@@ -1,0 +1,9 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {"label":"UE: Build Editor","type":"shell","command":"powershell.exe","args":["-NoProfile","-ExecutionPolicy","Bypass","-File","${workspaceFolder}/Scripts/Build.ps1"],"group":{"kind":"build","isDefault":true},"problemMatcher":"$msCompile"},
+    {"label":"UE: Prepare Content","type":"shell","command":"powershell.exe","args":["-NoProfile","-ExecutionPolicy","Bypass","-File","${workspaceFolder}/Scripts/PrepareContent.ps1"],"problemMatcher":[]},
+    {"label":"UE: Test","type":"shell","command":"powershell.exe","args":["-NoProfile","-ExecutionPolicy","Bypass","-File","${workspaceFolder}/Scripts/Test.ps1"],"group":"test","problemMatcher":[]},
+    {"label":"UE: Play","type":"shell","command":"powershell.exe","args":["-NoProfile","-ExecutionPolicy","Bypass","-File","${workspaceFolder}/Scripts/Run.ps1"],"problemMatcher":[]}
+  ]
+}

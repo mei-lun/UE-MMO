@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-09-25",
+  "packs": [
+    {
+      "id": "epic_ue58_mannequins",
+      "author": "Epic Games",
+      "source": "UE 5.8.3 installed Templates/TemplateResources/High/Characters/Content/Mannequins",
+      "page": "https://dev.epicgames.com/documentation/en-us/unreal-engine/third-person-template-in-unreal-engine",
+      "destination": "Content/Characters/Mannequins",
+      "asset_count": 128,
+      "animation_sequences_verified": 97,
+      "license": "Unreal Engine template content; governed by applicable Epic terms, not CC0",
+      "status": "copied and loaded in UE 5.8.3",
+      "required_for_m0": true
+    },
+    {
+      "id": "kenney_impact_sounds",
+      "author": "Kenney",
+      "page": "https://kenney.nl/assets/impact-sounds",
+      "archive": "SourceAssets/Downloads/kenney_impact-sounds.zip",
+      "sha256": "029d734af1582474edf3a694d1b0cebc97c1c152f2f39fa34d4c2bafc5de77f8",
+      "license": "CC0",
+      "license_file": "SourceAssets/Licenses/KenneyImpact-CC0.txt",
+      "destination": "Content/ThirdParty/Kenney/Impact",
+      "status": "downloaded, unpacked, four sounds imported and loaded in UE",
+      "required_for_m0": true
+    },
+    {
+      "id": "quaternius_base_characters_standard",
+      "author": "Quaternius",
+      "page": "https://quaternius.itch.io/universal-base-characters",
+      "license": "Pending archive-level verification: product pages and general license differ",
+      "status": "candidate; direct download connection timed out; not downloaded or imported",
+      "required_for_m0": false
+    },
+    {
+      "id": "quaternius_animation_library_standard",
+      "author": "Quaternius",
+      "page": "https://quaternius.itch.io/universal-animation-library",
+      "license": "Pending archive-level verification",
+      "status": "candidate; download unavailable; free-tier action inventory not verified",
+      "required_for_m0": false
+    },
+    {
+      "id": "quaternius_animation_library_2_standard",
+      "author": "Quaternius",
+      "page": "https://quaternius.itch.io/universal-animation-library-2",
+      "license": "Pending archive-level verification",
+      "status": "candidate; download unavailable; dedicated launcher/airborne coverage not verified",
+      "required_for_m0": false
+    }
+  ]
+}
