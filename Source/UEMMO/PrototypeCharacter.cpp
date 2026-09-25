@@ -1,5 +1,6 @@
 #include "PrototypeCharacter.h"
 #include "Animation/AnimInstance.h"
+#include "Character/AttackMovementGate.h"
 #include "Character/SideViewCameraComponent.h"
 #include "Combat/AttackCatalog.h"
 #include "Combat/CombatComponent.h"
@@ -23,30 +24,41 @@ namespace
 {
     /**
      * Single choke point for all planar movement: every frame the accumulated
-     * axis state is converted into movement input and facing here. This is the
-     * spot where M1-013 attack gating (CanAcceptMovement) plugs in once
-     * implemented; nothing else in this class feeds movement input.
+     * axis state is converted into movement input and facing here. M1-013: the
+     * combat gate plugs in exactly here (CanAcceptMovement/CanTurn via
+     * AttackMovementGate): an in-flight attack or death scales the active
+     * planar input to zero and locks facing. Nothing else in this class feeds
+     * movement input, and the movement component itself is never disabled, so
+     * external impulses (LaunchCharacter, knockback) still apply.
      */
     void ApplyPlanarMovement(APrototypeCharacter& Character, const FPlanarAxisState& Axes)
     {
-        const FVector PlanarVelocity = ComputePlanarVelocity(Axes);
-        UCharacterMovementComponent* Movement = Character.GetCharacterMovement();
-        const float Speed = PlanarVelocity.Size2D();
-        if (Speed > UE_SMALL_NUMBER && Movement && Movement->MaxWalkSpeed > UE_SMALL_NUMBER)
+        if (UE::UEMMO::Tasks::M1_013::ComputeAllowedMoveScale(Character.GetCombat()) > 0.0f)
         {
-            // Normalized direction plus an input scale of speed / MaxWalkSpeed makes
-            // CharacterMovement clamp its walk speed to the per-axis planar speed
-            // (analog input modifier), keeping normal acceleration, braking and collision.
-            Character.AddMovementInput(PlanarVelocity / Speed, Speed / Movement->MaxWalkSpeed);
+            const FVector PlanarVelocity = ComputePlanarVelocity(Axes);
+            UCharacterMovementComponent* Movement = Character.GetCharacterMovement();
+            const float Speed = PlanarVelocity.Size2D();
+            if (Speed > UE_SMALL_NUMBER && Movement && Movement->MaxWalkSpeed > UE_SMALL_NUMBER)
+            {
+                // Normalized direction plus an input scale of speed / MaxWalkSpeed makes
+                // CharacterMovement clamp its walk speed to the per-axis planar speed
+                // (analog input modifier), keeping normal acceleration, braking and collision.
+                Character.AddMovementInput(PlanarVelocity / Speed, Speed / Movement->MaxWalkSpeed);
+            }
         }
-        // Only horizontal input changes facing; depth input (W/S) never flips it.
-        if (Axes.AxisX > 0.0f)
+        // M1-013: facing stays locked while attacking or dead, so reversed input
+        // neither flips the locked facing nor swings the camera. Only horizontal
+        // input changes facing otherwise; depth input (W/S) never flips it.
+        if (UE::UEMMO::Tasks::M1_013::CanFlipFacing(Character.GetCombat()))
         {
-            Character.SetActorRotation(FRotator(0.f, 0.f, 0.f));
-        }
-        else if (Axes.AxisX < 0.0f)
-        {
-            Character.SetActorRotation(FRotator(0.f, 180.f, 0.f));
+            if (Axes.AxisX > 0.0f)
+            {
+                Character.SetActorRotation(FRotator(0.f, 0.f, 0.f));
+            }
+            else if (Axes.AxisX < 0.0f)
+            {
+                Character.SetActorRotation(FRotator(0.f, 180.f, 0.f));
+            }
         }
     }
 }
