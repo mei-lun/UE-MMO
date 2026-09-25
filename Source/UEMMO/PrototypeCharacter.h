@@ -7,7 +7,6 @@
 class USideViewCameraComponent;
 class UInputAction;
 class UInputMappingContext;
-class UAnimSequence;
 struct FInputActionValue;
 
 /** M0 movement scaffold. Combat belongs to a later milestone. */
@@ -27,7 +26,6 @@ private:
     void StartJump();
     void EndJump();
     void ResetPosition();
-    void UpdateAnimation();
     // M1-030: single component owning the fixed side-view rig and the ground
     // anchor follow (replaces the M0 CameraBoom/Camera pair).
     UPROPERTY(VisibleAnywhere) TObjectPtr<USideViewCameraComponent> CameraRig;
@@ -36,10 +34,6 @@ private:
     UPROPERTY() TObjectPtr<UInputAction> DepthAction;
     UPROPERTY() TObjectPtr<UInputAction> JumpAction;
     UPROPERTY() TObjectPtr<UInputAction> ResetAction;
-    UPROPERTY() TObjectPtr<UAnimSequence> IdleAnimation;
-    UPROPERTY() TObjectPtr<UAnimSequence> RunAnimation;
-    UPROPERTY() TObjectPtr<UAnimSequence> FallAnimation;
-    UPROPERTY() TObjectPtr<UAnimSequence> ActiveAnimation;
     FVector SpawnLocation;
     // M1-029: accumulated planar axis input; applied centrally in Tick.
     UE::UEMMO::Tasks::M1_029::FPlanarAxisState PlanarAxes;
