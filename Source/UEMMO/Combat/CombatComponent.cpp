@@ -82,6 +82,16 @@ void UCombatComponent::TickCombat(float DeltaSeconds)
 			FinishCurrentAttack();
 			return;
 		}
+
+		// M1-014: inside the cancel window the attack can switch into the
+		// buffered Light follow-up. A successful switch retires the old
+		// instance and starts the next one; this tick then stops advancing
+		// the old timeline (the new instance steps from its next TickCombat,
+		// so a chain never skips frames inside a single tick).
+		if (TryChainFromBuffer())
+		{
+			return;
+		}
 	}
 }
 
@@ -146,6 +156,95 @@ void UCombatComponent::QueueInput(FBufferedCombatInput Input)
 bool UCombatComponent::PeekInputBuffer(FBufferedCombatInput& Out, int32 Index) const
 {
 	return InputBuffer.PeekAt(Index, Out);
+}
+
+void UCombatComponent::SetInputClockSeconds(double NowSeconds)
+{
+	InputClockSeconds = NowSeconds;
+}
+
+double UCombatComponent::GetInputClockSeconds() const
+{
+	return InputClockSeconds;
+}
+
+bool UCombatComponent::TryChainFromBuffer()
+{
+	// The chaining only reads definitions of the running attack and never
+	// hardcodes windows or id lists: the cancel window and the allowed
+	// follow-ups both come from the injected catalog's definition.
+	const UAttackDefinition* Definition = (Catalog != nullptr) ? Catalog->Find(ActiveAttackId) : nullptr;
+	if (Definition == nullptr)
+	{
+		return false;
+	}
+	if (!Definition->CancelWindow.Contains(CurrentFrame))
+	{
+		// Outside the cancel window the buffer is deliberately untouched:
+		// presses wait there until the window opens (or expire there).
+		return false;
+	}
+
+	// Lifetime rule first (interface contract section 2): expired entries are
+	// dropped before any consumption attempt, and an age of exactly 150 ms is
+	// still valid (only a strictly greater age expires).
+	InputBuffer.PruneExpired(InputClockSeconds, 0.150);
+
+	// Find whether any buffered Light exists without consuming it: a Light
+	// that cannot chain (the running attack does not allow the light
+	// follow-up) must stay buffered, so the consume happens only after the
+	// switch is confirmed. The ConsumeFirst below then removes exactly the
+	// earliest such entry because nothing mutates the buffer in between.
+	bool bFoundLight = false;
+	const int32 BufferedCount = InputBuffer.Size();
+	for (int32 Index = 0; Index < BufferedCount && !bFoundLight; ++Index)
+	{
+		FBufferedCombatInput Entry;
+		if (InputBuffer.PeekAt(Index, Entry) && Entry.Action == ECombatInput::Light)
+		{
+			bFoundLight = true;
+		}
+	}
+	if (!bFoundLight)
+	{
+		// Other buffered actions (Launcher, Jump) stay untouched: consuming
+		// them belongs to later tasks.
+		return false;
+	}
+
+	// The Light press chains into the next light attack (M1-014 scope: the
+	// light_02 follow-up); the running attack's own definition decides whether
+	// that follow-up is allowed, so light_02 (whose next list holds only the
+	// launcher) can never loop into itself.
+	static const FName LightChainAttackId(TEXT("light_02"));
+	if (!Definition->AllowedNextAttacks.Contains(LightChainAttackId))
+	{
+		// Kept for later consumers; deliberately not consumed here.
+		return false;
+	}
+	// Belt-and-braces before consuming: the follow-up must exist in the
+	// catalog and the component must be able to start it (TryStartAttack
+	// refuses for a dead component).
+	if (bDead || Catalog->Find(LightChainAttackId) == nullptr)
+	{
+		return false;
+	}
+
+	FBufferedCombatInput Consumed;
+	if (!InputBuffer.ConsumeFirst(ECombatInput::Light, Consumed))
+	{
+		return false;
+	}
+
+	// Switch semantics: the old instance ends (exactly one Finished broadcast,
+	// handlers observe a Free snapshot in between, like a natural end) and the
+	// follow-up starts immediately with a fresh InstanceId and the same
+	// Facing. Only one switch per step: the caller stops advancing the old
+	// timeline, so a frame never skips through the follow-up.
+	const int32 ChainedFacing = Facing;
+	FinishCurrentAttack();
+	TryStartAttack(LightChainAttackId, ChainedFacing);
+	return true;
 }
 
 void UCombatComponent::ClearInstance()

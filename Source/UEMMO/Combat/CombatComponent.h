@@ -171,7 +171,31 @@ public:
 	 */
 	bool PeekInputBuffer(FBufferedCombatInput& Out, int32 Index = 0) const;
 
+	/**
+	 * M1-014: overrides the component's input game clock, the "now" the
+	 * cancel-window chaining compares buffered PressedAt ages against. The
+	 * owner injects it explicitly (from the pause-aware game clock, one call
+	 * per game frame before TickCombat); tests inject fixed times (interface
+	 * contract section 2: early tests use explicit times). TickCombat never
+	 * advances this clock itself, and QueueInput carries PressedAt in the
+	 * same time base, so a set value is used verbatim at the next window step.
+	 */
+	void SetInputClockSeconds(double NowSeconds);
+
+	/** Current input game clock value (0.0 until the first override). */
+	double GetInputClockSeconds() const;
+
 private:
+	/**
+	 * M1-014: when the running attack is inside its cancel window, prunes
+	 * expired buffered inputs and switches into the earliest buffered Light
+	 * when the running attack allows the light follow-up. Inputs that cannot
+	 * chain (wrong action, expired, follow-up not allowed) stay buffered.
+	 * Returns true when the running instance changed, so the caller stops
+	 * advancing the old timeline for this tick.
+	 */
+	bool TryChainFromBuffer();
+
 	/** Clears the running instance (not the id counter) back to Free defaults. */
 	void ClearInstance();
 
@@ -198,6 +222,13 @@ private:
 
 	FCombatClock Clock;
 	FCombatInputBuffer InputBuffer;
+
+	/**
+	 * M1-014: input game clock ("now") used for the buffered input lifetime
+	 * checks of the cancel-window chaining. Injected via SetInputClockSeconds;
+	 * never advanced internally.
+	 */
+	double InputClockSeconds = 0.0;
 
 	/** Missing ids already diagnosed; reset when a new catalog is attached. */
 	TSet<FName> LoggedMissingAttackIds;
