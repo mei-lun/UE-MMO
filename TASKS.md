@@ -30,7 +30,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M0-H01 | [真实键盘与镜头验收](Docs/Tasks/M0-H01.md) | REVIEW | M0-003,M0-004 | 用户 | 2026-09-25T06:05:19+08:00 | [待试玩记录](Docs/Tasks/Reports/M0-H01.md) |
 | M1-001 | [接手并复核现有基线](Docs/Tasks/M1-001.md) | DONE | M0-004 | ZCode-20260925-A | 2026-09-25T10:11:53+08:00 | [report](Docs/Tasks/Reports/M1-001.md) |
 | M1-002 | [建立按任务筛选的自动化测试入口](Docs/Tasks/M1-002.md) | DONE | M1-001 | ZCode-20260925-A | 2026-09-25T23:14:22+08:00 | [report](Docs/Tasks/Reports/M1-002.md) |
-| M1-003 | [输入缓存的容量与一次性消费](Docs/Tasks/M1-003.md) | TODO | M1-002 | — | — | — |
+| M1-003 | [输入缓存的容量与一次性消费](Docs/Tasks/M1-003.md) | DONE | M1-002 | ZCode-20260925-A | 2026-09-25T23:20:30+08:00 | [report](Docs/Tasks/Reports/M1-003.md) |
 | M1-004 | [输入过期与复位清理](Docs/Tasks/M1-004.md) | TODO | M1-003 | — | — | — |
 | M1-005 | [半开窗口与跨帧检测](Docs/Tasks/M1-005.md) | TODO | M1-002 | — | — | — |
 | M1-006 | [固定60Hz动作时钟](Docs/Tasks/M1-006.md) | TODO | M1-005 | — | — | — |
