@@ -1,5 +1,5 @@
 #include "PrototypeCharacter.h"
-#include "Animation/AnimSequence.h"
+#include "Animation/AnimInstance.h"
 #include "Character/SideViewCameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -65,12 +65,19 @@ APrototypeCharacter::APrototypeCharacter()
     GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     static ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshAsset(TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple"));
     if (MeshAsset.Succeeded()) GetMesh()->SetSkeletalMesh(MeshAsset.Object);
-    static ConstructorHelpers::FObjectFinder<UAnimSequence> Idle(TEXT("/Game/Characters/Mannequins/Anims/Unarmed/MM_Idle.MM_Idle"));
-    static ConstructorHelpers::FObjectFinder<UAnimSequence> Run(TEXT("/Game/Characters/Mannequins/Anims/Unarmed/Jog/MF_Unarmed_Jog_Fwd.MF_Unarmed_Jog_Fwd"));
-    static ConstructorHelpers::FObjectFinder<UAnimSequence> Fall(TEXT("/Game/Characters/Mannequins/Anims/Unarmed/Jump/MM_Fall_Loop.MM_Fall_Loop"));
-    IdleAnimation = Idle.Object;
-    RunAnimation = Run.Object;
-    FallAnimation = Fall.Object;
+    // M1-031: the generated AnimBP owns all animation state (locomotion
+    // BlendSpace plus jump/fall/land poses). The M0 per-frame PlayAnimation
+    // override is gone, so idle/move switching never restarts from time zero.
+    static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBPClass(TEXT("/Game/UEMMO/Animation/ABP_Prototype.ABP_Prototype_C"));
+    if (AnimBPClass.Succeeded())
+    {
+        GetMesh()->SetAnimationMode(EAnimationMode::AnimationBlueprint);
+        GetMesh()->SetAnimInstanceClass(AnimBPClass.Class);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UEMMO: /Game/UEMMO/Animation/ABP_Prototype missing; run Scripts/Editor/create_locomotion_assets.py."));
+    }
     // M1-030: the fixed side-view framing (yaw -90, pitch -18, FOV 55, arm
     // 1700 cm) and the ground-anchor follow moved into SideViewCameraComponent;
     // those values are preserved as the component's defaults.
@@ -82,7 +89,6 @@ void APrototypeCharacter::BeginPlay()
 {
     Super::BeginPlay();
     SpawnLocation = GetActorLocation();
-    UpdateAnimation();
     UE_LOG(LogTemp, Display, TEXT("UEMMO: prototype character ready; X/Y movement enabled."));
 }
 
@@ -141,15 +147,4 @@ void APrototypeCharacter::Tick(float DeltaSeconds)
     Super::Tick(DeltaSeconds);
     ApplyPlanarMovement(*this, PlanarAxes);
     if (GetActorLocation().Z < -1000.f) ResetPosition();
-    UpdateAnimation();
-}
-void APrototypeCharacter::UpdateAnimation()
-{
-    UAnimSequence* Desired = GetCharacterMovement()->IsFalling() ? FallAnimation.Get()
-        : (GetVelocity().SizeSquared2D() > 100.f ? RunAnimation.Get() : IdleAnimation.Get());
-    if (Desired && Desired != ActiveAnimation)
-    {
-        ActiveAnimation = Desired;
-        GetMesh()->PlayAnimation(Desired, true);
-    }
 }
