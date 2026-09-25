@@ -33,8 +33,8 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M1-003 | [输入缓存的容量与一次性消费](Docs/Tasks/M1-003.md) | DONE | M1-002 | ZCode-20260925-A | 2026-09-25T23:20:30+08:00 | [report](Docs/Tasks/Reports/M1-003.md) |
 | M1-004 | [输入过期与复位清理](Docs/Tasks/M1-004.md) | DONE | M1-003 | ZCode-20260925-A | 2026-09-25T23:46:41+08:00 | [report](Docs/Tasks/Reports/M1-004.md) |
 | M1-005 | [半开窗口与跨帧检测](Docs/Tasks/M1-005.md) | DONE | M1-002 | ZCode-20260925-A | 2026-09-25T23:46:42+08:00 | [report](Docs/Tasks/Reports/M1-005.md) |
-| M1-006 | [固定60Hz动作时钟](Docs/Tasks/M1-006.md) | TODO | M1-005 | — | — | — |
-| M1-007 | [攻击数据类型与单条校验](Docs/Tasks/M1-007.md) | TODO | M1-002 | — | — | — |
+| M1-006 | [固定60Hz动作时钟](Docs/Tasks/M1-006.md) | DONE | M1-005 | ZCode-20260925-A | 2026-09-26T00:15:43+08:00 | [report](Docs/Tasks/Reports/M1-006.md) |
+| M1-007 | [攻击数据类型与单条校验](Docs/Tasks/M1-007.md) | DONE | M1-002 | ZCode-20260925-A | 2026-09-26T00:15:44+08:00 | [report](Docs/Tasks/Reports/M1-007.md) |
 | M1-008 | [四个攻击的文本数据与引用校验](Docs/Tasks/M1-008.md) | TODO | M1-007 | — | — | — |
 | M1-009 | [从JSON生成攻击DataAsset](Docs/Tasks/M1-009.md) | TODO | M1-008 | — | — | — |
 | M1-010 | [运行时攻击目录与打包引用](Docs/Tasks/M1-010.md) | TODO | M1-009 | — | — | — |
@@ -56,7 +56,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M1-026 | [落地、倒地与恢复](Docs/Tasks/M1-026.md) | TODO | M1-025 | — | — | — |
 | M1-027 | [训练场一键复位所有战斗状态](Docs/Tasks/M1-027.md) | TODO | M1-026 | — | — | — |
 | M1-028 | [战斗调试覆盖层](Docs/Tasks/M1-028.md) | TODO | M1-027 | — | — | — |
-| M1-029 | [分方向速度和斜向归一化](Docs/Tasks/M1-029.md) | TODO | M1-002 | — | — | — |
+| M1-029 | [分方向速度和斜向归一化](Docs/Tasks/M1-029.md) | DONE | M1-002 | ZCode-20260925-A | 2026-09-26T00:15:45+08:00 | [report](Docs/Tasks/Reports/M1-029.md) |
 | M1-030 | [镜头跟随地面锚点](Docs/Tasks/M1-030.md) | TODO | M1-029 | — | — | — |
 | M1-031 | [八方向移动与跳跃动画层](Docs/Tasks/M1-031.md) | TODO | M1-029 | — | — | — |
 | M1-032 | [攻击Montage与动画所有权](Docs/Tasks/M1-032.md) | TODO | M1-014,M1-031 | — | — | — |
