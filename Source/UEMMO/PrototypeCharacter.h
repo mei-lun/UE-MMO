@@ -4,8 +4,7 @@
 #include "Character/PlanarMovement.h"
 #include "PrototypeCharacter.generated.h"
 
-class UCameraComponent;
-class USpringArmComponent;
+class USideViewCameraComponent;
 class UInputAction;
 class UInputMappingContext;
 class UAnimSequence;
@@ -29,8 +28,9 @@ private:
     void EndJump();
     void ResetPosition();
     void UpdateAnimation();
-    UPROPERTY(VisibleAnywhere) TObjectPtr<USpringArmComponent> CameraBoom;
-    UPROPERTY(VisibleAnywhere) TObjectPtr<UCameraComponent> Camera;
+    // M1-030: single component owning the fixed side-view rig and the ground
+    // anchor follow (replaces the M0 CameraBoom/Camera pair).
+    UPROPERTY(VisibleAnywhere) TObjectPtr<USideViewCameraComponent> CameraRig;
     UPROPERTY() TObjectPtr<UInputMappingContext> Mapping;
     UPROPERTY() TObjectPtr<UInputAction> HorizontalAction;
     UPROPERTY() TObjectPtr<UInputAction> DepthAction;

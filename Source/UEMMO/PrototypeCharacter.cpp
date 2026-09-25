@@ -1,6 +1,6 @@
 #include "PrototypeCharacter.h"
 #include "Animation/AnimSequence.h"
-#include "Camera/CameraComponent.h"
+#include "Character/SideViewCameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/LocalPlayer.h"
@@ -8,7 +8,6 @@
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
-#include "GameFramework/SpringArmComponent.h"
 #include "InputAction.h"
 #include "InputActionValue.h"
 #include "InputMappingContext.h"
@@ -72,16 +71,11 @@ APrototypeCharacter::APrototypeCharacter()
     IdleAnimation = Idle.Object;
     RunAnimation = Run.Object;
     FallAnimation = Fall.Object;
-    CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
-    CameraBoom->SetupAttachment(RootComponent);
-    CameraBoom->SetUsingAbsoluteRotation(true);
-    CameraBoom->SetRelativeRotation(FRotator(-18.f, -90.f, 0.f));
-    CameraBoom->TargetArmLength = 1700.f;
-    CameraBoom->TargetOffset = FVector(0, 0, 100);
-    CameraBoom->bDoCollisionTest = false;
-    Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("SideCamera"));
-    Camera->SetupAttachment(CameraBoom);
-    Camera->FieldOfView = 55.f;
+    // M1-030: the fixed side-view framing (yaw -90, pitch -18, FOV 55, arm
+    // 1700 cm) and the ground-anchor follow moved into SideViewCameraComponent;
+    // those values are preserved as the component's defaults.
+    CameraRig = CreateDefaultSubobject<USideViewCameraComponent>(TEXT("SideViewCameraRig"));
+    CameraRig->SetupAttachment(RootComponent);
 }
 
 void APrototypeCharacter::BeginPlay()
