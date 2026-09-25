@@ -41,7 +41,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M1-011 | [单次攻击开始、推进与结束](Docs/Tasks/M1-011.md) | DONE | M1-004,M1-006,M1-010 | ZCode-20260925-A | 2026-09-26T02:51:15+08:00 | [report](Docs/Tasks/Reports/M1-011.md) |
 | M1-012 | [J与K输入转成战斗意图](Docs/Tasks/M1-012.md) | DONE | M1-011 | ZCode-20260925-A | 2026-09-26T03:13:47+08:00 | [report](Docs/Tasks/Reports/M1-012.md) |
 | M1-013 | [攻击期间移动和朝向限制](Docs/Tasks/M1-013.md) | DONE | M1-012 | ZCode-20260925-A | 2026-09-26T03:31:09+08:00 | [report](Docs/Tasks/Reports/M1-013.md) |
-| M1-014 | [普攻两段的缓存衔接](Docs/Tasks/M1-014.md) | TODO | M1-013 | — | — | — |
+| M1-014 | [普攻两段的缓存衔接](Docs/Tasks/M1-014.md) | DONE | M1-013 | ZCode-20260925-A | 2026-09-26T03:52:08+08:00 | [report](Docs/Tasks/Reports/M1-014.md) |
 | M1-015 | [生命值扣除与死亡单次事件](Docs/Tasks/M1-015.md) | DONE | M1-002 | ZCode-20260925-A | 2026-09-25T23:46:43+08:00 | [report](Docs/Tasks/Reports/M1-015.md) |
 | M1-016 | [可受伤的训练敌人](Docs/Tasks/M1-016.md) | DONE | M1-015 | ZCode-20260925-A | 2026-09-26T00:49:33+08:00 | [report](Docs/Tasks/Reports/M1-016.md) |
 | M1-017 | [命中盒的世界坐标计算](Docs/Tasks/M1-017.md) | TODO | M1-013 | — | — | — |
