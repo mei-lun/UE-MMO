@@ -24,12 +24,14 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/Run.ps1
 
 ## 先读这些
 
+**执行任务先读根目录 [TASKS.md](TASKS.md) 和 [HANDOFF.md](HANDOFF.md)。** 现已将后续工作拆成76项小任务；任务卡在Docs/Tasks，每项可独立验收。每完成1项立即更新总表，每完成3项或停止时交接。由用户试玩的任务单独标记，AI不能代签。
+
 1. [游戏与技术设计](Docs/01-游戏与技术设计.md)：目标、阶段、坐标、输入、连招、判定、浮空、敌人、房间、装备、存档、架构、资源和验证。
 2. [准备与环境操作手册](Docs/02-准备与环境操作手册.md)：安装、路径、工具链、恢复步骤、所有脚本与故障排查。
 3. [资源目录与缺口](Docs/03-资源目录与缺口.md)：已入库模型/动作/音频，来源、许可、待补动作。
 4. [Agent 工作流](Docs/04-Agent工作流.md)：ZCode/CodeBuddy 接手提示、日常循环、MCP 评估办法。
 5. [验证记录](Docs/05-验证记录.md)：实际完成情况、证据和限制。
-6. [M1 实现任务](Docs/06-M1实现任务.md)：下一阶段按依赖排列的 6 个任务。
+6. [M1 原阶段计划](Docs/06-M1实现任务.md)：保留设计背景；执行以总表中的小任务卡为准。
 7. [AGENTS.md](AGENTS.md)：编程 Agent 的项目约定。
 
 ## 日常命令
@@ -43,6 +45,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/Test.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/Test.ps1 -Render
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/Package.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/TestPackage.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/CheckTaskBoard.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/UpdateTaskStatus.ps1 -Id M1-001 -Status IN_PROGRESS -Owner ZCode-Session -Report Docs/Tasks/Reports/M1-001.md
 ```
 
 报告位于 `Artifacts`；构建和 Shader 缓存不提交 Git。`.uasset/.umap` 由 Git LFS 管理。
@@ -58,4 +62,4 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/TestPackage.ps1
 
 ## 下一步
 
-登录 ZCode，打开本目录，让它读取 AGENTS.md 和 Docs/06-M1实现任务.md，从任务 1 的输入缓存和时间轴开始。先不要同时扩展地图、职业或装备系统。
+登录 ZCode，打开本目录，让它读取 AGENTS.md、TASKS.md、HANDOFF.md 和 Docs/Tasks/执行与交接规则.md。先领取M1-001复核基线，再按依赖完成M1-002与M1-003；一次只领取一项，每项通过立即更新总表。先不要越过阶段用户验收去扩展刷怪、装备或联网。

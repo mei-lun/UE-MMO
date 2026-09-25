@@ -7,8 +7,8 @@
 1. 本机已安装 ZCode 3.14.3，入口为 `D:\ZCode\ZCode.exe`；新机器从官方安装页获取 Windows 版本。
 2. 用用户自己的账号完成登录；凭据保存在工具自身安全配置中，不放仓库。
 3. 打开已有目录 `D:\Github-Poj\UE-MMO`，不要另建同名空工程。
-4. 要求 Agent 先读取 README.md、AGENTS.md、Docs/05-验证记录.md，然后读取对应阶段设计。
-5. 先执行 CheckEnvironment、Build、Test。通过后再接收下一功能任务。
+4. 要求 Agent 先读取 README.md、AGENTS.md、TASKS.md、HANDOFF.md 和 Docs/Tasks/执行与交接规则.md，然后读取可领取任务卡。
+5. 执行 CheckTaskBoard，依赖全DONE后领取一项。第一次M1-001复核CheckEnvironment、Build、Test；后续按各卡范围验证，不机械重复全部流程。
 
 官方入口：ZCode https://zcode.z.ai/cn/docs/install；CodeBuddy https://www.codebuddy.cn/docs/cli/installation。2026-09-25 核对的 CodeBuddy 文档给出的 npm 包是 `@tencent-ai/codebuddy-code`，Node 最低要求 18.20；当前机器 Node 20.19.6 满足这一要求。安装页面会更新，执行前以官方当前入口为准。
 
@@ -16,17 +16,18 @@
 
 ```text
 这是 UE 5.8.3 的单机 3D 横版研究项目，需要地面 X/Y 纵深走位。
-先读取 README.md、AGENTS.md、Docs/01-游戏与技术设计.md、Docs/05-验证记录.md。
+先读取 README.md、AGENTS.md、TASKS.md、HANDOFF.md、Docs/Tasks/执行与交接规则.md。
 不要重建工程，不要启用多人，不要重新生成美术素材，不要改动引擎源码。
-执行 Scripts/CheckEnvironment.ps1、Build.ps1 和 Test.ps1，核对真实报告。
-然后按 Docs/06-M1实现任务.md 的第一个任务实现输入缓存与动作时间轴。
-每次只完成一个可验收任务，更新验证记录，输出构建与测试证据。
+执行 Scripts/CheckTaskBoard.ps1，选择依赖全DONE的最小TODO任务。
+本轮最多3项，一次只领取1项；每完成1项立即填报告并更新TASKS.md。
+满3项或提前停止时更新HANDOFF并留历史副本，报告实际完成ID和数量。
+任务验收未通过或未执行不能标DONE，用户人工验收不能由AI代签。
 不要把设计中的未来系统称为已经实现。
 ```
 
 ## 3. 每轮开发闭环
 
-读当前状态→定义最小行为和验收标准→写/改文本代码与数据→编译→通过 UE 脚本更新资产→运行测试→读取新报告→查看渲染画面→修复→本机 Git 提交→请求用户试玩手感。
+读总表与交接→领取1项→读卡和接口→实现与验证→提交实现→填写实际SHA和验收报告→改总表DONE并提交记录→领取下一项。每3项或退出时写HANDOFF。人工阶段验收单独等待用户反馈。
 
 遇到错误先读取 Artifacts/Logs 末尾和对应错误，不靠重复运行碰运气。新编译器、UE 升级、插件变更单独验证，不与战斗功能修改混为一次大改。
 

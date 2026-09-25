@@ -1,6 +1,19 @@
 # UE-MMO Agent 工作约定
 
-本项目是 UE 5.8.3 的单机 3D 横版学习原型，必须支持地面纵深走位。先读 README.md、Docs/01-游戏与技术设计.md、Docs/05-验证记录.md 和当前任务计划。
+本项目是 UE 5.8.3 的单机 3D 横版学习原型，必须支持地面纵深走位。先读 README.md、TASKS.md、HANDOFF.md、Docs/Tasks/执行与交接规则.md，再读对应任务卡与设计。
+
+## 任务领取和强制进度记录
+
+- **TASKS.md 是唯一任务状态来源。每完成 1 项立即更新总表和该任务报告；每完成 3 项写一次批次交接，不足 3 项退出同样要写。** 默认一轮最多3项，用户明确连续执行更多时每3项存检查点后继续。
+- 一次只领取依赖全部DONE的一项，将状态、Owner、带时区时间、报告链接填完整；同一目录最多一个IN_PROGRESS。
+- 任务细则见 Docs/Tasks/<ID>.md；接口见 Docs/Tasks/接口约定.md。旧 Docs/06 六个大任务不再用于执行计数。
+- 未测试、失败、部分实现不能标DONE。需用户试玩的H01由用户明确反馈后才能标DONE，AI不得代签。
+- 当前会话完成数只统计新增DONE的ID，不把M0既有基线或拆分父任务重复计数。
+- 每项报告放 Docs/Tasks/Reports/<ID>.md，记录实际代码提交、验收命令、结果和限制；原始证据按时间戳放 Artifacts/Tasks/<ID>。
+- 完成实现提交后，在报告记录其SHA，再提交总表和报告，避免填写未来提交号。当前分支未集成的外部分支成果不解除依赖。
+- 每批更新HANDOFF.md并保存历史交接；暂停时设PAUSED/BLOCKED，写明剩余步骤。不要留无交接的IN_PROGRESS。
+- 开始和结束执行 Scripts/CheckTaskBoard.ps1。它只检查结构，不代表游戏逻辑已通过。
+- 推荐用 `Scripts/UpdateTaskStatus.ps1 -Id <ID> -Status IN_PROGRESS -Owner <工具会话> -Report Docs/Tasks/Reports/<ID>.md` 更新状态；DONE 前先把报告写完并记录已集成的提交 SHA。
 
 ## 范围
 
@@ -21,6 +34,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/PrepareContent.p
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/Test.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/Test.ps1 -Render
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/Run.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/CheckTaskBoard.ps1
 ```
 
 用户全局指令要求使用 RTK 时，为上述 shell 命令加 `rtk proxy` 前缀。不要让 RTK 压缩掩盖退出码；检查最终 JSON 和 UE 日志。
@@ -50,4 +64,4 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/Run.ps1
 
 ## 交接
 
-每次交付写明实际修改、验证命令、结果文件、未通过项和下一任务。更新 Docs/05-验证记录.md，保持设计目标和当前实现状态分开。
+每次交付写明本轮完成数量与具体任务ID、实际修改、验证命令、结果文件、未通过项和下一任务。逐项更新TASKS.md和任务报告，每3项或退出时更新HANDOFF.md；里程碑验证更新Docs/05-验证记录.md。保持设计目标和当前实现状态分开。
