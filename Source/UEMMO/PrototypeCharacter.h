@@ -1,6 +1,7 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Character/PlanarMovement.h"
 #include "PrototypeCharacter.generated.h"
 
 class UCameraComponent;
@@ -40,4 +41,6 @@ private:
     UPROPERTY() TObjectPtr<UAnimSequence> FallAnimation;
     UPROPERTY() TObjectPtr<UAnimSequence> ActiveAnimation;
     FVector SpawnLocation;
+    // M1-029: accumulated planar axis input; applied centrally in Tick.
+    UE::UEMMO::Tasks::M1_029::FPlanarAxisState PlanarAxes;
 };
