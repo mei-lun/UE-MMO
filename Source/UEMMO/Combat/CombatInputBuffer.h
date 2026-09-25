@@ -19,13 +19,28 @@ struct FBufferedCombatInput
 /**
  * Bounded FIFO of combat inputs (capacity 4).
  * Sequence numbers must strictly increase within a session; Reset() starts a new session.
- * Time-based expiry is added by task M1-004.
+ * All times come from the explicit monotonic input game clock passed by callers;
+ * wall clocks (FPlatformTime, FDateTime::Now, ...) are never read internally.
  */
 class FCombatInputBuffer
 {
 public:
 	bool Push(FBufferedCombatInput Input);
 	bool ConsumeFirst(ECombatInput Action, FBufferedCombatInput& Out);
+
+	/**
+	 * Removes entries whose age (Now - PressedAt) is strictly greater than Lifetime,
+	 * plus entries whose PressedAt is non-finite or clearly in the future (PressedAt > Now).
+	 * Surviving entries keep their relative order. Default lifetime is 0.150 seconds.
+	 */
+	void PruneExpired(double Now, double Lifetime = 0.150);
+
+	/**
+	 * Prunes expired entries first (PruneExpired(Now, Lifetime)), then consumes the
+	 * earliest surviving entry matching Action, if any.
+	 */
+	bool Consume(ECombatInput Action, double Now, double Lifetime, FBufferedCombatInput& Out);
+
 	int32 Size() const;
 	void Reset();
 
