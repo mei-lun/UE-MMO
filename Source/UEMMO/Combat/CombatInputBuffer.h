@@ -42,6 +42,14 @@ public:
 	bool Consume(ECombatInput Action, double Now, double Lifetime, FBufferedCombatInput& Out);
 
 	int32 Size() const;
+
+	/**
+	 * M1-012: copies the entry at Index (0 = earliest) without consuming or
+	 * reordering anything. Purely additive read-only accessor; returns false
+	 * when the index is out of range.
+	 */
+	bool PeekAt(int32 Index, FBufferedCombatInput& Out) const;
+
 	void Reset();
 
 private:

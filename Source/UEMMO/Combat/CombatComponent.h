@@ -155,6 +155,22 @@ public:
 
 	bool IsClockFrozen() const;
 
+	/**
+	 * M1-012: buffers one combat intent into the component's input buffer
+	 * (interface contract section 4). The buffer rejects duplicate or
+	 * regressing sequence numbers and non-finite timestamps; a rejected push
+	 * is silently ignored here (no state change, no event).
+	 */
+	void QueueInput(FBufferedCombatInput Input);
+
+	/**
+	 * M1-012: copies one buffered input without consuming or reordering
+	 * anything (Index 0 = earliest entry). Returns false when the index is out
+	 * of range. Read-only observation for diagnostics and tests; consumption
+	 * wiring stays with M1-014.
+	 */
+	bool PeekInputBuffer(FBufferedCombatInput& Out, int32 Index = 0) const;
+
 private:
 	/** Clears the running instance (not the id counter) back to Free defaults. */
 	void ClearInstance();

@@ -42,6 +42,16 @@ int32 FCombatInputBuffer::Size() const
 	return Entries.Num();
 }
 
+bool FCombatInputBuffer::PeekAt(int32 Index, FBufferedCombatInput& Out) const
+{
+	if (Index < 0 || Index >= Entries.Num())
+	{
+		return false;
+	}
+	Out = Entries[Index];
+	return true;
+}
+
 void FCombatInputBuffer::PruneExpired(double Now, double Lifetime)
 {
 	// Walk backwards so removal keeps the relative order of surviving entries.

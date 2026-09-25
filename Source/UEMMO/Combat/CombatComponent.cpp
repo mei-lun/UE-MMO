@@ -136,6 +136,18 @@ bool UCombatComponent::IsClockFrozen() const
 	return bClockFrozen;
 }
 
+void UCombatComponent::QueueInput(FBufferedCombatInput Input)
+{
+	// Push rejections (duplicate/regressing sequence, non-finite time) are
+	// intentionally silent: QueueInput reports nothing (M1-012 contract).
+	InputBuffer.Push(Input);
+}
+
+bool UCombatComponent::PeekInputBuffer(FBufferedCombatInput& Out, int32 Index) const
+{
+	return InputBuffer.PeekAt(Index, Out);
+}
+
 void UCombatComponent::ClearInstance()
 {
 	ActionState = ECombatActionState::Free;

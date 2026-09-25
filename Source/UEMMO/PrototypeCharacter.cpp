@@ -1,9 +1,12 @@
 #include "PrototypeCharacter.h"
 #include "Animation/AnimInstance.h"
 #include "Character/SideViewCameraComponent.h"
+#include "Combat/AttackCatalog.h"
+#include "Combat/CombatComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/LocalPlayer.h"
+#include "Engine/World.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -83,19 +86,39 @@ APrototypeCharacter::APrototypeCharacter()
     // those values are preserved as the component's defaults.
     CameraRig = CreateDefaultSubobject<USideViewCameraComponent>(TEXT("SideViewCameraRig"));
     CameraRig->SetupAttachment(RootComponent);
+    // M1-012: combat lifecycle component (M1-011); J/K intents buffer here.
+    Combat = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat"));
 }
 
 void APrototypeCharacter::BeginPlay()
 {
     Super::BeginPlay();
     SpawnLocation = GetActorLocation();
+    // M1-012 catalog wiring point: build the read-only catalog once from the
+    // DefaultGame.ini references (the same loading path M1-010/M1-011 use) and
+    // inject it into the combat component. On failure combat intents still
+    // buffer; TryStartAttack then rejects every id with its own diagnostic.
+    UAttackCatalog* Catalog = NewObject<UAttackCatalog>(this);
+    FText CatalogError;
+    if (Catalog->InitializeFromConfig(CatalogError))
+    {
+        Combat->InitializeFromCatalog(Catalog);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UEMMO: attack catalog unavailable (%s); combat intents buffer without one."), *CatalogError.ToString());
+    }
     UE_LOG(LogTemp, Display, TEXT("UEMMO: prototype character ready; X/Y movement enabled."));
 }
 
-void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+void APrototypeCharacter::EnsureCombatInputActions()
 {
-    Super::SetupPlayerInputComponent(PlayerInputComponent);
-    UEnhancedInputComponent* Input = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
+    if (Mapping != nullptr)
+    {
+        // M1-012: actions and the mapping context are built exactly once per
+        // pawn; a re-setup (re-possess) reuses them so nothing accumulates.
+        return;
+    }
     Mapping = NewObject<UInputMappingContext>(this);
     auto MakeAxis = [this](const TCHAR* Name, FKey Positive, FKey Negative)
     {
@@ -113,6 +136,26 @@ void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
     ResetAction = NewObject<UInputAction>(this, TEXT("Reset"));
     Mapping->MapKey(JumpAction, EKeys::SpaceBar);
     Mapping->MapKey(ResetAction, EKeys::R);
+    // M1-012: combat intents (J = Light, K = Launcher). Runtime-created actions
+    // keep the M0 pattern: no uasset IMC/IA, keys mapped in code. Only the
+    // Started event is bound, so holding a key never repeats and releasing
+    // never enqueues.
+    CombatLightAction = NewObject<UInputAction>(this, TEXT("CombatLight"));
+    CombatLauncherAction = NewObject<UInputAction>(this, TEXT("CombatLauncher"));
+    Mapping->MapKey(CombatLightAction, EKeys::J);
+    Mapping->MapKey(CombatLauncherAction, EKeys::K);
+}
+
+void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+    Super::SetupPlayerInputComponent(PlayerInputComponent);
+    UEnhancedInputComponent* Input = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
+    // M1-012 duplicate-binding guard: EnhancedInput stacks a delegate per
+    // BindAction call, so re-running setup against the same component would
+    // double-trigger. Clearing this pawn's bindings first makes the bind block
+    // below idempotent.
+    Input->ClearBindingsForObject(this);
+    EnsureCombatInputActions();
     Input->BindAction(HorizontalAction, ETriggerEvent::Triggered, this, &APrototypeCharacter::MoveHorizontal);
     Input->BindAction(HorizontalAction, ETriggerEvent::Completed, this, &APrototypeCharacter::MoveHorizontal);
     Input->BindAction(DepthAction, ETriggerEvent::Triggered, this, &APrototypeCharacter::MoveDepth);
@@ -120,10 +163,20 @@ void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
     Input->BindAction(JumpAction, ETriggerEvent::Started, this, &APrototypeCharacter::StartJump);
     Input->BindAction(JumpAction, ETriggerEvent::Completed, this, &APrototypeCharacter::EndJump);
     Input->BindAction(ResetAction, ETriggerEvent::Started, this, &APrototypeCharacter::ResetPosition);
+    Input->BindAction(CombatLightAction, ETriggerEvent::Started, this, &APrototypeCharacter::OnCombatLightPressed);
+    Input->BindAction(CombatLauncherAction, ETriggerEvent::Started, this, &APrototypeCharacter::OnCombatLauncherPressed);
     if (APlayerController* PC = Cast<APlayerController>(Controller))
     {
         if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
-            Subsystem->AddMappingContext(Mapping, 0);
+        {
+            // M1-012: the context object is a per-pawn singleton (see
+            // EnsureCombatInputActions); registering it twice is pointless, so
+            // a re-setup never re-adds it.
+            if (!Subsystem->HasMappingContext(Mapping))
+            {
+                Subsystem->AddMappingContext(Mapping, 0);
+            }
+        }
     }
 }
 
@@ -137,6 +190,30 @@ void APrototypeCharacter::MoveHorizontal(const FInputActionValue& Value)
 void APrototypeCharacter::MoveDepth(const FInputActionValue& Value) { PlanarAxes.SetAxisY(Value.Get<float>()); }
 void APrototypeCharacter::StartJump() { Jump(); }
 void APrototypeCharacter::EndJump() { StopJumping(); }
+void APrototypeCharacter::OnCombatLightPressed() { SubmitCombatInput(ECombatInput::Light); }
+void APrototypeCharacter::OnCombatLauncherPressed() { SubmitCombatInput(ECombatInput::Launcher); }
+void APrototypeCharacter::SubmitCombatInput(ECombatInput Action)
+{
+    const UWorld* World = GetWorld();
+    // Input game clock (interface contract section 2): World GetTimeSeconds
+    // advances with normal game time only, so pause and hit stop do not
+    // advance it. World-less callers (early tests) read 0.0.
+    SubmitCombatInput(Action, World ? World->GetTimeSeconds() : 0.0);
+}
+void APrototypeCharacter::SubmitCombatInput(ECombatInput Action, double PressedAt)
+{
+    if (Combat == nullptr)
+    {
+        return;
+    }
+    FBufferedCombatInput Intent;
+    Intent.Sequence = NextCombatInputSequence++;
+    Intent.Action = Action;
+    Intent.PressedAt = PressedAt;
+    // Rejections (duplicate/regressing sequence, non-finite time) are only
+    // ignored: the character counter stays monotonic either way.
+    Combat->QueueInput(Intent);
+}
 void APrototypeCharacter::ResetPosition()
 {
     GetCharacterMovement()->StopMovementImmediately();
@@ -145,6 +222,13 @@ void APrototypeCharacter::ResetPosition()
 void APrototypeCharacter::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+    // M1-012: the combat component advances its own 60 Hz action clock from
+    // here. Buffer consumption is NOT wired yet (M1-014 and later tasks own
+    // that link; TryStartAttack still has no game-side caller).
+    if (Combat != nullptr)
+    {
+        Combat->TickCombat(DeltaSeconds);
+    }
     ApplyPlanarMovement(*this, PlanarAxes);
     if (GetActorLocation().Z < -1000.f) ResetPosition();
 }
