@@ -15,6 +15,40 @@
 #include "InputModifiers.h"
 #include "UObject/ConstructorHelpers.h"
 
+using namespace UE::UEMMO::Tasks::M1_029;
+
+namespace
+{
+    /**
+     * Single choke point for all planar movement: every frame the accumulated
+     * axis state is converted into movement input and facing here. This is the
+     * spot where M1-013 attack gating (CanAcceptMovement) plugs in once
+     * implemented; nothing else in this class feeds movement input.
+     */
+    void ApplyPlanarMovement(APrototypeCharacter& Character, const FPlanarAxisState& Axes)
+    {
+        const FVector PlanarVelocity = ComputePlanarVelocity(Axes);
+        UCharacterMovementComponent* Movement = Character.GetCharacterMovement();
+        const float Speed = PlanarVelocity.Size2D();
+        if (Speed > UE_SMALL_NUMBER && Movement && Movement->MaxWalkSpeed > UE_SMALL_NUMBER)
+        {
+            // Normalized direction plus an input scale of speed / MaxWalkSpeed makes
+            // CharacterMovement clamp its walk speed to the per-axis planar speed
+            // (analog input modifier), keeping normal acceleration, braking and collision.
+            Character.AddMovementInput(PlanarVelocity / Speed, Speed / Movement->MaxWalkSpeed);
+        }
+        // Only horizontal input changes facing; depth input (W/S) never flips it.
+        if (Axes.AxisX > 0.0f)
+        {
+            Character.SetActorRotation(FRotator(0.f, 0.f, 0.f));
+        }
+        else if (Axes.AxisX < 0.0f)
+        {
+            Character.SetActorRotation(FRotator(0.f, 180.f, 0.f));
+        }
+    }
+}
+
 APrototypeCharacter::APrototypeCharacter()
 {
     PrimaryActorTick.bCanEverTick = true;
@@ -80,7 +114,9 @@ void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
     Mapping->MapKey(JumpAction, EKeys::SpaceBar);
     Mapping->MapKey(ResetAction, EKeys::R);
     Input->BindAction(HorizontalAction, ETriggerEvent::Triggered, this, &APrototypeCharacter::MoveHorizontal);
+    Input->BindAction(HorizontalAction, ETriggerEvent::Completed, this, &APrototypeCharacter::MoveHorizontal);
     Input->BindAction(DepthAction, ETriggerEvent::Triggered, this, &APrototypeCharacter::MoveDepth);
+    Input->BindAction(DepthAction, ETriggerEvent::Completed, this, &APrototypeCharacter::MoveDepth);
     Input->BindAction(JumpAction, ETriggerEvent::Started, this, &APrototypeCharacter::StartJump);
     Input->BindAction(JumpAction, ETriggerEvent::Completed, this, &APrototypeCharacter::EndJump);
     Input->BindAction(ResetAction, ETriggerEvent::Started, this, &APrototypeCharacter::ResetPosition);
@@ -93,11 +129,12 @@ void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 
 void APrototypeCharacter::MoveHorizontal(const FInputActionValue& Value)
 {
-    const float Axis = Value.Get<float>();
-    AddMovementInput(FVector::ForwardVector, Axis);
-    if (!FMath::IsNearlyZero(Axis)) SetActorRotation(FRotator(0, Axis > 0 ? 0 : 180, 0));
+    // Enhanced Input already sums the mapped keys (D and negated A) into one net
+    // axis; Triggered carries it while held and Completed carries 0 on release.
+    // The value is only recorded here; movement is applied centrally in Tick.
+    PlanarAxes.SetAxisX(Value.Get<float>());
 }
-void APrototypeCharacter::MoveDepth(const FInputActionValue& Value) { AddMovementInput(FVector::RightVector, Value.Get<float>()); }
+void APrototypeCharacter::MoveDepth(const FInputActionValue& Value) { PlanarAxes.SetAxisY(Value.Get<float>()); }
 void APrototypeCharacter::StartJump() { Jump(); }
 void APrototypeCharacter::EndJump() { StopJumping(); }
 void APrototypeCharacter::ResetPosition()
@@ -108,6 +145,7 @@ void APrototypeCharacter::ResetPosition()
 void APrototypeCharacter::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+    ApplyPlanarMovement(*this, PlanarAxes);
     if (GetActorLocation().Z < -1000.f) ResetPosition();
     UpdateAnimation();
 }
