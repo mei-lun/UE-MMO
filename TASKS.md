@@ -35,7 +35,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M1-005 | [半开窗口与跨帧检测](Docs/Tasks/M1-005.md) | DONE | M1-002 | ZCode-20260925-A | 2026-09-25T23:46:42+08:00 | [report](Docs/Tasks/Reports/M1-005.md) |
 | M1-006 | [固定60Hz动作时钟](Docs/Tasks/M1-006.md) | DONE | M1-005 | ZCode-20260925-A | 2026-09-26T00:15:43+08:00 | [report](Docs/Tasks/Reports/M1-006.md) |
 | M1-007 | [攻击数据类型与单条校验](Docs/Tasks/M1-007.md) | DONE | M1-002 | ZCode-20260925-A | 2026-09-26T00:15:44+08:00 | [report](Docs/Tasks/Reports/M1-007.md) |
-| M1-008 | [四个攻击的文本数据与引用校验](Docs/Tasks/M1-008.md) | TODO | M1-007 | — | — | — |
+| M1-008 | [四个攻击的文本数据与引用校验](Docs/Tasks/M1-008.md) | DONE | M1-007 | ZCode-20260925-A | 2026-09-26T00:49:32+08:00 | [report](Docs/Tasks/Reports/M1-008.md) |
 | M1-009 | [从JSON生成攻击DataAsset](Docs/Tasks/M1-009.md) | TODO | M1-008 | — | — | — |
 | M1-010 | [运行时攻击目录与打包引用](Docs/Tasks/M1-010.md) | TODO | M1-009 | — | — | — |
 | M1-011 | [单次攻击开始、推进与结束](Docs/Tasks/M1-011.md) | TODO | M1-004,M1-006,M1-010 | — | — | — |
@@ -43,7 +43,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M1-013 | [攻击期间移动和朝向限制](Docs/Tasks/M1-013.md) | TODO | M1-012 | — | — | — |
 | M1-014 | [普攻两段的缓存衔接](Docs/Tasks/M1-014.md) | TODO | M1-013 | — | — | — |
 | M1-015 | [生命值扣除与死亡单次事件](Docs/Tasks/M1-015.md) | DONE | M1-002 | ZCode-20260925-A | 2026-09-25T23:46:43+08:00 | [report](Docs/Tasks/Reports/M1-015.md) |
-| M1-016 | [可受伤的训练敌人](Docs/Tasks/M1-016.md) | TODO | M1-015 | — | — | — |
+| M1-016 | [可受伤的训练敌人](Docs/Tasks/M1-016.md) | DONE | M1-015 | ZCode-20260925-A | 2026-09-26T00:49:33+08:00 | [report](Docs/Tasks/Reports/M1-016.md) |
 | M1-017 | [命中盒的世界坐标计算](Docs/Tasks/M1-017.md) | TODO | M1-013 | — | — | — |
 | M1-018 | [三维命中查询与过滤](Docs/Tasks/M1-018.md) | TODO | M1-016,M1-017 | — | — | — |
 | M1-019 | [有效窗口扣血与同招去重](Docs/Tasks/M1-019.md) | TODO | M1-018,M1-011 | — | — | — |
@@ -57,7 +57,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M1-027 | [训练场一键复位所有战斗状态](Docs/Tasks/M1-027.md) | TODO | M1-026 | — | — | — |
 | M1-028 | [战斗调试覆盖层](Docs/Tasks/M1-028.md) | TODO | M1-027 | — | — | — |
 | M1-029 | [分方向速度和斜向归一化](Docs/Tasks/M1-029.md) | DONE | M1-002 | ZCode-20260925-A | 2026-09-26T00:15:45+08:00 | [report](Docs/Tasks/Reports/M1-029.md) |
-| M1-030 | [镜头跟随地面锚点](Docs/Tasks/M1-030.md) | TODO | M1-029 | — | — | — |
+| M1-030 | [镜头跟随地面锚点](Docs/Tasks/M1-030.md) | DONE | M1-029 | ZCode-20260925-A | 2026-09-26T00:49:33+08:00 | [report](Docs/Tasks/Reports/M1-030.md) |
 | M1-031 | [八方向移动与跳跃动画层](Docs/Tasks/M1-031.md) | TODO | M1-029 | — | — | — |
 | M1-032 | [攻击Montage与动画所有权](Docs/Tasks/M1-032.md) | TODO | M1-014,M1-031 | — | — | — |
 | M1-033 | [局部命中停顿与输入保留](Docs/Tasks/M1-033.md) | TODO | M1-032,M1-026 | — | — | — |
