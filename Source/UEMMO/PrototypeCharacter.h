@@ -13,7 +13,7 @@ class UInputAction;
 class UInputMappingContext;
 struct FInputActionValue;
 
-/** M0 movement scaffold. M1-012 routes J/K combat intents into the combat component. */
+/** M0 movement scaffold. M1-012 routes combat intents into the combat component; M1-040 remaps the keys to the DNF layout. */
 UCLASS()
 class UEMMO_API APrototypeCharacter : public ACharacter
 {
@@ -26,7 +26,8 @@ public:
     UCombatComponent* GetCombat() const { return Combat; }
 
     /**
-     * M1-012: public combat intent entry (J = Light, K = Launcher). PressedAt
+     * M1-012: public combat intent entry (M1-040 keys: X = Light, Z =
+     * Launcher). PressedAt
      * is read from the input game clock (World GetTimeSeconds: advances with
      * normal game time only, so pause and hit stop do not advance it) and the
      * sequence comes from a character-level counter starting at 1. Push
@@ -45,7 +46,8 @@ public:
     virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
     /**
-     * M1-027: the R-key entry is the public reset surface. With a registered
+     * M1-027: the reset entry is the public reset surface (M1-040: bound to
+     * F2; the old R key moved to skill slot 4). With a registered
      * UTrainingResetService the press routes into exactly one unified session
      * reset (player + every registered enemy; the service owns the player
      * physics reset, so nothing runs twice); without a service the M0 local
@@ -65,7 +67,7 @@ public:
     void ApplyTrainingRoomReset();
 
     /**
-     * M1-027: injects the session reset service the R-key path routes into
+     * M1-027: injects the session reset service the F2-key path routes into
      * (the room owner / automation tests register the participants on the
      * service and hand it to its pawn here). Passing null restores the M0
      * fallback behavior.
@@ -73,13 +75,33 @@ public:
     void SetTrainingResetService(UTrainingResetService* InService);
 
     /**
-     * M1-023: the Space entry (Enhanced Input Started binding). Public so the
+     * M1-023: the Jump entry (Enhanced Input Started binding; M1-040 keys: C
+     * primary with Space retained as the alias). Public so the
      * automation tests can drive the exact binding target: the press is
      * buffered into the combat component (never a direct state-bypassing
      * jump); the component's state decides Free jump vs launcher jump-cancel
      * vs keep-buffered.
      */
     void StartJump();
+
+    /**
+     * M1-040: DNF skill-slot entry (slot 1..8 = Q W E R A S D F in that
+     * order). The press only lands in a per-slot counter plus a Verbose log -
+     * no combat effect yet (M2+ owns skill execution). Out-of-range slots are
+     * ignored. Public because it is the input binding target and the
+     * automation tests drive it directly.
+     */
+    void SubmitSkillSlot(int32 SlotIndex);
+
+    /** M1-040: how often skill slot 1..8 was pressed since spawn (0 out of range). */
+    int32 GetSkillSlotPressCount(int32 SlotIndex) const;
+
+    /**
+     * M1-040: the eight runtime skill-slot actions in slot order (index 0 is
+     * slot 1 = Q, index 7 is slot 8 = F), read-only for the automation tests'
+     * mapping-table assertions.
+     */
+    const TArray<TObjectPtr<UInputAction>>& GetSkillSlotActions() const { return SkillSlotActions; }
 
     /**
      * M1-028: the runtime mapping context built by EnsureCombatInputActions,
@@ -107,6 +129,17 @@ private:
     void EnsureCombatInputActions();
     void OnCombatLightPressed();
     void OnCombatLauncherPressed();
+    // M1-040: per-slot Started handlers (one member per action keeps the
+    // member-pointer binding form, so ClearBindingsForObject keeps covering
+    // every skill-slot binding on a re-setup).
+    void OnSkillSlot1Pressed();
+    void OnSkillSlot2Pressed();
+    void OnSkillSlot3Pressed();
+    void OnSkillSlot4Pressed();
+    void OnSkillSlot5Pressed();
+    void OnSkillSlot6Pressed();
+    void OnSkillSlot7Pressed();
+    void OnSkillSlot8Pressed();
     // M1-030: single component owning the fixed side-view rig and the ground
     // anchor follow (replaces the M0 CameraBoom/Camera pair).
     UPROPERTY(VisibleAnywhere) TObjectPtr<USideViewCameraComponent> CameraRig;
@@ -126,6 +159,9 @@ private:
     UPROPERTY(Transient) TObjectPtr<UInputAction> CombatLauncherAction;
     // M1-028: F1 debug-overlay toggle action (same runtime-action pattern).
     UPROPERTY(Transient) TObjectPtr<UInputAction> DebugToggleAction;
+    // M1-040: the eight DNF skill-slot actions in slot order (Q W E R A S D F
+    // = slot 1..8); created with the same runtime-action pattern.
+    UPROPERTY(Transient) TArray<TObjectPtr<UInputAction>> SkillSlotActions;
     FVector SpawnLocation;
     // M1-027: the facing captured with the spawn point; the unified reset
     // restores it alongside the position (interface contract section 6).
@@ -137,4 +173,7 @@ private:
     UE::UEMMO::Tasks::M1_029::FPlanarAxisState PlanarAxes;
     // M1-012: next combat input sequence; strictly increases per submitted intent.
     uint64 NextCombatInputSequence = 1;
+    // M1-040: per-slot press counters (slot 1..8 at index 0..7); the skill
+    // slots have no combat effect yet, so this counter is their surface.
+    int32 SkillSlotPressCounts[8] = {};
 };

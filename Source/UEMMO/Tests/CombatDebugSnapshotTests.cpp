@@ -306,7 +306,8 @@ bool FUEMMOTasksM1_028StaleTargetWeakReferenceReadsSafe::RunTest(const FString& 
 }
 
 // The F1 debug-toggle mapping exists exactly once on the runtime mapping
-// context (no conflict with W/A/S/D/Space/R/J/K), its action carries the
+// context (no conflict with the M1-040 DNF layout: arrows, X, Z, C, Space,
+// F2 and the Q/W/E/R/A/S/D/F skill slots), its action carries the
 // Started binding, and a repeated input setup neither duplicates the mapping
 // nor rebuilds the action.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(

@@ -51,7 +51,8 @@ namespace
         }
         // M1-013: facing stays locked while attacking or dead, so reversed input
         // neither flips the locked facing nor swings the camera. Only horizontal
-        // input changes facing otherwise; depth input (W/S) never flips it.
+        // input changes facing otherwise; depth input (the Up/Down arrows)
+        // never flips it.
         if (UE::UEMMO::Tasks::M1_013::CanFlipFacing(Character.GetCombat()))
         {
             if (Axes.AxisX > 0.0f)
@@ -101,7 +102,7 @@ APrototypeCharacter::APrototypeCharacter()
     // those values are preserved as the component's defaults.
     CameraRig = CreateDefaultSubobject<USideViewCameraComponent>(TEXT("SideViewCameraRig"));
     CameraRig->SetupAttachment(RootComponent);
-    // M1-012: combat lifecycle component (M1-011); J/K intents buffer here.
+    // M1-012: combat lifecycle component (M1-011); combat intents buffer here.
     Combat = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat"));
     // M1-032: attack montage playback owner; sources are injected in BeginPlay
     // (after the catalog is attached) because the presenter needs the exact
@@ -136,7 +137,7 @@ void APrototypeCharacter::BeginPlay()
     // locomotion AnimBP). Null-safe on both arguments by contract.
     CombatPresentation->SetSources(Combat, GetMesh());
     // M1-023: the combat component cannot jump itself; both the Free-state
-    // jump and the launcher jump-cancel consume a buffered Space intent into
+    // jump and the launcher jump-cancel consume a buffered jump intent into
     // this handler, which performs the real ACharacter::Jump synchronously in
     // the consume path. The component is owned by this pawn, so the raw this
     // capture never outlives the handler.
@@ -177,22 +178,46 @@ void APrototypeCharacter::EnsureCombatInputActions()
         NegativeMapping.Modifiers.Add(NewObject<UInputModifierNegate>(Mapping));
         return Action;
     };
-    HorizontalAction = MakeAxis(TEXT("MoveHorizontal"), EKeys::D, EKeys::A);
-    DepthAction = MakeAxis(TEXT("MoveDepth"), EKeys::S, EKeys::W);
+    // M1-040: DNF movement keys. The planar sign convention is unchanged
+    // (Right/Down positive, Left/Up negated), only the keys moved: the arrow
+    // keys replace A/D (X) and W/S (Y depth); WASD became skill slots.
+    HorizontalAction = MakeAxis(TEXT("MoveHorizontal"), EKeys::Right, EKeys::Left);
+    DepthAction = MakeAxis(TEXT("MoveDepth"), EKeys::Down, EKeys::Up);
     JumpAction = NewObject<UInputAction>(this, TEXT("Jump"));
     ResetAction = NewObject<UInputAction>(this, TEXT("Reset"));
+    // M1-040: C is the primary jump key; the Space alias is retained on the
+    // same action to soften the remap (both feed the M1-023 buffered jump).
+    Mapping->MapKey(JumpAction, EKeys::C);
     Mapping->MapKey(JumpAction, EKeys::SpaceBar);
-    Mapping->MapKey(ResetAction, EKeys::R);
-    // M1-012: combat intents (J = Light, K = Launcher). Runtime-created actions
-    // keep the M0 pattern: no uasset IMC/IA, keys mapped in code. Only the
-    // Started event is bound, so holding a key never repeats and releasing
-    // never enqueues.
+    // M1-040: F2 resets; R left the reset binding for skill slot 4 (the WASD
+    // skill-slot move removes the old R collision for free).
+    Mapping->MapKey(ResetAction, EKeys::F2);
+    // M1-040: combat intents (X = Light, Z = Launcher; J/K removed without
+    // alias). Runtime-created actions keep the M0 pattern: no uasset IMC/IA,
+    // keys mapped in code. Only the Started event is bound, so holding a key
+    // never repeats and releasing never enqueues.
     CombatLightAction = NewObject<UInputAction>(this, TEXT("CombatLight"));
     CombatLauncherAction = NewObject<UInputAction>(this, TEXT("CombatLauncher"));
-    Mapping->MapKey(CombatLightAction, EKeys::J);
-    Mapping->MapKey(CombatLauncherAction, EKeys::K);
+    Mapping->MapKey(CombatLightAction, EKeys::X);
+    Mapping->MapKey(CombatLauncherAction, EKeys::Z);
+    // M1-040: the eight DNF skill-slot actions (Q W E R A S D F = slot 1..8),
+    // same runtime-action pattern, created exactly once like every action.
+    SkillSlotActions.Reset(8);
+    for (int32 Slot = 1; Slot <= 8; ++Slot)
+    {
+        SkillSlotActions.Add(NewObject<UInputAction>(this, *FString::Printf(TEXT("SkillSlot%d"), Slot)));
+    }
+    // M1-040: the eight DNF skill slots in slot order (Q W E R A S D F = slot
+    // 1..8). A/D/W/S/R left the movement/reset bindings and now only produce
+    // SkillSlot intents (no combat effect yet, M2+ placeholder).
+    const FKey SkillSlotKeys[8] = { EKeys::Q, EKeys::W, EKeys::E, EKeys::R, EKeys::A, EKeys::S, EKeys::D, EKeys::F };
+    for (int32 Slot = 1; Slot <= 8; ++Slot)
+    {
+        Mapping->MapKey(SkillSlotActions[Slot - 1], SkillSlotKeys[Slot - 1]);
+    }
     // M1-028: F1 toggles the HUD combat debug overlay. F1 collides with no
-    // existing mapping (W/A/S/D/Space/R/J/K), and the guard above keeps the
+    // other mapping in the M1-040 DNF layout (arrows, X, Z, C, Space, F2 and
+    // the Q/W/E/R/A/S/D/F skill slots), and the guard above keeps the
     // mapping and action single even on a re-setup.
     DebugToggleAction = NewObject<UInputAction>(this, TEXT("DebugToggle"));
     Mapping->MapKey(DebugToggleAction, EKeys::F1);
@@ -220,6 +245,17 @@ void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
     // M1-028: F1 routes to the HUD debug overlay toggle (Started only: one
     // press flips the flag exactly once).
     Input->BindAction(DebugToggleAction, ETriggerEvent::Started, this, &APrototypeCharacter::OnDebugTogglePressed);
+    // M1-040: the eight DNF skill slots only record a per-slot press counter;
+    // no combat effect yet (M2+ placeholder). Started only: one intent per
+    // press, releasing never enqueues.
+    Input->BindAction(SkillSlotActions[0], ETriggerEvent::Started, this, &APrototypeCharacter::OnSkillSlot1Pressed);
+    Input->BindAction(SkillSlotActions[1], ETriggerEvent::Started, this, &APrototypeCharacter::OnSkillSlot2Pressed);
+    Input->BindAction(SkillSlotActions[2], ETriggerEvent::Started, this, &APrototypeCharacter::OnSkillSlot3Pressed);
+    Input->BindAction(SkillSlotActions[3], ETriggerEvent::Started, this, &APrototypeCharacter::OnSkillSlot4Pressed);
+    Input->BindAction(SkillSlotActions[4], ETriggerEvent::Started, this, &APrototypeCharacter::OnSkillSlot5Pressed);
+    Input->BindAction(SkillSlotActions[5], ETriggerEvent::Started, this, &APrototypeCharacter::OnSkillSlot6Pressed);
+    Input->BindAction(SkillSlotActions[6], ETriggerEvent::Started, this, &APrototypeCharacter::OnSkillSlot7Pressed);
+    Input->BindAction(SkillSlotActions[7], ETriggerEvent::Started, this, &APrototypeCharacter::OnSkillSlot8Pressed);
     if (APlayerController* PC = Cast<APlayerController>(Controller))
     {
         if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
@@ -245,8 +281,9 @@ void APrototypeCharacter::MoveHorizontal(const FInputActionValue& Value)
 void APrototypeCharacter::MoveDepth(const FInputActionValue& Value) { PlanarAxes.SetAxisY(Value.Get<float>()); }
 void APrototypeCharacter::StartJump()
 {
-    // M1-023: Space is a combat intent, not a state bypass. The press is
-    // buffered like J/K and the component's state decides: Free consumes it
+    // M1-023: a jump key (M1-040: C primary, Space alias) is a combat intent,
+    // not a state bypass. The press is buffered like X/Z and the component's
+    // state decides: Free consumes it
     // into the BeginPlay-bound jump request on the next combat tick (same
     // frame, M0 instant-jump experience), the launcher cancel window consumes
     // it into a jump cancel, everything else keeps it buffered until its
@@ -262,6 +299,33 @@ void APrototypeCharacter::StartJump()
 void APrototypeCharacter::EndJump() { StopJumping(); }
 void APrototypeCharacter::OnCombatLightPressed() { SubmitCombatInput(ECombatInput::Light); }
 void APrototypeCharacter::OnCombatLauncherPressed() { SubmitCombatInput(ECombatInput::Launcher); }
+// M1-040: one trivial forwarder per slot keeps the member-pointer binding
+// form (ClearBindingsForObject keeps covering every binding) while the slot
+// identity travels as the literal the handler forwards.
+void APrototypeCharacter::OnSkillSlot1Pressed() { SubmitSkillSlot(1); }
+void APrototypeCharacter::OnSkillSlot2Pressed() { SubmitSkillSlot(2); }
+void APrototypeCharacter::OnSkillSlot3Pressed() { SubmitSkillSlot(3); }
+void APrototypeCharacter::OnSkillSlot4Pressed() { SubmitSkillSlot(4); }
+void APrototypeCharacter::OnSkillSlot5Pressed() { SubmitSkillSlot(5); }
+void APrototypeCharacter::OnSkillSlot6Pressed() { SubmitSkillSlot(6); }
+void APrototypeCharacter::OnSkillSlot7Pressed() { SubmitSkillSlot(7); }
+void APrototypeCharacter::OnSkillSlot8Pressed() { SubmitSkillSlot(8); }
+void APrototypeCharacter::SubmitSkillSlot(int32 SlotIndex)
+{
+    // M1-040: the DNF skill slots have no combat effect yet (M2+ owns skill
+    // execution); the press only lands in the per-slot counter so the wiring
+    // stays observable. Out-of-range slots are ignored.
+    if (SlotIndex < 1 || SlotIndex > 8)
+    {
+        return;
+    }
+    ++SkillSlotPressCounts[SlotIndex - 1];
+    UE_LOG(LogTemp, Verbose, TEXT("UEMMO: skill slot %d pressed (no effect; M2+ placeholder)."), SlotIndex);
+}
+int32 APrototypeCharacter::GetSkillSlotPressCount(int32 SlotIndex) const
+{
+    return (SlotIndex >= 1 && SlotIndex <= 8) ? SkillSlotPressCounts[SlotIndex - 1] : 0;
+}
 void APrototypeCharacter::OnDebugTogglePressed()
 {
     // M1-028: F1 is not a combat intent. The press only flips the local HUD's
@@ -304,9 +368,10 @@ void APrototypeCharacter::SetTrainingResetService(UTrainingResetService* InServi
 
 void APrototypeCharacter::ResetPosition()
 {
-    // M1-027: one R press (or one fall-out-of-world recovery, the other
+    // M1-027: one reset press (M1-040 key: F2; or one fall-out-of-world
+    // recovery, the other
     // ResetPosition caller in Tick) is exactly one unified session reset.
-    // The R action keeps its single Started binding to this method, and the
+    // The F2 action keeps its single Started binding to this method, and the
     // two branches below are mutually exclusive, so the reset can never run
     // twice per entry. With a registered service the whole training session
     // resets through UTrainingResetService::ResetTrainingSession (which owns
@@ -340,7 +405,7 @@ void APrototypeCharacter::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
     // M1-012: the combat component advances its own 60 Hz action clock from
-    // here. M1-023: the Free-state Space consumption is live (a buffered Jump
+    // here. M1-023: the Free-state jump (C/Space) consumption is live (a buffered Jump
     // intent requests this character's jump through the BeginPlay handler);
     // the input-driven attack starts/chains stay dormant until the per-frame
     // SetInputClockSeconds injection and the facing source arrive (later

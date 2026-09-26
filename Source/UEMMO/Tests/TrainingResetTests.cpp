@@ -34,8 +34,8 @@ namespace UE::UEMMO::Tasks::M1_027
 	// extent of every hit box, so only enemy 0 ever sits in a hit box.
 	const float M1_027_SecondEnemyYOffset = 400.0f;
 
-	// Spawn point of the service-less fallback player of the R-key test,
-	// remote from the main scene base.
+	// Spawn point of the service-less fallback player of the reset-key test
+	// (M1-040: F2; formerly R), remote from the main scene base.
 	const FVector M1_027_BarePlayerSpawn(80000.0, 86000.0, 600.0);
 
 	// World acquisition, same order as the M1-018 through M1-026 pattern: a
@@ -213,7 +213,7 @@ namespace UE::UEMMO::Tasks::M1_027
 				Service->RegisterEnemy(Enemy);
 			}
 			// The two-way wiring: the service knows its participants, and the
-			// pawn knows the service its R-key path routes into.
+			// pawn knows the service its reset-key path (M1-040: F2) routes into.
 			Player->SetTrainingResetService(Service);
 			return Test.TestTrue(TEXT("the service registered every participant"),
 				Service->GetRegisteredEnemyCount() == EnemyCount && Service->HasRegisteredPlayer());
@@ -721,7 +721,8 @@ bool FUEMMOTasksM1_027EnemyHittableAgainByFirstMoveAfterResetFromFullHealth::Run
 	return true;
 }
 
-// The R-key wrap: one press runs exactly one session reset through the
+// The reset-key wrap (M1-040: F2, formerly R): one press runs exactly one
+// session reset through the
 // service (the reset counter proves no double execution) and resets both
 // sides; a pawn without a registered service keeps the M0 local reset.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -754,7 +755,7 @@ bool FUEMMOTasksM1_027PlayerResetRoutesThroughServiceExactlyOnceAndFallsBack::Ru
 	Scene.PlayerMovement->Velocity = FVector(300.0f, 0.0f, 0.0f);
 	Scene.Player->SetActorRotation(FRotator(0.0f, 180.0f, 0.0f));
 
-	// The R-key binding target: the unified entry, exactly once.
+	// The F2 binding target: the unified entry, exactly once.
 	Scene.Player->ResetPosition();
 	TestEqual(TEXT("one reset entry ran exactly one session reset"),
 		Scene.Service->GetResetCount(), 1);
