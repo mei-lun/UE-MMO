@@ -70,7 +70,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M1-040 | [DNF键位映射](Docs/Tasks/M1-040.md) | DONE | M1-012 | ZCode-20260925-A | 2026-09-27T01:35:43+08:00 | [report](Docs/Tasks/Reports/M1-040.md) |
 | M1-042 | [HUD标题阶段文案清理](Docs/Tasks/M1-042.md) | DONE | M1-040 | ZCode-20260925-A | 2026-09-27T03:04:33+08:00 | [report](Docs/Tasks/Reports/M1-042.md) |
 | M1-043 | [敌侧战斗组件游戏驱动](Docs/Tasks/M1-043.md) | DONE | M1-041 | ZCode-20260925-A | 2026-09-27T03:30:27+08:00 | [report](Docs/Tasks/Reports/M1-043.md) |
-| M1-H01 | [M1 用户阶段验收](Docs/Tasks/M1-H01.md) | BLOCKED | M1-039,M0-H01 | 用户 | 2026-09-27T02:05:00+08:00 | [第一轮反馈：不通过](Docs/Tasks/Reports/M1-H01.md) |
+| M1-H01 | [M1 用户阶段验收](Docs/Tasks/M1-H01.md) | BLOCKED | M1-039,M0-H01 | 用户 | 2026-09-27T03:30:30+08:00 | [report](Docs/Tasks/Reports/M1-H01.md) |
 | M1-041 | [游戏侧战斗接线](Docs/Tasks/M1-041.md) | DONE | M1-012,M1-021,M1-040 | ZCode-20260925-A | 2026-09-27T03:04:31+08:00 | [report](Docs/Tasks/Reports/M1-041.md) |
 | M2-001 | [近战敌人配置与出生冷却](Docs/Tasks/M2-001.md) | TODO | M1-H01 | — | — | — |
 | M2-002 | [追击与纵深对齐](Docs/Tasks/M2-002.md) | TODO | M2-001 | — | — | — |
