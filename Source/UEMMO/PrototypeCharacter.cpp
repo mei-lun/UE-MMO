@@ -17,6 +17,7 @@
 #include "InputActionValue.h"
 #include "InputMappingContext.h"
 #include "InputModifiers.h"
+#include "Room/TrainingResetService.h"
 #include "UObject/ConstructorHelpers.h"
 
 using namespace UE::UEMMO::Tasks::M1_029;
@@ -111,6 +112,9 @@ void APrototypeCharacter::BeginPlay()
 {
     Super::BeginPlay();
     SpawnLocation = GetActorLocation();
+    // M1-027: the unified reset restores this facing alongside the spawn
+    // position (interface contract section 6: the reset covers facing).
+    SpawnRotation = GetActorRotation();
     // M1-012 catalog wiring point: build the read-only catalog once from the
     // DefaultGame.ini references (the same loading path M1-010/M1-011 use) and
     // inject it into the combat component. On failure combat intents still
@@ -271,10 +275,44 @@ void APrototypeCharacter::SubmitCombatInput(ECombatInput Action, double PressedA
     // ignored: the character counter stays monotonic either way.
     Combat->QueueInput(Intent);
 }
+void APrototypeCharacter::SetTrainingResetService(UTrainingResetService* InService)
+{
+    TrainingResetService = InService;
+}
+
 void APrototypeCharacter::ResetPosition()
 {
-    GetCharacterMovement()->StopMovementImmediately();
+    // M1-027: one R press (or one fall-out-of-world recovery, the other
+    // ResetPosition caller in Tick) is exactly one unified session reset.
+    // The R action keeps its single Started binding to this method, and the
+    // two branches below are mutually exclusive, so the reset can never run
+    // twice per entry. With a registered service the whole training session
+    // resets through UTrainingResetService::ResetTrainingSession (which owns
+    // the player physics half via ApplyTrainingRoomReset); without one, the
+    // M0 local reset stays for bare scaffolding and test worlds.
+    if (UTrainingResetService* Service = TrainingResetService.Get())
+    {
+        Service->ResetTrainingSession();
+        return;
+    }
+    ApplyTrainingRoomReset();
+}
+
+void APrototypeCharacter::ApplyTrainingRoomReset()
+{
+    // M1-027: the physics half of the unified reset, mirroring the enemy-side
+    // ResetEnemy physics: zero every velocity source (including any launch or
+    // impulse still pending on the movement component) and re-ground the mode,
+    // then teleport back to the captured spawn location and facing.
+    if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+    {
+        Movement->StopMovementImmediately();
+        Movement->Velocity = FVector::ZeroVector;
+        Movement->ClearAccumulatedForces();
+        Movement->SetMovementMode(MOVE_Walking);
+    }
     SetActorLocation(SpawnLocation, false, nullptr, ETeleportType::TeleportPhysics);
+    SetActorRotation(SpawnRotation);
 }
 void APrototypeCharacter::Tick(float DeltaSeconds)
 {
