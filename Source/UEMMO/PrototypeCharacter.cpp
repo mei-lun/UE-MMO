@@ -4,6 +4,7 @@
 #include "Character/SideViewCameraComponent.h"
 #include "Combat/AttackCatalog.h"
 #include "Combat/CombatComponent.h"
+#include "Combat/CombatPresentationComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/LocalPlayer.h"
@@ -100,6 +101,10 @@ APrototypeCharacter::APrototypeCharacter()
     CameraRig->SetupAttachment(RootComponent);
     // M1-012: combat lifecycle component (M1-011); J/K intents buffer here.
     Combat = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat"));
+    // M1-032: attack montage playback owner; sources are injected in BeginPlay
+    // (after the catalog is attached) because the presenter needs the exact
+    // UCombatComponent instance this pawn ticks.
+    CombatPresentation = CreateDefaultSubobject<UCombatPresentationComponent>(TEXT("CombatPresentation"));
 }
 
 void APrototypeCharacter::BeginPlay()
@@ -120,6 +125,11 @@ void APrototypeCharacter::BeginPlay()
     {
         UE_LOG(LogTemp, Warning, TEXT("UEMMO: attack catalog unavailable (%s); combat intents buffer without one."), *CatalogError.ToString());
     }
+    // M1-032: hand attack playback ownership to the presentation component: it
+    // follows Combat's Started/Finished events and re-syncs from the snapshot
+    // every tick (Reset/interrupt paths stop the montage and return to the
+    // locomotion AnimBP). Null-safe on both arguments by contract.
+    CombatPresentation->SetSources(Combat, GetMesh());
     UE_LOG(LogTemp, Display, TEXT("UEMMO: prototype character ready; X/Y movement enabled."));
 }
 

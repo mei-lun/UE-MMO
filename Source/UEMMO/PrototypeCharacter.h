@@ -7,6 +7,7 @@
 
 class USideViewCameraComponent;
 class UCombatComponent;
+class UCombatPresentationComponent;
 class UInputAction;
 class UInputMappingContext;
 struct FInputActionValue;
@@ -60,6 +61,9 @@ private:
     UPROPERTY(VisibleAnywhere) TObjectPtr<USideViewCameraComponent> CameraRig;
     // M1-012: combat lifecycle component (M1-011); intents buffer here.
     UPROPERTY(VisibleAnywhere) TObjectPtr<UCombatComponent> Combat;
+    // M1-032: owns attack montage playback; follows Combat's
+    // Started/Finished events plus a per-tick snapshot fallback.
+    UPROPERTY(VisibleAnywhere) TObjectPtr<UCombatPresentationComponent> CombatPresentation;
     UPROPERTY() TObjectPtr<UInputMappingContext> Mapping;
     UPROPERTY() TObjectPtr<UInputAction> HorizontalAction;
     UPROPERTY() TObjectPtr<UInputAction> DepthAction;
