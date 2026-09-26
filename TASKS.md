@@ -54,7 +54,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M1-024 | [空中普攻路由与追击](Docs/Tasks/M1-024.md) | DONE | M1-022,M1-023 | ZCode-20260925-A | 2026-09-26T14:48:29+08:00 | [report](Docs/Tasks/Reports/M1-024.md) |
 | M1-025 | [浮空次数限制与冲量衰减](Docs/Tasks/M1-025.md) | DONE | M1-024 | ZCode-20260925-A | 2026-09-26T15:23:32+08:00 | [report](Docs/Tasks/Reports/M1-025.md) |
 | M1-026 | [落地、倒地与恢复](Docs/Tasks/M1-026.md) | DONE | M1-025 | ZCode-20260925-A | 2026-09-26T16:00:26+08:00 | [report](Docs/Tasks/Reports/M1-026.md) |
-| M1-027 | [训练场一键复位所有战斗状态](Docs/Tasks/M1-027.md) | TODO | M1-026 | — | — | — |
+| M1-027 | [训练场一键复位所有战斗状态](Docs/Tasks/M1-027.md) | DONE | M1-026 | ZCode-20260925-A | 2026-09-26T16:33:17+08:00 | [report](Docs/Tasks/Reports/M1-027.md) |
 | M1-028 | [战斗调试覆盖层](Docs/Tasks/M1-028.md) | TODO | M1-027 | — | — | — |
 | M1-029 | [分方向速度和斜向归一化](Docs/Tasks/M1-029.md) | DONE | M1-002 | ZCode-20260925-A | 2026-09-26T00:15:45+08:00 | [report](Docs/Tasks/Reports/M1-029.md) |
 | M1-030 | [镜头跟随地面锚点](Docs/Tasks/M1-030.md) | DONE | M1-029 | ZCode-20260925-A | 2026-09-26T00:49:33+08:00 | [report](Docs/Tasks/Reports/M1-030.md) |
