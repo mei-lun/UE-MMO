@@ -9,6 +9,7 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "PrototypeCharacter.h"
+#include "UI/DamageNumberModel.h"
 
 namespace
 {
@@ -38,6 +39,24 @@ namespace
     constexpr float M1_028_PanelW = 620.0f;
     constexpr float M1_028_PanelH = 104.0f;
     constexpr float M1_028_RowStep = 19.0f;
+
+    // M1-035: palette and layout for the hit-feedback display. The HP bars
+    // anchor at the top-right screen edge (away from the top-left M0/M1-028
+    // panels at any rendering resolution) and the combo counter at the
+    // bottom-left edge; neither ever covers the input hints.
+    const FLinearColor M1_035_BarFrameColor(0.02f, 0.03f, 0.05f, 0.86f);
+    const FLinearColor M1_035_BarFillColor(0.85f, 0.2f, 0.2f, 1.0f);
+    const FLinearColor M1_035_NumberColor(1.0f, 0.9f, 0.25f, 1.0f);
+    const FLinearColor M1_035_ComboColor(1.0f, 0.65f, 0.2f, 1.0f);
+    const FLinearColor M1_035_MutedColor(0.6f, 0.65f, 0.7f, 1.0f);
+
+    constexpr float M1_035_BarWidth = 240.0f;
+    constexpr float M1_035_BarHeight = 14.0f;
+    constexpr float M1_035_BarMargin = 24.0f;
+    constexpr float M1_035_BarRowStep = 38.0f;
+    constexpr double M1_035_NumberRiseSpeed = 60.0;   // screen px per second
+    constexpr float M1_035_ComboMargin = 24.0f;
+    constexpr float M1_035_ComboBottomOffset = 64.0f;
 }
 
 void APrototypeHUD::DrawHUD()
@@ -55,6 +74,15 @@ void APrototypeHUD::DrawHUD()
     {
         RefreshDebugReferences();
         DrawCombatDebugOverlay();
+
+        // M1-035: the hit feedback (HP bars, damage numbers, combo counter)
+        // lives on the same debug HUD behind the same flag, so the default
+        // view and the input hints above stay untouched. The feed binds only
+        // here (event-driven; no per-frame world scan).
+        RefreshDamageFeedBinding();
+        DrawHealthBars();
+        DrawDamageNumbers();
+        DrawComboCounter();
     }
 }
 
@@ -218,19 +246,41 @@ void APrototypeHUD::UEMMODebugCombatOverlay(int32 Mode)
         return;
     }
     SetCombatDebugOverlayEnabled(true);
-    if (Mode != 2)
+    if (Mode == 2)
     {
+        // Offscreen-evidence choreography (never gameplay): wait until the smoke
+        // runner's movement window (2..4.3 s) is over, start light_01 toward the
+        // first training enemy, then freeze the combat clock inside the active
+        // window (light_01 hits on frames [7,11); 0.15 s after the start is frame
+        // 8-9) so the ~8 s screenshot catches Frame>=0 with the shared box drawn.
+        if (GetWorld() != nullptr)
+        {
+            GetWorldTimerManager().SetTimer(DebugStrikeStartTimerHandle,
+                FTimerDelegate::CreateUObject(this, &APrototypeHUD::StartDebugDemoStrike), 6.0f, false);
+        }
         return;
     }
-    // Offscreen-evidence choreography (never gameplay): wait until the smoke
-    // runner's movement window (2..4.3 s) is over, start light_01 toward the
-    // first training enemy, then freeze the combat clock inside the active
-    // window (light_01 hits on frames [7,11); 0.15 s after the start is frame
-    // 8-9) so the ~8 s screenshot catches Frame>=0 with the shared box drawn.
-    if (GetWorld() != nullptr)
+    if (Mode == 3)
     {
-        GetWorldTimerManager().SetTimer(DebugStrikeStartTimerHandle,
-            FTimerDelegate::CreateUObject(this, &APrototypeHUD::StartDebugDemoStrike), 6.0f, false);
+        // M1-035 render staging (debug only, never gameplay): repeated REAL
+        // light_01 strikes from 6.6 s every 0.6 s. Each hit lands ~0.13 s into
+        // its strike, so at least one 0.6 s damage number is alive when the
+        // smoke runner captures its ~8 s screenshot, and the combo/HP bar
+        // carry the real consecutive-hit values. Nothing here fakes data: the
+        // numbers only arrive through the real OnHitConfirmed event.
+        if (GetWorld() == nullptr)
+        {
+            return;
+        }
+        TWeakObjectPtr<APrototypeHUD> WeakHUD(this);
+        GetWorldTimerManager().SetTimer(DebugStrikeRepeatTimerHandle,
+            FTimerDelegate::CreateLambda([WeakHUD]()
+            {
+                if (WeakHUD.IsValid())
+                {
+                    WeakHUD->StartDebugRepeatStrike();
+                }
+            }), 0.6f, /*bLoop*/ true, /*firstDelay*/ 6.6f);
     }
 }
 
@@ -273,4 +323,202 @@ void APrototypeHUD::StartDebugDemoStrike()
         }
     }), 0.15f, false);
     UE_LOG(LogTemp, Display, TEXT("UEMMO M1-028: demo strike started (light_01, facing %d)"), Facing);
+}
+
+
+// ----- M1-035: health bars, damage numbers, combo counter (display model) -----
+
+void APrototypeHUD::BindDamageFeed(UCombatComponent* Source)
+{
+    if (Source == DamageFeedSource.Get())
+    {
+        return;
+    }
+    UnbindDamageFeed();
+    if (Source != nullptr)
+    {
+        DamageFeedHandle = Source->OnHitConfirmed.AddUObject(this, &APrototypeHUD::HandleHitConfirmed);
+        DamageFeedSource = Source;
+    }
+}
+
+void APrototypeHUD::RefreshDamageFeedBinding()
+{
+    // The feed binds to the local player's combat component (the attacker
+    // whose OnHitConfirmed the debug HUD visualizes). Resolution goes through
+    // the cached weak reference M1-028 maintains (no scan in the steady
+    // state); a destroyed pawn reads null and simply unbinds the feed.
+    UCombatComponent* Desired = nullptr;
+    if (APrototypeCharacter* Player = DebugPlayer.Get())
+    {
+        Desired = Player->GetCombat();
+    }
+    BindDamageFeed(Desired);
+}
+
+void APrototypeHUD::UnbindDamageFeed()
+{
+    // Stale-source safety: only a still-valid source is touched. A destroyed
+    // component reads null here and is dropped without dereferencing it; the
+    // delegate handle dies with the object, so no explicit removal is needed.
+    if (UCombatComponent* Bound = DamageFeedSource.Get())
+    {
+        Bound->OnHitConfirmed.Remove(DamageFeedHandle);
+    }
+    DamageFeedSource = nullptr;
+    DamageFeedHandle.Reset();
+}
+
+void APrototypeHUD::HandleHitConfirmed(const FCombatHit& Hit)
+{
+    // Stale-source guard: a destroyed attacker reads as an invalid weak
+    // reference and the event is ignored (no crash, no stale dereference).
+    if (!DamageFeedSource.IsValid() || Hit.Damage <= 0.0f)
+    {
+        return;
+    }
+    const double Now = ResolveDisplayClockSeconds();
+    DamageNumbers.SetNowSeconds(Now);
+    // Hit.Damage is the ApplyDamage return value - the health the target
+    // actually lost, never the configured base damage. The number anchors at
+    // the reported world hit location and is projected at draw time.
+    DamageNumbers.Add(Hit.Damage, Hit.WorldHitLocation, Hit.AttackId);
+    ComboCounter.NotifyHit(Now);
+}
+
+void APrototypeHUD::DrawHealthBars()
+{
+    if (Canvas == nullptr)
+    {
+        return;
+    }
+    const float BarX = static_cast<float>(Canvas->SizeX) - M1_035_BarWidth - M1_035_BarMargin;
+    float RowY = M1_035_BarMargin;
+
+    // Player row: M1-016 grants a HealthComponent to enemies only, so the
+    // player side shows the explicit placeholder - no invented HP numbers.
+    DrawText(TEXT("Player HP: n/a (no health component yet)"), M1_035_MutedColor, BarX, RowY);
+    RowY += M1_035_BarRowStep;
+
+    // Enemy row: the real HealthComponent truth, read per drawn frame from the
+    // cached weak target (a plain component query on the M1-028 reference -
+    // never a world scan).
+    const ATrainingEnemy* Target = DebugTarget.Get();
+    UHealthComponent* Health = (Target != nullptr) ? Target->GetHealthComponent() : nullptr;
+    if (Health == nullptr)
+    {
+        DrawText(TEXT("Enemy HP: no target"), M1_035_MutedColor, BarX, RowY);
+        LastObservedHealth = nullptr;
+        LastObservedTargetHP = -1.0f;
+        return;
+    }
+
+    // Session-reset signature (the card's reset step within this file scope):
+    // damage can only lower the observed pool, so a rising value is a reset
+    // (ResetEnemy restores full HP) and clears the combo and the numbers. A
+    // target switch just re-baselines the observation.
+    if (LastObservedHealth.Get() != Health || Health->GetHealth() < LastObservedTargetHP
+        || LastObservedTargetHP < 0.0f)
+    {
+        LastObservedHealth = Health;
+        LastObservedTargetHP = Health->GetHealth();
+    }
+    else if (Health->GetHealth() > LastObservedTargetHP)
+    {
+        DamageNumbers.Clear();
+        ComboCounter.Reset();
+        LastObservedTargetHP = Health->GetHealth();
+    }
+
+    FHealthBarData Data;
+    Data.Set(Health->GetHealth(), Health->GetMaxHealth(), Health->IsAlive());
+    DrawRect(M1_035_BarFrameColor, BarX, RowY, M1_035_BarWidth, M1_035_BarHeight);
+    const float FillWidth = (M1_035_BarWidth - 2.0f) * Data.GetRatio();
+    if (FillWidth > 0.0f)
+    {
+        DrawRect(M1_035_BarFillColor, BarX + 1.0f, RowY + 1.0f, FillWidth, M1_035_BarHeight - 2.0f);
+    }
+    const FString EnemyLine = FString::Printf(TEXT("Enemy HP: %.0f / %.0f%s"),
+        Data.CurrentHP, Data.MaxHP, Data.bAlive ? TEXT("") : TEXT(" (dead)"));
+    DrawText(EnemyLine, M1_028_TextColor, BarX, RowY + M1_035_BarHeight + 2.0f);
+}
+
+void APrototypeHUD::DrawDamageNumbers()
+{
+    if (Canvas == nullptr)
+    {
+        return;
+    }
+    const double Now = ResolveDisplayClockSeconds();
+    DamageNumbers.SetNowSeconds(Now);
+    DamageNumbers.PruneExpired();
+
+    // Behind-camera guard shared with the M1-028 box stroke: Project mirrors
+    // points behind the view, so their screen position is meaningless.
+    FVector ViewLocation = FVector::ZeroVector;
+    FRotator ViewRotation = FRotator::ZeroRotator;
+    const bool bHasView = (PlayerOwner != nullptr);
+    if (bHasView)
+    {
+        PlayerOwner->GetPlayerViewPoint(ViewLocation, ViewRotation);
+    }
+
+    for (const FDamageNumberEntry& Entry : DamageNumbers.GetEntries())
+    {
+        const double Age = FMath::Max(0.0, Now - Entry.SpawnTimeSeconds);
+        if (bHasView
+            && FVector::DotProduct(Entry.Location - ViewLocation, ViewRotation.Vector()) <= 0.0)
+        {
+            continue;
+        }
+        const FVector Screen = Canvas->Project(Entry.Location);
+        const float Alpha = FMath::Clamp(
+            1.0f - static_cast<float>(Age / FDamageNumberPool::LifeTimeSeconds), 0.0f, 1.0f);
+        const FLinearColor Color(M1_035_NumberColor.R, M1_035_NumberColor.G, M1_035_NumberColor.B, Alpha);
+        const float ScreenY = Screen.Y - static_cast<float>(Age * M1_035_NumberRiseSpeed);
+        DrawText(FString::Printf(TEXT("%.0f"), Entry.Damage), Color, Screen.X, ScreenY, nullptr, 1.4f);
+    }
+}
+
+void APrototypeHUD::DrawComboCounter()
+{
+    if (Canvas == nullptr)
+    {
+        return;
+    }
+    const int32 CurrentCombo = ComboCounter.EvaluateCombo(ResolveDisplayClockSeconds());
+    if (CurrentCombo <= 0)
+    {
+        return;
+    }
+    const float ScreenY = static_cast<float>(Canvas->SizeY) - M1_035_ComboBottomOffset;
+    DrawText(FString::Printf(TEXT("Combo x%d"), CurrentCombo),
+        M1_035_ComboColor, M1_035_ComboMargin, ScreenY, nullptr, 1.5f);
+}
+
+double APrototypeHUD::ResolveDisplayClockSeconds() const
+{
+    return (GetWorld() != nullptr) ? GetWorld()->GetTimeSeconds() : 0.0;
+}
+
+void APrototypeHUD::StartDebugRepeatStrike()
+{
+    RefreshDebugReferences();
+    APrototypeCharacter* Player = DebugPlayer.Get();
+    ATrainingEnemy* Target = DebugTarget.Get();
+    UCombatComponent* Combat = Player ? Player->GetCombat() : nullptr;
+    if (Player == nullptr || Target == nullptr || Combat == nullptr)
+    {
+        return;
+    }
+
+    // Debug-only repositioning: keep the enemy exactly one strike's reach in
+    // front of the player (player-relative +150 X) so every staged strike
+    // lands despite the knockback of the previous one.
+    Target->SetActorLocation(Player->GetActorLocation() + FVector(150.0, 0.0, 0.0));
+    const int32 Facing = (Target->GetActorLocation().X >= Player->GetActorLocation().X) ? 1 : -1;
+    if (Combat->TryStartAttack(FName(TEXT("light_01")), Facing))
+    {
+        UE_LOG(LogTemp, Display, TEXT("UEMMO M1-035: staged real strike (light_01, facing %d)"), Facing);
+    }
 }
