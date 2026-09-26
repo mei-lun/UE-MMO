@@ -2,7 +2,7 @@
 
 UE 5.8.3 单机 3D 横版研究工程：固定侧面镜头，支持 X/Y 地面纵深移动，使用现成免费或引擎附带素材，由编程 Agent 完成客户端实现。
 
-**当前版本：M0 开发与资源基线。** 已有可运行房间、Manny 玩家、Quinn 资源预览、左右/纵深移动、跳跃、复位和自动验证。普攻、上挑、浮空追击、怪物战斗、装备和联网是后续设计目标，目前没有实现。
+**当前版本：M1 技术完成 / 待人工验收（M1-H01）。** M0 房间、Manny 玩家、左右/纵深移动、跳跃、复位之外，M1 已实现客户端战斗技术栈：J 普攻二段、K 上挑、跳取消后空中追击、伤害/浮空/倒地恢复、训练假人与会话复位、调试面板（F1）。M1 全部 39 项技术任务已通过自动验证（227 条自动化测试全绿、完整连招场景回归、Development 独立包内验证）；按项目规则，M1 阶段验收（M1-H01）必须由用户实际试玩后确认，任何 AI 不得代签。装备、刷怪波次、联网仍是后续设计目标。
 
 ## 直接打开
 
@@ -20,7 +20,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/Run.ps1 -Editor
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/Run.ps1
 ```
 
-按键：A/D 左右，W/S 纵深，Space 跳跃，R 回到出生点。当前 Quinn 是素材预览，不会受击或攻击。
+按键：A/D 左右，W/S 纵深，Space 跳跃，R 回到出生点（训练房会话复位），J 普攻，K 上挑，F1 开关战斗调试面板。完整连招（先按 F1 打开调试面板观察）：走近假人 → J（light_01）→ 约两次连续 J 的节奏内再按 J 链 light_02 → 按 K 出上挑 → 上挑命中后按 Space 跳取消 → 空中按 J 出 aerial_01 追击浮空目标。预期现象：4 段伤害 10/14/18/12（假人 100→46 HP）、假人被上挑浮空约 1.4 秒、落地倒地后自行恢复、左下角连击计数与伤害数字出现、R 复位后满血重来。
 
 ## 先读这些
 
@@ -62,4 +62,4 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/UpdateTaskStatus
 
 ## 下一步
 
-登录 ZCode，打开本目录，让它读取 AGENTS.md、TASKS.md、HANDOFF.md 和 Docs/Tasks/执行与交接规则.md。先领取M1-001复核基线，再按依赖完成M1-002与M1-003；一次只领取一项，每项通过立即更新总表。先不要越过阶段用户验收去扩展刷怪、装备或联网。
+登录 ZCode，打开本目录，让它读取 AGENTS.md、TASKS.md、HANDOFF.md 和 Docs/Tasks/执行与交接规则.md。M1 技术任务（M1-001..M1-039）已全部完成；当前唯一待办是 **M1-H01 用户阶段验收**：用户按上面"直接打开"的连招说明实际试玩（编辑器或 `Artifacts/Package/Windows/UEMMO.exe` 独立包均可），确认手感后该任务才能标 DONE。验收前不要越过阶段用户验收去扩展刷怪、装备或联网。
