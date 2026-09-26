@@ -55,7 +55,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M1-025 | [浮空次数限制与冲量衰减](Docs/Tasks/M1-025.md) | DONE | M1-024 | ZCode-20260925-A | 2026-09-26T15:23:32+08:00 | [report](Docs/Tasks/Reports/M1-025.md) |
 | M1-026 | [落地、倒地与恢复](Docs/Tasks/M1-026.md) | DONE | M1-025 | ZCode-20260925-A | 2026-09-26T16:00:26+08:00 | [report](Docs/Tasks/Reports/M1-026.md) |
 | M1-027 | [训练场一键复位所有战斗状态](Docs/Tasks/M1-027.md) | DONE | M1-026 | ZCode-20260925-A | 2026-09-26T16:33:17+08:00 | [report](Docs/Tasks/Reports/M1-027.md) |
-| M1-028 | [战斗调试覆盖层](Docs/Tasks/M1-028.md) | TODO | M1-027 | — | — | — |
+| M1-028 | [战斗调试覆盖层](Docs/Tasks/M1-028.md) | DONE | M1-027 | ZCode-20260925-A | 2026-09-26T17:37:09+08:00 | [report](Docs/Tasks/Reports/M1-028.md) |
 | M1-029 | [分方向速度和斜向归一化](Docs/Tasks/M1-029.md) | DONE | M1-002 | ZCode-20260925-A | 2026-09-26T00:15:45+08:00 | [report](Docs/Tasks/Reports/M1-029.md) |
 | M1-030 | [镜头跟随地面锚点](Docs/Tasks/M1-030.md) | DONE | M1-029 | ZCode-20260925-A | 2026-09-26T00:49:33+08:00 | [report](Docs/Tasks/Reports/M1-030.md) |
 | M1-031 | [八方向移动与跳跃动画层](Docs/Tasks/M1-031.md) | DONE | M1-029 | ZCode-20260925-A | 2026-09-26T02:08:06+08:00 | [report](Docs/Tasks/Reports/M1-031.md) |
@@ -63,7 +63,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M1-033 | [局部命中停顿与输入保留](Docs/Tasks/M1-033.md) | TODO | M1-032,M1-026 | — | — | — |
 | M1-034 | [拳击和落地音效事件](Docs/Tasks/M1-034.md) | DONE | M1-019,M1-032 | ZCode-20260925-A | 2026-09-26T12:41:57+08:00 | [report](Docs/Tasks/Reports/M1-034.md) |
 | M1-035 | [生命条与命中数字反馈](Docs/Tasks/M1-035.md) | TODO | M1-028,M1-034 | — | — | — |
-| M1-036 | [上挑与空中动作素材验收记录](Docs/Tasks/M1-036.md) | TODO | M1-032,M1-026 | — | — | — |
+| M1-036 | [上挑与空中动作素材验收记录](Docs/Tasks/M1-036.md) | DONE | M1-032,M1-026 | ZCode-20260925-A | 2026-09-26T17:37:11+08:00 | [report](Docs/Tasks/Reports/M1-036.md) |
 | M1-037 | [完整连招的可重复场景测试](Docs/Tasks/M1-037.md) | TODO | M1-027,M1-030,M1-033,M1-035,M1-036 | — | — | — |
 | M1-038 | [帧率与卡顿边界回归](Docs/Tasks/M1-038.md) | TODO | M1-037 | — | — | — |
 | M1-039 | [M1独立包与交接验收包](Docs/Tasks/M1-039.md) | TODO | M1-038 | — | — | — |
