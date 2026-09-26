@@ -45,7 +45,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M1-015 | [生命值扣除与死亡单次事件](Docs/Tasks/M1-015.md) | DONE | M1-002 | ZCode-20260925-A | 2026-09-25T23:46:43+08:00 | [report](Docs/Tasks/Reports/M1-015.md) |
 | M1-016 | [可受伤的训练敌人](Docs/Tasks/M1-016.md) | DONE | M1-015 | ZCode-20260925-A | 2026-09-26T00:49:33+08:00 | [report](Docs/Tasks/Reports/M1-016.md) |
 | M1-017 | [命中盒的世界坐标计算](Docs/Tasks/M1-017.md) | DONE | M1-013 | ZCode-20260925-A | 2026-09-26T09:45:53+08:00 | [report](Docs/Tasks/Reports/M1-017.md) |
-| M1-018 | [三维命中查询与过滤](Docs/Tasks/M1-018.md) | TODO | M1-016,M1-017 | — | — | — |
+| M1-018 | [三维命中查询与过滤](Docs/Tasks/M1-018.md) | DONE | M1-016,M1-017 | ZCode-20260925-A | 2026-09-26T10:45:04+08:00 | [report](Docs/Tasks/Reports/M1-018.md) |
 | M1-019 | [有效窗口扣血与同招去重](Docs/Tasks/M1-019.md) | TODO | M1-018,M1-011 | — | — | — |
 | M1-020 | [受击硬直打断攻击](Docs/Tasks/M1-020.md) | TODO | M1-019 | — | — | — |
 | M1-021 | [上挑输入和取消窗口](Docs/Tasks/M1-021.md) | TODO | M1-014,M1-020 | — | — | — |
@@ -59,7 +59,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M1-029 | [分方向速度和斜向归一化](Docs/Tasks/M1-029.md) | DONE | M1-002 | ZCode-20260925-A | 2026-09-26T00:15:45+08:00 | [report](Docs/Tasks/Reports/M1-029.md) |
 | M1-030 | [镜头跟随地面锚点](Docs/Tasks/M1-030.md) | DONE | M1-029 | ZCode-20260925-A | 2026-09-26T00:49:33+08:00 | [report](Docs/Tasks/Reports/M1-030.md) |
 | M1-031 | [八方向移动与跳跃动画层](Docs/Tasks/M1-031.md) | DONE | M1-029 | ZCode-20260925-A | 2026-09-26T02:08:06+08:00 | [report](Docs/Tasks/Reports/M1-031.md) |
-| M1-032 | [攻击Montage与动画所有权](Docs/Tasks/M1-032.md) | TODO | M1-014,M1-031 | — | — | — |
+| M1-032 | [攻击Montage与动画所有权](Docs/Tasks/M1-032.md) | DONE | M1-014,M1-031 | ZCode-20260925-A | 2026-09-26T10:45:02+08:00 | [report](Docs/Tasks/Reports/M1-032.md) |
 | M1-033 | [局部命中停顿与输入保留](Docs/Tasks/M1-033.md) | TODO | M1-032,M1-026 | — | — | — |
 | M1-034 | [拳击和落地音效事件](Docs/Tasks/M1-034.md) | TODO | M1-019,M1-032 | — | — | — |
 | M1-035 | [生命条与命中数字反馈](Docs/Tasks/M1-035.md) | TODO | M1-028,M1-034 | — | — | — |
