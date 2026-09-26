@@ -126,6 +126,16 @@ using FCombatJumpRequestHandler = TFunction<void()>;
 using FCombatAirStateProvider = TFunction<bool()>;
 
 /**
+ * M1-041: injectable facing source for the input-driven attack start (+1
+ * right / -1 left, the X axis mirror convention of TryStartAttack). The game
+ * owner binds it in BeginPlay (derived from the pawn yaw the M1-029 planar
+ * flip writes); tests may pin a fixed lambda. While unbound, an input-driven
+ * start carries the stored Facing (0 for a bare component), which keeps the
+ * pre-M1-041 bare-component behavior verbatim.
+ */
+using FCombatFacingProvider = TFunction<int32()>;
+
+/**
  * Component-level attack lifecycle (M1-011): start one attack, advance it on a
  * fixed 60 Hz FCombatClock and finish it exactly once. Pure logic: no keyboard
  * input, no hit detection, no animation and no character movement is wired
@@ -377,6 +387,14 @@ public:
 	 */
 	void SetAirStateProvider(FCombatAirStateProvider InProvider);
 
+	/**
+	 * M1-041: binds the facing source (see FCombatFacingProvider) the
+	 * input-driven Free start passes to TryStartAttack. Passing an empty
+	 * function unbinds it: while unbound an input-driven start keeps the
+	 * stored Facing (0 for a bare component).
+	 */
+	void SetFacingProvider(FCombatFacingProvider InProvider);
+
 private:
 	/**
 	 * M1-014: when the running attack is inside its cancel window, prunes
@@ -586,6 +604,14 @@ private:
 	 * (airborne) or light_01 (grounded); the Launcher mapping never changes.
 	 */
 	FCombatAirStateProvider AirStateProvider;
+
+	/**
+	 * M1-041: bound facing source (empty = the stored Facing, 0 for a bare
+	 * component). Read at the Free-state input-driven start only; the
+	 * cancel-window chaining keeps the running instance's Facing (the game
+	 * facing is locked while attacking, so both agree in the game owner).
+	 */
+	FCombatFacingProvider FacingProvider;
 
 	/** Missing ids already diagnosed; reset when a new catalog is attached. */
 	TSet<FName> LoggedMissingAttackIds;

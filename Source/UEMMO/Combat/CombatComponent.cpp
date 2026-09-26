@@ -771,6 +771,15 @@ void UCombatComponent::SetAirStateProvider(FCombatAirStateProvider InProvider)
 	AirStateProvider = MoveTempIfPossible(InProvider);
 }
 
+void UCombatComponent::SetFacingProvider(FCombatFacingProvider InProvider)
+{
+	// M1-041: the provider is the facing source of the input-driven start (see
+	// FCombatFacingProvider): the game owner derives it from the pawn yaw in
+	// BeginPlay (the M1-029 flip writes only 0/180); tests pin a fixed lambda.
+	// An empty provider keeps the stored Facing (0 for a bare component).
+	FacingProvider = MoveTempIfPossible(InProvider);
+}
+
 bool UCombatComponent::TryChainFromBuffer()
 {
 	// The chaining only reads definitions of the running attack and never
@@ -973,10 +982,12 @@ bool UCombatComponent::TryStartFromBuffer()
 			continue;
 		}
 
-		// The start carries the component's stored Facing (0 until the
-		// game-side start wiring passes a real facing; that wiring is a later
-		// task). The new instance steps from its next TickCombat.
-		TryStartAttack(StartAttackId, Facing);
+		// M1-041: the start facing comes from the injected provider (the game
+		// owner derives it from the pawn yaw); without a provider the stored
+		// Facing (0 for a bare component) keeps the pre-M1-041 behavior
+		// verbatim. The new instance steps from its next TickCombat.
+		const int32 StartFacing = FacingProvider ? FacingProvider() : Facing;
+		TryStartAttack(StartAttackId, StartFacing);
 		UE_LOG(LogTemp, Verbose,
 			TEXT("UEMMO UCombatComponent: input-driven start from Free (FreeInput:%s) started %s#%llu (input sequence %llu)"),
 			M1_021_InputActionName(Entry.Action),

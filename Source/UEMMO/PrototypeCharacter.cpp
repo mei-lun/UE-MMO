@@ -156,6 +156,18 @@ void APrototypeCharacter::BeginPlay()
         const UCharacterMovementComponent* Movement = GetCharacterMovement();
         return Movement != nullptr && Movement->IsFalling();
     });
+    // M1-041: the facing source of the input-driven attack start (the last
+    // un-wired component input, M1-H01's "facing passes 0"). M1-029's planar
+    // flip writes only yaw 0 (right) or yaw 180 (left) into the actor and
+    // locks it while attacking, so the yaw half-plane is exactly the facing
+    // the movement code last locked in; right = +1, left = -1 (the
+    // TryStartAttack mirror convention). The component is owned by this pawn,
+    // so the raw this capture never outlives the handler.
+    Combat->SetFacingProvider([this]()
+    {
+        const float Yaw = GetActorRotation().Yaw;
+        return (Yaw > -90.0f && Yaw < 90.0f) ? 1 : -1;
+    });
     UE_LOG(LogTemp, Display, TEXT("UEMMO: prototype character ready; X/Y movement enabled."));
 }
 
@@ -405,13 +417,22 @@ void APrototypeCharacter::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
     // M1-012: the combat component advances its own 60 Hz action clock from
-    // here. M1-023: the Free-state jump (C/Space) consumption is live (a buffered Jump
-    // intent requests this character's jump through the BeginPlay handler);
-    // the input-driven attack starts/chains stay dormant until the per-frame
-    // SetInputClockSeconds injection and the facing source arrive (later
-    // tasks own that wiring).
+    // here. M1-041 (M1-H01 fix): the owner's per-frame duty - inject the
+    // input game clock once per game frame, BEFORE TickCombat, from the World
+    // GetTimeSeconds clock (the same clock SubmitCombatInput records
+    // PressedAt on; it advances with normal game time only, so pause and hit
+    // stop do not move it). The first injection activates the M1-021
+    // input-driven Free start and the M1-014/M1-021 cancel-window chaining;
+    // the component itself pins the value while a local hit stop freezes
+    // (M1-033), so a plain every-frame injection is exactly the contract. A
+    // world-less pawn (early tests) keeps the pre-M1-041 semantics: no
+    // injection, the buffered-input consumption stays gated off.
     if (Combat != nullptr)
     {
+        if (UWorld* World = GetWorld())
+        {
+            Combat->SetInputClockSeconds(World->GetTimeSeconds());
+        }
         Combat->TickCombat(DeltaSeconds);
     }
     ApplyPlanarMovement(*this, PlanarAxes);
