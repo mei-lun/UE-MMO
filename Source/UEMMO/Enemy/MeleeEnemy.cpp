@@ -1,5 +1,6 @@
 #include "MeleeEnemy.h"
 
+#include "../Combat/AttackCatalog.h"
 #include "../Combat/CombatComponent.h"
 #include "../Combat/HealthComponent.h"
 #include "MeleeEnemyController.h"
@@ -9,6 +10,13 @@
 #include "EnemyDefinition.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "UObject/ConstructorHelpers.h"
+
+namespace
+{
+	// M2-003: telegraph mesh swell factor while the wind-up runs (minimal
+	// presentation, the card allows color tint or simple scale).
+	constexpr float M2_003_TelegraphVisualScale = 1.15f;
+}
 
 AMeleeEnemy::AMeleeEnemy()
 {
@@ -81,6 +89,27 @@ void AMeleeEnemy::BeginPlay()
 			}
 		});
 	}
+
+	// M2-003: this enemy's own attacks fire through its combat component's
+	// TryStartAttack (the shared M1 pipeline; the controller never touches a
+	// victim's health directly), which needs the same read-only M1 attack
+	// catalog the player pawn attaches in its BeginPlay. Same loading path
+	// (Config/DefaultGame.ini references), same failure policy: on failure
+	// no catalog is attached and TryStartAttack rejects every id with its
+	// own diagnostic - attacks stay disabled, nothing crashes.
+	if (Combat != nullptr)
+	{
+		UAttackCatalog* Catalog = NewObject<UAttackCatalog>(this);
+		FText CatalogError;
+		if (Catalog->InitializeFromConfig(CatalogError))
+		{
+			Combat->InitializeFromCatalog(Catalog);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("UEMMO: melee enemy attack catalog unavailable (%s); enemy attacks stay disabled."), *CatalogError.ToString());
+		}
+	}
 }
 
 void AMeleeEnemy::Tick(float DeltaSeconds)
@@ -116,4 +145,20 @@ void AMeleeEnemy::ApplyFacingIntent(const FVector& MoveIntent)
 	const float CurrentYaw = GetActorRotation().Yaw;
 	const float NewYaw = ComputeMeleeFacingYaw(MoveIntent, CurrentYaw);
 	SetActorRotation(FRotator(0.0f, NewYaw, 0.0f));
+}
+
+void AMeleeEnemy::ApplyTelegraphVisual(bool bActive)
+{
+	USkeletalMeshComponent* MeshComponent = GetMesh();
+	if (MeshComponent == nullptr)
+	{
+		return;
+	}
+	// Minimal wind-up presentation: a uniform mesh swell while the telegraph
+	// runs, the plain identity scale when it ends. Presentation only - the
+	// mesh has no collision, so the combat pipeline's real 3D hit query
+	// (component contract section 5) is unaffected either way.
+	MeshComponent->SetRelativeScale3D(bActive
+		? FVector(M2_003_TelegraphVisualScale)
+		: FVector::OneVector);
 }

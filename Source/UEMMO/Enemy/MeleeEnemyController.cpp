@@ -33,7 +33,9 @@ void AMeleeEnemyController::Tick(float DeltaSeconds)
 	AMeleeEnemy* Enemy = Cast<AMeleeEnemy>(GetPawn());
 	if (Enemy == nullptr)
 	{
-		// Unpossessed or wrong pawn kind: nothing to drive.
+		// Unpossessed or wrong pawn kind: nothing to drive. (No pawn means no
+		// mesh to restore, so only the bookkeeping flag is cleared.)
+		bTelegraphVisualActive = false;
 		State = EMeleeEnemyState::Idle;
 		LastMoveIntent = FVector::ZeroVector;
 		return;
@@ -41,13 +43,38 @@ void AMeleeEnemyController::Tick(float DeltaSeconds)
 
 	// Effective combat parameters: contract defaults, overridable per
 	// controller, with the pawn's M2-001 definition winning when one was
-	// applied (the definition is the data-driven source of truth).
+	// applied (the definition is the data-driven source of truth). M2-003
+	// adds the wind-up duration and the catalog attack id the attack fires
+	// with; without a definition (or an empty id) the enemy never attacks.
 	float EffectiveAttackRangeX = AttackRangeX;
 	float EffectiveAlignYTolerance = AlignYTolerance;
+	float EffectiveTelegraphSeconds = DefaultTelegraphSeconds;
+	FName EffectiveAttackId = NAME_None;
 	if (const UEnemyDefinition* Definition = Enemy->GetEnemyDefinition())
 	{
 		EffectiveAttackRangeX = Definition->AttackRangeX;
 		EffectiveAlignYTolerance = Definition->AlignYTolerance;
+		EffectiveTelegraphSeconds = Definition->TelegraphSeconds;
+		EffectiveAttackId = Definition->MeleeAttackId;
+	}
+
+	// M2-003: explicit game-clock injection for the Telegraph/Recover
+	// countdown, once per tick BEFORE the state machine reads it (the M1
+	// per-frame injection pattern). The World GetTimeSeconds clock advances
+	// only with real game-time ticks (a manually ticked test world advances
+	// it by the injected delta), so no wall clock is ever read.
+	if (UWorld* World = GetWorld())
+	{
+		InjectTelegraphClockSeconds(World->GetTimeSeconds());
+	}
+	const double NowSeconds = TelegraphClockSeconds;
+
+	// Self combat state first: a dead enemy never keeps a wind-up running.
+	UCombatComponent* SelfCombat = Enemy->GetCombatComponent();
+	if (SelfCombat != nullptr && SelfCombat->IsDead())
+	{
+		CancelTimedState(*Enemy, NowSeconds);
+		return;
 	}
 
 	// Target resolution: a destroyed or dead target drops the brain to Idle
@@ -55,14 +82,51 @@ void AMeleeEnemyController::Tick(float DeltaSeconds)
 	FVector TargetLocation = FVector::ZeroVector;
 	if (!ResolveTarget(TargetLocation))
 	{
-		State = EMeleeEnemyState::Idle;
-		LastMoveIntent = FVector::ZeroVector;
-		// No movement input this tick: the CharacterMovement brakes the pawn
-		// to a standstill instead of walking on to the last known position.
+		CancelTimedState(*Enemy, NowSeconds);
 		return;
 	}
 
-	State = EMeleeEnemyState::Approach;
+	const ECombatActionState SelfAction = (SelfCombat != nullptr)
+		? SelfCombat->GetSnapshot().ActionState
+		: ECombatActionState::Free;
+	const bool bSelfCombatBusy = SelfAction != ECombatActionState::Free
+		&& SelfAction != ECombatActionState::Attacking;
+	const bool bSelfFree = SelfAction == ECombatActionState::Free;
+
+	// ---------------- M2-003 timed state machine ----------------
+	// Telegraph / Attack / Recover hold the position and the locked facing:
+	// no approach input, no separation input, no facing update while one of
+	// them runs. The approach loop below only resumes from Free states.
+	switch (State)
+	{
+	case EMeleeEnemyState::Telegraph:
+		TickTelegraphState(*Enemy, NowSeconds, bSelfCombatBusy, EffectiveAttackId);
+		return;
+	case EMeleeEnemyState::Attack:
+		TickAttackState(NowSeconds, bSelfCombatBusy, bSelfFree);
+		return;
+	case EMeleeEnemyState::Recover:
+		TickRecoverState(NowSeconds, bSelfCombatBusy);
+		return;
+	case EMeleeEnemyState::Idle:
+	case EMeleeEnemyState::Approach:
+	default:
+		break;
+	}
+
+	if (State != EMeleeEnemyState::Approach)
+	{
+		EnterState(EMeleeEnemyState::Approach, NowSeconds);
+	}
+
+	// While the enemy's own combat component is busy (M1-020 hit stun, M1-026
+	// knockdown/recovery) the brain freezes in place: the component refuses
+	// movement, so chasing or starting a wind-up now would fight the stun.
+	if (bSelfCombatBusy)
+	{
+		LastMoveIntent = FVector::ZeroVector;
+		return;
+	}
 
 	// The approach rule (depth first, then X), filtered by the configured
 	// room bound, is the only chase movement; it goes through
@@ -97,6 +161,131 @@ void AMeleeEnemyController::Tick(float DeltaSeconds)
 	// AMeleeEnemy::ApplyFacingIntent); a pure depth or zero intent keeps the
 	// current yaw, so the enemy never faces the camera direction.
 	Enemy->ApplyFacingIntent(Intent);
+
+	// Attack condition met: lock the attack direction from the target's
+	// current relative position, arm the wind-up deadline and enter the
+	// Telegraph state (the attack fires only when the deadline elapses; a
+	// target that walks away meanwhile is simply missed by the real 3D hit
+	// query). Without a definition attack id nothing ever fires.
+	if (EffectiveAttackId != NAME_None
+		&& ComputeMeleeAttackReady(EnemyLocation, TargetLocation, EffectiveAttackRangeX, EffectiveAlignYTolerance))
+	{
+		LockedFacing = (TargetLocation.X >= EnemyLocation.X) ? 1 : -1;
+		TelegraphDeadlineSeconds = NowSeconds + EffectiveTelegraphSeconds;
+		SetTelegraphVisual(*Enemy, true);
+		EnterState(EMeleeEnemyState::Telegraph, NowSeconds);
+	}
+}
+
+void AMeleeEnemyController::TickTelegraphState(AMeleeEnemy& Enemy, double NowSeconds, bool bSelfCombatBusy, FName EffectiveAttackId)
+{
+	// The wind-up holds the locked position and facing: no approach input,
+	// no separation push, no facing update - the attack direction was fixed
+	// at entry and the position judgment is deliberately frozen so a target
+	// that steps away gets missed by the real hit query.
+	LastMoveIntent = FVector::ZeroVector;
+
+	if (bSelfCombatBusy)
+	{
+		// An accepted hit (M1-020) or a knockdown (M1-026) interrupted the
+		// wind-up: cancel it immediately - the deadline timer is dropped, so
+		// no delayed attack can ever fire from an interrupted telegraph.
+		SetTelegraphVisual(Enemy, false);
+		EnterState(EMeleeEnemyState::Approach, NowSeconds);
+		return;
+	}
+
+	if (NowSeconds < TelegraphDeadlineSeconds)
+	{
+		return;
+	}
+
+	// Wind-up complete: fire the attack through the enemy's own combat
+	// component (the shared M1 pipeline settles the damage; this controller
+	// never touches a victim's health directly).
+	SetTelegraphVisual(Enemy, false);
+	UCombatComponent* Combat = Enemy.GetCombatComponent();
+	if (Combat != nullptr && Combat->TryStartAttack(EffectiveAttackId, LockedFacing))
+	{
+		EnterState(EMeleeEnemyState::Attack, NowSeconds);
+		return;
+	}
+
+	// Refused (a dead or stunned race): no attack, resume approaching.
+	EnterState(EMeleeEnemyState::Approach, NowSeconds);
+}
+
+void AMeleeEnemyController::TickAttackState(double NowSeconds, bool bSelfCombatBusy, bool bSelfFree)
+{
+	// The attack instance runs on the combat component: hold position and
+	// the locked facing while it is in flight.
+	LastMoveIntent = FVector::ZeroVector;
+
+	if (bSelfCombatBusy)
+	{
+		// The instance was interrupted (an accepted hit cancels it without a
+		// Finished broadcast): no recovery rest for an unfinished attack.
+		EnterState(EMeleeEnemyState::Approach, NowSeconds);
+		return;
+	}
+
+	if (bSelfFree)
+	{
+		// The instance finished (Finished broadcast / natural end): rest.
+		RecoverEndTimeSeconds = NowSeconds + RecoverSeconds;
+		EnterState(EMeleeEnemyState::Recover, NowSeconds);
+	}
+}
+
+void AMeleeEnemyController::TickRecoverState(double NowSeconds, bool bSelfCombatBusy)
+{
+	// The rest holds the position (the post-attack recovery stance).
+	LastMoveIntent = FVector::ZeroVector;
+
+	if (bSelfCombatBusy)
+	{
+		// A hit during the rest interrupts it (death/loss of target are
+		// handled before the state machine).
+		EnterState(EMeleeEnemyState::Approach, NowSeconds);
+		return;
+	}
+
+	if (NowSeconds >= RecoverEndTimeSeconds)
+	{
+		// Recovery over: back to the approach loop (Free). A still-satisfied
+		// attack condition starts the next wind-up from here.
+		EnterState(EMeleeEnemyState::Approach, NowSeconds);
+	}
+}
+
+void AMeleeEnemyController::EnterState(EMeleeEnemyState NewState, double NowSeconds)
+{
+	State = NewState;
+	StateEnteredSeconds = NowSeconds;
+}
+
+void AMeleeEnemyController::CancelTimedState(AMeleeEnemy& Enemy, double NowSeconds)
+{
+	// Any timed state (Telegraph wind-up, Attack wait, Recover rest)
+	// collapses to Idle when the self is dead or the target is gone: the
+	// wind-up timer is dropped (no delayed attack can ever fire from it) and
+	// the telegraph presentation is restored.
+	SetTelegraphVisual(Enemy, false);
+	TelegraphDeadlineSeconds = 0.0;
+	RecoverEndTimeSeconds = 0.0;
+	EnterState(EMeleeEnemyState::Idle, NowSeconds);
+	LastMoveIntent = FVector::ZeroVector;
+}
+
+void AMeleeEnemyController::SetTelegraphVisual(AMeleeEnemy& Enemy, bool bActive)
+{
+	// Deduped: repeated ticks in the same state never re-issue the request.
+	if (bTelegraphVisualActive == bActive)
+	{
+		return;
+	}
+	bTelegraphVisualActive = bActive;
+	Enemy.ApplyTelegraphVisual(bActive);
 }
 
 bool AMeleeEnemyController::ResolveTarget(FVector& OutTargetLocation) const
@@ -169,6 +358,15 @@ FVector ComputeMeleeApproachIntent(const FVector& EnemyLocation, const FVector& 
 
 	// Aligned and in range: hold position (the attack itself is M2-003).
 	return FVector::ZeroVector;
+}
+
+bool ComputeMeleeAttackReady(const FVector& EnemyLocation, const FVector& TargetLocation, float AttackRangeX, float AlignYTolerance)
+{
+	// The attack window equals the approach hold band: boundaries count as
+	// satisfied (the same geometry that stops the chase starts the wind-up).
+	const float DeltaX = FMath::Abs(TargetLocation.X - EnemyLocation.X);
+	const float DeltaY = FMath::Abs(TargetLocation.Y - EnemyLocation.Y);
+	return DeltaX <= AttackRangeX && DeltaY <= AlignYTolerance;
 }
 
 FVector ComputeMeleeSeparationAdjustment(const FVector& SelfLocation, const TArray<FVector>& OtherEnemyLocations, float MinSeparation)

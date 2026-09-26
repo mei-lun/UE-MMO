@@ -64,6 +64,15 @@ public:
 	 */
 	void ApplyFacingIntent(const FVector& MoveIntent);
 
+	/**
+	 * M2-003 minimal telegraph presentation: a uniform mesh swell while the
+	 * attack wind-up runs, restored when it ends (color tint or scale was
+	 * the card's allowed minimum; this is the scale variant). Pure
+	 * presentation: the mesh carries no collision, so the real hit query of
+	 * the combat component pipeline is unaffected either way.
+	 */
+	void ApplyTelegraphVisual(bool bActive);
+
 protected:
 	virtual void BeginPlay() override;
 
