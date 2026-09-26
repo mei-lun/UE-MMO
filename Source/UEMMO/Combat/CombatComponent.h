@@ -5,6 +5,7 @@
 #include "Delegates/DelegateCombinations.h"
 #include "Templates/Function.h"
 
+#include "AttackCatalog.h"
 #include "CombatClock.h"
 #include "CombatHitTypes.h"
 #include "CombatInputBuffer.h"
@@ -229,6 +230,32 @@ public:
 	bool IsInLandingRecovery() const;
 
 	FCombatSnapshot GetSnapshot() const;
+
+	/**
+	 * M1-028: read-only debug view of the definition the running attack
+	 * instance queries - the exact pair (Attacking guard + Catalog::Find on
+	 * ActiveAttackId) TryApplyActiveWindowHits uses, so the HUD's debug box
+	 * can never diverge from the real query. Null while Free/stunned/dead or
+	 * without an attached catalog: the overlay draws no box then. Inline here
+	 * because the M1-028 file scope extends this header only; the include of
+	 * AttackCatalog.h below makes the inline Find call compile.
+	 */
+	const UAttackDefinition* GetCurrentDefinition() const
+	{
+		return (ActionState == ECombatActionState::Attacking && Catalog != nullptr)
+			? Catalog->Find(ActiveAttackId)
+			: nullptr;
+	}
+
+	/**
+	 * M1-028: the feet origin the real hit query resolves (provider first,
+	 * owner second - ResolveFeetLocation), so the debug box shares the query
+	 * origin exactly. Inline for the same file-scope reason.
+	 */
+	FVector GetDebugFeetLocation() const
+	{
+		return ResolveFeetLocation();
+	}
 
 	/**
 	 * Snapshot-driven minimal rule consumed by M1-013: movement is accepted

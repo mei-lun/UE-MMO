@@ -17,6 +17,7 @@
 #include "InputActionValue.h"
 #include "InputMappingContext.h"
 #include "InputModifiers.h"
+#include "PrototypeHUD.h"
 #include "Room/TrainingResetService.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -190,6 +191,11 @@ void APrototypeCharacter::EnsureCombatInputActions()
     CombatLauncherAction = NewObject<UInputAction>(this, TEXT("CombatLauncher"));
     Mapping->MapKey(CombatLightAction, EKeys::J);
     Mapping->MapKey(CombatLauncherAction, EKeys::K);
+    // M1-028: F1 toggles the HUD combat debug overlay. F1 collides with no
+    // existing mapping (W/A/S/D/Space/R/J/K), and the guard above keeps the
+    // mapping and action single even on a re-setup.
+    DebugToggleAction = NewObject<UInputAction>(this, TEXT("DebugToggle"));
+    Mapping->MapKey(DebugToggleAction, EKeys::F1);
 }
 
 void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -211,6 +217,9 @@ void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
     Input->BindAction(ResetAction, ETriggerEvent::Started, this, &APrototypeCharacter::ResetPosition);
     Input->BindAction(CombatLightAction, ETriggerEvent::Started, this, &APrototypeCharacter::OnCombatLightPressed);
     Input->BindAction(CombatLauncherAction, ETriggerEvent::Started, this, &APrototypeCharacter::OnCombatLauncherPressed);
+    // M1-028: F1 routes to the HUD debug overlay toggle (Started only: one
+    // press flips the flag exactly once).
+    Input->BindAction(DebugToggleAction, ETriggerEvent::Started, this, &APrototypeCharacter::OnDebugTogglePressed);
     if (APlayerController* PC = Cast<APlayerController>(Controller))
     {
         if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
@@ -253,6 +262,19 @@ void APrototypeCharacter::StartJump()
 void APrototypeCharacter::EndJump() { StopJumping(); }
 void APrototypeCharacter::OnCombatLightPressed() { SubmitCombatInput(ECombatInput::Light); }
 void APrototypeCharacter::OnCombatLauncherPressed() { SubmitCombatInput(ECombatInput::Launcher); }
+void APrototypeCharacter::OnDebugTogglePressed()
+{
+    // M1-028: F1 is not a combat intent. The press only flips the local HUD's
+    // debug overlay flag (pure display); combat state, queries and damage are
+    // untouched. Without a player controller / prototype HUD it is a no-op.
+    if (APlayerController* PC = Cast<APlayerController>(Controller))
+    {
+        if (APrototypeHUD* HUD = Cast<APrototypeHUD>(PC->GetHUD()))
+        {
+            HUD->ToggleCombatDebugOverlay();
+        }
+    }
+}
 void APrototypeCharacter::SubmitCombatInput(ECombatInput Action)
 {
     const UWorld* World = GetWorld();

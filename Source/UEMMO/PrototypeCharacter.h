@@ -81,6 +81,21 @@ public:
      */
     void StartJump();
 
+    /**
+     * M1-028: the runtime mapping context built by EnsureCombatInputActions,
+     * read-only. The automation smoke asserts the F1 debug-toggle mapping
+     * exists on it exactly once.
+     */
+    const UInputMappingContext* GetRuntimeInputMappingContext() const { return Mapping; }
+
+    /**
+     * M1-028: the F1 press entry (Enhanced Input Started binding). Toggles the
+     * local HUD's combat debug overlay through the possessing player
+     * controller; pure display, no combat state change. Public because it is
+     * the input binding target.
+     */
+    void OnDebugTogglePressed();
+
 protected:
     virtual void BeginPlay() override;
 private:
@@ -109,6 +124,8 @@ private:
     // runtime-action pattern, only the Started event is bound.
     UPROPERTY(Transient) TObjectPtr<UInputAction> CombatLightAction;
     UPROPERTY(Transient) TObjectPtr<UInputAction> CombatLauncherAction;
+    // M1-028: F1 debug-overlay toggle action (same runtime-action pattern).
+    UPROPERTY(Transient) TObjectPtr<UInputAction> DebugToggleAction;
     FVector SpawnLocation;
     // M1-027: the facing captured with the spawn point; the unified reset
     // restores it alongside the position (interface contract section 6).
