@@ -2,11 +2,47 @@
 
 #include "AttackCatalog.h"
 #include "AttackDefinition.h"
+#include "CombatGeometry.h"
+#include "CombatHitQuery.h"
+#include "HealthComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/PrimitiveComponent.h"
+#include "Engine/World.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Logging/LogMacros.h"
+
+#include <atomic>
+
+namespace
+{
+	// Session-wide monotonic source of stable attacker ids (interface contract
+	// sections 4 and 5): minted once per component, never a raw pointer value,
+	// never reused within the session. Starts at 1 so 0 stays "no id".
+	std::atomic<uint64> M1_019_NextInstigatorId{1};
+
+	// The design damage formula (Docs/01 section 8.2):
+	// damage = max(1, round((baseDamage + AttackPower * coefficient)
+	//                        * 100 / (100 + max(0, Defense))))
+	// Attacker AttackPower and defender Defense have no growth source yet
+	// (profile stats belong to M3), so both stay 0 here and the result is
+	// max(1, round(BaseDamage)): light_01 deducts exactly 10 and stays
+	// verifiable. The formula keeps the two attribute entry points named so
+	// M3 can wire real stats without reshaping the call site.
+	float M1_019_ComputeHitDamage(const UAttackDefinition& Definition)
+	{
+		constexpr float AttackPower = 0.0f;
+		constexpr float Defense = 0.0f;
+		const float RawDamage = (Definition.BaseDamage + AttackPower * Definition.AttackCoefficient)
+			* 100.0f / (100.0f + FMath::Max(0.0f, Defense));
+		return FMath::Max(1.0f, FMath::RoundToFloat(RawDamage));
+	}
+}
 
 UCombatComponent::UCombatComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+	CachedInstigatorId = M1_019_NextInstigatorId.fetch_add(1) + 1;
 }
 
 bool UCombatComponent::InitializeFromCatalog(UAttackCatalog* InCatalog)
@@ -75,6 +111,10 @@ void UCombatComponent::TickCombat(float DeltaSeconds)
 	for (int32 Step = 0; Step < Steps; ++Step)
 	{
 		++CurrentFrame;
+		// M1-019: the current frame's active-window hits run before the finish
+		// check, so a definition whose active window includes the final frame
+		// still lands its hit exactly once. The stub applies nothing yet.
+		TryApplyActiveWindowHits();
 		// Half-open timeline: DurationFrames - 1 is the last covered frame;
 		// the step that lands on it ends the attack (26 steps for light_01).
 		if (CurrentFrame >= ActiveDurationFrames - 1)
@@ -256,6 +296,173 @@ void UCombatComponent::ClearInstance()
 	CurrentFrame = -1;
 	Facing = 0;
 	Clock.Reset();
+	// M1-019: the instance's hit set dies with the instance (finish, chain
+	// switch and reset all funnel through here), so the next instance can hit
+	// the same target again.
+	InstanceHitKeys.Reset();
+}
+
+uint64 UCombatComponent::GetInstigatorId() const
+{
+	return CachedInstigatorId;
+}
+
+void UCombatComponent::SetFeetLocationProvider(FCombatFeetLocationProvider InProvider)
+{
+	FeetLocationProvider = MoveTempIfPossible(InProvider);
+}
+
+void UCombatComponent::TryApplyActiveWindowHits()
+{
+	// Guards: no running instance, no catalog entry, no owner or no world
+	// means no hits. The definition lookup repeats the one TryStartAttack
+	// used, so a swapped catalog can never crash the tick path.
+	if (ActionState != ECombatActionState::Attacking)
+	{
+		return;
+	}
+	const UAttackDefinition* Definition = (Catalog != nullptr) ? Catalog->Find(ActiveAttackId) : nullptr;
+	if (Definition == nullptr)
+	{
+		return;
+	}
+	AActor* OwnerActor = GetOwner();
+	if (OwnerActor == nullptr || OwnerActor->GetWorld() == nullptr)
+	{
+		return;
+	}
+	// Active window test through FCombatWindow::Contains (the definition's
+	// window struct delegates there, one place owns the half-open rules).
+	if (!Definition->ActiveWindow.Contains(CurrentFrame))
+	{
+		return;
+	}
+
+	// Feet origin first (interface contract section 5), then the pure
+	// geometry step, then the read-only world query.
+	const FVector FeetLocation = ResolveFeetLocation();
+	const FCombatHitBox Box = ComputeHitBox(FeetLocation, Facing, *Definition);
+	const TArray<TWeakObjectPtr<AActor>> Targets = QueryTargets(OwnerActor->GetWorld(), Box, OwnerActor, /*AttackerTeam*/ 0);
+
+	// Single hit group per attack instance this card: every current attack is
+	// one hit, so all keys share HitGroupId 0. Multi-hit skills later define
+	// one group per sub-hit (interface contract section 5).
+	constexpr int32 HitGroupId = 0;
+
+	for (const TWeakObjectPtr<AActor>& WeakTarget : Targets)
+	{
+		// Stale weak references (an actor destroyed between query and use)
+		// are skipped safely; the query filters destroyed actors upstream,
+		// this guard is defense in depth.
+		AActor* Target = WeakTarget.Get();
+		if (Target == nullptr)
+		{
+			continue;
+		}
+
+		// Dedup key of the contract shape. Only an accepted damage adds the
+		// key, so a refused hit (dead target, zero result) never blocks a
+		// later instance.
+		FCombatHitDedupKey Key;
+		Key.InstigatorId = CachedInstigatorId;
+		Key.AttackInstanceId = ActiveInstanceId;
+		Key.HitGroupId = HitGroupId;
+		Key.TargetId = static_cast<uint64>(Target->GetUniqueID());
+		if (InstanceHitKeys.Contains(Key))
+		{
+			continue;
+		}
+
+		UHealthComponent* TargetHealth = Target->FindComponentByClass<UHealthComponent>();
+		if (TargetHealth == nullptr)
+		{
+			continue;
+		}
+
+		// The design damage formula (Docs/01 section 8.2) with the current
+		// zero growth attributes; light_01 then deducts exactly 10.
+		const float Damage = M1_019_ComputeHitDamage(*Definition);
+		const float Applied = TargetHealth->ApplyDamage(Damage);
+		if (Applied <= 0.0f)
+		{
+			continue;
+		}
+		InstanceHitKeys.Add(Key);
+
+		FCombatHit Hit;
+		Hit.Instigator = OwnerActor;
+		Hit.InstigatorId = CachedInstigatorId;
+		Hit.AttackInstanceId = ActiveInstanceId;
+		Hit.HitGroupId = HitGroupId;
+		Hit.Target = Target;
+		Hit.Damage = Applied;
+		Hit.WorldHitLocation = Box.Center;
+		Hit.AttackId = ActiveAttackId;
+		Hit.HitStopSeconds = Definition->HitStopSeconds;
+		Hit.Impulse = FVector(Facing * Definition->KnockbackSpeed, 0.0f, Definition->LaunchSpeed);
+
+		// A target that died from this hit receives no impulse: death has
+		// priority (interface contract section 4).
+		if (TargetHealth->IsAlive())
+		{
+			ApplyHitImpulse(*Target, Hit.Impulse);
+		}
+
+		// Only now the hit exists for presentations and state tasks.
+		OnHitConfirmed.Broadcast(Hit);
+	}
+}
+
+FVector UCombatComponent::ResolveFeetLocation() const
+{
+	// The injected provider wins (tests pin an explicit feet origin).
+	if (FeetLocationProvider)
+	{
+		return FeetLocationProvider();
+	}
+	const AActor* OwnerActor = GetOwner();
+	if (OwnerActor == nullptr)
+	{
+		return FVector::ZeroVector;
+	}
+	// A character roots on its capsule whose center sits at the actor
+	// location: the feet origin is the capsule center minus the half height
+	// (interface contract section 5). This matches APrototypeCharacter, whose
+	// root capsule carries the standard ACharacter alignment.
+	if (const ACharacter* Character = Cast<ACharacter>(OwnerActor))
+	{
+		if (const UCapsuleComponent* Capsule = Character->GetCapsuleComponent())
+		{
+			return OwnerActor->GetActorLocation() - FVector(0.0f, 0.0f, Capsule->GetScaledCapsuleHalfHeight());
+		}
+	}
+	// Any other owner (test actors, non-character prototypes): the actor
+	// location itself is treated as the feet origin.
+	return OwnerActor->GetActorLocation();
+}
+
+void UCombatComponent::ApplyHitImpulse(AActor& Target, const FVector& Impulse) const
+{
+	// Characters take the impulse through their movement component as a
+	// velocity change (mass independent; applied on its next movement update).
+	if (ACharacter* TargetCharacter = Cast<ACharacter>(&Target))
+	{
+		if (UCharacterMovementComponent* Movement = TargetCharacter->GetCharacterMovement())
+		{
+			Movement->AddImpulse(Impulse, /*bVelocityChange*/ true);
+			return;
+		}
+	}
+	// Simulating rigid bodies get a velocity-change impulse; query-only or
+	// static bodies (the test actors of the temp worlds, walls) cannot move
+	// and are skipped, which the task report records.
+	if (UPrimitiveComponent* RootPrimitive = Cast<UPrimitiveComponent>(Target.GetRootComponent()))
+	{
+		if (RootPrimitive->IsAnySimulatingPhysics())
+		{
+			RootPrimitive->AddImpulse(Impulse, NAME_None, /*bVelChange*/ true);
+		}
+	}
 }
 
 void UCombatComponent::FinishCurrentAttack()

@@ -3,8 +3,10 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "Delegates/DelegateCombinations.h"
+#include "Templates/Function.h"
 
 #include "CombatClock.h"
+#include "CombatHitTypes.h"
 #include "CombatInputBuffer.h"
 
 #include "CombatComponent.generated.h"
@@ -74,6 +76,17 @@ DECLARE_MULTICAST_DELEGATE_TwoParams(FOnCombatStarted, FName /*AttackId*/, uint6
 
 /** Broadcast exactly once when an attack instance reaches its final frame. */
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnCombatFinished, FName /*AttackId*/, uint64 /*InstanceId*/);
+
+/** Broadcast exactly once per accepted hit: ApplyDamage removed health (> 0). */
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnCombatHitConfirmed, const FCombatHit& /*Hit*/);
+
+/**
+ * Injectable feet-origin source (interface contract section 5: the feet
+ * location is the capsule center minus the capsule half height). The default
+ * derivation reads the owner (capsule half height for characters, the actor
+ * location as feet for any other root); tests can pin an explicit origin.
+ */
+using FCombatFeetLocationProvider = TFunction<FVector()>;
 
 /**
  * Component-level attack lifecycle (M1-011): start one attack, advance it on a
@@ -150,6 +163,28 @@ public:
 	/** Broadcast exactly once per completed attack instance. */
 	FOnCombatFinished OnFinished;
 
+	/**
+	 * M1-019: broadcast once per accepted hit while the attack's active window
+	 * advances. Only a hit whose ApplyDamage call removed health (> 0) is
+	 * broadcast; an overlap that was refused (dead target, zero result) or
+	 * already deduplicated never fires.
+	 */
+	FOnCombatHitConfirmed OnHitConfirmed;
+
+	/**
+	 * M1-019: stable in-session id of this component as an attacker, minted
+	 * once at construction from a session-wide counter (monotonic, never a
+	 * raw pointer value; interface contract sections 4 and 5).
+	 */
+	uint64 GetInstigatorId() const;
+
+	/**
+	 * M1-019: overrides the feet-origin derivation with an explicit provider
+	 * (tests pin a fixed origin). Passing an empty function restores the
+	 * default owner-based derivation.
+	 */
+	void SetFeetLocationProvider(FCombatFeetLocationProvider InProvider);
+
 	/** Freezes/unfreezes the action clock passthrough (default: not frozen). */
 	void SetClockFrozen(bool bNewFrozen);
 
@@ -202,6 +237,21 @@ private:
 	/** Ends the current attack: clears state first, then broadcasts OnFinished once. */
 	void FinishCurrentAttack();
 
+	/**
+	 * M1-019: when the current frame sits inside the running attack's active
+	 * window, queries the hit box targets and applies one deduplicated damage
+	 * per target (dedup key = InstigatorId/AttackInstanceId/HitGroupId/
+	 * TargetId, recorded only on an accepted ApplyDamage). Safe no-op without
+	 * a catalog, definition, owner or world; stale and dead targets skip.
+	 */
+	void TryApplyActiveWindowHits();
+
+	/** M1-019: resolves the current feet origin (provider first, owner second). */
+	FVector ResolveFeetLocation() const;
+
+	/** M1-019: applies the hit impulse to a surviving target, skipping bodies that cannot move. */
+	void ApplyHitImpulse(AActor& Target, const FVector& Impulse) const;
+
 	/** Injected catalog; UPROPERTY keeps it alive for the GC. */
 	UPROPERTY(Transient)
 	TObjectPtr<UAttackCatalog> Catalog;
@@ -232,4 +282,20 @@ private:
 
 	/** Missing ids already diagnosed; reset when a new catalog is attached. */
 	TSet<FName> LoggedMissingAttackIds;
+
+	/**
+	 * M1-019: hit keys already accepted by the running attack instance. The
+	 * set is cleared together with the instance (finish, chain switch, reset),
+	 * so the next instance can hit the same target again.
+	 */
+	TSet<FCombatHitDedupKey> InstanceHitKeys;
+
+	/**
+	 * M1-019: injected feet-origin provider; empty means the default
+	 * owner-based derivation (ResolveFeetLocation).
+	 */
+	FCombatFeetLocationProvider FeetLocationProvider;
+
+	/** M1-019: stable in-session attacker id minted once at construction. */
+	uint64 CachedInstigatorId = 0;
 };
