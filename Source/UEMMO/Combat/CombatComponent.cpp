@@ -40,6 +40,11 @@ namespace
 	// the jump allowance is input semantics, not an AllowedNextAttacks entry.
 	const FName M1_023_JumpCancelAttackId(TEXT("launcher"));
 
+	// M1-024: the attack a buffered Light starts while the owner is airborne
+	// (the interface contract section 3 row: aerial_01, launch 60 cm/s). The
+	// grounded mapping stays M1_021_FreeLightAttackId (light_01).
+	const FName M1_024_AerialLightAttackId(TEXT("aerial_01"));
+
 	// Buffered-input lifetime (interface contract section 2): an age of exactly
 	// 150 ms is still valid, only a strictly greater age expires.
 	constexpr double M1_021_InputLifetimeSeconds = 0.150;
@@ -62,13 +67,15 @@ namespace
 	}
 
 	// M1-021: maps a buffered input type to the attack id a Free-state start
-	// would begin. Jump stays unconsumed (M1-023).
-	bool M1_021_ResolveFreeStartAttackId(ECombatInput Action, FName& OutAttackId)
+	// would begin. M1-024: the Light routes by the owner's air state -
+	// aerial_01 while airborne, light_01 grounded - while the Launcher
+	// mapping stays launcher in both states. Jump stays unconsumed (M1-023).
+	bool M1_021_ResolveFreeStartAttackId(ECombatInput Action, bool bAirborne, FName& OutAttackId)
 	{
 		switch (Action)
 		{
 		case ECombatInput::Light:
-			OutAttackId = M1_021_FreeLightAttackId;
+			OutAttackId = bAirborne ? M1_024_AerialLightAttackId : M1_021_FreeLightAttackId;
 			return true;
 		case ECombatInput::Launcher:
 			OutAttackId = M1_021_FreeLauncherAttackId;
@@ -76,6 +83,23 @@ namespace
 		default:
 			return false;
 		}
+	}
+
+	// M1-024: whether the target combatant stands on ground right now. This
+	// matches ATrainingEnemy::GetAirState()==Grounded (the movement component
+	// walks on ground, which is the same IsMovingOnGround check). A
+	// non-character target cannot float, so it reads as grounded and the
+	// per-float-cycle aerial gate can never block hits on it.
+	bool M1_024_IsTargetGrounded(const AActor& Target)
+	{
+		if (const ACharacter* TargetCharacter = Cast<ACharacter>(&Target))
+		{
+			if (const UCharacterMovementComponent* Movement = TargetCharacter->GetCharacterMovement())
+			{
+				return Movement->IsMovingOnGround();
+			}
+		}
+		return true;
 	}
 
 	// M1-021: display name of a buffered action for the switch/start logs.
@@ -236,6 +260,10 @@ void UCombatComponent::ResetCombat()
 	// reset semantics belong to M1-027).
 	ClearInstance();
 	InputBuffer.Reset();
+	// M1-024: the reset also tears down the per-float-cycle aerial follow-up
+	// records (landing or reset clear the aerial follow-up counts), so a
+	// fresh life starts with every target's cycle unspent.
+	AerialFollowUpTargetIds.Reset();
 }
 
 void UCombatComponent::SetDead(bool bNewDead)
@@ -390,6 +418,14 @@ void UCombatComponent::SetJumpRequestHandler(FCombatJumpRequestHandler InHandler
 	JumpRequestHandler = MoveTempIfPossible(InHandler);
 }
 
+void UCombatComponent::SetAirStateProvider(FCombatAirStateProvider InProvider)
+{
+	// The provider is the air/ground routing source (see FCombatAirStateProvider):
+	// the game owner binds its own ACharacter::IsFalling in BeginPlay; tests
+	// pin a fixed lambda. An empty provider reads as grounded everywhere.
+	AirStateProvider = MoveTempIfPossible(InProvider);
+}
+
 bool UCombatComponent::TryChainFromBuffer()
 {
 	// The chaining only reads definitions of the running attack and never
@@ -536,6 +572,11 @@ bool UCombatComponent::TryStartFromBuffer()
 	// jump (M1-023), a mapped Light/Launcher starts its Free attack (M1-021).
 	// Entries that cannot be acted on stay buffered: the consume happens only
 	// after the action is confirmed.
+	// M1-024: the air state is read once per walk and routes the Light start
+	// (aerial_01 while the owner reports airborne, light_01 grounded); an
+	// unbound provider reads grounded, which keeps the pre-M1-024 bare
+	// component behavior verbatim.
+	const bool bAirborne = AirStateProvider ? AirStateProvider() : false;
 	const int32 BufferedCount = InputBuffer.Size();
 	for (int32 Index = 0; Index < BufferedCount; ++Index)
 	{
@@ -566,7 +607,7 @@ bool UCombatComponent::TryStartFromBuffer()
 		}
 
 		FName StartAttackId;
-		if (!M1_021_ResolveFreeStartAttackId(Entry.Action, StartAttackId))
+		if (!M1_021_ResolveFreeStartAttackId(Entry.Action, bAirborne, StartAttackId))
 		{
 			continue;
 		}
@@ -737,6 +778,19 @@ void UCombatComponent::TryApplyActiveWindowHits()
 			continue;
 		}
 
+		// M1-024: one aerial follow-up per target float cycle. A refused
+		// follow-up is a miss in the fullest sense: no damage, no impulse,
+		// no dedup key (nothing poisons a later instance) and no event.
+		const uint64 TargetId = static_cast<uint64>(Target->GetUniqueID());
+		if (ActiveAttackId == M1_024_AerialLightAttackId
+			&& ShouldRefuseAerialFollowUp(TargetId, *Target))
+		{
+			UE_LOG(LogTemp, Verbose,
+				TEXT("UEMMO UCombatComponent: aerial follow-up on target %llu refused (already spent in this float cycle)."),
+				TargetId);
+			continue;
+		}
+
 		// Dedup key of the contract shape. Only an accepted damage adds the
 		// key, so a refused hit (dead target, zero result) never blocks a
 		// later instance.
@@ -744,7 +798,7 @@ void UCombatComponent::TryApplyActiveWindowHits()
 		Key.InstigatorId = CachedInstigatorId;
 		Key.AttackInstanceId = ActiveInstanceId;
 		Key.HitGroupId = HitGroupId;
-		Key.TargetId = static_cast<uint64>(Target->GetUniqueID());
+		Key.TargetId = TargetId;
 		if (InstanceHitKeys.Contains(Key))
 		{
 			continue;
@@ -765,6 +819,13 @@ void UCombatComponent::TryApplyActiveWindowHits()
 			continue;
 		}
 		InstanceHitKeys.Add(Key);
+		// M1-024: the accepted aerial hit spends the target's float cycle -
+		// further aerial hits on it are refused until it lands (or the
+		// component resets).
+		if (ActiveAttackId == M1_024_AerialLightAttackId)
+		{
+			AerialFollowUpTargetIds.Add(TargetId);
+		}
 
 		FCombatHit Hit;
 		Hit.Instigator = OwnerActor;
@@ -798,6 +859,24 @@ void UCombatComponent::TryApplyActiveWindowHits()
 		// Only now the hit exists for presentations and state tasks.
 		OnHitConfirmed.Broadcast(Hit);
 	}
+}
+
+bool UCombatComponent::ShouldRefuseAerialFollowUp(uint64 TargetId, const AActor& Target)
+{
+	// A grounded target's float cycle is closed: any recorded aerial
+	// follow-up belongs to a finished leave-ground-to-landing cycle and is
+	// dropped here, so the incoming hit opens a fresh cycle. The landing is
+	// read lazily from the target itself (its movement component walking on
+	// ground, the same check ATrainingEnemy::GetAirState uses) at the only
+	// moment the attacker cares: the next aerial hit attempt.
+	if (M1_024_IsTargetGrounded(Target))
+	{
+		AerialFollowUpTargetIds.Remove(TargetId);
+		return false;
+	}
+	// The target still floats and already took an aerial follow-up in this
+	// cycle: refuse (the caller treats this as a full miss).
+	return AerialFollowUpTargetIds.Contains(TargetId);
 }
 
 FVector UCombatComponent::ResolveFeetLocation() const
@@ -839,21 +918,33 @@ void UCombatComponent::ApplyHitImpulse(AActor& Target, const FVector& Impulse) c
 			// M1-022: a hit that carries a launch component (LaunchSpeed > 0:
 			// the launcher's 700 cm/s, aerial_01's 60 cm/s) launches the target
 			// through ACharacter::LaunchCharacter instead of accumulating an
-			// impulse. With bZOverride=true the vertical speed is REPLACED by
-			// the definition's launch speed - the engine stores it as the
-			// pending launch velocity, which a later launch overwrites and a
-			// real movement update applies absolutely, so repeated launcher
-			// hits can never stack Z towards 1400, 2100, ... - while
-			// bXYOverride=false keeps the horizontal knockback additive on top
-			// of the target's current velocity. Launch is velocity injection
-			// (no teleport, no ragdoll): the flight resolves through the
-			// normal collision integration, also next to walls. Non-launching
-			// hits (light: Z == 0) stay on the additive impulse path, which
-			// leaves a floating target's vertical speed untouched (a floating
-			// hit state is never zeroed by a ground-level hit).
+			// impulse. With bXYOverride=false the horizontal knockback stays
+			// additive on top of the target's current velocity; the vertical
+			// component is replaced by the definition's launch speed - the
+			// engine stores it as the pending launch velocity, which a later
+			// launch overwrites and a real movement update applies
+			// absolutely, so repeated launcher hits can never stack Z towards
+			// 1400, 2100, ... - Launch is velocity injection (no teleport, no
+			// ragdoll): the flight resolves through the normal collision
+			// integration, also next to walls. Non-launching hits (light:
+			// Z == 0) stay on the additive impulse path, which leaves a
+			// floating target's vertical speed untouched (a floating hit
+			// state is never zeroed by a ground-level hit).
+			// M1-024: the vertical replacement became a max with the target's
+			// current vertical speed - max(currentZ, Impulse.Z), where
+			// currentZ also covers a launch still pending on the movement
+			// component (never applied by a movement update yet). The
+			// launcher's 700 keeps its behavior (700 >= every current Z the
+			// pre-M1-025 flow can produce), while the aerial follow-up's 60
+			// never demotes a faster floating target (max(100, 60) = 100) and
+			// only lifts slower ones up to exactly 60 (max(30, 60) = 60) -
+			// one small compensation per accepted hit, never a per-frame
+			// acceleration.
 			if (Impulse.Z > 0.0f)
 			{
-				TargetCharacter->LaunchCharacter(FVector(Impulse.X, Impulse.Y, Impulse.Z),
+				const float CurrentZ = FMath::Max(Movement->Velocity.Z, Movement->PendingLaunchVelocity.Z);
+				const float LaunchZ = FMath::Max(CurrentZ, Impulse.Z);
+				TargetCharacter->LaunchCharacter(FVector(Impulse.X, Impulse.Y, LaunchZ),
 					/*bXYOverride*/ false, /*bZOverride*/ true);
 				return;
 			}

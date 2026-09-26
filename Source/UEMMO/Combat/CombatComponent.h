@@ -100,6 +100,16 @@ using FCombatFeetLocationProvider = TFunction<FVector()>;
 using FCombatJumpRequestHandler = TFunction<void()>;
 
 /**
+ * M1-024: injectable airborne predicate. Returns true while the owner is in
+ * the air (the game owner binds ACharacter::IsFalling in BeginPlay; tests bind
+ * a fixed lambda). The value routes the Free-state buffered Light start: an
+ * airborne Light begins aerial_01, a grounded Light keeps light_01. An empty
+ * provider reads as grounded, which keeps the pre-M1-024 bare-component
+ * behavior verbatim.
+ */
+using FCombatAirStateProvider = TFunction<bool()>;
+
+/**
  * Component-level attack lifecycle (M1-011): start one attack, advance it on a
  * fixed 60 Hz FCombatClock and finish it exactly once. Pure logic: no keyboard
  * input, no hit detection, no animation and no character movement is wired
@@ -139,11 +149,13 @@ public:
 	 * the state returns to Free. While Free (M1-021) the tick consumes the
 	 * earliest valid buffered Light/Launcher and starts its mapped attack
 	 * (input-driven start; inert until the input clock was injected once);
-	 * M1-023 adds the earliest buffered Jump to the same walk (one owner jump
-	 * request per consumed press when a handler is bound).
-	 * The frozen flag (hit stop and cutscene freezes belong to later tasks) is
-	 * passed straight through to the clock: a frozen frame drops its delta and
-	 * advances no frame.
+	 * M1-024 routes the mapped Light by the injected air state (aerial_01
+	 * while the owner reports airborne, light_01 grounded; the Launcher
+	 * mapping never changes); M1-023 adds the earliest buffered Jump to the
+	 * same walk (one owner jump request per consumed press when a handler is
+	 * bound). The frozen flag (hit stop and cutscene freezes belong to later
+	 * tasks) is passed straight through to the clock: a frozen frame drops its
+	 * delta and advances no frame.
 	 */
 	void TickCombat(float DeltaSeconds);
 
@@ -269,6 +281,13 @@ public:
 	 */
 	void SetJumpRequestHandler(FCombatJumpRequestHandler InHandler);
 
+	/**
+	 * M1-024: binds the airborne predicate (see FCombatAirStateProvider).
+	 * Passing an empty function unbinds it: while unbound the component reads
+	 * as grounded and every buffered Light keeps starting light_01.
+	 */
+	void SetAirStateProvider(FCombatAirStateProvider InProvider);
+
 private:
 	/**
 	 * M1-014: when the running attack is inside its cancel window, prunes
@@ -288,14 +307,17 @@ private:
 	/**
 	 * M1-021: while Free and alive, prunes expired buffered inputs and starts
 	 * the earliest buffered Light/Launcher whose mapped Free attack id exists
-	 * in the catalog (Light -> light_01, Launcher -> launcher). M1-023
-	 * extends the same earliest-Sequence walk to a buffered Jump: with a
-	 * bound jump request handler the Jump is consumed into exactly one owner
-	 * jump request (no attack starts); unbound, the Jump stays buffered.
-	 * Consumes exactly one entry per tick, so one press starts one attack or
-	 * requests one jump and can never fire twice. The attack-start half
-	 * stays gated on the injected input clock; the jump half is gated on the
-	 * bound handler only (see SetJumpRequestHandler for the rationale).
+	 * in the catalog (grounded: Light -> light_01, Launcher -> launcher).
+	 * M1-024 routes the Light by the injected air state: while the owner
+	 * reports airborne the same press starts aerial_01 instead (the Launcher
+	 * mapping never changes). M1-023 extends the same earliest-Sequence walk
+	 * to a buffered Jump: with a bound jump request handler the Jump is
+	 * consumed into exactly one owner jump request (no attack starts);
+	 * unbound, the Jump stays buffered. Consumes exactly one entry per tick,
+	 * so one press starts one attack or requests one jump and can never fire
+	 * twice. The attack-start half stays gated on the injected input clock;
+	 * the jump half is gated on the bound handler only (see
+	 * SetJumpRequestHandler for the rationale).
 	 * Returns true when an attack started or a jump was requested.
 	 */
 	bool TryStartFromBuffer();
@@ -338,13 +360,30 @@ private:
 	 * M1-019: applies the hit impulse to a surviving target, skipping bodies
 	 * that cannot move. M1-022: a hit that carries a launch component
 	 * (Impulse.Z > 0) launches a character target through
-	 * ACharacter::LaunchCharacter with bZOverride=true (the vertical speed is
-	 * replaced by the launch speed, never stacked) and bXYOverride=false (the
-	 * horizontal knockback stays additive); hits without a launch component
-	 * keep the additive AddImpulse path, so a floating target's vertical
-	 * speed is never zeroed by a ground-level hit.
+	 * ACharacter::LaunchCharacter with bXYOverride=false (the horizontal
+	 * knockback stays additive on top of the target's current velocity) and a
+	 * character-vertical override; hits without a launch component keep the
+	 * additive AddImpulse path, so a floating target's vertical speed is
+	 * never zeroed by a ground-level hit. M1-024: the vertical component is a
+	 * max with the target's current vertical speed, not a blind replacement:
+	 * the launch Z is max(currentZ, Impulse.Z) where currentZ also covers a
+	 * launch still pending on the movement component - a launcher's 700 cm/s
+	 * stays 700 (700 >= any current Z in practice, unchanged behavior) while
+	 * the aerial follow-up (60 cm/s) never demotes a faster floating target
+	 * and only lifts slower ones up to 60.
 	 */
 	void ApplyHitImpulse(AActor& Target, const FVector& Impulse) const;
+
+	/**
+	 * M1-024: one aerial follow-up per target float cycle. Returns true when
+	 * the incoming aerial hit on this target must be refused (already landed
+	 * an aerial hit in the current leave-ground-to-landing cycle and the
+	 * target still floats). The cycle is read lazily from the target: a
+	 * grounded target's record belongs to a closed cycle and is dropped here,
+	 * so the incoming hit opens a fresh cycle. The refusal is a miss in the
+	 * fullest sense: no damage, no impulse, no dedup key, no event.
+	 */
+	bool ShouldRefuseAerialFollowUp(uint64 TargetId, const AActor& Target);
 
 	/** Injected catalog; UPROPERTY keeps it alive for the GC. */
 	UPROPERTY(Transient)
@@ -396,6 +435,13 @@ private:
 	 */
 	FCombatJumpRequestHandler JumpRequestHandler;
 
+	/**
+	 * M1-024: bound airborne predicate (empty = grounded). Read at the
+	 * Free-state input-driven start to route a buffered Light to aerial_01
+	 * (airborne) or light_01 (grounded); the Launcher mapping never changes.
+	 */
+	FCombatAirStateProvider AirStateProvider;
+
 	/** Missing ids already diagnosed; reset when a new catalog is attached. */
 	TSet<FName> LoggedMissingAttackIds;
 
@@ -405,6 +451,16 @@ private:
 	 * so the next instance can hit the same target again.
 	 */
 	TSet<FCombatHitDedupKey> InstanceHitKeys;
+
+	/**
+	 * M1-024: targets that already took an aerial follow-up in their current
+	 * float cycle (keys are the target actors' session-unique object ids).
+	 * An entry blocks further aerial hits on that target until it reads
+	 * grounded again (dropped lazily at the next aerial hit attempt) or the
+	 * component resets. Deliberately NOT part of ClearInstance: the cycle
+	 * spans attack instances.
+	 */
+	TSet<uint64> AerialFollowUpTargetIds;
 
 	/**
 	 * M1-019: injected feet-origin provider; empty means the default

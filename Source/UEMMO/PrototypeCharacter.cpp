@@ -139,6 +139,17 @@ void APrototypeCharacter::BeginPlay()
     {
         Jump();
     });
+    // M1-024: the combat component routes a buffered Light by the air state -
+    // an airborne J starts aerial_01, a grounded J keeps light_01. The
+    // component owns no movement, so the owner binds its own airborne
+    // predicate (the movement component's IsFalling, the check the engine
+    // derives the falling state from); the component is owned by this pawn,
+    // so the raw this capture never outlives the handler.
+    Combat->SetAirStateProvider([this]()
+    {
+        const UCharacterMovementComponent* Movement = GetCharacterMovement();
+        return Movement != nullptr && Movement->IsFalling();
+    });
     UE_LOG(LogTemp, Display, TEXT("UEMMO: prototype character ready; X/Y movement enabled."));
 }
 
