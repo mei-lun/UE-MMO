@@ -141,6 +141,9 @@ void ATrainingEnemy::ResetEnemy()
 	// M1-025: a room reset also reopens the policy float cycle, so the next
 	// launcher rises at full launch speed again.
 	LauncherCycleCount = 0;
+	// M1-026: the reset also drops any pending launched-landing marker - a
+	// replayed room never owes a knockdown for a float the reset cancelled.
+	bWasLaunchedAirborne = false;
 }
 
 ECombatAirState ATrainingEnemy::GetAirState() const
@@ -197,6 +200,12 @@ void ATrainingEnemy::LaunchCharacter(FVector LaunchVelocity, bool bXYOverride, b
 	{
 		AirComboCount = bGroundedSinceLastLaunch ? 1 : AirComboCount + 1;
 		bGroundedSinceLastLaunch = false;
+		// M1-026: a vertical launch through the combat path is a hit into the
+		// air (launcher or aerial follow-up; ApplyHitImpulse is the only game
+		// caller). The flag marks the enemy as launched-airborne until it
+		// lands, which is the only difference between a knocked-down landing
+		// and a plain one.
+		bWasLaunchedAirborne = true;
 	}
 }
 
@@ -204,21 +213,61 @@ void ATrainingEnemy::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
 
+	// M1-026: the whole landing handling lives in NotifyLanded so tests can
+	// replay a landing with an explicit time (interface contract section 2);
+	// the override only resolves the world time the engine notifies with.
+	const UWorld* World = GetWorld();
+	const double Now = World ? World->GetTimeSeconds() : 0.0;
+	NotifyLanded(Now);
+}
+
+void ATrainingEnemy::NotifyLanded(double NowSeconds)
+{
+	// M1-026: one landing event snapshot. A launched landing keeps its policy
+	// float cycle open through the recovery, so the count is captured here and
+	// restored after the ground-contact record (which reopens the cycle for
+	// every plain landing - the M1-025 semantics the direct
+	// RecordGroundContact callers and the existing suites pin). The cycle is
+	// then only reopened by the recovery completion itself (the component's
+	// Recovering -> Free clear point calling ClearLauncherCycle).
+	const bool bLaunchedLanding = bWasLaunchedAirborne;
+	const int32 OpenCycleCount = LauncherCycleCount;
+
 	// M1-034: one landing round = one land request. The epoch advances only
 	// after the round window since the previous Landed notify, so bounce-style
 	// duplicate notifies reuse the epoch and the dispatcher's dedup key
 	// (actor id, epoch) rejects them; a later round starts a fresh epoch.
-	const UWorld* World = GetWorld();
-	const double Now = World ? World->GetTimeSeconds() : 0.0;
 	// M1-022: every landing is a ground contact (recorded time, launcher
-	// combo bookkeeping) before the audio dispatch below.
-	RecordGroundContact(Now);
-	if (LastLandedNotifySeconds < 0.0 || Now - LastLandedNotifySeconds > LandRoundWindowSeconds)
+	// combo bookkeeping) before the audio dispatch.
+	RecordGroundContact(NowSeconds);
+	if (bLaunchedLanding)
+	{
+		// M1-026: the launched landing defers the policy-cycle reset to the
+		// recovery completion, so the cycle reads open for the whole 0.70 s
+		// process (hits are refused in that window anyway).
+		LauncherCycleCount = OpenCycleCount;
+	}
+	if (LastLandedNotifySeconds < 0.0 || NowSeconds - LastLandedNotifySeconds > LandRoundWindowSeconds)
 	{
 		++LandingEpoch;
 	}
-	LastLandedNotifySeconds = Now;
-	SubmitLandingAudio(LandingEpoch, Now);
+	LastLandedNotifySeconds = NowSeconds;
+	SubmitLandingAudio(LandingEpoch, NowSeconds);
+
+	// M1-026: only a launched landing builds the Knockdown 0.45 s ->
+	// Recovering 0.25 s -> Free process - one landing event, one process
+	// (the component refuses an already running one and a dead combatant:
+	// death has priority, the dead never recover). The launched-airborne
+	// marker is only consumed by an accepted process, so a refused request
+	// (dead) can never silently swallow a later valid landing's owed
+	// knockdown; ResetEnemy drops the marker with the rest of the room state.
+	if (bLaunchedLanding && Combat != nullptr)
+	{
+		if (Combat->BeginLandingRecovery(NowSeconds))
+		{
+			bWasLaunchedAirborne = false;
+		}
+	}
 }
 
 bool ATrainingEnemy::SubmitLandingAudio(uint64 InLandingEpoch, double NowSeconds)

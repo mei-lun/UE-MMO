@@ -66,6 +66,14 @@ namespace
 		return 0;
 	}
 
+	// M1-026: the landing recovery durations (interface contract section 6):
+	// a launched landing knocks the victim down for 0.45 s and then keeps it
+	// in Recovering for 0.25 s before it is Free again - both deadlines are
+	// fixed at the landing moment, so the process always totals 0.70 s
+	// regardless of tick spacing. Pre-tuning-playtest initial values.
+	constexpr double M1_026_KnockdownSeconds = 0.45;
+	constexpr double M1_026_RecoveringSeconds = 0.25;
+
 	// Buffered-input lifetime (interface contract section 2): an age of exactly
 	// 150 ms is still valid, only a strictly greater age expires.
 	constexpr double M1_021_InputLifetimeSeconds = 0.150;
@@ -210,6 +218,27 @@ bool UCombatComponent::TryStartAttack(FName AttackId, int32 NewFacing)
 
 void UCombatComponent::TickCombat(float DeltaSeconds)
 {
+	// M1-026: the landing recovery runs on the injected input clock (the
+	// M1-020 stun pattern). The owner keeps calling TickCombat; each branch
+	// flips at most one state per tick, exactly like the per-frame game loop,
+	// so a clock jump past both deadlines settles on the second tick.
+	if (ActionState == ECombatActionState::Knockdown)
+	{
+		if (InputClockSeconds >= LandingKnockdownEndTimeSeconds)
+		{
+			ActionState = ECombatActionState::Recovering;
+		}
+		return;
+	}
+	if (ActionState == ECombatActionState::Recovering)
+	{
+		if (InputClockSeconds >= LandingRecoveringEndTimeSeconds)
+		{
+			EndLandingRecovery();
+		}
+		return;
+	}
+
 	// M1-020: a stun runs on the injected input clock (the same explicitly
 	// injected "now" as the buffered input lifetimes). The owner keeps calling
 	// TickCombat; on the first tick whose clock reached the stun end the state
@@ -289,6 +318,22 @@ void UCombatComponent::ResetCombat()
 
 void UCombatComponent::SetDead(bool bNewDead)
 {
+	if (bNewDead && !bDead)
+	{
+		// M1-026: death has priority over every non-attacking action state -
+		// death, the landing recovery and the hit stun are mutually exclusive,
+		// so a combatant that dies mid-recovery or mid-stun drops that state
+		// immediately (an in-flight attack keeps the documented SetDead
+		// contract untouched; the NotifyHitReceived death path cancels it
+		// explicitly).
+		if (ActionState == ECombatActionState::Knockdown || ActionState == ECombatActionState::Recovering)
+		{
+			ActionState = ECombatActionState::Free;
+		}
+		EndHitStun();
+		LandingKnockdownEndTimeSeconds = 0.0;
+		LandingRecoveringEndTimeSeconds = 0.0;
+	}
 	bDead = bNewDead;
 }
 
@@ -321,6 +366,14 @@ void UCombatComponent::NotifyHitReceived(const FCombatHit& Hit)
 		SetDead(true);
 		CancelCurrentAttack(FName(TEXT("Death")));
 		EndHitStun();
+		return;
+	}
+
+	// M1-026: the landing recovery refuses hits entirely (the death >
+	// knockdown/recovering > hit stun priority): no stun is applied and the
+	// running process is never restarted, extended or cut short by a hit.
+	if (ActionState == ECombatActionState::Knockdown || ActionState == ECombatActionState::Recovering)
+	{
 		return;
 	}
 
@@ -361,6 +414,63 @@ void UCombatComponent::CancelCurrentAttack(FName Reason)
 	// so the interrupted instance can never land its pending damage.
 	ClearInstance();
 	UE_LOG(LogTemp, Verbose, TEXT("UEMMO UCombatComponent: attack cancelled (reason: %s)"), *Reason.ToString());
+}
+
+bool UCombatComponent::BeginLandingRecovery(double NowSeconds)
+{
+	// The entry needs a finite "now": a non-finite landing time could only
+	// produce non-finite deadlines that no clock ever reaches (a permanently
+	// unhittable combatant), so it is refused like the stun's non-finite rule.
+	if (!FMath::IsFinite(NowSeconds))
+	{
+		return false;
+	}
+	// Death has the highest priority (interface contract section 4): a dead
+	// combatant never recovers.
+	if (bDead)
+	{
+		return false;
+	}
+	// One landing event builds exactly one process: an already running
+	// recovery (Knockdown or Recovering) is never restarted or extended.
+	if (ActionState == ECombatActionState::Knockdown || ActionState == ECombatActionState::Recovering)
+	{
+		return false;
+	}
+	// The landing interrupts any in-flight attack (an interruption - no
+	// Finished broadcast) and any pending stun bookkeeping: the knockdown
+	// takes over both (death > landing recovery > hit stun priority).
+	CancelCurrentAttack(FName(TEXT("LandingRecovery")));
+	HitStunEndTimeSeconds = 0.0;
+	ActionState = ECombatActionState::Knockdown;
+	LandingKnockdownEndTimeSeconds = NowSeconds + M1_026_KnockdownSeconds;
+	LandingRecoveringEndTimeSeconds = LandingKnockdownEndTimeSeconds + M1_026_RecoveringSeconds;
+	return true;
+}
+
+bool UCombatComponent::IsInLandingRecovery() const
+{
+	return ActionState == ECombatActionState::Knockdown || ActionState == ECombatActionState::Recovering;
+}
+
+void UCombatComponent::EndLandingRecovery()
+{
+	if (ActionState != ECombatActionState::Recovering)
+	{
+		return;
+	}
+	ActionState = ECombatActionState::Free;
+	LandingKnockdownEndTimeSeconds = 0.0;
+	LandingRecoveringEndTimeSeconds = 0.0;
+	// M1-026: the fourth float-cycle clear point (interface contract section
+	// 6): the air-combo policy cycle reopens only when the recovery completed,
+	// so the next launcher after the recovery rises at the full definition
+	// launch speed again. The count lives target-side on ATrainingEnemy (the
+	// M1-025 read pattern); other owner types carry no float cycle.
+	if (ATrainingEnemy* EnemyOwner = Cast<ATrainingEnemy>(GetOwner()))
+	{
+		EnemyOwner->ClearLauncherCycle();
+	}
 }
 
 void UCombatComponent::EndHitStun()
@@ -735,6 +845,11 @@ void UCombatComponent::ClearInstance()
 	// M1-020: torn-down instances also drop the stun deadline bookkeeping; a
 	// real stun is (re)applied right after the cancel that lands here.
 	HitStunEndTimeSeconds = 0.0;
+	// M1-026: a teardown also drops the landing-recovery deadlines. ResetCombat
+	// funnels here, so a room reset never carries a half-finished recovery
+	// (the unified reset semantics belong to M1-027).
+	LandingKnockdownEndTimeSeconds = 0.0;
+	LandingRecoveringEndTimeSeconds = 0.0;
 	// M1-019: the instance's hit set dies with the instance (finish, chain
 	// switch and reset all funnel through here), so the next instance can hit
 	// the same target again.
@@ -803,6 +918,21 @@ void UCombatComponent::TryApplyActiveWindowHits()
 		// follow-up is a miss in the fullest sense: no damage, no impulse,
 		// no dedup key (nothing poisons a later instance) and no event.
 		const uint64 TargetId = static_cast<uint64>(Target->GetUniqueID());
+		// M1-026: a target inside its landing recovery (Knockdown or
+		// Recovering) refuses every hit in the fullest sense: no damage, no
+		// impulse, no dedup key and no event - the recovery period is
+		// unhittable by contract. The state lives on the victim's own combat
+		// component (the same lookup the victim-side notify uses below).
+		if (const UCombatComponent* VictimCombat = Target->FindComponentByClass<UCombatComponent>())
+		{
+			if (VictimCombat->IsInLandingRecovery())
+			{
+				UE_LOG(LogTemp, Verbose,
+					TEXT("UEMMO UCombatComponent: hit on target %llu refused (target is inside its landing recovery)."),
+					TargetId);
+				continue;
+			}
+		}
 		if (ActiveAttackId == M1_024_AerialLightAttackId
 			&& ShouldRefuseAerialFollowUp(TargetId, *Target))
 		{

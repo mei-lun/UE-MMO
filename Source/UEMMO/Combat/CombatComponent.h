@@ -27,7 +27,14 @@ enum class ECombatActionState : uint8
 	/** An attack instance is running its frame timeline. */
 	Attacking = 1,
 	/** M1-020: an accepted hit interrupted the combatant; attacks stay refused until the stun ends. */
-	HitStun = 2
+	HitStun = 2,
+	/**
+	 * M1-026: a launched landing knocked the combatant down (interface
+	 * contract section 6); every hit on it is refused until it recovered.
+	 */
+	Knockdown = 3,
+	/** M1-026: the knockdown ended and the combatant is getting back up; hits stay refused. */
+	Recovering = 4
 };
 
 /**
@@ -193,9 +200,33 @@ public:
 	 * Hit.StunSeconds on the injected input clock; a new stun is
 	 * max(remaining, new), never additive. Death has priority: an already dead
 	 * component ignores the hit, and a lethal hit (the owner's health pool is
-	 * gone) marks the component dead instead of stunning it.
+	 * gone) marks the component dead instead of stunning it. M1-026: a
+	 * combatant inside its landing recovery (Knockdown or Recovering) refuses
+	 * the hit entirely - the stun request never takes over the recovery
+	 * process (death > landing recovery > hit stun priority).
 	 */
 	void NotifyHitReceived(const FCombatHit& Hit);
+
+	/**
+	 * M1-026: victim-side entry of one landed-after-launch recovery process
+	 * (interface contract section 6: a launched landing builds exactly one
+	 * Knockdown 0.45 s -> Recovering 0.25 s -> Free sequence). The two
+	 * deadlines are fixed at the landing moment on the injected input clock,
+	 * so the whole process always totals 0.70 s regardless of tick spacing.
+	 * Returns false without any state change when the combatant is dead
+	 * (death has priority; the dead never recover) or when a recovery process
+	 * is already running (one landing event builds exactly one process;
+	 * duplicate Landed notifies never restart the timers).
+	 */
+	bool BeginLandingRecovery(double NowSeconds);
+
+	/**
+	 * M1-026: true while this combatant is inside its landing recovery
+	 * process (Knockdown or Recovering). The attacker-side hit application
+	 * refuses such targets entirely (no damage, no impulse, no dedup key, no
+	 * event) and the victim-side NotifyHitReceived refuses stun requests.
+	 */
+	bool IsInLandingRecovery() const;
 
 	FCombatSnapshot GetSnapshot() const;
 
@@ -341,6 +372,15 @@ private:
 	/** M1-020: leaves HitStun back to Free (no-op unless currently stunned). */
 	void EndHitStun();
 
+	/**
+	 * M1-026: leaves Recovering back to Free and reopens the owner's float
+	 * cycle (the fourth LauncherCycleCount clear point: the policy cycle
+	 * reopens only when the recovery completed, so the next launcher after
+	 * the recovery rises at full definition speed again). No-op unless
+	 * currently Recovering.
+	 */
+	void EndLandingRecovery();
+
 	/** Ends the current attack: clears state first, then broadcasts OnFinished once. */
 	void FinishCurrentAttack();
 
@@ -413,6 +453,22 @@ private:
 	 * clock as the buffered input lifetimes.
 	 */
 	double HitStunEndTimeSeconds = 0.0;
+
+	/**
+	 * M1-026: input-clock time at which the current Knockdown flips to
+	 * Recovering (the landing moment plus 0.45 s). Only meaningful while the
+	 * action state is Knockdown; measured on the same explicitly injected
+	 * input clock as the HitStun deadline.
+	 */
+	double LandingKnockdownEndTimeSeconds = 0.0;
+
+	/**
+	 * M1-026: input-clock time at which the current Recovering returns to
+	 * Free (the landing moment plus 0.45 s + 0.25 s = 0.70 s). Only
+	 * meaningful while the action state is Knockdown or Recovering; fixed at
+	 * BeginLandingRecovery so the process always totals 0.70 s.
+	 */
+	double LandingRecoveringEndTimeSeconds = 0.0;
 
 	FCombatClock Clock;
 	FCombatInputBuffer InputBuffer;

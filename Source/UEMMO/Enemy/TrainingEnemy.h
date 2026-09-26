@@ -124,6 +124,28 @@ public:
 	 */
 	void RecordGroundContact(double NowSeconds);
 
+	/**
+	 * M1-026: testable/diagnostic landing dispatch entry carrying the whole
+	 * landing handling the ACharacter::Landed override performs (the override
+	 * resolves the world time and delegates here; tests pass explicit times,
+	 * interface contract section 2). One call is one landing event: it
+	 * records the ground contact (M1-022), dispatches the landing audio
+	 * (M1-034) and - only when this enemy was previously hit airborne - opens
+	 * the single Knockdown -> Recovering -> Free recovery process on its
+	 * combat component. A plain landing (never launched) never knocks down.
+	 */
+	void NotifyLanded(double NowSeconds);
+
+	/**
+	 * M1-026: reopens the policy float cycle (LauncherCycleCount = 0). This
+	 * is the fourth clear point of the air-combo policy: the cycle reopens
+	 * only when the landing recovery completed (the component's Recovering ->
+	 * Free transition calls this), so the next launcher after the recovery
+	 * rises at the full definition speed again. Death and ResetEnemy keep
+	 * their own M1-025 clear points.
+	 */
+	void ClearLauncherCycle() { LauncherCycleCount = 0; }
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -138,8 +160,9 @@ protected:
 	/**
 	 * M1-034: landing sound source. Advances the landing round epoch once per
 	 * round (bounce-style duplicate Landed calls inside the round window reuse
-	 * the epoch) and forwards to SubmitLandingAudio; floating-then-landing
-	 * victims arrive through later tasks, this card only wires the source.
+	 * the epoch) and forwards to SubmitLandingAudio; M1-026: the whole landing
+	 * handling (ground record, audio, launched-landing recovery) lives in
+	 * NotifyLanded, which this override calls with the world time.
 	 */
 	virtual void Landed(const FHitResult& Hit) override;
 
@@ -202,6 +225,16 @@ private:
 
 	/** M1-022: true while no launcher launch happened since the last ground contact. */
 	bool bGroundedSinceLastLaunch = true;
+
+	/**
+	 * M1-026: true while this enemy was hit airborne (a launcher or aerial
+	 * launch actually applied a vertical launch velocity) and has not landed
+	 * from that float yet. Only a landing with this flag set builds the
+	 * Knockdown -> Recovering -> Free recovery process; a plain jump or
+	 * gravity landing (flag false) never knocks down. Consumed by the
+	 * landing that opens the process, cleared by ResetEnemy.
+	 */
+	bool bWasLaunchedAirborne = false;
 
 	/** M1-022: clock value of the last recorded ground contact; 0.0 = none yet. */
 	double LastGroundedTimeSeconds = 0.0;
