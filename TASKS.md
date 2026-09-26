@@ -64,7 +64,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M1-034 | [拳击和落地音效事件](Docs/Tasks/M1-034.md) | DONE | M1-019,M1-032 | ZCode-20260925-A | 2026-09-26T12:41:57+08:00 | [report](Docs/Tasks/Reports/M1-034.md) |
 | M1-035 | [生命条与命中数字反馈](Docs/Tasks/M1-035.md) | DONE | M1-028,M1-034 | ZCode-20260925-A | 2026-09-26T20:11:36+08:00 | [report](Docs/Tasks/Reports/M1-035.md) |
 | M1-036 | [上挑与空中动作素材验收记录](Docs/Tasks/M1-036.md) | DONE | M1-032,M1-026 | ZCode-20260925-A | 2026-09-26T17:39:05+08:00 | [report](Docs/Tasks/Reports/M1-036.md) |
-| M1-037 | [完整连招的可重复场景测试](Docs/Tasks/M1-037.md) | TODO | M1-027,M1-030,M1-033,M1-035,M1-036 | — | — | — |
+| M1-037 | [完整连招的可重复场景测试](Docs/Tasks/M1-037.md) | DONE | M1-027,M1-030,M1-033,M1-035,M1-036 | ZCode-20260925-A | 2026-09-26T21:11:47+08:00 | [report](Docs/Tasks/Reports/M1-037.md) |
 | M1-038 | [帧率与卡顿边界回归](Docs/Tasks/M1-038.md) | TODO | M1-037 | — | — | — |
 | M1-039 | [M1独立包与交接验收包](Docs/Tasks/M1-039.md) | TODO | M1-038 | — | — | — |
 | M1-H01 | [M1 用户阶段验收](Docs/Tasks/M1-H01.md) | TODO | M1-039,M0-H01 | 用户 | — | — |
