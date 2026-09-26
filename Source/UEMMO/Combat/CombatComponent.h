@@ -297,7 +297,16 @@ private:
 	/** M1-019: resolves the current feet origin (provider first, owner second). */
 	FVector ResolveFeetLocation() const;
 
-	/** M1-019: applies the hit impulse to a surviving target, skipping bodies that cannot move. */
+	/**
+	 * M1-019: applies the hit impulse to a surviving target, skipping bodies
+	 * that cannot move. M1-022: a hit that carries a launch component
+	 * (Impulse.Z > 0) launches a character target through
+	 * ACharacter::LaunchCharacter with bZOverride=true (the vertical speed is
+	 * replaced by the launch speed, never stacked) and bXYOverride=false (the
+	 * horizontal knockback stays additive); hits without a launch component
+	 * keep the additive AddImpulse path, so a floating target's vertical
+	 * speed is never zeroed by a ground-level hit.
+	 */
 	void ApplyHitImpulse(AActor& Target, const FVector& Impulse) const;
 
 	/** Injected catalog; UPROPERTY keeps it alive for the GC. */

@@ -12,6 +12,20 @@ class UHealthComponent;
 class USoundWave;
 
 /**
+ * M1-022: airborne phase of one combatant, read from its actual vertical
+ * velocity (interface contract section 4: Grounded/Rising/Falling stay
+ * separate from the Alive/Dead and the action states). Grounded while the
+ * movement component walks on ground; Rising while the vertical speed is
+ * positive; Falling otherwise (an airborne apex already falls).
+ */
+enum class ECombatAirState : uint8
+{
+	Grounded = 0,
+	Rising = 1,
+	Falling = 2
+};
+
+/**
  * M1-016: a passive, damageable training enemy for the training arena.
  * The only damage entry point is UHealthComponent::ApplyDamage (interface
  * contract 7: reuse Health/Combat, never a second direct health-removal
@@ -69,8 +83,41 @@ public:
 	/** M1-034: overrides the landing sound soft reference (tests/config). */
 	void SetLandSound(TSoftObjectPtr<USoundWave> InLandSound) { LandSound = InLandSound; }
 
+	/**
+	 * M1-022: launcher launches accepted since the last ground contact (the
+	 * first launch from ground contact counts 1, every further launcher hit
+	 * before the next ground contact increments). Recording only: the launch
+	 * count cap and the Z-factor decay stay with M1-025.
+	 */
+	int32 GetAirComboCount() const { return AirComboCount; }
+
+	/**
+	 * M1-022: injected clock value of the last recorded ground contact (the
+	 * real Landed notify feeds it; 0.0 until the first record).
+	 */
+	double GetLastGroundedTimeSeconds() const { return LastGroundedTimeSeconds; }
+
+	/** M1-022: airborne phase read from the actual velocity (see the enum). */
+	ECombatAirState GetAirState() const;
+
+	/**
+	 * M1-022: records one ground contact at the given injected clock value
+	 * and closes the running launcher combo. The ACharacter::Landed override
+	 * calls this with the world time; tests call it directly with explicit
+	 * times (interface contract section 2: early tests use explicit times).
+	 */
+	void RecordGroundContact(double NowSeconds);
+
 protected:
 	virtual void BeginPlay() override;
+
+	/**
+	 * M1-022: launches are recorded for the launcher combo count before the
+	 * base implementation defers the velocity application (ACharacter::
+	 * LaunchCharacter is virtual in UE 5.8; the combat launch path in
+	 * UCombatComponent::ApplyHitImpulse is the only game caller).
+	 */
+	virtual void LaunchCharacter(FVector LaunchVelocity, bool bXYOverride, bool bZOverride) override;
 
 	/**
 	 * M1-034: landing sound source. Advances the landing round epoch once per
@@ -130,4 +177,13 @@ private:
 
 	bool bLoggedMissingLandSound = false;
 	int32 DispatchedLandingAudioCount = 0;
+
+	/** M1-022: launcher launches accepted since the last ground contact. */
+	int32 AirComboCount = 0;
+
+	/** M1-022: true while no launcher launch happened since the last ground contact. */
+	bool bGroundedSinceLastLaunch = true;
+
+	/** M1-022: clock value of the last recorded ground contact; 0.0 = none yet. */
+	double LastGroundedTimeSeconds = 0.0;
 };

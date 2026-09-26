@@ -55,6 +55,16 @@ ATrainingEnemy::ATrainingEnemy()
 	// damage application calls NotifyHitReceived on the target's component).
 	Combat = CreateDefaultSubobject<UCombatComponent>(TEXT("EnemyCombat"));
 
+	// M1-022: the dummy owns no AIController (M1-016), so without this flag
+	// its movement physics would never initialize or run: the mode would stay
+	// MOVE_None (which silently drops every AddImpulse and Launch) and
+	// PhysWalking would zero any velocity it received. Running physics without
+	// a controller gives the dummy a real physical presence: it settles onto
+	// the floor under gravity, a launcher hit flies it through the normal
+	// falling physics and every landing arrives through ACharacter::Landed
+	// (which also feeds the M1-034 landing audio and the M1-022 ground record).
+	GetCharacterMovement()->bRunPhysicsWithNoController = true;
+
 	// M1-034: default landing sound (Kenney Impact CC0 soft heavy impact).
 	LandSound = TSoftObjectPtr<USoundWave>(FSoftObjectPath(DefaultLandSoundPath));
 }
@@ -113,6 +123,61 @@ void ATrainingEnemy::ResetEnemy()
 	{
 		Movement->StopMovementImmediately();
 		Movement->Velocity = FVector::ZeroVector;
+		// M1-022: a room reset also drops any launch/impulse still pending on
+		// the movement component and puts the dummy back on the ground, so the
+		// replayable room never carries airborne state (or a resurrecting
+		// pending launch) into the next run.
+		Movement->ClearAccumulatedForces();
+		Movement->SetMovementMode(MOVE_Walking);
+	}
+	// M1-022: the reset opens a fresh ground phase - no launcher combo, the
+	// next launcher hit counts 1 again. The last-grounded time is a record of
+	// real landing events and is left untouched (a reset is not a landing).
+	AirComboCount = 0;
+	bGroundedSinceLastLaunch = true;
+}
+
+ECombatAirState ATrainingEnemy::GetAirState() const
+{
+	// Grounded while the movement component walks on ground; the actual
+	// vertical speed decides the airborne phase (interface contract section
+	// 4): Z > 0 Rising, otherwise Falling - an airborne apex at Z == 0 already
+	// falls on the next update. Computed on demand, so walking ground input
+	// can never stale it and a launched state can never be masked.
+	const UCharacterMovementComponent* Movement = GetCharacterMovement();
+	if (Movement == nullptr || Movement->IsMovingOnGround())
+	{
+		return ECombatAirState::Grounded;
+	}
+	return Movement->Velocity.Z > 0.0f ? ECombatAirState::Rising : ECombatAirState::Falling;
+}
+
+void ATrainingEnemy::RecordGroundContact(double NowSeconds)
+{
+	// M1-022: the landing time is the ground-contact record the later
+	// floating-state tasks read; the real Landed notify feeds this with the
+	// world time. A ground contact closes the running launcher combo: the
+	// next launcher hit opens a fresh one at 1 (the count cap and the
+	// Z-factor decay stay with M1-025; recording only here).
+	LastGroundedTimeSeconds = NowSeconds;
+	bGroundedSinceLastLaunch = true;
+}
+
+void ATrainingEnemy::LaunchCharacter(FVector LaunchVelocity, bool bXYOverride, bool bZOverride)
+{
+	// M1-022: the combat launch path (UCombatComponent::ApplyHitImpulse) sends
+	// every hit that carries a launch component through here. A vertical
+	// launch opens or continues the pre-landing launcher combo: the first
+	// launch from ground contact counts 1, every further launcher hit before
+	// the next ground contact increments. The flag is the hit-time ground
+	// state (not the movement mode, which the deferred launch only flips on
+	// the next applied movement update), so the classification never races
+	// the launch itself.
+	Super::LaunchCharacter(LaunchVelocity, bXYOverride, bZOverride);
+	if (LaunchVelocity.Z > 0.0f)
+	{
+		AirComboCount = bGroundedSinceLastLaunch ? 1 : AirComboCount + 1;
+		bGroundedSinceLastLaunch = false;
 	}
 }
 
@@ -126,6 +191,9 @@ void ATrainingEnemy::Landed(const FHitResult& Hit)
 	// (actor id, epoch) rejects them; a later round starts a fresh epoch.
 	const UWorld* World = GetWorld();
 	const double Now = World ? World->GetTimeSeconds() : 0.0;
+	// M1-022: every landing is a ground contact (recorded time, launcher
+	// combo bookkeeping) before the audio dispatch below.
+	RecordGroundContact(Now);
 	if (LastLandedNotifySeconds < 0.0 || Now - LastLandedNotifySeconds > LandRoundWindowSeconds)
 	{
 		++LandingEpoch;

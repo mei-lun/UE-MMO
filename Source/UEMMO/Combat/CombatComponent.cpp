@@ -703,13 +703,35 @@ void UCombatComponent::ApplyHitImpulse(AActor& Target, const FVector& Impulse) c
 	{
 		if (UCharacterMovementComponent* Movement = TargetCharacter->GetCharacterMovement())
 		{
+			// M1-022: a hit that carries a launch component (LaunchSpeed > 0:
+			// the launcher's 700 cm/s, aerial_01's 60 cm/s) launches the target
+			// through ACharacter::LaunchCharacter instead of accumulating an
+			// impulse. With bZOverride=true the vertical speed is REPLACED by
+			// the definition's launch speed - the engine stores it as the
+			// pending launch velocity, which a later launch overwrites and a
+			// real movement update applies absolutely, so repeated launcher
+			// hits can never stack Z towards 1400, 2100, ... - while
+			// bXYOverride=false keeps the horizontal knockback additive on top
+			// of the target's current velocity. Launch is velocity injection
+			// (no teleport, no ragdoll): the flight resolves through the
+			// normal collision integration, also next to walls. Non-launching
+			// hits (light: Z == 0) stay on the additive impulse path, which
+			// leaves a floating target's vertical speed untouched (a floating
+			// hit state is never zeroed by a ground-level hit).
+			if (Impulse.Z > 0.0f)
+			{
+				TargetCharacter->LaunchCharacter(FVector(Impulse.X, Impulse.Y, Impulse.Z),
+					/*bXYOverride*/ false, /*bZOverride*/ true);
+				return;
+			}
 			Movement->AddImpulse(Impulse, /*bVelocityChange*/ true);
 			return;
 		}
 	}
 	// Simulating rigid bodies get a velocity-change impulse; query-only or
 	// static bodies (the test actors of the temp worlds, walls) cannot move
-	// and are skipped, which the task report records.
+	// and are skipped, which the task report records. The launch override is
+	// a CharacterMovement semantic and stays character-only.
 	if (UPrimitiveComponent* RootPrimitive = Cast<UPrimitiveComponent>(Target.GetRootComponent()))
 	{
 		if (RootPrimitive->IsAnySimulatingPhysics())
