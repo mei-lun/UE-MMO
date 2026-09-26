@@ -48,7 +48,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M1-018 | [三维命中查询与过滤](Docs/Tasks/M1-018.md) | DONE | M1-016,M1-017 | ZCode-20260925-A | 2026-09-26T10:45:04+08:00 | [report](Docs/Tasks/Reports/M1-018.md) |
 | M1-019 | [有效窗口扣血与同招去重](Docs/Tasks/M1-019.md) | DONE | M1-018,M1-011 | ZCode-20260925-A | 2026-09-26T11:12:19+08:00 | [report](Docs/Tasks/Reports/M1-019.md) |
 | M1-020 | [受击硬直打断攻击](Docs/Tasks/M1-020.md) | DONE | M1-019 | ZCode-20260925-A | 2026-09-26T12:06:15+08:00 | [report](Docs/Tasks/Reports/M1-020.md) |
-| M1-021 | [上挑输入和取消窗口](Docs/Tasks/M1-021.md) | TODO | M1-014,M1-020 | — | — | — |
+| M1-021 | [上挑输入和取消窗口](Docs/Tasks/M1-021.md) | DONE | M1-014,M1-020 | ZCode-20260925-A | 2026-09-26T12:41:56+08:00 | [report](Docs/Tasks/Reports/M1-021.md) |
 | M1-022 | [上挑命中产生物理浮空](Docs/Tasks/M1-022.md) | TODO | M1-021 | — | — | — |
 | M1-023 | [上挑后的跳跃取消](Docs/Tasks/M1-023.md) | TODO | M1-021 | — | — | — |
 | M1-024 | [空中普攻路由与追击](Docs/Tasks/M1-024.md) | TODO | M1-022,M1-023 | — | — | — |
@@ -61,7 +61,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M1-031 | [八方向移动与跳跃动画层](Docs/Tasks/M1-031.md) | DONE | M1-029 | ZCode-20260925-A | 2026-09-26T02:08:06+08:00 | [report](Docs/Tasks/Reports/M1-031.md) |
 | M1-032 | [攻击Montage与动画所有权](Docs/Tasks/M1-032.md) | DONE | M1-014,M1-031 | ZCode-20260925-A | 2026-09-26T10:45:02+08:00 | [report](Docs/Tasks/Reports/M1-032.md) |
 | M1-033 | [局部命中停顿与输入保留](Docs/Tasks/M1-033.md) | TODO | M1-032,M1-026 | — | — | — |
-| M1-034 | [拳击和落地音效事件](Docs/Tasks/M1-034.md) | TODO | M1-019,M1-032 | — | — | — |
+| M1-034 | [拳击和落地音效事件](Docs/Tasks/M1-034.md) | DONE | M1-019,M1-032 | ZCode-20260925-A | 2026-09-26T12:41:57+08:00 | [report](Docs/Tasks/Reports/M1-034.md) |
 | M1-035 | [生命条与命中数字反馈](Docs/Tasks/M1-035.md) | TODO | M1-028,M1-034 | — | — | — |
 | M1-036 | [上挑与空中动作素材验收记录](Docs/Tasks/M1-036.md) | TODO | M1-032,M1-026 | — | — | — |
 | M1-037 | [完整连招的可重复场景测试](Docs/Tasks/M1-037.md) | TODO | M1-027,M1-030,M1-033,M1-035,M1-036 | — | — | — |
