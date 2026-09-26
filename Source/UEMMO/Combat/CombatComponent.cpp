@@ -21,6 +21,61 @@ namespace
 	// never reused within the session. Starts at 1 so 0 stays "no id".
 	std::atomic<uint64> M1_019_NextInstigatorId{1};
 
+	// M1-021 component-level constants: the fixed mapping from a buffered
+	// input type to the attack id it drives. The Free state starts the base
+	// attack of each ground chain (Light -> light_01, Launcher -> launcher);
+	// a cancel window chains into the per-type follow-up (Light -> light_02,
+	// Launcher -> launcher). Whether a mapped follow-up is legal is always
+	// decided by the running attack's AllowedNextAttacks, never here.
+	const FName M1_021_FreeLightAttackId(TEXT("light_01"));
+	const FName M1_021_FreeLauncherAttackId(TEXT("launcher"));
+	const FName M1_021_ChainLightAttackId(TEXT("light_02"));
+	const FName M1_021_ChainLauncherAttackId(TEXT("launcher"));
+
+	// Buffered-input lifetime (interface contract section 2): an age of exactly
+	// 150 ms is still valid, only a strictly greater age expires.
+	constexpr double M1_021_InputLifetimeSeconds = 0.150;
+
+	// M1-021: maps a buffered input type to the attack id a cancel-window
+	// chain would start. Jump stays unconsumed (the jump cancel is M1-023).
+	bool M1_021_ResolveChainAttackId(ECombatInput Action, FName& OutAttackId)
+	{
+		switch (Action)
+		{
+		case ECombatInput::Light:
+			OutAttackId = M1_021_ChainLightAttackId;
+			return true;
+		case ECombatInput::Launcher:
+			OutAttackId = M1_021_ChainLauncherAttackId;
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	// M1-021: maps a buffered input type to the attack id a Free-state start
+	// would begin. Jump stays unconsumed (M1-023).
+	bool M1_021_ResolveFreeStartAttackId(ECombatInput Action, FName& OutAttackId)
+	{
+		switch (Action)
+		{
+		case ECombatInput::Light:
+			OutAttackId = M1_021_FreeLightAttackId;
+			return true;
+		case ECombatInput::Launcher:
+			OutAttackId = M1_021_FreeLauncherAttackId;
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	// M1-021: display name of a buffered action for the switch/start logs.
+	const TCHAR* M1_021_InputActionName(ECombatInput Action)
+	{
+		return Action == ECombatInput::Launcher ? TEXT("Launcher") : TEXT("Light");
+	}
+
 	// The design damage formula (Docs/01 section 8.2):
 	// damage = max(1, round((baseDamage + AttackPower * coefficient)
 	//                        * 100 / (100 + max(0, Defense))))
@@ -117,6 +172,15 @@ void UCombatComponent::TickCombat(float DeltaSeconds)
 
 	if (ActionState != ECombatActionState::Attacking)
 	{
+		// M1-021: Free and alive - the earliest valid buffered Light/Launcher
+		// starts its mapped attack here (the input-driven start; game-side
+		// TryStartAttack callers still do not exist, so the buffered intents
+		// are the only start source). The started instance steps from its next
+		// TickCombat, so this tick returns without advancing any timeline.
+		if (ActionState == ECombatActionState::Free)
+		{
+			TryStartFromBuffer();
+		}
 		return;
 	}
 
@@ -136,11 +200,12 @@ void UCombatComponent::TickCombat(float DeltaSeconds)
 			return;
 		}
 
-		// M1-014: inside the cancel window the attack can switch into the
-		// buffered Light follow-up. A successful switch retires the old
-		// instance and starts the next one; this tick then stops advancing
-		// the old timeline (the new instance steps from its next TickCombat,
-		// so a chain never skips frames inside a single tick).
+		// M1-014 (M1-021 generalized it): inside the cancel window the attack
+		// can switch into the earliest valid buffered Light/Launcher
+		// follow-up. A successful switch retires the old instance and starts
+		// the next one; this tick then stops advancing the old timeline (the
+		// new instance steps from its next TickCombat, so a chain never skips
+		// frames inside a single tick).
 		if (TryChainFromBuffer())
 		{
 			return;
@@ -290,6 +355,9 @@ bool UCombatComponent::PeekInputBuffer(FBufferedCombatInput& Out, int32 Index) c
 void UCombatComponent::SetInputClockSeconds(double NowSeconds)
 {
 	InputClockSeconds = NowSeconds;
+	// M1-021: the first injection activates the input-driven Free start (see
+	// TryStartFromBuffer for the rationale).
+	bInputClockInjected = true;
 }
 
 double UCombatComponent::GetInputClockSeconds() const
@@ -317,63 +385,147 @@ bool UCombatComponent::TryChainFromBuffer()
 	// Lifetime rule first (interface contract section 2): expired entries are
 	// dropped before any consumption attempt, and an age of exactly 150 ms is
 	// still valid (only a strictly greater age expires).
-	InputBuffer.PruneExpired(InputClockSeconds, 0.150);
+	InputBuffer.PruneExpired(InputClockSeconds, M1_021_InputLifetimeSeconds);
 
-	// Find whether any buffered Light exists without consuming it: a Light
-	// that cannot chain (the running attack does not allow the light
-	// follow-up) must stay buffered, so the consume happens only after the
-	// switch is confirmed. The ConsumeFirst below then removes exactly the
-	// earliest such entry because nothing mutates the buffer in between.
-	bool bFoundLight = false;
+	// M1-021: walk the buffer from the earliest entry and take the first one
+	// whose action maps to a follow-up the running attack allows (earliest
+	// Sequence wins, first come first served; the buffer order is the Sequence
+	// order because Push rejects duplicate or regressing sequences). Entries
+	// that cannot chain (other actions, follow-up not allowed, missing
+	// follow-up definition, dead) stay buffered: the consume happens only
+	// after the switch is confirmed, so one step never consumes more than one
+	// entry and never double-switches.
 	const int32 BufferedCount = InputBuffer.Size();
-	for (int32 Index = 0; Index < BufferedCount && !bFoundLight; ++Index)
+	for (int32 Index = 0; Index < BufferedCount; ++Index)
 	{
 		FBufferedCombatInput Entry;
-		if (InputBuffer.PeekAt(Index, Entry) && Entry.Action == ECombatInput::Light)
+		if (!InputBuffer.PeekAt(Index, Entry))
 		{
-			bFoundLight = true;
+			continue;
 		}
+		FName FollowUpAttackId;
+		if (!M1_021_ResolveChainAttackId(Entry.Action, FollowUpAttackId))
+		{
+			continue;
+		}
+		if (!Definition->AllowedNextAttacks.Contains(FollowUpAttackId))
+		{
+			// Kept for later consumers; deliberately not consumed here.
+			continue;
+		}
+		// Belt-and-braces before consuming: the follow-up must exist in the
+		// catalog and the component must be able to start it (TryStartAttack
+		// refuses for a dead component).
+		if (bDead || Catalog->Find(FollowUpAttackId) == nullptr)
+		{
+			continue;
+		}
+
+		// Nothing mutates the buffer between the peek and the consume, so
+		// ConsumeFirst removes exactly this earliest matching entry.
+		FBufferedCombatInput Consumed;
+		if (!InputBuffer.ConsumeFirst(Entry.Action, Consumed))
+		{
+			continue;
+		}
+
+		// Switch semantics (M1-014, kept verbatim): the old instance ends
+		// (exactly one Finished broadcast, handlers observe a Free snapshot in
+		// between, like a natural end) and the follow-up starts immediately
+		// with a fresh InstanceId and the same Facing. The caller stops
+		// advancing the old timeline, so a frame never skips through the
+		// follow-up. The M1-021 record of the switch (cancel reason plus the
+		// retired/new instance ids and the consumed sequence) is the Verbose
+		// log line below.
+		const int32 ChainedFacing = Facing;
+		const FName RetiredAttackId = ActiveAttackId;
+		const uint64 RetiredInstanceId = ActiveInstanceId;
+		FinishCurrentAttack();
+		const bool bFollowUpStarted = TryStartAttack(FollowUpAttackId, ChainedFacing);
+		UE_LOG(LogTemp, Verbose,
+			TEXT("UEMMO UCombatComponent: cancel-window switch (CancelWindow:%s) retired %s#%llu, started %s#%llu (input sequence %llu)"),
+			M1_021_InputActionName(Entry.Action),
+			*RetiredAttackId.ToString(), RetiredInstanceId,
+			*FollowUpAttackId.ToString(), ActiveInstanceId,
+			Consumed.Sequence);
+		if (!bFollowUpStarted)
+		{
+			// The follow-up was verified above, so this is a diagnostic guard,
+			// not an expected path: the consumed press is gone, the component
+			// stays Free.
+			UE_LOG(LogTemp, Warning,
+				TEXT("UEMMO UCombatComponent: the consumed %s chain input could not start '%s'; the component stays Free."),
+				M1_021_InputActionName(Entry.Action), *FollowUpAttackId.ToString());
+		}
+		return true;
 	}
-	if (!bFoundLight)
+	return false;
+}
+
+bool UCombatComponent::TryStartFromBuffer()
+{
+	// Death has the highest priority (interface contract section 4): a dead
+	// component refuses everything and does not even judge the buffer (the
+	// unified dead-side teardown belongs to M1-027).
+	if (bDead)
 	{
-		// Other buffered actions (Launcher, Jump) stay untouched: consuming
-		// them belongs to later tasks.
+		return false;
+	}
+	// The input-driven start judges buffered lifetimes on the injected input
+	// game clock (interface contract section 2). Until the owner injects it
+	// once (contract: one call per game frame before TickCombat) the component
+	// has no valid "now" - treating the 0.0 default as now would misjudge
+	// every positive PressedAt as future-dated - so the Free path stays
+	// observation-only and the pre-M1-021 game behavior is unchanged.
+	if (!bInputClockInjected)
+	{
 		return false;
 	}
 
-	// The Light press chains into the next light attack (M1-014 scope: the
-	// light_02 follow-up); the running attack's own definition decides whether
-	// that follow-up is allowed, so light_02 (whose next list holds only the
-	// launcher) can never loop into itself.
-	static const FName LightChainAttackId(TEXT("light_02"));
-	if (!Definition->AllowedNextAttacks.Contains(LightChainAttackId))
-	{
-		// Kept for later consumers; deliberately not consumed here.
-		return false;
-	}
-	// Belt-and-braces before consuming: the follow-up must exist in the
-	// catalog and the component must be able to start it (TryStartAttack
-	// refuses for a dead component).
-	if (bDead || Catalog->Find(LightChainAttackId) == nullptr)
-	{
-		return false;
-	}
+	// Lifetime rule first: expired entries are dropped before any consumption
+	// attempt (exactly 150 ms is still valid).
+	InputBuffer.PruneExpired(InputClockSeconds, M1_021_InputLifetimeSeconds);
 
-	FBufferedCombatInput Consumed;
-	if (!InputBuffer.ConsumeFirst(ECombatInput::Light, Consumed))
+	// Walk the buffer from the earliest entry and start the first one whose
+	// action maps to a Free start (earliest Sequence wins, one start per
+	// tick, so one press can never fire twice). Jump stays buffered for
+	// M1-023; a mapped id missing from the catalog keeps its press buffered
+	// (the consume happens only after the start is confirmed).
+	const int32 BufferedCount = InputBuffer.Size();
+	for (int32 Index = 0; Index < BufferedCount; ++Index)
 	{
-		return false;
-	}
+		FBufferedCombatInput Entry;
+		if (!InputBuffer.PeekAt(Index, Entry))
+		{
+			continue;
+		}
+		FName StartAttackId;
+		if (!M1_021_ResolveFreeStartAttackId(Entry.Action, StartAttackId))
+		{
+			continue;
+		}
+		if (Catalog == nullptr || Catalog->Find(StartAttackId) == nullptr)
+		{
+			continue;
+		}
 
-	// Switch semantics: the old instance ends (exactly one Finished broadcast,
-	// handlers observe a Free snapshot in between, like a natural end) and the
-	// follow-up starts immediately with a fresh InstanceId and the same
-	// Facing. Only one switch per step: the caller stops advancing the old
-	// timeline, so a frame never skips through the follow-up.
-	const int32 ChainedFacing = Facing;
-	FinishCurrentAttack();
-	TryStartAttack(LightChainAttackId, ChainedFacing);
-	return true;
+		FBufferedCombatInput Consumed;
+		if (!InputBuffer.ConsumeFirst(Entry.Action, Consumed))
+		{
+			continue;
+		}
+
+		// The start carries the component's stored Facing (0 until the
+		// game-side start wiring passes a real facing; that wiring is a later
+		// task). The new instance steps from its next TickCombat.
+		TryStartAttack(StartAttackId, Facing);
+		UE_LOG(LogTemp, Verbose,
+			TEXT("UEMMO UCombatComponent: input-driven start from Free (FreeInput:%s) started %s#%llu (input sequence %llu)"),
+			M1_021_InputActionName(Entry.Action),
+			*StartAttackId.ToString(), ActiveInstanceId, Consumed.Sequence);
+		return true;
+	}
+	return false;
 }
 
 void UCombatComponent::ClearInstance()

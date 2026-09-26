@@ -360,16 +360,19 @@ bool FUEMMOTasksM1_014PressBeforeWindowStaysBufferedUntilWindowOpens::RunTest(co
 	return true;
 }
 
-// A Launcher press inside the light_01 window is never consumed by the Light
-// chaining: the buffer keeps it through every window step and the natural end
-// (its press time stays inside the lifetime, isolating the action mismatch
-// from the expiry rule), and nothing chains.
+// SUPERSEDED BY M1-021: M1-014 originally proved here that a Launcher press
+// inside the light_01 window was never consumed (the chaining was Light-only
+// in that task's scope). M1-021 generalized the type-parameterized chaining,
+// so the same scenario now consumes the press and chains into launcher with
+// the standard switch semantics. The press stays inside its 150 ms lifetime
+// (input clock frozen at 14/60 s), isolating the type rule from the expiry
+// rule, and no animation Notify is involved.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FUEMMOTasksM1_014LauncherInputIsNotConsumedDuringLight01Window,
-	"UEMMO.Tasks.M1_014.LauncherInputIsNotConsumedDuringLight01Window",
+	FUEMMOTasksM1_014LauncherInputChainsLauncherDuringLight01Window,
+	"UEMMO.Tasks.M1_014.LauncherInputChainsLauncherDuringLight01Window",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
 
-bool FUEMMOTasksM1_014LauncherInputIsNotConsumedDuringLight01Window::RunTest(const FString& Parameters)
+bool FUEMMOTasksM1_014LauncherInputChainsLauncherDuringLight01Window::RunTest(const FString& Parameters)
 {
 	UCombatComponent* Component = NewCombatComponentWithCatalog(*this);
 	if (Component == nullptr)
@@ -389,29 +392,27 @@ bool FUEMMOTasksM1_014LauncherInputIsNotConsumedDuringLight01Window::RunTest(con
 	QueueAction(*Component, 1, ECombatInput::Launcher, 11.0 * FrameSeconds);
 	Component->SetInputClockSeconds(14.0 * FrameSeconds);
 
-	// First window step: a Launcher is not a Light, so nothing is consumed
-	// and nothing chains.
+	// First window step (Frame 12): the Launcher maps to the launcher
+	// follow-up, which light_01 allows, so the press is consumed and the
+	// attack switches.
 	TickN(*Component, 1);
 	const FCombatSnapshot WindowStep = Component->GetSnapshot();
-	TestEqual(TEXT("the Launcher press does not chain (still light_01)"), WindowStep.AttackId, FName(TEXT("light_01")));
-	TestEqual(TEXT("the Launcher press keeps the running InstanceId 1"), WindowStep.InstanceId, uint64(1));
-	TestEqual(TEXT("the Launcher press survives the first window step"), WindowStep.BufferSize, 1);
-	FBufferedCombatInput Buffered;
-	TestTrue(TEXT("the buffered press is readable"), Component->PeekInputBuffer(Buffered, 0));
-	TestTrue(TEXT("the buffered press is the Launcher"), Buffered.Action == ECombatInput::Launcher);
-	TestEqual(TEXT("the buffered Launcher keeps Sequence 1"), Buffered.Sequence, uint64(1));
+	TestEqual(TEXT("the Launcher press chains into launcher"), WindowStep.AttackId, FName(TEXT("launcher")));
+	TestEqual(TEXT("the chained instance mints a fresh InstanceId 2"), WindowStep.InstanceId, uint64(2));
+	TestTrue(TEXT("the component is Attacking right after the switch"),
+		WindowStep.ActionState == ECombatActionState::Attacking);
+	TestEqual(TEXT("the chained instance keeps the running Facing"), WindowStep.Facing, 1);
+	TestEqual(TEXT("the consumed press empties the buffer"), WindowStep.BufferSize, 0);
+	TestEqual(TEXT("the old instance broadcasts Finished exactly once"), Events.FinishedCount, 1);
+	TestEqual(TEXT("Finished carries the retired light_01"), Events.FinishedAttackId, FName(TEXT("light_01")));
+	TestEqual(TEXT("Finished carries the old InstanceId 1"), Events.FinishedInstanceId, uint64(1));
+	TestEqual(TEXT("the switch fires a second Started"), Events.StartedCount, 2);
+	TestEqual(TEXT("the second Started carries launcher"), Events.StartedAttackId, FName(TEXT("launcher")));
 
-	// Run through the rest of the window and the natural end: no step consumes
-	// the Launcher and nothing chains.
-	TickN(*Component, 13);
-	const FCombatSnapshot Done = Component->GetSnapshot();
-	TestTrue(TEXT("light_01 ends naturally with only a Launcher buffered"),
-		Done.ActionState == ECombatActionState::Free);
-	TestEqual(TEXT("the natural end broadcasts Finished exactly once"), Events.FinishedCount, 1);
-	TestEqual(TEXT("no chain fired a second Started"), Events.StartedCount, 1);
-	TestEqual(TEXT("the Launcher is still buffered after the natural end"), Done.BufferSize, 1);
-	TestTrue(TEXT("the surviving entry is still the Launcher"),
-		Component->PeekInputBuffer(Buffered, 0) && Buffered.Action == ECombatInput::Launcher);
+	// The new instance steps from its own next tick; nothing else starts.
+	TickN(*Component, 1);
+	TestEqual(TEXT("the next tick lands launcher on Frame 0"), Component->GetSnapshot().Frame, 0);
+	TestEqual(TEXT("ticking on after the switch starts nothing new"), Events.StartedCount, 2);
 	return true;
 }
 

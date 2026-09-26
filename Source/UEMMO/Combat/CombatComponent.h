@@ -125,11 +125,14 @@ public:
 	 * Advances the running attack on the fixed 60 Hz clock. The first step
 	 * after a start lands on Frame 0; the step that reaches DurationFrames - 1
 	 * ends the attack: OnFinished is broadcast exactly once and the state
-	 * returns to Free. No-op while Free. While HitStun (M1-020) the tick only
-	 * checks the injected input clock: on the first tick whose clock reached
-	 * the stun end the state returns to Free. The frozen flag (hit stop and
-	 * cutscene freezes belong to later tasks) is passed straight through to
-	 * the clock: a frozen frame drops its delta and advances no frame.
+	 * returns to Free. While HitStun (M1-020) the tick only checks the
+	 * injected input clock: on the first tick whose clock reached the stun end
+	 * the state returns to Free. While Free (M1-021) the tick consumes the
+	 * earliest valid buffered Light/Launcher and starts its mapped attack
+	 * (input-driven start; inert until the input clock was injected once).
+	 * The frozen flag (hit stop and cutscene freezes belong to later tasks) is
+	 * passed straight through to the clock: a frozen frame drops its delta and
+	 * advances no frame.
 	 */
 	void TickCombat(float DeltaSeconds);
 
@@ -239,6 +242,8 @@ public:
 	 * contract section 2: early tests use explicit times). TickCombat never
 	 * advances this clock itself, and QueueInput carries PressedAt in the
 	 * same time base, so a set value is used verbatim at the next window step.
+	 * The first injection also activates the M1-021 input-driven Free start
+	 * (TryStartFromBuffer).
 	 */
 	void SetInputClockSeconds(double NowSeconds);
 
@@ -248,13 +253,28 @@ public:
 private:
 	/**
 	 * M1-014: when the running attack is inside its cancel window, prunes
-	 * expired buffered inputs and switches into the earliest buffered Light
-	 * when the running attack allows the light follow-up. Inputs that cannot
-	 * chain (wrong action, expired, follow-up not allowed) stay buffered.
-	 * Returns true when the running instance changed, so the caller stops
-	 * advancing the old timeline for this tick.
+	 * expired buffered inputs and switches into the earliest buffered entry
+	 * whose action maps to a follow-up the running attack allows (M1-021
+	 * generalized the M1-014 Light-only rule to the input type: a Light maps
+	 * to light_02, a Launcher to launcher; Jump stays for M1-023). Inputs that
+	 * cannot chain (other actions, follow-up not allowed, expired, missing
+	 * follow-up definition) stay buffered. Returns true when the running
+	 * instance changed, so the caller stops advancing the old timeline for
+	 * this tick.
 	 */
 	bool TryChainFromBuffer();
+
+	/**
+	 * M1-021: while Free and alive, prunes expired buffered inputs and starts
+	 * the earliest buffered Light/Launcher whose mapped Free attack id exists
+	 * in the catalog (Light -> light_01, Launcher -> launcher; Jump stays for
+	 * M1-023). Consumes exactly one entry per tick, so one press starts one
+	 * attack and can never fire twice. Inert until the owner injected the
+	 * input clock at least once (SetInputClockSeconds): without an injected
+	 * clock the component has no valid "now" to judge input lifetimes with.
+	 * Returns true when an attack started.
+	 */
+	bool TryStartFromBuffer();
 
 	/** Clears the running instance (not the id counter) back to Free defaults. */
 	void ClearInstance();
@@ -315,6 +335,13 @@ private:
 	 * never advanced internally.
 	 */
 	double InputClockSeconds = 0.0;
+
+	/**
+	 * M1-021: true after the first SetInputClockSeconds injection. Gates the
+	 * input-driven Free start (TryStartFromBuffer): buffered-input lifetimes
+	 * are only judged once the owner supplies the input game clock.
+	 */
+	bool bInputClockInjected = false;
 
 	/** Missing ids already diagnosed; reset when a new catalog is attached. */
 	TSet<FName> LoggedMissingAttackIds;
