@@ -91,6 +91,15 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnCombatHitConfirmed, const FCombatHit& /*H
 using FCombatFeetLocationProvider = TFunction<FVector()>;
 
 /**
+ * M1-023: injectable jump request. The component owns no movement and cannot
+ * call ACharacter::Jump itself, so every consumed Jump intent (the Free-state
+ * jump and the launcher jump-cancel) asks the owner through this handler to
+ * perform the real jump, synchronously in the consume path. Tests bind a
+ * counting handler to capture the requests.
+ */
+using FCombatJumpRequestHandler = TFunction<void()>;
+
+/**
  * Component-level attack lifecycle (M1-011): start one attack, advance it on a
  * fixed 60 Hz FCombatClock and finish it exactly once. Pure logic: no keyboard
  * input, no hit detection, no animation and no character movement is wired
@@ -129,7 +138,9 @@ public:
 	 * injected input clock: on the first tick whose clock reached the stun end
 	 * the state returns to Free. While Free (M1-021) the tick consumes the
 	 * earliest valid buffered Light/Launcher and starts its mapped attack
-	 * (input-driven start; inert until the input clock was injected once).
+	 * (input-driven start; inert until the input clock was injected once);
+	 * M1-023 adds the earliest buffered Jump to the same walk (one owner jump
+	 * request per consumed press when a handler is bound).
 	 * The frozen flag (hit stop and cutscene freezes belong to later tasks) is
 	 * passed straight through to the clock: a frozen frame drops its delta and
 	 * advances no frame.
@@ -250,13 +261,23 @@ public:
 	/** Current input game clock value (0.0 until the first override). */
 	double GetInputClockSeconds() const;
 
+	/**
+	 * M1-023: binds the jump request handler (see FCombatJumpRequestHandler).
+	 * Passing an empty function unbinds it: while unbound, buffered Jump
+	 * intents are never consumed (they stay buffered), which keeps the
+	 * pre-M1-023 observation-only behavior for bare components verbatim.
+	 */
+	void SetJumpRequestHandler(FCombatJumpRequestHandler InHandler);
+
 private:
 	/**
 	 * M1-014: when the running attack is inside its cancel window, prunes
 	 * expired buffered inputs and switches into the earliest buffered entry
 	 * whose action maps to a follow-up the running attack allows (M1-021
 	 * generalized the M1-014 Light-only rule to the input type: a Light maps
-	 * to light_02, a Launcher to launcher; Jump stays for M1-023). Inputs that
+	 * to light_02, a Launcher to launcher; the Jump is not a chain input and
+	 * is handled by the M1-023 TryJumpCancelFromBuffer step that follows this
+	 * one in the frame loop). Inputs that
 	 * cannot chain (other actions, follow-up not allowed, expired, missing
 	 * follow-up definition) stay buffered. Returns true when the running
 	 * instance changed, so the caller stops advancing the old timeline for
@@ -267,14 +288,30 @@ private:
 	/**
 	 * M1-021: while Free and alive, prunes expired buffered inputs and starts
 	 * the earliest buffered Light/Launcher whose mapped Free attack id exists
-	 * in the catalog (Light -> light_01, Launcher -> launcher; Jump stays for
-	 * M1-023). Consumes exactly one entry per tick, so one press starts one
-	 * attack and can never fire twice. Inert until the owner injected the
-	 * input clock at least once (SetInputClockSeconds): without an injected
-	 * clock the component has no valid "now" to judge input lifetimes with.
-	 * Returns true when an attack started.
+	 * in the catalog (Light -> light_01, Launcher -> launcher). M1-023
+	 * extends the same earliest-Sequence walk to a buffered Jump: with a
+	 * bound jump request handler the Jump is consumed into exactly one owner
+	 * jump request (no attack starts); unbound, the Jump stays buffered.
+	 * Consumes exactly one entry per tick, so one press starts one attack or
+	 * requests one jump and can never fire twice. The attack-start half
+	 * stays gated on the injected input clock; the jump half is gated on the
+	 * bound handler only (see SetJumpRequestHandler for the rationale).
+	 * Returns true when an attack started or a jump was requested.
 	 */
 	bool TryStartFromBuffer();
+
+	/**
+	 * M1-023: while the launcher attack runs inside its definition's cancel
+	 * window, consumes the earliest buffered Jump and cancels the running
+	 * attack (no Finished, hit set cleared) before requesting exactly one
+	 * owner jump through the bound handler. The window is read from the
+	 * definition (never hardcoded) and the launcher-only allowance is input
+	 * semantics, not an AllowedNextAttacks entry; other attacks keep the
+	 * Jump buffered. Without a bound handler nothing is consumed. Returns
+	 * true when the running instance was cancelled, so the caller stops
+	 * advancing the old timeline for this tick.
+	 */
+	bool TryJumpCancelFromBuffer();
 
 	/** Clears the running instance (not the id counter) back to Free defaults. */
 	void ClearInstance();
@@ -351,6 +388,13 @@ private:
 	 * are only judged once the owner supplies the input game clock.
 	 */
 	bool bInputClockInjected = false;
+
+	/**
+	 * M1-023: bound jump request (empty = unbound). The component never jumps
+	 * itself; consuming a Jump intent (Free jump or launcher jump-cancel)
+	 * invokes this exactly once per consumed entry.
+	 */
+	FCombatJumpRequestHandler JumpRequestHandler;
 
 	/** Missing ids already diagnosed; reset when a new catalog is attached. */
 	TSet<FName> LoggedMissingAttackIds;

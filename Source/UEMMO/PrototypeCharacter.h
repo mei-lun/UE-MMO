@@ -43,12 +43,20 @@ public:
      */
     virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
+    /**
+     * M1-023: the Space entry (Enhanced Input Started binding). Public so the
+     * automation tests can drive the exact binding target: the press is
+     * buffered into the combat component (never a direct state-bypassing
+     * jump); the component's state decides Free jump vs launcher jump-cancel
+     * vs keep-buffered.
+     */
+    void StartJump();
+
 protected:
     virtual void BeginPlay() override;
 private:
     void MoveHorizontal(const FInputActionValue& Value);
     void MoveDepth(const FInputActionValue& Value);
-    void StartJump();
     void EndJump();
     void ResetPosition();
     // M1-012: builds the mapping context and actions exactly once (guarded by

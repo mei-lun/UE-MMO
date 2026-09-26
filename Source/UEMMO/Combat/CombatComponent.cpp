@@ -32,6 +32,14 @@ namespace
 	const FName M1_021_ChainLightAttackId(TEXT("light_02"));
 	const FName M1_021_ChainLauncherAttackId(TEXT("launcher"));
 
+	// M1-023: the only attack whose cancel window allows the jump cancel.
+	// The cancel window itself is always read from the running attack's
+	// definition (launcher: [18,32)); this constant pins the source attack
+	// because the data schema carries no per-attack jump flag yet (the JSON
+	// cancel_window_allows field is not surfaced into UAttackDefinition) and
+	// the jump allowance is input semantics, not an AllowedNextAttacks entry.
+	const FName M1_023_JumpCancelAttackId(TEXT("launcher"));
+
 	// Buffered-input lifetime (interface contract section 2): an age of exactly
 	// 150 ms is still valid, only a strictly greater age expires.
 	constexpr double M1_021_InputLifetimeSeconds = 0.150;
@@ -210,6 +218,14 @@ void UCombatComponent::TickCombat(float DeltaSeconds)
 		{
 			return;
 		}
+		// M1-023: after the attack-type chain, a buffered Jump inside the
+		// launcher cancel window cancels the running attack and requests the
+		// owner's jump. A successful cancel retires the instance (no Finished,
+		// hit set cleared), so this tick stops advancing the old timeline.
+		if (TryJumpCancelFromBuffer())
+		{
+			return;
+		}
 	}
 }
 
@@ -365,6 +381,15 @@ double UCombatComponent::GetInputClockSeconds() const
 	return InputClockSeconds;
 }
 
+void UCombatComponent::SetJumpRequestHandler(FCombatJumpRequestHandler InHandler)
+{
+	// RED-phase stub (M1-023): the handler is stored so tests can bind a
+	// counting double, but nothing consumes a Jump intent or invokes it yet.
+	// The green implementation owns the Free-state consumption and the
+	// launcher jump-cancel.
+	JumpRequestHandler = MoveTempIfPossible(InHandler);
+}
+
 bool UCombatComponent::TryChainFromBuffer()
 {
 	// The chaining only reads definitions of the running attack and never
@@ -471,26 +496,46 @@ bool UCombatComponent::TryStartFromBuffer()
 	{
 		return false;
 	}
-	// The input-driven start judges buffered lifetimes on the injected input
+
+	// M1-023: a Free-state Jump intent is actionable only when a jump request
+	// handler is bound (the component cannot jump itself; while unbound the
+	// entry stays buffered, which keeps the pre-M1-023 observation-only
+	// behavior for bare components verbatim). Unlike the attack-start path
+	// below, the jump request needs no injected input clock: the game owner
+	// binds the handler in BeginPlay while the per-frame clock injection
+	// still belongs to a later wiring task, and judging lifetimes against the
+	// 0.0 default would misjudge every real press as future-dated. The
+	// staleness a clock-less consume can let through is bounded by the
+	// window-step prune (entries pressed outside the current window are
+	// dropped as future-dated at the first cancel-window step, M1-014
+	// semantics) and is a documented limitation, not a new lifetime rule.
+	const bool bJumpRequestBound = static_cast<bool>(JumpRequestHandler);
+
+	// The attack-start path judges buffered lifetimes on the injected input
 	// game clock (interface contract section 2). Until the owner injects it
 	// once (contract: one call per game frame before TickCombat) the component
 	// has no valid "now" - treating the 0.0 default as now would misjudge
-	// every positive PressedAt as future-dated - so the Free path stays
-	// observation-only and the pre-M1-021 game behavior is unchanged.
-	if (!bInputClockInjected)
+	// every positive PressedAt as future-dated - so with no clock and no
+	// bound jump handler the Free path stays observation-only (the
+	// pre-M1-023 game behavior is unchanged).
+	if (!bInputClockInjected && !bJumpRequestBound)
 	{
 		return false;
 	}
 
-	// Lifetime rule first: expired entries are dropped before any consumption
-	// attempt (exactly 150 ms is still valid).
-	InputBuffer.PruneExpired(InputClockSeconds, M1_021_InputLifetimeSeconds);
+	// Lifetime rule first (only with a valid clock): expired entries are
+	// dropped before any consumption attempt (exactly 150 ms is still valid).
+	if (bInputClockInjected)
+	{
+		InputBuffer.PruneExpired(InputClockSeconds, M1_021_InputLifetimeSeconds);
+	}
 
-	// Walk the buffer from the earliest entry and start the first one whose
-	// action maps to a Free start (earliest Sequence wins, one start per
-	// tick, so one press can never fire twice). Jump stays buffered for
-	// M1-023; a mapped id missing from the catalog keeps its press buffered
-	// (the consume happens only after the start is confirmed).
+	// Walk the buffer from the earliest entry and act on the first actionable
+	// one (earliest Sequence wins, one consumption per tick, so one press can
+	// never fire twice): a Jump with a bound handler requests the owner's
+	// jump (M1-023), a mapped Light/Launcher starts its Free attack (M1-021).
+	// Entries that cannot be acted on stay buffered: the consume happens only
+	// after the action is confirmed.
 	const int32 BufferedCount = InputBuffer.Size();
 	for (int32 Index = 0; Index < BufferedCount; ++Index)
 	{
@@ -499,8 +544,35 @@ bool UCombatComponent::TryStartFromBuffer()
 		{
 			continue;
 		}
+		if (Entry.Action == ECombatInput::Jump)
+		{
+			if (!bJumpRequestBound)
+			{
+				continue;
+			}
+			// Nothing mutates the buffer between the peek and the consume, so
+			// ConsumeFirst removes exactly this earliest Jump entry (the same
+			// Sequence can never request a second jump).
+			FBufferedCombatInput Consumed;
+			if (!InputBuffer.ConsumeFirst(ECombatInput::Jump, Consumed))
+			{
+				continue;
+			}
+			UE_LOG(LogTemp, Verbose,
+				TEXT("UEMMO UCombatComponent: Free-state jump consumed (input sequence %llu); requesting the owner jump."),
+				Consumed.Sequence);
+			JumpRequestHandler();
+			return true;
+		}
+
 		FName StartAttackId;
 		if (!M1_021_ResolveFreeStartAttackId(Entry.Action, StartAttackId))
+		{
+			continue;
+		}
+		// Attack starts keep their M1-021 clock gate: without an injected
+		// clock the lifetime judgment has no basis, so the entry stays.
+		if (!bInputClockInjected)
 		{
 			continue;
 		}
@@ -526,6 +598,67 @@ bool UCombatComponent::TryStartFromBuffer()
 		return true;
 	}
 	return false;
+}
+
+bool UCombatComponent::TryJumpCancelFromBuffer()
+{
+	// Death has the highest priority (interface contract section 4): a dead
+	// component neither cancels into a jump nor consumes anything (M1-027
+	// owns the unified dead-side teardown).
+	if (bDead)
+	{
+		return false;
+	}
+	// No bound handler means no jump to cancel into: keep the intent buffered
+	// (this preserves the pre-M1-023 keep-behavior for bare components).
+	if (!JumpRequestHandler)
+	{
+		return false;
+	}
+	const UAttackDefinition* Definition = (Catalog != nullptr) ? Catalog->Find(ActiveAttackId) : nullptr;
+	if (Definition == nullptr || ActiveAttackId != M1_023_JumpCancelAttackId)
+	{
+		// The jump cancel is launcher-only input semantics (launcher.next
+		// holds aerial_01 and the allowance is not an AllowedNextAttacks
+		// entry): every other running attack keeps the Jump buffered.
+		return false;
+	}
+	// The cancel window comes from the definition (launcher: [18,32), read
+	// through FCombatWindow::Contains); no frame number is hardcoded here.
+	if (!Definition->CancelWindow.Contains(CurrentFrame))
+	{
+		return false;
+	}
+
+	// Lifetime rule first (interface contract section 2): expired entries are
+	// dropped before any consumption attempt, and an age of exactly 150 ms is
+	// still valid (only a strictly greater age expires).
+	InputBuffer.PruneExpired(InputClockSeconds, M1_021_InputLifetimeSeconds);
+
+	// Consume the earliest buffered Jump; consumption removes the entry, so
+	// the same Sequence can never cancel twice.
+	FBufferedCombatInput Consumed;
+	if (!InputBuffer.ConsumeFirst(ECombatInput::Jump, Consumed))
+	{
+		return false;
+	}
+
+	// Cancel semantics (M1-020 path, kept verbatim): an interruption, not the
+	// timeline reaching its final frame - no OnFinished - and the instance
+	// hit set dies with the instance, so the cancelled launcher can never
+	// land its pending damage. CancelCurrentAttack is idempotent and clears
+	// the timeline back to Free.
+	const int32 CancelledFrame = CurrentFrame;
+	const FName RetiredAttackId = ActiveAttackId;
+	const uint64 RetiredInstanceId = ActiveInstanceId;
+	CancelCurrentAttack(FName(TEXT("JumpCancel")));
+	UE_LOG(LogTemp, Verbose,
+		TEXT("UEMMO UCombatComponent: jump cancel retired %s#%llu at frame %d (input sequence %llu); requesting the owner jump."),
+		*RetiredAttackId.ToString(), RetiredInstanceId, CancelledFrame, Consumed.Sequence);
+	// Exactly one jump request per consumed intent, synchronously in the
+	// consume path: the owner performs the real ACharacter::Jump here.
+	JumpRequestHandler();
+	return true;
 }
 
 void UCombatComponent::ClearInstance()

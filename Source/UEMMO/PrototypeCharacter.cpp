@@ -130,6 +130,15 @@ void APrototypeCharacter::BeginPlay()
     // every tick (Reset/interrupt paths stop the montage and return to the
     // locomotion AnimBP). Null-safe on both arguments by contract.
     CombatPresentation->SetSources(Combat, GetMesh());
+    // M1-023: the combat component cannot jump itself; both the Free-state
+    // jump and the launcher jump-cancel consume a buffered Space intent into
+    // this handler, which performs the real ACharacter::Jump synchronously in
+    // the consume path. The component is owned by this pawn, so the raw this
+    // capture never outlives the handler.
+    Combat->SetJumpRequestHandler([this]()
+    {
+        Jump();
+    });
     UE_LOG(LogTemp, Display, TEXT("UEMMO: prototype character ready; X/Y movement enabled."));
 }
 
@@ -210,7 +219,22 @@ void APrototypeCharacter::MoveHorizontal(const FInputActionValue& Value)
     PlanarAxes.SetAxisX(Value.Get<float>());
 }
 void APrototypeCharacter::MoveDepth(const FInputActionValue& Value) { PlanarAxes.SetAxisY(Value.Get<float>()); }
-void APrototypeCharacter::StartJump() { Jump(); }
+void APrototypeCharacter::StartJump()
+{
+    // M1-023: Space is a combat intent, not a state bypass. The press is
+    // buffered like J/K and the component's state decides: Free consumes it
+    // into the BeginPlay-bound jump request on the next combat tick (same
+    // frame, M0 instant-jump experience), the launcher cancel window consumes
+    // it into a jump cancel, everything else keeps it buffered until its
+    // 150 ms lifetime expires. Without a combat component the M0 direct jump
+    // stays.
+    if (Combat != nullptr)
+    {
+        SubmitCombatInput(ECombatInput::Jump);
+        return;
+    }
+    Jump();
+}
 void APrototypeCharacter::EndJump() { StopJumping(); }
 void APrototypeCharacter::OnCombatLightPressed() { SubmitCombatInput(ECombatInput::Light); }
 void APrototypeCharacter::OnCombatLauncherPressed() { SubmitCombatInput(ECombatInput::Launcher); }
@@ -245,8 +269,11 @@ void APrototypeCharacter::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
     // M1-012: the combat component advances its own 60 Hz action clock from
-    // here. Buffer consumption is NOT wired yet (M1-014 and later tasks own
-    // that link; TryStartAttack still has no game-side caller).
+    // here. M1-023: the Free-state Space consumption is live (a buffered Jump
+    // intent requests this character's jump through the BeginPlay handler);
+    // the input-driven attack starts/chains stay dormant until the per-frame
+    // SetInputClockSeconds injection and the facing source arrive (later
+    // tasks own that wiring).
     if (Combat != nullptr)
     {
         Combat->TickCombat(DeltaSeconds);
