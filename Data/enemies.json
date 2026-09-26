@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "enemies": [
+    {
+      "enemy_id": "melee_grunt",
+      "max_hp": 60,
+      "attack_power": 0,
+      "move_speed": 220,
+      "attack_range_x": 160,
+      "align_y_tolerance": 35,
+      "telegraph_seconds": 0.35,
+      "spawn_grace_seconds": 0.5,
+      "melee_attack_id": "light_01"
+    }
+  ]
+}
