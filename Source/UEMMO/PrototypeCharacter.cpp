@@ -5,6 +5,7 @@
 #include "Combat/AttackCatalog.h"
 #include "Combat/CombatComponent.h"
 #include "Combat/CombatPresentationComponent.h"
+#include "Combat/HealthComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/LocalPlayer.h"
@@ -104,6 +105,12 @@ APrototypeCharacter::APrototypeCharacter()
     CameraRig->SetupAttachment(RootComponent);
     // M1-012: combat lifecycle component (M1-011); combat intents buffer here.
     Combat = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat"));
+    // M2-004: the pawn's own health pool (MaxHP 100, the HealthComponent
+    // default). Owning it from spawn makes the pawn a full combatant: the
+    // M1-018 target query selects it (the M2-003 enemy attacks land real
+    // damage), the M1-020 victim-side stun path applies, and its death
+    // lifecycle drives the PlayerDied broadcast (BeginPlay wiring).
+    Health = CreateDefaultSubobject<UHealthComponent>(TEXT("PlayerHealth"));
     // M1-032: attack montage playback owner; sources are injected in BeginPlay
     // (after the catalog is attached) because the presenter needs the exact
     // UCombatComponent instance this pawn ticks.
@@ -168,7 +175,59 @@ void APrototypeCharacter::BeginPlay()
         const float Yaw = GetActorRotation().Yaw;
         return (Yaw > -90.0f && Yaw < 90.0f) ? 1 : -1;
     });
+    // M2-004: the death wiring. The health pool fires OnDied exactly once per
+    // death lifecycle (HealthComponent contract); the handler marks the
+    // combat component dead, stops the current attack and animation, and
+    // broadcasts PlayerDied exactly once per lifecycle. Health and Combat
+    // live and die with this pawn (subobjects), so the captured lambda can
+    // never dangle (the AMeleeEnemy M2-002 precedent).
+    if (Health != nullptr)
+    {
+        Health->OnDied.AddLambda([this]()
+        {
+            HandlePlayerDied();
+        });
+    }
     UE_LOG(LogTemp, Display, TEXT("UEMMO: prototype character ready; X/Y movement enabled."));
+}
+
+void APrototypeCharacter::HandlePlayerDied()
+{
+    // Exactly once per death lifecycle: the health pool fires OnDied once per
+    // lifecycle, and this guard additionally absorbs any stray repeat, so
+    // PlayerDied stays singular until the unified reset reopens the lifecycle.
+    if (bPlayerDiedBroadcast)
+    {
+        return;
+    }
+    bPlayerDiedBroadcast = true;
+    // Death stops control (interface contract section 4: death has the
+    // highest priority): the dead flag refuses every new attack and the
+    // movement gate (M1-013 CanAcceptMovement) reads false. SetDead alone
+    // leaves an in-flight attack running by its M1-011 contract, so the
+    // running instance is cancelled explicitly (idempotent; no Finished
+    // event - a death cancel is an interruption).
+    if (Combat != nullptr)
+    {
+        Combat->SetDead(true);
+        Combat->CancelCurrentAttack(FName(TEXT("PlayerDied")));
+    }
+    // Minimal death presentation: drop any running montage and detach the
+    // locomotion AnimBP so the death pose is not overridden by idle/walk
+    // blending (the mesh rests in its last pose). The unified reset
+    // re-attaches the captured class (SavedAnimInstanceClass).
+    if (USkeletalMeshComponent* MeshComponent = GetMesh())
+    {
+        if (UAnimInstance* Anim = MeshComponent->GetAnimInstance())
+        {
+            Anim->Montage_Stop(0.0f);
+            SavedAnimInstanceClass = Anim->GetClass();
+        }
+        MeshComponent->SetAnimInstanceClass(nullptr);
+    }
+    // Broadcast last, so every observer reads the post-death state (combat
+    // dead, animation detached).
+    PlayerDied.Broadcast();
 }
 
 void APrototypeCharacter::EnsureCombatInputActions()
@@ -412,6 +471,31 @@ void APrototypeCharacter::ApplyTrainingRoomReset()
     }
     SetActorLocation(SpawnLocation, false, nullptr, ETeleportType::TeleportPhysics);
     SetActorRotation(SpawnRotation);
+    // M2-004: the value half for the pawn itself (the retry entry works while
+    // dead, interface contract section 6: the unified reset covers HP): full
+    // health pool (opens a fresh death lifecycle), combat teardown plus the
+    // dead flag dropped, and the locomotion animation re-attached. Every step
+    // is an idempotent no-op on an alive reset press, and the M1-027 service
+    // path shares this exact entry (ResetTrainingSession phase 2), so both
+    // reset routes revive identically.
+    if (Health != nullptr)
+    {
+        Health->ResetHealth();
+    }
+    bPlayerDiedBroadcast = false;
+    if (Combat != nullptr)
+    {
+        Combat->ResetCombat();
+        Combat->SetDead(false);
+    }
+    if (USkeletalMeshComponent* MeshComponent = GetMesh())
+    {
+        if (SavedAnimInstanceClass != nullptr)
+        {
+            MeshComponent->SetAnimInstanceClass(SavedAnimInstanceClass);
+            SavedAnimInstanceClass = nullptr;
+        }
+    }
 }
 void APrototypeCharacter::Tick(float DeltaSeconds)
 {

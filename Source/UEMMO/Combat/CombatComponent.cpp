@@ -7,6 +7,7 @@
 #include "CombatHitQuery.h"
 #include "CombatPresentationComponent.h"
 #include "HealthComponent.h"
+#include "../Enemy/MeleeEnemy.h"
 #include "../Enemy/TrainingEnemy.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/PrimitiveComponent.h"
@@ -1143,6 +1144,25 @@ void UCombatComponent::TryApplyActiveWindowHits()
 		// follow-up is a miss in the fullest sense: no damage, no impulse,
 		// no dedup key (nothing poisons a later instance) and no event.
 		const uint64 TargetId = static_cast<uint64>(Target->GetUniqueID());
+		// M2-004: same faction never hurts itself (interface contract sections
+		// 4 and 5). The query's AttackerTeam parameter is still a placeholder
+		// (M1-018 - no team source exists on actors), so the minimal
+		// same-kind exclusion lands at this single call site instead of the
+		// query layer: a melee enemy's attack refuses a target of its own kind
+		// in the fullest sense (no damage, no impulse, no dedup key, no
+		// event; the self exclusion already lives in the query). The
+		// APrototypeCharacter player and every non-enemy attacker (including
+		// the bare-AActor M1 test scaffolding) stay untouched.
+		if (const AMeleeEnemy* MeleeAttacker = Cast<AMeleeEnemy>(OwnerActor))
+		{
+			if (Target->IsA(MeleeAttacker->GetClass()))
+			{
+				UE_LOG(LogTemp, Verbose,
+					TEXT("UEMMO UCombatComponent: hit on target %llu refused (same-kind enemy, no friendly fire)."),
+					TargetId);
+				continue;
+			}
+		}
 		// M1-026: a target inside its landing recovery (Knockdown or
 		// Recovering) refuses every hit in the fullest sense: no damage, no
 		// impulse, no dedup key and no event - the recovery period is

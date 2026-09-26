@@ -1,5 +1,6 @@
 #pragma once
 #include "CoreMinimal.h"
+#include "Delegates/DelegateCombinations.h"
 #include "GameFramework/Character.h"
 #include "Character/PlanarMovement.h"
 #include "Combat/CombatInputBuffer.h"
@@ -8,10 +9,14 @@
 class USideViewCameraComponent;
 class UCombatComponent;
 class UCombatPresentationComponent;
+class UHealthComponent;
 class UTrainingResetService;
 class UInputAction;
 class UInputMappingContext;
 struct FInputActionValue;
+
+/** Broadcast exactly once per player death lifecycle, when the health pool dies. */
+DECLARE_MULTICAST_DELEGATE(FOnPlayerDied);
 
 /** M0 movement scaffold. M1-012 routes combat intents into the combat component; M1-040 remaps the keys to the DNF layout. */
 UCLASS()
@@ -24,6 +29,22 @@ public:
 
     /** M1-012: the combat subobject every submitted intent is buffered into. */
     UCombatComponent* GetCombat() const { return Combat; }
+
+    /**
+     * M2-004: broadcast exactly once per death lifecycle, when the pawn's
+     * health pool reaches 0. A reset opens a new lifecycle, so a revived pawn
+     * broadcasts again on its next death (the UHealthComponent lifecycle
+     * contract, interface contract section 5).
+     */
+    FOnPlayerDied PlayerDied;
+
+    /**
+     * M2-004: the pawn's own health pool (MaxHP 100 per the card). Owning it
+     * from spawn makes the pawn selectable by the M1-018 target query, so the
+     * M2-003 enemy attack pipeline lands real damage on it, and it carries
+     * the death lifecycle the PlayerDied broadcast follows.
+     */
+    UHealthComponent* GetHealth() const { return Health; }
 
     /**
      * M1-012: public combat intent entry (M1-040 keys: X = Light, Z =
@@ -57,12 +78,15 @@ public:
     void ResetPosition();
 
     /**
-     * M1-027: the local physics half of the unified reset - zero velocity,
+     * M1-027: the local half of the unified reset - physics (zero velocity,
      * teleport back to the captured spawn location and spawn rotation, drop
-     * pending launch/impulse forces and re-ground the movement mode. Called
-     * by UTrainingResetService (phase 2) and as the service-less fallback of
-     * ResetPosition; it never triggers a session reset itself, so the two
-     * entry points cannot recurse into each other.
+     * pending launch/impulse forces and re-ground the movement mode) plus the
+     * M2-004 value half for the pawn itself: full health pool (fresh death
+     * lifecycle, so a dead pawn is revived and can die again), combat
+     * teardown with the dead flag dropped, and the locomotion animation
+     * re-attached. Called by UTrainingResetService (phase 2) and as the
+     * service-less fallback of ResetPosition; it never triggers a session
+     * reset itself, so the two entry points cannot recurse into each other.
      */
     void ApplyTrainingRoomReset();
 
@@ -124,6 +148,14 @@ private:
     void MoveHorizontal(const FInputActionValue& Value);
     void MoveDepth(const FInputActionValue& Value);
     void EndJump();
+    /**
+     * M2-004: the death half of the health wiring (bound to Health->OnDied in
+     * BeginPlay): marks the combat component dead (refuses attacks and
+     * movement, cancels the running attack), takes the mesh out of the
+     * locomotion AnimBP drive so the death pose is not overridden, and
+     * broadcasts PlayerDied exactly once per lifecycle.
+     */
+    void HandlePlayerDied();
     // M1-012: builds the mapping context and actions exactly once (guarded by
     // Mapping != nullptr); re-setup (re-possess) reuses them.
     void EnsureCombatInputActions();
@@ -148,6 +180,10 @@ private:
     // M1-032: owns attack montage playback; follows Combat's
     // Started/Finished events plus a per-tick snapshot fallback.
     UPROPERTY(VisibleAnywhere) TObjectPtr<UCombatPresentationComponent> CombatPresentation;
+    // M2-004: the pawn's own health pool (MaxHP 100), created as a default
+    // subobject exactly like the M2-002 enemies carry theirs. Damage must go
+    // through its ApplyDamage; its OnDied event drives HandlePlayerDied.
+    UPROPERTY(VisibleAnywhere) TObjectPtr<UHealthComponent> Health;
     UPROPERTY() TObjectPtr<UInputMappingContext> Mapping;
     UPROPERTY() TObjectPtr<UInputAction> HorizontalAction;
     UPROPERTY() TObjectPtr<UInputAction> DepthAction;
@@ -176,4 +212,10 @@ private:
     // M1-040: per-slot press counters (slot 1..8 at index 0..7); the skill
     // slots have no combat effect yet, so this counter is their surface.
     int32 SkillSlotPressCounts[8] = {};
+    // M2-004: one PlayerDied broadcast per death lifecycle; cleared by the
+    // unified reset (revive), so a revived pawn can die and broadcast again.
+    bool bPlayerDiedBroadcast = false;
+    // M2-004: the locomotion AnimBP class captured at death so the revive can
+    // re-attach it (death detaches the animation drive; reset restores it).
+    UPROPERTY(Transient) TObjectPtr<UClass> SavedAnimInstanceClass = nullptr;
 };
