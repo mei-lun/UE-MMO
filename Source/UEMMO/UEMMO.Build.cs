@@ -10,6 +10,9 @@ public class UEMMO : ModuleRules
         // TestTolerance). Per-file compilation is deterministic.
         bUseUnity = false;
         PublicDependencyModuleNames.AddRange(new[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "AnimGraphRuntime" });
+        // M2-002: AMeleeEnemyController extends AAIController (AIModule type);
+        // the module is otherwise unused (no behavior tree, no nav mesh).
+        PublicDependencyModuleNames.AddRange(new[] { "AIModule" });
         if (Target.bBuildEditor)
         {
             // M1-031 editor-side locomotion graph builder (PrototypeAnimInstance
