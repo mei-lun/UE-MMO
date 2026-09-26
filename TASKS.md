@@ -67,7 +67,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M1-037 | [完整连招的可重复场景测试](Docs/Tasks/M1-037.md) | DONE | M1-027,M1-030,M1-033,M1-035,M1-036 | ZCode-20260925-A | 2026-09-26T21:11:47+08:00 | [report](Docs/Tasks/Reports/M1-037.md) |
 | M1-038 | [帧率与卡顿边界回归](Docs/Tasks/M1-038.md) | DONE | M1-037 | ZCode-20260925-A | 2026-09-26T22:18:15+08:00 | [report](Docs/Tasks/Reports/M1-038.md) |
 | M1-039 | [M1独立包与交接验收包](Docs/Tasks/M1-039.md) | DONE | M1-038 | ZCode-20260925-A | 2026-09-26T23:16:35+08:00 | [report](Docs/Tasks/Reports/M1-039.md) |
-| M1-040 | [DNF键位映射](Docs/Tasks/M1-040.md) | IN_PROGRESS | M1-012 | ZCode-20260925-A | 2026-09-27T00:19:20+08:00 | [report](Docs/Tasks/Reports/M1-040.md) |
+| M1-040 | [DNF键位映射](Docs/Tasks/M1-040.md) | DONE | M1-012 | ZCode-20260925-A | 2026-09-27T01:35:43+08:00 | [report](Docs/Tasks/Reports/M1-040.md) |
 | M1-H01 | [M1 用户阶段验收](Docs/Tasks/M1-H01.md) | TODO | M1-039,M0-H01 | 用户 | — | — |
 | M2-001 | [近战敌人配置与出生冷却](Docs/Tasks/M2-001.md) | TODO | M1-H01 | — | — | — |
 | M2-002 | [追击与纵深对齐](Docs/Tasks/M2-002.md) | TODO | M2-001 | — | — | — |
