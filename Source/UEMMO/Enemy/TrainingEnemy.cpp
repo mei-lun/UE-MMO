@@ -6,7 +6,16 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundWave.h"
 #include "UObject/ConstructorHelpers.h"
+
+namespace
+{
+	// M1-034: manually picked landing sound from the Kenney Impact CC0 set
+	// (the punch medium wave is the presentation component's hit default).
+	const TCHAR* const DefaultLandSoundPath = TEXT("/Game/ThirdParty/Kenney/Impact/impactSoft_heavy_000.impactSoft_heavy_000");
+}
 
 ATrainingEnemy::ATrainingEnemy()
 {
@@ -45,6 +54,9 @@ ATrainingEnemy::ATrainingEnemy()
 	// can interrupt and stun it through the victim-side entry (the attacker's
 	// damage application calls NotifyHitReceived on the target's component).
 	Combat = CreateDefaultSubobject<UCombatComponent>(TEXT("EnemyCombat"));
+
+	// M1-034: default landing sound (Kenney Impact CC0 soft heavy impact).
+	LandSound = TSoftObjectPtr<USoundWave>(FSoftObjectPath(DefaultLandSoundPath));
 }
 
 void ATrainingEnemy::BeginPlay()
@@ -102,4 +114,74 @@ void ATrainingEnemy::ResetEnemy()
 		Movement->StopMovementImmediately();
 		Movement->Velocity = FVector::ZeroVector;
 	}
+}
+
+void ATrainingEnemy::Landed(const FHitResult& Hit)
+{
+	Super::Landed(Hit);
+
+	// M1-034: one landing round = one land request. The epoch advances only
+	// after the round window since the previous Landed notify, so bounce-style
+	// duplicate notifies reuse the epoch and the dispatcher's dedup key
+	// (actor id, epoch) rejects them; a later round starts a fresh epoch.
+	const UWorld* World = GetWorld();
+	const double Now = World ? World->GetTimeSeconds() : 0.0;
+	if (LastLandedNotifySeconds < 0.0 || Now - LastLandedNotifySeconds > LandRoundWindowSeconds)
+	{
+		++LandingEpoch;
+	}
+	LastLandedNotifySeconds = Now;
+	SubmitLandingAudio(LandingEpoch, Now);
+}
+
+bool ATrainingEnemy::SubmitLandingAudio(uint64 InLandingEpoch, double NowSeconds)
+{
+	// The dispatcher is the once-per-round evidence surface: an accepted
+	// request resolves the soft sound reference and plays it; a rejected one
+	// (same round inside the interval or voice budget exhausted) stays silent.
+	LandAudioDispatcher.SetClockSeconds(NowSeconds);
+
+	FCombatAudioEvent Event;
+	Event.Type = ECombatAudioEventType::Land;
+	Event.WorldLocation = GetActorLocation();
+	Event.TargetActor = this;
+	Event.TargetId = static_cast<uint64>(GetUniqueID());
+	Event.LandingEpoch = InLandingEpoch;
+	if (!LandAudioDispatcher.Submit(Event))
+	{
+		return false;
+	}
+
+	USoundWave* Sound = LandSound.LoadSynchronous();
+	if (Sound == nullptr)
+	{
+		// Missing/empty soft reference: one diagnostic, then silent skip.
+		// Gameplay never depends on audio being present (no crash).
+		if (!bLoggedMissingLandSound)
+		{
+			bLoggedMissingLandSound = true;
+			UE_LOG(LogTemp, Warning,
+				TEXT("UEMMO ATrainingEnemy: landing sound asset missing (empty or unloadable soft reference); landing continues without sound."));
+		}
+		return true;
+	}
+	PlayLandSound(Sound, Event.WorldLocation);
+	return true;
+}
+
+void ATrainingEnemy::PlayLandSound(USoundWave* Sound, const FVector& Location)
+{
+	if (Sound == nullptr)
+	{
+		return;
+	}
+	++DispatchedLandingAudioCount;
+	UWorld* World = GetWorld();
+	if (World == nullptr)
+	{
+		// Tests and torn-down actors: the play request is dispatched (counted)
+		// but nothing can sound; never a crash, never an audibility claim.
+		return;
+	}
+	UGameplayStatics::PlaySoundAtLocation(this, Sound, Location, LandingAudioVolumeMultiplier);
 }

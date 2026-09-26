@@ -5,6 +5,8 @@
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundWave.h"
 
 namespace
 {
@@ -19,12 +21,133 @@ namespace
 	// section 3: DurationFrames are frames at logic_fps 60), so the play-rate
 	// mapping compresses the montage into DurationFrames / 60 seconds.
 	constexpr float LogicFramesPerSecond = 60.0f;
+
+	// M1-034: the two manually picked Kenney Impact CC0 SoundWaves (loaded by
+	// the M0 foundation pass, see Docs/05 section 3): punch medium for hits,
+	// soft heavy for landings. Object path = <package>.<object>.
+	const TCHAR* const DefaultHitSoundPath = TEXT("/Game/ThirdParty/Kenney/Impact/impactPunch_medium_000.impactPunch_medium_000");
+	const TCHAR* const DefaultLandSoundPath = TEXT("/Game/ThirdParty/Kenney/Impact/impactSoft_heavy_000.impactSoft_heavy_000");
+
+	// M1-034: dispatcher bookkeeping caps so a long session cannot grow the
+	// diagnostics state without bound.
+	constexpr int32 MaxTrackedAudioKeys = 256;
+	constexpr int32 MaxAudioHistoryEntries = 64;
+}
+
+void FCombatAudioDispatcher::SetConfig(const FCombatAudioDispatchConfig& InConfig)
+{
+	Config = InConfig;
+}
+
+void FCombatAudioDispatcher::SetClockSeconds(double NowSecondsValue)
+{
+	NowSeconds = NowSecondsValue;
+}
+
+int32 FCombatAudioDispatcher::GetAcceptedCount() const
+{
+	return AcceptedEvents.Num();
+}
+
+const TArray<FCombatAudioEvent>& FCombatAudioDispatcher::GetAcceptedEvents() const
+{
+	return AcceptedEvents;
+}
+
+FCombatAudioDedupKey FCombatAudioDispatcher::MakeDedupKey(const FCombatAudioEvent& Event) const
+{
+	FCombatAudioDedupKey Key;
+	Key.Type = Event.Type;
+	const uint64 ActorKey = Event.TargetId != 0
+		? Event.TargetId
+		: (Event.TargetActor.IsValid() ? static_cast<uint64>(Event.TargetActor->GetUniqueID()) : 0ull);
+	if (Event.Type == ECombatAudioEventType::Hit)
+	{
+		Key.A = Event.InstigatorId;
+		Key.B = Event.AttackInstanceId;
+		Key.C = static_cast<uint64>(Event.HitGroupId);
+		Key.D = ActorKey;
+	}
+	else
+	{
+		Key.A = 0;
+		Key.B = ActorKey;
+		Key.C = Event.LandingEpoch;
+		Key.D = 0;
+	}
+	return Key;
+}
+
+void FCombatAudioDispatcher::PruneExpired()
+{
+	// Requests expire (inclusive) when their concurrency window elapsed; the
+	// expiry check runs before every Submit so the cap only counts voices that
+	// could still be sounding.
+	for (int32 Index = PendingRequests.Num() - 1; Index >= 0; --Index)
+	{
+		if (PendingRequests[Index].AcceptedAtSeconds + Config.ConcurrencyWindowSeconds <= NowSeconds)
+		{
+			PendingRequests.RemoveAtSwap(Index);
+		}
+	}
+	// Hit keys are unique per instance, so the key map only ever grows; trim
+	// stale entries once it exceeds the cap to keep long sessions bounded.
+	if (LastAcceptedByKey.Num() > MaxTrackedAudioKeys)
+	{
+		for (TMap<FCombatAudioDedupKey, double>::TIterator It = LastAcceptedByKey.CreateIterator(); It; ++It)
+		{
+			if (NowSeconds - It.Value() >= Config.MinRepeatIntervalSeconds)
+			{
+				It.RemoveCurrent();
+			}
+		}
+	}
+}
+
+bool FCombatAudioDispatcher::Submit(const FCombatAudioEvent& Event)
+{
+	// Gate order: expire first (the cap only counts still-unexpired voices),
+	// then the per-key minimum repeat interval, then the concurrency cap.
+	PruneExpired();
+
+	const FCombatAudioDedupKey Key = MakeDedupKey(Event);
+	if (const double* LastAccepted = LastAcceptedByKey.Find(Key))
+	{
+		// Same key inside the interval (strictly less than): rejected, so one
+		// hit/landing round can only produce one accepted request. Exactly at
+		// the interval boundary the request is accepted again.
+		if (NowSeconds - *LastAccepted < Config.MinRepeatIntervalSeconds)
+		{
+			return false;
+		}
+	}
+	if (PendingRequests.Num() >= Config.MaxConcurrentRequests)
+	{
+		// Voice budget exhausted inside the concurrency window: rejected.
+		return false;
+	}
+
+	LastAcceptedByKey.Add(Key, NowSeconds);
+	PendingRequests.Add({Key, NowSeconds});
+	AcceptedEvents.Add(Event);
+	if (AcceptedEvents.Num() > MaxAudioHistoryEntries)
+	{
+		// Diagnostics history only; drop the oldest entry to stay bounded.
+		AcceptedEvents.RemoveAt(0);
+	}
+	return true;
 }
 
 UCombatPresentationComponent::UCombatPresentationComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.bStartWithTickEnabled = true;
+
+	// M1-034: default Kenney Impact CC0 sounds (manually picked, see the
+	// anonymous-namespace constants above); both stay configurable per
+	// instance so later tasks can re-route them without code changes.
+	HitSound = TSoftObjectPtr<USoundWave>(FSoftObjectPath(DefaultHitSoundPath));
+	LandSound = TSoftObjectPtr<USoundWave>(FSoftObjectPath(DefaultLandSoundPath));
 }
 
 float UCombatPresentationComponent::ComputeMontagePlayRate(const UAttackDefinition& Definition, float MontageLengthSeconds)
@@ -60,9 +183,11 @@ void UCombatPresentationComponent::SetSources(UCombatComponent* InCombatSource, 
 	{
 		// Ownership wiring (card): Started/Finished drive playback immediately;
 		// the Tick fallback covers event-less teardowns (ResetCombat) and any
-		// future interrupt-to-free path (hit stun / knockdown wiring).
+		// future interrupt-to-free path (hit stun / knockdown wiring). M1-034
+		// adds the accepted-hit audio dispatch on the same source events.
 		CombatSource->OnStarted.AddUObject(this, &UCombatPresentationComponent::HandleStarted);
 		CombatSource->OnFinished.AddUObject(this, &UCombatPresentationComponent::HandleFinished);
+		CombatSource->OnHitConfirmed.AddUObject(this, &UCombatPresentationComponent::HandleHitConfirmed);
 		bDelegatesBound = true;
 	}
 }
@@ -256,6 +381,103 @@ void UCombatPresentationComponent::HandleFinished(FName AttackId, uint64 Instanc
 	StopPresentedMontage();
 }
 
+void UCombatPresentationComponent::SetAudioClockSeconds(double NowSeconds)
+{
+	// Negative restores the world-time default (production never pins it).
+	ExplicitAudioClockSeconds = NowSeconds;
+}
+
+void UCombatPresentationComponent::SetAudioSounds(TSoftObjectPtr<USoundWave> InHitSound, TSoftObjectPtr<USoundWave> InLandSound)
+{
+	HitSound = InHitSound;
+	LandSound = InLandSound;
+}
+
+double UCombatPresentationComponent::ResolveAudioNowSeconds() const
+{
+	if (ExplicitAudioClockSeconds >= 0.0)
+	{
+		return ExplicitAudioClockSeconds;
+	}
+	const UWorld* World = GetWorld();
+	return World ? World->GetTimeSeconds() : 0.0;
+}
+
+FCombatAudioEvent UCombatPresentationComponent::BuildHitAudioEvent(const FCombatHit& Hit) const
+{
+	FCombatAudioEvent Event;
+	Event.Type = ECombatAudioEventType::Hit;
+	Event.WorldLocation = Hit.WorldHitLocation;
+	Event.TargetActor = Hit.Target;
+	// Same session-unique target id derivation as the combat hit dedup key
+	// (CombatComponent uses Target->GetUniqueID()); a stale target yields 0.
+	Event.TargetId = Hit.Target.IsValid() ? static_cast<uint64>(Hit.Target->GetUniqueID()) : 0ull;
+	Event.InstigatorId = Hit.InstigatorId;
+	Event.AttackInstanceId = Hit.AttackInstanceId;
+	Event.HitGroupId = Hit.HitGroupId;
+	return Event;
+}
+
+USoundWave* UCombatPresentationComponent::ResolveSoundForEvent(const FCombatAudioEvent& Event)
+{
+	const TSoftObjectPtr<USoundWave>& Reference =
+		(Event.Type == ECombatAudioEventType::Hit) ? HitSound : LandSound;
+	return Reference.LoadSynchronous();
+}
+
+void UCombatPresentationComponent::PlayCombatSound(USoundWave* Sound, const FVector& Location)
+{
+	if (Sound == nullptr)
+	{
+		return;
+	}
+	++DispatchedAudioPlayCount;
+	UWorld* World = GetWorld();
+	if (World == nullptr)
+	{
+		// Tests and torn-down actors: the play request is dispatched (counted)
+		// but nothing can sound; never a crash, never an audibility claim.
+		return;
+	}
+	UGameplayStatics::PlaySoundAtLocation(this, Sound, Location, AudioVolumeMultiplier);
+}
+
+bool UCombatPresentationComponent::SubmitAudioEvent(const FCombatAudioEvent& Event)
+{
+	AudioDispatcher.SetClockSeconds(ResolveAudioNowSeconds());
+	if (!AudioDispatcher.Submit(Event))
+	{
+		// Rejected by the dedup interval or the concurrency cap: stays silent.
+		return false;
+	}
+	USoundWave* Sound = ResolveSoundForEvent(Event);
+	if (Sound == nullptr)
+	{
+		// Missing/empty soft reference: one diagnostic per event type, then
+		// silent skip. Combat never depends on audio being present.
+		const bool bHit = (Event.Type == ECombatAudioEventType::Hit);
+		bool& bLoggedFlag = bHit ? bLoggedMissingHitSound : bLoggedMissingLandSound;
+		if (!bLoggedFlag)
+		{
+			bLoggedFlag = true;
+			UE_LOG(LogTemp, Warning,
+				TEXT("UEMMO UCombatPresentationComponent: %s sound asset missing (empty or unloadable soft reference); combat continues without this sound."),
+				bHit ? TEXT("hit") : TEXT("landing"));
+		}
+		return true;
+	}
+	PlayCombatSound(Sound, Event.WorldLocation);
+	return true;
+}
+
+void UCombatPresentationComponent::HandleHitConfirmed(const FCombatHit& Hit)
+{
+	// One accepted damage application = exactly one hit sound request; the
+	// dispatcher's dedup key (InstigatorId, AttackInstanceId, HitGroupId,
+	// TargetId) makes the once-per-hit guarantee local to this component too.
+	SubmitAudioEvent(BuildHitAudioEvent(Hit));
+}
+
 void UCombatPresentationComponent::UnbindDelegates()
 {
 	if (bDelegatesBound)
@@ -264,6 +486,7 @@ void UCombatPresentationComponent::UnbindDelegates()
 		{
 			Combat->OnStarted.RemoveAll(this);
 			Combat->OnFinished.RemoveAll(this);
+			Combat->OnHitConfirmed.RemoveAll(this);
 		}
 		bDelegatesBound = false;
 	}

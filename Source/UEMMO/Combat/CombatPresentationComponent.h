@@ -11,6 +11,139 @@
 class UAttackDefinition;
 class UAnimMontage;
 class USkeletalMeshComponent;
+class USoundWave;
+
+/**
+ * M1-034: kind of one combat audio request routed through the dispatcher.
+ * Hit requests originate from UCombatComponent::OnHitConfirmed (one accepted
+ * damage application); Land requests originate from ATrainingEnemy::Landed.
+ */
+enum class ECombatAudioEventType : uint8
+{
+	Hit = 0,
+	Land = 1
+};
+
+/**
+ * M1-034: one presentation audio request. Plain struct (no UHT): the audio
+ * path never serializes these values. TargetId is the session-unique actor
+ * id (GetUniqueID pattern of the combat hit dedup); when zero the dispatcher
+ * derives it from TargetActor. LandingEpoch is the landing round instance
+ * (a per-character counter advanced once per landing round), the land-side
+ * half of the dedup key.
+ */
+struct FCombatAudioEvent
+{
+	ECombatAudioEventType Type = ECombatAudioEventType::Hit;
+
+	/** World-space play location (hit box center / landing feet location). */
+	FVector WorldLocation = FVector::ZeroVector;
+
+	/** Actor the event belongs to (hit target / landing character); weak. */
+	TWeakObjectPtr<AActor> TargetActor;
+
+	/** Session-unique target id; 0 = derive from TargetActor when valid. */
+	uint64 TargetId = 0;
+
+	/** Hit dedup: attacker's stable in-session id (interface contract 5). */
+	uint64 InstigatorId = 0;
+
+	/** Hit dedup: in-session instance id of the attack that landed the hit. */
+	uint64 AttackInstanceId = 0;
+
+	/** Hit dedup: independent hit group inside the attack instance. */
+	int32 HitGroupId = 0;
+
+	/** Land dedup: landing round instance (counter, advanced once per round). */
+	uint64 LandingEpoch = 0;
+};
+
+/**
+ * M1-034: deduplication key of one audio request. Hit requests use the full
+ * combat hit dedup tuple (InstigatorId, AttackInstanceId, HitGroupId,
+ * TargetId); Land requests use (ActorKey, LandingEpoch). The event type is
+ * part of the key so a hit and a land can never collide numerically.
+ */
+struct FCombatAudioDedupKey
+{
+	ECombatAudioEventType Type = ECombatAudioEventType::Hit;
+	uint64 A = 0;
+	uint64 B = 0;
+	uint64 C = 0;
+	uint64 D = 0;
+
+	bool operator==(const FCombatAudioDedupKey& Other) const
+	{
+		return Type == Other.Type && A == Other.A && B == Other.B && C == Other.C && D == Other.D;
+	}
+};
+
+inline uint32 GetTypeHash(const FCombatAudioDedupKey& Key)
+{
+	uint32 Hash = ::GetTypeHash(static_cast<uint8>(Key.Type));
+	Hash = HashCombine(Hash, ::GetTypeHash(Key.A));
+	Hash = HashCombine(Hash, ::GetTypeHash(Key.B));
+	Hash = HashCombine(Hash, ::GetTypeHash(Key.C));
+	Hash = HashCombine(Hash, ::GetTypeHash(Key.D));
+	return Hash;
+}
+
+/**
+ * M1-034: dispatcher tuning (card values). MaxConcurrentRequests bounds the
+ * number of unexpired accepted requests inside ConcurrencyWindowSeconds so a
+ * crowd of monsters cannot stack unlimited voices; MinRepeatIntervalSeconds
+ * is the per-key minimum repeat interval (one hit round sounds once).
+ */
+struct FCombatAudioDispatchConfig
+{
+	int32 MaxConcurrentRequests = 8;
+	double ConcurrencyWindowSeconds = 0.25;
+	double MinRepeatIntervalSeconds = 0.05;
+};
+
+/**
+ * M1-034: the presentation audio gate. Plain C++ class, no world needed:
+ * callers inject the clock explicitly (SetClockSeconds) before Submit, so the
+ * dedup/concurrency windows are testable with fixed times. Submit returns
+ * true exactly when a play request was recorded (the caller then resolves the
+ * sound and plays or diagnoses); false means the request was rejected by the
+ * dedup key interval or the concurrency cap and must not sound.
+ */
+class FCombatAudioDispatcher
+{
+public:
+	void SetConfig(const FCombatAudioDispatchConfig& InConfig);
+
+	/** Injects "now" for the next Submit (explicit clock, interface contract 2 style). */
+	void SetClockSeconds(double NowSeconds);
+
+	/** Gates one request: true = accepted and recorded; false = silently dropped. */
+	bool Submit(const FCombatAudioEvent& Event);
+
+	/** Total number of accepted requests since construction (history, capped). */
+	int32 GetAcceptedCount() const;
+
+	/** Accepted request history (diagnostics/tests, oldest first, capped). */
+	const TArray<FCombatAudioEvent>& GetAcceptedEvents() const;
+
+private:
+	struct FPendingAudioRequest
+	{
+		FCombatAudioDedupKey Key;
+		double AcceptedAtSeconds = 0.0;
+	};
+
+	/** Drops requests whose concurrency window elapsed and trims key tracking. */
+	void PruneExpired();
+
+	FCombatAudioDedupKey MakeDedupKey(const FCombatAudioEvent& Event) const;
+
+	FCombatAudioDispatchConfig Config;
+	double NowSeconds = 0.0;
+	TArray<FPendingAudioRequest> PendingRequests;
+	TMap<FCombatAudioDedupKey, double> LastAcceptedByKey;
+	TArray<FCombatAudioEvent> AcceptedEvents;
+};
 
 /**
  * M1-032: the single owner of attack playback presentation. When the combat
@@ -69,6 +202,31 @@ public:
 	 */
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
+	/**
+	 * M1-034: pins the audio dispatch clock ("now" for the dedup/concurrency
+	 * windows). Tests inject fixed times; production never calls this and the
+	 * dispatcher follows the world time instead (0.0 without a world).
+	 */
+	void SetAudioClockSeconds(double NowSeconds);
+
+	/**
+	 * M1-034: overrides both sound soft references (config/tests). An empty
+	 * reference makes the corresponding event type skip playback with one
+	 * diagnostic while the request stays accepted.
+	 */
+	void SetAudioSounds(TSoftObjectPtr<USoundWave> InHitSound, TSoftObjectPtr<USoundWave> InLandSound);
+
+	/** M1-034: read-only dispatcher observation (accepted request history). */
+	const FCombatAudioDispatcher& GetAudioDispatcher() const { return AudioDispatcher; }
+
+	/**
+	 * M1-034: how many accepted requests reached the play seam with a resolved
+	 * sound. Without a world the actual audible playback is suppressed (tests,
+	 * NullRHI automation) — dispatched counts the play-seam handoffs, never
+	 * audibility.
+	 */
+	int32 GetDispatchedAudioPlayCount() const { return DispatchedAudioPlayCount; }
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -104,6 +262,28 @@ protected:
 	 * definitions without authoring assets.
 	 */
 	virtual const UAttackDefinition* FindDefinitionForAttack(FName AttackId);
+
+	/**
+	 * M1-034: OnHitConfirmed handler (bound in SetSources): one accepted hit
+	 * becomes exactly one Hit audio request through the dispatcher gate.
+	 */
+	void HandleHitConfirmed(const FCombatHit& Hit);
+
+	/**
+	 * M1-034: sound resolution seam behind the soft references. Returns the
+	 * loaded sound or nullptr (missing/empty reference) so a caller can skip
+	 * playback with one diagnostic; tests can rely on the null path instead
+	 * of real audio assets.
+	 */
+	virtual USoundWave* ResolveSoundForEvent(const FCombatAudioEvent& Event);
+
+	/**
+	 * M1-034: playback seam. The default implementation plays at Location
+	 * through UGameplayStatics::PlaySoundAtLocation with the configured
+	 * volume multiplier and is suppressed without a world (tests, torn-down
+	 * actors): no crash, nothing audible.
+	 */
+	virtual void PlayCombatSound(USoundWave* Sound, const FVector& Location);
 
 private:
 	/**
@@ -143,4 +323,45 @@ private:
 
 	/** True while HandleStarted/HandleFinished are bound to the source. */
 	bool bDelegatesBound = false;
+
+	/** M1-034: builds the Hit audio event from one accepted hit (dedup fields). */
+	FCombatAudioEvent BuildHitAudioEvent(const FCombatHit& Hit) const;
+
+	/**
+	 * M1-034: submits one audio event to the dispatcher; on acceptance resolves
+	 * the sound and plays it, or skips with one diagnostic when the reference
+	 * is missing. Returns whether the request was accepted.
+	 */
+	bool SubmitAudioEvent(const FCombatAudioEvent& Event);
+
+	/** M1-034: current dispatch clock (explicit override, else world time). */
+	double ResolveAudioNowSeconds() const;
+
+	/** M1-034: pinned audio clock; negative = follow the world time. */
+	double ExplicitAudioClockSeconds = -1.0;
+
+	/**
+	 * M1-034: hit/landing sound soft references. Defaults pick the Kenney
+	 * Impact CC0 set (punch medium for hits, soft heavy for landings); both
+	 * are configurable per instance.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Combat Audio")
+	TSoftObjectPtr<USoundWave> HitSound;
+
+	UPROPERTY(EditAnywhere, Category = "Combat Audio")
+	TSoftObjectPtr<USoundWave> LandSound;
+
+	/**
+	 * M1-034: playback volume. The card's Master/SFX 0.7 target is simplified
+	 * to this PlaySoundAtLocation volume multiplier (no SoundClass/mix asset
+	 * exists yet); 0.7 keeps the initial value.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Combat Audio")
+	float AudioVolumeMultiplier = 0.7f;
+
+	/** M1-034: dispatch state (dedup/concurrency gate + diagnostics). */
+	FCombatAudioDispatcher AudioDispatcher;
+	bool bLoggedMissingHitSound = false;
+	bool bLoggedMissingLandSound = false;
+	int32 DispatchedAudioPlayCount = 0;
 };
