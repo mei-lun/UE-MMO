@@ -150,6 +150,19 @@ protected:
 	virtual void BeginPlay() override;
 
 	/**
+	 * M1-043: per-frame driver of this enemy's combat component - the
+	 * enemy-side counterpart of the M1-041 player wiring. The component's
+	 * victim-side timers (M1-033 hit stop, M1-020 hit stun, M1-026 landing
+	 * recovery) only advance when the game injects the input game clock and
+	 * ticks the component every frame; without this driver the first accepted
+	 * hit froze the enemy in MOVE_None forever. The order matches the
+	 * interface contract: SetInputClockSeconds BEFORE TickCombat, one
+	 * injection per game frame. World-less owners (early tests) skip the
+	 * injection and keep the pre-M1-043 semantics.
+	 */
+	virtual void Tick(float DeltaSeconds) override;
+
+	/**
 	 * M1-022: launches are recorded for the launcher combo count before the
 	 * base implementation defers the velocity application (ACharacter::
 	 * LaunchCharacter is virtual in UE 5.8; the combat launch path in

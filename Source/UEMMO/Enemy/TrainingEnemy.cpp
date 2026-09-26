@@ -19,6 +19,11 @@ namespace
 
 ATrainingEnemy::ATrainingEnemy()
 {
+	// M1-043: the actor must tick so its own Tick can drive the combat
+	// component every game frame (ACharacter ticks by default; the explicit
+	// flag documents the driver dependency of the M1-043 Tick override).
+	PrimaryActorTick.bCanEverTick = true;
+
 	// Quinn is roughly 180 cm tall: keep the standard mannequin capsule
 	// (34 cm radius, 88 cm half height) so feet meet the floor plane.
 	GetCapsuleComponent()->InitCapsuleSize(34.f, 88.f);
@@ -94,6 +99,49 @@ void ATrainingEnemy::BeginPlay()
 				Combat->SetDead(true);
 			}
 		});
+	}
+	// M1-043: fixed facing source for the component's input-driven start
+	// (the enemy never attacks today, so the value is dormant bookkeeping).
+	// The training dummy has no AI and nothing in the game rotates it: it
+	// keeps its spawn orientation (the M1-016 arena places it at yaw 180,
+	// facing the player spawn). The provider derives a constant +1/-1 from
+	// the captured spawn anchor yaw with the same half-plane rule the M1-041
+	// player provider uses (yaw in (-90, 90) -> +1 right, else -1 left), so
+	// ResetEnemy restoring the anchor rotation can never desync the value.
+	// The component is owned by this actor, so the raw this capture never
+	// outlives the handler.
+	if (Combat != nullptr)
+	{
+		Combat->SetFacingProvider([this]()
+		{
+			const float Yaw = SpawnAnchorRotation.Yaw;
+			return (Yaw > -90.0f && Yaw < 90.0f) ? 1 : -1;
+		});
+	}
+}
+
+void ATrainingEnemy::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	// M1-043 (the enemy-side counterpart of the M1-041 player wiring): the
+	// owner's per-frame duty - inject the input game clock once per game
+	// frame, BEFORE TickCombat, from the World GetTimeSeconds clock (the
+	// same clock Landed/NotifyLanded resolve their times on). The component
+	// itself pins the value while a local hit stop freezes (M1-033), so this
+	// plain injection is exactly what advances the victim-side hit stop, the
+	// M1-020 hit stun and the M1-026 landing recovery on their deadlines.
+	// Without it the first accepted hit froze the enemy in MOVE_None
+	// forever. A world-less pawn (early tests) keeps the pre-M1-043
+	// semantics: no injection, no clock-driven progress. The order mirrors
+	// APrototypeCharacter::Tick exactly (contract: one injection per game
+	// frame, before TickCombat).
+	if (Combat != nullptr)
+	{
+		if (UWorld* World = GetWorld())
+		{
+			Combat->SetInputClockSeconds(World->GetTimeSeconds());
+		}
+		Combat->TickCombat(DeltaSeconds);
 	}
 }
 
