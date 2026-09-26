@@ -86,6 +86,9 @@ void ATrainingEnemy::BeginPlay()
 	{
 		Health->OnDied.AddLambda([this]()
 		{
+			// M1-025: death clears the float cycle - a later reset/revive
+			// starts a fresh cycle whose first launcher rises at full speed.
+			LauncherCycleCount = 0;
 			if (Combat != nullptr)
 			{
 				Combat->SetDead(true);
@@ -135,6 +138,9 @@ void ATrainingEnemy::ResetEnemy()
 	// real landing events and is left untouched (a reset is not a landing).
 	AirComboCount = 0;
 	bGroundedSinceLastLaunch = true;
+	// M1-025: a room reset also reopens the policy float cycle, so the next
+	// launcher rises at full launch speed again.
+	LauncherCycleCount = 0;
 }
 
 ECombatAirState ATrainingEnemy::GetAirState() const
@@ -152,6 +158,16 @@ ECombatAirState ATrainingEnemy::GetAirState() const
 	return Movement->Velocity.Z > 0.0f ? ECombatAirState::Rising : ECombatAirState::Falling;
 }
 
+void ATrainingEnemy::RecordLauncherLaunch()
+{
+	// M1-025: one applied launcher launch extends the current float cycle's
+	// policy count. The cycle reset points (ground contact, death,
+	// ResetEnemy) zero it; the attacker's combat component records the launch
+	// only when the launcher impulse was actually applied (a refused launcher
+	// and a lethal hit leave the count untouched).
+	++LauncherCycleCount;
+}
+
 void ATrainingEnemy::RecordGroundContact(double NowSeconds)
 {
 	// M1-022: the landing time is the ground-contact record the later
@@ -161,6 +177,9 @@ void ATrainingEnemy::RecordGroundContact(double NowSeconds)
 	// Z-factor decay stay with M1-025; recording only here).
 	LastGroundedTimeSeconds = NowSeconds;
 	bGroundedSinceLastLaunch = true;
+	// M1-025: landing recovers the float cycle - the policy count reopens at
+	// zero so the next launcher rises at full launch speed again.
+	LauncherCycleCount = 0;
 }
 
 void ATrainingEnemy::LaunchCharacter(FVector LaunchVelocity, bool bXYOverride, bool bZOverride)

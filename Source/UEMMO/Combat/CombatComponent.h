@@ -370,7 +370,10 @@ private:
 	 * launch still pending on the movement component - a launcher's 700 cm/s
 	 * stays 700 (700 >= any current Z in practice, unchanged behavior) while
 	 * the aerial follow-up (60 cm/s) never demotes a faster floating target
-	 * and only lifts slower ones up to 60.
+	 * and only lifts slower ones up to 60. M1-025: the launcher's Z can now
+	 * arrive decayed (490 on a float cycle's second launch, 0 on a refused
+	 * third one); the same max floor applies, so the decay manifests once the
+	 * target's rise has fallen below the scaled launch.
 	 */
 	void ApplyHitImpulse(AActor& Target, const FVector& Impulse) const;
 

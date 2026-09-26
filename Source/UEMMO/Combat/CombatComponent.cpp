@@ -1,10 +1,12 @@
 #include "CombatComponent.h"
 
+#include "AirComboPolicy.h"
 #include "AttackCatalog.h"
 #include "AttackDefinition.h"
 #include "CombatGeometry.h"
 #include "CombatHitQuery.h"
 #include "HealthComponent.h"
+#include "../Enemy/TrainingEnemy.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/PrimitiveComponent.h"
 #include "Engine/World.h"
@@ -44,6 +46,25 @@ namespace
 	// (the interface contract section 3 row: aerial_01, launch 60 cm/s). The
 	// grounded mapping stays M1_021_FreeLightAttackId (light_01).
 	const FName M1_024_AerialLightAttackId(TEXT("aerial_01"));
+
+	// M1-025: the attack whose hits run the per-float-cycle air-combo policy
+	// (EvaluateAirCombo). Only the launcher is capped and decayed; aerial_01's
+	// small compensation stays under the separate M1-024 one-per-cycle gate.
+	const FName M1_025_LauncherAttackId(TEXT("launcher"));
+
+	// M1-025: reads the target's current float-cycle launcher count. The count
+	// lives target-side on ATrainingEnemy (cleared by ground contact, death
+	// and ResetEnemy, see there); any other actor type carries no float cycle
+	// yet and reads 0, which keeps every launcher hit allowed at full scale
+	// for it (documented limitation until M2 enemies adopt the same surface).
+	int32 M1_025_ResolveLauncherCycleCount(const AActor* Target)
+	{
+		if (const ATrainingEnemy* EnemyTarget = Cast<const ATrainingEnemy>(Target))
+		{
+			return EnemyTarget->GetLauncherCycleCount();
+		}
+		return 0;
+	}
 
 	// Buffered-input lifetime (interface contract section 2): an age of exactly
 	// 150 ms is still valid, only a strictly greater age expires.
@@ -840,11 +861,57 @@ void UCombatComponent::TryApplyActiveWindowHits()
 		Hit.StunSeconds = Definition->HitStunSeconds;
 		Hit.Impulse = FVector(Facing * Definition->KnockbackSpeed, 0.0f, Definition->LaunchSpeed);
 
+		// M1-025: launcher hits run the per-float-cycle air-combo policy
+		// before the impulse leaves the hit site (interface contract section
+		// 6: at most two launcher launches per cycle, Z scale 1.0 then 0.7,
+		// the third refuses the launch reaction while damage and dedup already
+		// happened above). Allowed: the launch Z is the definition launch
+		// speed times the policy scale (700 -> 490 on the second launch);
+		// refused: the Z component is removed entirely so ApplyHitImpulse
+		// takes the additive no-Z path - the X knockback stays on the hit,
+		// the target's current vertical state is untouched. The scaled Z
+		// flows through the unchanged M1-024 max(currentZ, Impulse.Z)
+		// application, so the decay manifests once the target's rise has
+		// fallen below the scaled launch - the only regime the real combo
+		// timing (the second launcher cannot land before frame 18 + the
+		// follow-up's active frame) can produce. Non-launcher attacks keep
+		// their definition impulse verbatim.
+		bool bLauncherLaunchAllowed = false;
+		if (ActiveAttackId == M1_025_LauncherAttackId)
+		{
+			const int32 LauncherCycleCount = M1_025_ResolveLauncherCycleCount(Target);
+			const FAirComboDecision AirComboDecision = EvaluateAirCombo(LauncherCycleCount);
+			if (AirComboDecision.bAllowed)
+			{
+				Hit.Impulse.Z = Definition->LaunchSpeed * AirComboDecision.ZScale;
+				bLauncherLaunchAllowed = true;
+			}
+			else
+			{
+				Hit.Impulse.Z = 0.0f;
+			}
+			UE_LOG(LogTemp, Verbose,
+				TEXT("UEMMO UCombatComponent: launcher air-combo decision on target %llu (cycle count %d, allowed %d, z scale %.2f)"),
+				TargetId, LauncherCycleCount,
+				AirComboDecision.bAllowed ? 1 : 0, AirComboDecision.ZScale);
+		}
+
 		// A target that died from this hit receives no impulse: death has
 		// priority (interface contract section 4).
 		if (TargetHealth->IsAlive())
 		{
 			ApplyHitImpulse(*Target, Hit.Impulse);
+			// M1-025: only a launch that was actually applied counts into the
+			// target's float cycle - a refused launcher (no launch impulse)
+			// and a lethal hit (no impulse at all) leave the count untouched,
+			// so a still-further launcher keeps being refused in this cycle.
+			if (bLauncherLaunchAllowed && Hit.Impulse.Z > 0.0f)
+			{
+				if (ATrainingEnemy* EnemyTarget = Cast<ATrainingEnemy>(Target))
+				{
+					EnemyTarget->RecordLauncherLaunch();
+				}
+			}
 		}
 
 		// M1-020: the accepted hit reaches the victim's combat component (when

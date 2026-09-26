@@ -92,6 +92,22 @@ public:
 	int32 GetAirComboCount() const { return AirComboCount; }
 
 	/**
+	 * M1-025: launcher launches applied to this enemy in its current float
+	 * cycle - the per-target count source of the air-combo policy (interface
+	 * contract section 6: at most two launcher launches per cycle, the third
+	 * is refused). The attacker's combat component records one launch only
+	 * when a launcher hit actually applied the launch impulse; ground contact
+	 * (RecordGroundContact), death and ResetEnemy clear the cycle. Deliberately
+	 * independent of the M1-022 AirComboCount recording above, which counts
+	 * every vertical launch including aerial follow-ups: the policy counts
+	 * launchers only.
+	 */
+	int32 GetLauncherCycleCount() const { return LauncherCycleCount; }
+
+	/** M1-025: records one applied launcher launch into the current float cycle. */
+	void RecordLauncherLaunch();
+
+	/**
 	 * M1-022: injected clock value of the last recorded ground contact (the
 	 * real Landed notify feeds it; 0.0 until the first record).
 	 */
@@ -180,6 +196,9 @@ private:
 
 	/** M1-022: launcher launches accepted since the last ground contact. */
 	int32 AirComboCount = 0;
+
+	/** M1-025: launcher launches applied in the current float cycle (policy count source). */
+	int32 LauncherCycleCount = 0;
 
 	/** M1-022: true while no launcher launch happened since the last ground contact. */
 	bool bGroundedSinceLastLaunch = true;
