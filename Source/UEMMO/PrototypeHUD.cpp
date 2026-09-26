@@ -64,7 +64,10 @@ void APrototypeHUD::DrawHUD()
     Super::DrawHUD();
     DrawRect(FLinearColor(0.02f, 0.03f, 0.05f, 0.86f), 18, 18, 630, 84);
     DrawText(TEXT("UE-MMO | M0: movement and asset foundation"), FLinearColor::White, 32, 28, nullptr, 1.2f);
-    DrawText(TEXT("A/D: left/right    W/S: depth    Space: jump    R: reset"), FLinearColor(0.6f, 0.85f, 1.f), 32, 53);
+    // M1-040: DNF-style keymap hints. Arrows move (X/Y incl. depth), X attack,
+    // Z launcher, C jump (Space stays a jump alias), F2 resets, QWERASDF are
+    // the reserved skill slots (no skill effect yet), F1 the debug overlay.
+    DrawText(TEXT("Arrows: move  X: attack  Z: launcher  C: jump  F2: reset  QWERASDF: skills (reserved)  F1: debug"), FLinearColor(0.6f, 0.85f, 1.f), 32, 53);
     DrawText(TEXT("Single-player. Combat is specified, not implemented in M0."), FLinearColor(0.9f, 0.8f, 0.45f), 32, 77);
 
     // M1-028: the debug overlay is a pure display layer gated by the F1 flag.
