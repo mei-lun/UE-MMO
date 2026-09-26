@@ -75,7 +75,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M2-001 | [近战敌人配置与出生冷却](Docs/Tasks/M2-001.md) | DONE | M1-039 | ZCode-20260925-A | 2026-09-27T03:55:52+08:00 | [report](Docs/Tasks/Reports/M2-001.md) |
 | M2-002 | [追击与纵深对齐](Docs/Tasks/M2-002.md) | DONE | M2-001 | ZCode-20260925-A | 2026-09-27T04:36:09+08:00 | [report](Docs/Tasks/Reports/M2-002.md) |
 | M2-003 | [敌人攻击前摇和恢复](Docs/Tasks/M2-003.md) | DONE | M2-002 | ZCode-20260925-A | 2026-09-27T05:32:08+08:00 | [report](Docs/Tasks/Reports/M2-003.md) |
-| M2-004 | [玩家受击、死亡与控制释放](Docs/Tasks/M2-004.md) | TODO | M2-003 | — | — | — |
+| M2-004 | [玩家受击、死亡与控制释放](Docs/Tasks/M2-004.md) | DONE | M2-003 | ZCode-20260925-A | 2026-09-27T06:07:33+08:00 | [report](Docs/Tasks/Reports/M2-004.md) |
 | M2-005 | [房间定义与边界校验](Docs/Tasks/M2-005.md) | DONE | M2-001 | ZCode-20260925-A | 2026-09-27T04:36:11+08:00 | [report](Docs/Tasks/Reports/M2-005.md) |
 | M2-006 | [单局会话状态和唯一标识](Docs/Tasks/M2-006.md) | DONE | M2-005 | ZCode-20260925-A | 2026-09-27T05:32:10+08:00 | [report](Docs/Tasks/Reports/M2-006.md) |
 | M2-007 | [可取消的单波刷怪器](Docs/Tasks/M2-007.md) | TODO | M2-006,M2-004 | — | — | — |
