@@ -25,7 +25,9 @@ enum class ECombatActionState : uint8
 	/** No action in flight; a new attack may start. */
 	Free = 0,
 	/** An attack instance is running its frame timeline. */
-	Attacking = 1
+	Attacking = 1,
+	/** M1-020: an accepted hit interrupted the combatant; attacks stay refused until the stun ends. */
+	HitStun = 2
 };
 
 /**
@@ -114,8 +116,8 @@ public:
 	 * AttackId. Every successful start mints a fresh InstanceId (monotonic
 	 * from 1, never reused in this session) and broadcasts OnStarted with the
 	 * AttackId and the new InstanceId. Returns false (no state change, no
-	 * event) when dead, already attacking, or the definition is missing
-	 * (a diagnostic is logged once per missing id).
+	 * event) when dead, already attacking, stunned (HitStun, M1-020), or the
+	 * definition is missing (a diagnostic is logged once per missing id).
 	 */
 	bool TryStartAttack(FName AttackId, int32 Facing);
 
@@ -123,7 +125,9 @@ public:
 	 * Advances the running attack on the fixed 60 Hz clock. The first step
 	 * after a start lands on Frame 0; the step that reaches DurationFrames - 1
 	 * ends the attack: OnFinished is broadcast exactly once and the state
-	 * returns to Free. No-op while Free. The frozen flag (hit stop and
+	 * returns to Free. No-op while Free. While HitStun (M1-020) the tick only
+	 * checks the injected input clock: on the first tick whose clock reached
+	 * the stun end the state returns to Free. The frozen flag (hit stop and
 	 * cutscene freezes belong to later tasks) is passed straight through to
 	 * the clock: a frozen frame drops its delta and advances no frame.
 	 */
@@ -145,6 +149,27 @@ public:
 	void SetDead(bool bNewDead);
 
 	bool IsDead() const;
+
+	/**
+	 * M1-020: tears down the running attack without broadcasting OnFinished
+	 * (the delegate means the timeline reached its final frame; a cancel is an
+	 * interruption). Clears the instance state and the instance hit set, so
+	 * the cancelled instance can never hit again. Idempotent: no-op unless an
+	 * attack is currently running.
+	 */
+	void CancelCurrentAttack(FName Reason);
+
+	/**
+	 * M1-020: victim-side entry of one accepted hit (the attacker's damage
+	 * application calls this on the target's component after ApplyDamage
+	 * removed health). While alive, the hit interrupts the running attack
+	 * (CancelCurrentAttack("HitStun")) and puts the component into HitStun for
+	 * Hit.StunSeconds on the injected input clock; a new stun is
+	 * max(remaining, new), never additive. Death has priority: an already dead
+	 * component ignores the hit, and a lethal hit (the owner's health pool is
+	 * gone) marks the component dead instead of stunning it.
+	 */
+	void NotifyHitReceived(const FCombatHit& Hit);
 
 	FCombatSnapshot GetSnapshot() const;
 
@@ -234,6 +259,9 @@ private:
 	/** Clears the running instance (not the id counter) back to Free defaults. */
 	void ClearInstance();
 
+	/** M1-020: leaves HitStun back to Free (no-op unless currently stunned). */
+	void EndHitStun();
+
 	/** Ends the current attack: clears state first, then broadcasts OnFinished once. */
 	void FinishCurrentAttack();
 
@@ -269,6 +297,14 @@ private:
 
 	bool bDead = false;
 	bool bClockFrozen = false;
+
+	/**
+	 * M1-020: input-clock time at which the current HitStun ends (the moment
+	 * of the accepted hit plus the stun duration). Only meaningful while the
+	 * action state is HitStun; measured on the same explicitly injected input
+	 * clock as the buffered input lifetimes.
+	 */
+	double HitStunEndTimeSeconds = 0.0;
 
 	FCombatClock Clock;
 	FCombatInputBuffer InputBuffer;

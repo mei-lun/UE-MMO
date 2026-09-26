@@ -1,5 +1,6 @@
 #include "TrainingEnemy.h"
 
+#include "../Combat/CombatComponent.h"
 #include "../Combat/HealthComponent.h"
 
 #include "Components/CapsuleComponent.h"
@@ -39,6 +40,11 @@ ATrainingEnemy::ATrainingEnemy()
 	}
 
 	Health = CreateDefaultSubobject<UHealthComponent>(TEXT("EnemyHealth"));
+
+	// M1-020: the enemy carries the shared combat component so an accepted hit
+	// can interrupt and stun it through the victim-side entry (the attacker's
+	// damage application calls NotifyHitReceived on the target's component).
+	Combat = CreateDefaultSubobject<UCombatComponent>(TEXT("EnemyCombat"));
 }
 
 void ATrainingEnemy::BeginPlay()
@@ -49,6 +55,20 @@ void ATrainingEnemy::BeginPlay()
 		SpawnAnchorLocation = GetActorLocation();
 		SpawnAnchorRotation = GetActorRotation();
 		bSpawnAnchorCaptured = true;
+	}
+	// M1-020: death has priority over hit stun. When the health pool dies the
+	// combat component is marked dead, so a lethal hit never stuns and the
+	// enemy never comes back when a stun timer would end. Health and Combat
+	// live and die with this actor, so the captured lambda cannot dangle.
+	if (Health != nullptr && Combat != nullptr)
+	{
+		Health->OnDied.AddLambda([this]()
+		{
+			if (Combat != nullptr)
+			{
+				Combat->SetDead(true);
+			}
+		});
 	}
 }
 
@@ -65,6 +85,15 @@ void ATrainingEnemy::ResetEnemy()
 	{
 		// ResetHealth restores full HP and opens a new death lifecycle.
 		Health->ResetHealth();
+	}
+	if (Combat)
+	{
+		// M1-020: the combat component must not carry a dead flag, a stun or
+		// stale buffered input into the next life, so the documented
+		// "replayable room" contract keeps holding. The unified reset
+		// semantics stay with M1-027; this only covers the added component.
+		Combat->SetDead(false);
+		Combat->ResetCombat();
 	}
 	SetActorLocation(SpawnAnchorLocation, false, nullptr, ETeleportType::TeleportPhysics);
 	SetActorRotation(SpawnAnchorRotation);

@@ -102,6 +102,19 @@ bool UCombatComponent::TryStartAttack(FName AttackId, int32 NewFacing)
 
 void UCombatComponent::TickCombat(float DeltaSeconds)
 {
+	// M1-020: a stun runs on the injected input clock (the same explicitly
+	// injected "now" as the buffered input lifetimes). The owner keeps calling
+	// TickCombat; on the first tick whose clock reached the stun end the state
+	// returns to Free. The action-clock delta plays no role while stunned.
+	if (ActionState == ECombatActionState::HitStun)
+	{
+		if (InputClockSeconds >= HitStunEndTimeSeconds)
+		{
+			EndHitStun();
+		}
+		return;
+	}
+
 	if (ActionState != ECombatActionState::Attacking)
 	{
 		return;
@@ -152,6 +165,82 @@ void UCombatComponent::SetDead(bool bNewDead)
 bool UCombatComponent::IsDead() const
 {
 	return bDead;
+}
+
+void UCombatComponent::NotifyHitReceived(const FCombatHit& Hit)
+{
+	// A hit that does not name this owner is not this owner's business
+	// (defense in depth for the public victim-side entry).
+	if (Hit.Target.Get() != GetOwner())
+	{
+		return;
+	}
+	// Death has the highest priority (interface contract section 4): a dead
+	// combatant neither stuns nor re-runs any death handling.
+	if (bDead)
+	{
+		return;
+	}
+
+	// A lethal hit (the attacker already applied the damage before this call,
+	// so the owner's health pool is gone) marks the component dead instead of
+	// stunning it: a dead combatant never comes back when a stun timer ends.
+	const UHealthComponent* OwnerHealth = GetOwner() ? GetOwner()->FindComponentByClass<UHealthComponent>() : nullptr;
+	if (OwnerHealth != nullptr && !OwnerHealth->IsAlive())
+	{
+		SetDead(true);
+		CancelCurrentAttack(FName(TEXT("Death")));
+		EndHitStun();
+		return;
+	}
+
+	// Capture the remaining stun before the cancel (the cancel itself never
+	// touches an existing stun, but ClearInstance resets the bookkeeping).
+	const double RemainingSeconds = (ActionState == ECombatActionState::HitStun)
+		? FMath::Max(0.0, HitStunEndTimeSeconds - InputClockSeconds)
+		: 0.0;
+
+	// Interrupt first: the running attack dies with the accepted hit and its
+	// instance hit set (and any pending active-window damage with it) is
+	// cleared, so the interrupted instance can never hit again.
+	CancelCurrentAttack(FName(TEXT("HitStun")));
+
+	// New stun = max(remaining, new): a hit during a stun refreshes to the
+	// longer of the two and never stacks additively. Non-finite requests are
+	// treated as no stun; a zero total leaves the component simply Free.
+	const double RequestedSeconds = FMath::IsFinite(Hit.StunSeconds) ? static_cast<double>(Hit.StunSeconds) : 0.0;
+	const double StunSeconds = FMath::Max(RemainingSeconds, RequestedSeconds);
+	if (StunSeconds > 0.0)
+	{
+		ActionState = ECombatActionState::HitStun;
+		HitStunEndTimeSeconds = InputClockSeconds + StunSeconds;
+	}
+}
+
+void UCombatComponent::CancelCurrentAttack(FName Reason)
+{
+	// Idempotent: only a running attack can be cancelled; Free and HitStun
+	// already have no instance to tear down.
+	if (ActionState != ECombatActionState::Attacking)
+	{
+		return;
+	}
+	// A cancel is an interruption, not the attack reaching its final frame:
+	// no OnFinished (that delegate's contract is the natural timeline end).
+	// ClearInstance drops the timeline, the facing and the instance hit set,
+	// so the interrupted instance can never land its pending damage.
+	ClearInstance();
+	UE_LOG(LogTemp, Verbose, TEXT("UEMMO UCombatComponent: attack cancelled (reason: %s)"), *Reason.ToString());
+}
+
+void UCombatComponent::EndHitStun()
+{
+	if (ActionState != ECombatActionState::HitStun)
+	{
+		return;
+	}
+	ActionState = ECombatActionState::Free;
+	HitStunEndTimeSeconds = 0.0;
 }
 
 FCombatSnapshot UCombatComponent::GetSnapshot() const
@@ -296,6 +385,9 @@ void UCombatComponent::ClearInstance()
 	CurrentFrame = -1;
 	Facing = 0;
 	Clock.Reset();
+	// M1-020: torn-down instances also drop the stun deadline bookkeeping; a
+	// real stun is (re)applied right after the cancel that lands here.
+	HitStunEndTimeSeconds = 0.0;
 	// M1-019: the instance's hit set dies with the instance (finish, chain
 	// switch and reset all funnel through here), so the next instance can hit
 	// the same target again.
@@ -399,6 +491,7 @@ void UCombatComponent::TryApplyActiveWindowHits()
 		Hit.WorldHitLocation = Box.Center;
 		Hit.AttackId = ActiveAttackId;
 		Hit.HitStopSeconds = Definition->HitStopSeconds;
+		Hit.StunSeconds = Definition->HitStunSeconds;
 		Hit.Impulse = FVector(Facing * Definition->KnockbackSpeed, 0.0f, Definition->LaunchSpeed);
 
 		// A target that died from this hit receives no impulse: death has
@@ -406,6 +499,15 @@ void UCombatComponent::TryApplyActiveWindowHits()
 		if (TargetHealth->IsAlive())
 		{
 			ApplyHitImpulse(*Target, Hit.Impulse);
+		}
+
+		// M1-020: the accepted hit reaches the victim's combat component (when
+		// it has one) before the attacker-side broadcast, so any observer of
+		// OnHitConfirmed already sees the victim stunned or dead. The victim
+		// entry owns the stun/death decision (death has priority there).
+		if (UCombatComponent* VictimCombat = Target->FindComponentByClass<UCombatComponent>())
+		{
+			VictimCombat->NotifyHitReceived(Hit);
 		}
 
 		// Only now the hit exists for presentations and state tasks.

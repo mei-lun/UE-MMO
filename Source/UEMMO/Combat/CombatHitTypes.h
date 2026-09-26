@@ -111,4 +111,13 @@ struct FCombatHit
 	 */
 	UPROPERTY(BlueprintReadOnly, Category = "Combat")
 	float HitStopSeconds = 0.0f;
+
+	/**
+	 * M1-020: hit stun duration this hit requests on the victim, copied from
+	 * the attack definition's HitStunSeconds (0.22 s for light_01). The value
+	 * rides on the hit so the victim's combat component can consume it through
+	 * NotifyHitReceived without ever reading the attacker's catalog.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Combat")
+	float StunSeconds = 0.0f;
 };

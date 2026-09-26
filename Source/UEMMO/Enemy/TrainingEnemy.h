@@ -4,6 +4,7 @@
 #include "GameFramework/Character.h"
 #include "TrainingEnemy.generated.h"
 
+class UCombatComponent;
 class UHealthComponent;
 
 /**
@@ -36,12 +37,24 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Combat")
 	UHealthComponent* GetHealthComponent() const { return Health; }
 
+	/**
+	 * M1-020: combat state of this enemy (hit stun and death priority). The
+	 * attacker's damage application notifies this component about accepted
+	 * hits; the enemy itself has no AI use for it yet.
+	 */
+	UFUNCTION(BlueprintPure, Category = "Combat")
+	UCombatComponent* GetCombatComponent() const { return Combat; }
+
 protected:
 	virtual void BeginPlay() override;
 
 private:
 	UPROPERTY(VisibleAnywhere, Category = "Combat")
 	TObjectPtr<UHealthComponent> Health;
+
+	/** M1-020: hit stun / death priority state for this enemy. */
+	UPROPERTY(VisibleAnywhere, Category = "Combat")
+	TObjectPtr<UCombatComponent> Combat;
 
 	UPROPERTY(EditInstanceOnly, Category = "Combat")
 	FVector SpawnAnchorLocation = FVector::ZeroVector;
