@@ -46,7 +46,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M1-016 | [可受伤的训练敌人](Docs/Tasks/M1-016.md) | DONE | M1-015 | ZCode-20260925-A | 2026-09-26T00:49:33+08:00 | [report](Docs/Tasks/Reports/M1-016.md) |
 | M1-017 | [命中盒的世界坐标计算](Docs/Tasks/M1-017.md) | DONE | M1-013 | ZCode-20260925-A | 2026-09-26T09:45:53+08:00 | [report](Docs/Tasks/Reports/M1-017.md) |
 | M1-018 | [三维命中查询与过滤](Docs/Tasks/M1-018.md) | DONE | M1-016,M1-017 | ZCode-20260925-A | 2026-09-26T10:45:04+08:00 | [report](Docs/Tasks/Reports/M1-018.md) |
-| M1-019 | [有效窗口扣血与同招去重](Docs/Tasks/M1-019.md) | TODO | M1-018,M1-011 | — | — | — |
+| M1-019 | [有效窗口扣血与同招去重](Docs/Tasks/M1-019.md) | DONE | M1-018,M1-011 | ZCode-20260925-A | 2026-09-26T11:12:19+08:00 | [report](Docs/Tasks/Reports/M1-019.md) |
 | M1-020 | [受击硬直打断攻击](Docs/Tasks/M1-020.md) | TODO | M1-019 | — | — | — |
 | M1-021 | [上挑输入和取消窗口](Docs/Tasks/M1-021.md) | TODO | M1-014,M1-020 | — | — | — |
 | M1-022 | [上挑命中产生物理浮空](Docs/Tasks/M1-022.md) | TODO | M1-021 | — | — | — |
