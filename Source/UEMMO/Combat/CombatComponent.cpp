@@ -5,10 +5,12 @@
 #include "AttackDefinition.h"
 #include "CombatGeometry.h"
 #include "CombatHitQuery.h"
+#include "CombatPresentationComponent.h"
 #include "HealthComponent.h"
 #include "../Enemy/TrainingEnemy.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/PrimitiveComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Engine/World.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -218,6 +220,27 @@ bool UCombatComponent::TryStartAttack(FName AttackId, int32 NewFacing)
 
 void UCombatComponent::TickCombat(float DeltaSeconds)
 {
+	// M1-033: a local hit stop counts down on real game advancement. Owners
+	// that inject the input clock per frame (the contract's per-frame order)
+	// drive the remainder through those injections; this tick's delta only
+	// feeds the countdown when no injection advanced it this frame (owners
+	// without input-clock injection, today's production wiring included). The
+	// frozen action-clock deltas stay dropped either way: the freeze consumes
+	// the real time but the action timeline never back-fills it (interface
+	// contract section 2: no catch-up after a freeze lifts).
+	if (bHitStopActive)
+	{
+		if (!bHitStopConsumedInjectedAdvance && FMath::IsFinite(DeltaSeconds) && static_cast<double>(DeltaSeconds) > 0.0)
+		{
+			HitStopRemainingSeconds -= static_cast<double>(DeltaSeconds);
+			if (HitStopRemainingSeconds <= 0.0)
+			{
+				EndHitStop();
+			}
+		}
+		bHitStopConsumedInjectedAdvance = false;
+	}
+
 	// M1-026: the landing recovery runs on the injected input clock (the
 	// M1-020 stun pattern). The owner keeps calling TickCombat; each branch
 	// flips at most one state per tick, exactly like the per-frame game loop,
@@ -305,6 +328,10 @@ void UCombatComponent::TickCombat(float DeltaSeconds)
 
 void UCombatComponent::ResetCombat()
 {
+	// M1-033: a reset tears down a running local hit stop first (the clocks
+	// resume, the saved movement state and the animation restore) before the
+	// instance teardown; a stop never survives into the next life.
+	EndHitStop();
 	// Reset is a teardown, not an attack ending: no OnFinished. The instance
 	// id counter and the dead flag are intentionally left alone (the unified
 	// reset semantics belong to M1-027).
@@ -330,6 +357,10 @@ void UCombatComponent::SetDead(bool bNewDead)
 		{
 			ActionState = ECombatActionState::Free;
 		}
+		// M1-033: death clears a running local hit stop (the freeze never
+		// outlives the body; the cleanup also restores the saved movement and
+		// resumes the animation through the end broadcast).
+		EndHitStop();
 		EndHitStun();
 		LandingKnockdownEndTimeSeconds = 0.0;
 		LandingRecoveringEndTimeSeconds = 0.0;
@@ -515,6 +546,148 @@ bool UCombatComponent::IsClockFrozen() const
 	return bClockFrozen;
 }
 
+void UCombatComponent::RequestHitStop(float DurationSeconds)
+{
+	// Death owns the body: a dead component never freezes (a lethal hit's own
+	// presentation dispatch is refused here, and the death path already
+	// cleared any stop a previous hit had opened).
+	if (bDead)
+	{
+		return;
+	}
+	const double RequestedSeconds = (FMath::IsFinite(DurationSeconds) && DurationSeconds > 0.0)
+		? static_cast<double>(DurationSeconds)
+		: 0.0;
+	if (RequestedSeconds <= 0.0)
+	{
+		// A zero or broken request stops nothing (a refused hit carries 0).
+		return;
+	}
+
+	// Reentry takes max(remaining, requested), never a sum: a second hit while
+	// 30 ms remain extends the stop to the new 40 ms, and a 40 ms hit during a
+	// 50 ms stop keeps the longer remainder.
+	const double RemainingSeconds = bHitStopActive ? HitStopRemainingSeconds : 0.0;
+	HitStopRemainingSeconds = FMath::Max(RemainingSeconds, RequestedSeconds);
+	const bool bWasActive = bHitStopActive;
+	bHitStopActive = true;
+	bHitStopConsumedInjectedAdvance = false;
+	// The action clock freezes through the existing passthrough; the injected
+	// input clock pins through the SetInputClockSeconds hold while this flag
+	// is set.
+	bClockFrozen = true;
+	if (!bWasActive)
+	{
+		// A fresh stop freezes the victim-side movement once (the first save
+		// wins; a reentry keeps the pre-freeze state) and pauses a
+		// presenter-less owner's mesh animation.
+		FreezeOwnerMovementForHitStop();
+		ApplyOwnerHitStopAnimationPause(true);
+		OnHitStopChanged.Broadcast(true);
+	}
+}
+
+bool UCombatComponent::IsHitStopActive() const
+{
+	return bHitStopActive;
+}
+
+void UCombatComponent::EndHitStop()
+{
+	if (!bHitStopActive)
+	{
+		return;
+	}
+	bHitStopActive = false;
+	HitStopRemainingSeconds = 0.0;
+	bHitStopConsumedInjectedAdvance = false;
+	// The action clock passthrough unfreezes here. A debug freeze set through
+	// SetClockFrozen(true) is lifted by a hit stop ending too (a documented
+	// debug-tool interaction: both share one freeze flag).
+	bClockFrozen = false;
+	RestoreOwnerMovementFromHitStop();
+	ApplyOwnerHitStopAnimationPause(false);
+	// Broadcast last: observers see the fully restored component.
+	OnHitStopChanged.Broadcast(false);
+}
+
+void UCombatComponent::FreezeOwnerMovementForHitStop()
+{
+	// One save per stop: a reentry keeps the original pre-freeze state instead
+	// of stacking a second save over the frozen one.
+	if (bOwnerMovementFrozenByHitStop)
+	{
+		return;
+	}
+	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
+	UCharacterMovementComponent* Movement = OwnerCharacter ? OwnerCharacter->GetCharacterMovement() : nullptr;
+	if (Movement == nullptr)
+	{
+		// Non-character owners (test bodies) carry no movement to freeze.
+		return;
+	}
+	// Fold any pending impulse/force (the hit's knockback arrives as a pending
+	// impulse one tick before this call) into the velocity first: the engine's
+	// MOVE_None transition runs ClearAccumulatedForces internally and would
+	// otherwise wipe it. Folding is the same step a real movement update runs
+	// (ApplyAccumulatedForces), so the knockback applies at the freeze start
+	// instead of 40 ms later - indistinguishable, because nothing integrates
+	// while the stop lasts.
+	Movement->ApplyAccumulatedForces(1.0f / 60.0f);
+	// Save exactly once (after the fold, so the knockback resumes with it).
+	HitStopSavedVelocity = Movement->Velocity;
+	HitStopSavedPendingLaunchVelocity = Movement->PendingLaunchVelocity;
+	HitStopSavedMovementMode = Movement->MovementMode;
+	bOwnerMovementFrozenByHitStop = true;
+	// MOVE_None integrates nothing (StartNewPhysics early-outs on it), so an
+	// airborne target neither falls nor drifts while the stop lasts. The
+	// engine's own MOVE_None transition zeroes the velocity and clears the
+	// accumulated forces internally, so the saved values are written back
+	// right after the mode change: the frozen body keeps its velocity and any
+	// still-pending launch observable, ready for the restore.
+	Movement->SetMovementMode(MOVE_None);
+	Movement->Velocity = HitStopSavedVelocity;
+	Movement->PendingLaunchVelocity = HitStopSavedPendingLaunchVelocity;
+}
+
+void UCombatComponent::RestoreOwnerMovementFromHitStop()
+{
+	if (!bOwnerMovementFrozenByHitStop)
+	{
+		return;
+	}
+	bOwnerMovementFrozenByHitStop = false;
+	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
+	UCharacterMovementComponent* Movement = OwnerCharacter ? OwnerCharacter->GetCharacterMovement() : nullptr;
+	if (Movement == nullptr)
+	{
+		return;
+	}
+	// Exactly one restore: the saved velocity (including the folded hit
+	// knockback and any pending launch) comes back with the saved mode, so the
+	// original motion continues.
+	Movement->Velocity = HitStopSavedVelocity;
+	Movement->PendingLaunchVelocity = HitStopSavedPendingLaunchVelocity;
+	Movement->SetMovementMode(HitStopSavedMovementMode);
+}
+
+void UCombatComponent::ApplyOwnerHitStopAnimationPause(bool bPause)
+{
+	// Owners with a presentation component pause through that component (its
+	// OnHitStopChanged binding); presenter-less owners (the training enemy)
+	// pause their own mesh here, so a local stop always stops the animation
+	// while the two paths never double-drive one mesh.
+	AActor* OwnerActor = GetOwner();
+	if (OwnerActor == nullptr || OwnerActor->FindComponentByClass<UCombatPresentationComponent>() != nullptr)
+	{
+		return;
+	}
+	ACharacter* OwnerCharacter = Cast<ACharacter>(OwnerActor);
+	USkeletalMeshComponent* Mesh = OwnerCharacter ? OwnerCharacter->GetMesh() : nullptr;
+	UAnimInstance* AnimInstance = Mesh ? Mesh->GetAnimInstance() : nullptr;
+	UCombatPresentationComponent::SetAnimInstancePausedForHitStop(AnimInstance, bPause);
+}
+
 void UCombatComponent::QueueInput(FBufferedCombatInput Input)
 {
 	// Push rejections (duplicate/regressing sequence, non-finite time) are
@@ -529,6 +702,47 @@ bool UCombatComponent::PeekInputBuffer(FBufferedCombatInput& Out, int32 Index) c
 
 void UCombatComponent::SetInputClockSeconds(double NowSeconds)
 {
+	// M1-033: the input game clock is pinned while a local hit stop freezes
+	// this component (interface contract section 2: Pause/HitStop does not
+	// advance it, so PressedAt values recorded during the freeze are judged
+	// against the frozen value and stun/landing deadlines stop moving).
+	// Injections during the freeze still measure real advancement and consume
+	// the stop remainder; a still-active freeze returns with the pinned value,
+	// while the injection that ends the freeze falls through and applies (the
+	// clock resumes advancing with that very injection).
+	if (bHitStopActive)
+	{
+		if (bInputClockInjected && FMath::IsFinite(NowSeconds) && FMath::IsFinite(LastInjectedInputClockSeconds))
+		{
+			const double Advanced = NowSeconds - LastInjectedInputClockSeconds;
+			if (Advanced > 0.0)
+			{
+				HitStopRemainingSeconds -= Advanced;
+				bHitStopConsumedInjectedAdvance = true;
+				if (HitStopRemainingSeconds <= 0.0)
+				{
+					EndHitStop();
+				}
+			}
+		}
+		if (FMath::IsFinite(NowSeconds))
+		{
+			LastInjectedInputClockSeconds = NowSeconds;
+		}
+		if (bHitStopActive)
+		{
+			// Still frozen: the injected value is dropped, the clock stays at
+			// the frozen moment (no state change, no event).
+			return;
+		}
+	}
+	else
+	{
+		if (FMath::IsFinite(NowSeconds))
+		{
+			LastInjectedInputClockSeconds = NowSeconds;
+		}
+	}
 	InputClockSeconds = NowSeconds;
 	// M1-021: the first injection activates the input-driven Free start (see
 	// TryStartFromBuffer for the rationale).

@@ -4,6 +4,7 @@
 
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
+#include "Animation/AnimSingleNodeInstance.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundWave.h"
@@ -185,9 +186,11 @@ void UCombatPresentationComponent::SetSources(UCombatComponent* InCombatSource, 
 		// the Tick fallback covers event-less teardowns (ResetCombat) and any
 		// future interrupt-to-free path (hit stun / knockdown wiring). M1-034
 		// adds the accepted-hit audio dispatch on the same source events.
+		// M1-033 adds the local hit stop pause dispatch.
 		CombatSource->OnStarted.AddUObject(this, &UCombatPresentationComponent::HandleStarted);
 		CombatSource->OnFinished.AddUObject(this, &UCombatPresentationComponent::HandleFinished);
 		CombatSource->OnHitConfirmed.AddUObject(this, &UCombatPresentationComponent::HandleHitConfirmed);
+		CombatSource->OnHitStopChanged.AddUObject(this, &UCombatPresentationComponent::HandleHitStopChanged);
 		bDelegatesBound = true;
 	}
 }
@@ -472,10 +475,75 @@ bool UCombatPresentationComponent::SubmitAudioEvent(const FCombatAudioEvent& Eve
 
 void UCombatPresentationComponent::HandleHitConfirmed(const FCombatHit& Hit)
 {
+	// M1-033: the confirmed hit executes the local hit stop on both parties -
+	// the attacking component (this source) and the hit target's own combat
+	// component. The components own the freeze mechanics (clock pinning,
+	// movement save/restore, max reentry, reset/death cleanup); the presenter
+	// is the trigger because it is the one place that already observes the
+	// accepted hit event for presentation purposes. Bare combat components
+	// without a bound presenter keep the pre-M1-033 behavior verbatim (the
+	// same inertness pattern as the M1-021 input-driven start).
+	if (UCombatComponent* Source = CombatSource.Get())
+	{
+		Source->RequestHitStop(Hit.HitStopSeconds);
+	}
+	if (const AActor* TargetActor = Hit.Target.Get())
+	{
+		if (UCombatComponent* TargetCombat = TargetActor->FindComponentByClass<UCombatComponent>())
+		{
+			TargetCombat->RequestHitStop(Hit.HitStopSeconds);
+		}
+	}
+
 	// One accepted damage application = exactly one hit sound request; the
 	// dispatcher's dedup key (InstigatorId, AttackInstanceId, HitGroupId,
 	// TargetId) makes the once-per-hit guarantee local to this component too.
 	SubmitAudioEvent(BuildHitAudioEvent(Hit));
+}
+
+void UCombatPresentationComponent::SetAnimInstancePausedForHitStop(UAnimInstance* AnimInstance, bool bPaused)
+{
+	if (AnimInstance == nullptr)
+	{
+		return;
+	}
+	if (bPaused)
+	{
+		// Montage playback (the attack montage on the player, any future
+		// montage on a target): pause every active instance.
+		AnimInstance->Montage_Pause(nullptr);
+		// Single-node playback (the training enemy's looping idle) is not a
+		// montage; stop its advance the same way the node tree would.
+		if (UAnimSingleNodeInstance* SingleNode = Cast<UAnimSingleNodeInstance>(AnimInstance))
+		{
+			SingleNode->SetPlaying(false);
+		}
+	}
+	else
+	{
+		// Resume exactly what the pause covered.
+		AnimInstance->Montage_Resume(nullptr);
+		if (UAnimSingleNodeInstance* SingleNode = Cast<UAnimSingleNodeInstance>(AnimInstance))
+		{
+			SingleNode->SetPlaying(true);
+		}
+	}
+}
+
+void UCombatPresentationComponent::SetHitStopPaused(bool bPaused)
+{
+	// Dispatch record first (tests observe the seam even with a null mesh, the
+	// same handoff-counting pattern as the audio play seam), then the real
+	// pause on the injected mesh's animation.
+	HitStopPauseDispatchHistory.Add(bPaused);
+	USkeletalMeshComponent* Mesh = MeshTarget.Get();
+	UAnimInstance* AnimInstance = Mesh ? Mesh->GetAnimInstance() : nullptr;
+	SetAnimInstancePausedForHitStop(AnimInstance, bPaused);
+}
+
+void UCombatPresentationComponent::HandleHitStopChanged(bool bFrozen)
+{
+	SetHitStopPaused(bFrozen);
 }
 
 void UCombatPresentationComponent::UnbindDelegates()
@@ -487,6 +555,7 @@ void UCombatPresentationComponent::UnbindDelegates()
 			Combat->OnStarted.RemoveAll(this);
 			Combat->OnFinished.RemoveAll(this);
 			Combat->OnHitConfirmed.RemoveAll(this);
+			Combat->OnHitStopChanged.RemoveAll(this);
 		}
 		bDelegatesBound = false;
 	}

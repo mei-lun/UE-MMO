@@ -9,6 +9,7 @@
 #include "CombatPresentationComponent.generated.h"
 
 class UAttackDefinition;
+class UAnimInstance;
 class UAnimMontage;
 class USkeletalMeshComponent;
 class USoundWave;
@@ -220,6 +221,25 @@ public:
 	const FCombatAudioDispatcher& GetAudioDispatcher() const { return AudioDispatcher; }
 
 	/**
+	 * M1-033: shared UE 5.8 pause surface for one anim instance: pauses or
+	 * resumes every active montage (Montage_Pause/Montage_Resume with a null
+	 * montage reference) plus a single-node animation
+	 * (UAnimSingleNodeInstance::SetPlaying, the training enemy's idle).
+	 * Null-safe. UAnimInstance::SetPaused does not exist in UE 5.8, so this
+	 * static is the one pause implementation for the presenter seam and
+	 * UCombatComponent's presenter-less owner fallback alike.
+	 */
+	static void SetAnimInstancePausedForHitStop(UAnimInstance* AnimInstance, bool bPaused);
+
+	/**
+	 * M1-033: every SetHitStopPaused dispatch, oldest first (true = pause,
+	 * false = resume). The same handoff-counting observation pattern as the
+	 * audio play seam: the record exists even when the mesh is null and
+	 * nothing can really pause.
+	 */
+	const TArray<bool>& GetHitStopPauseDispatchHistory() const { return HitStopPauseDispatchHistory; }
+
+	/**
 	 * M1-034: how many accepted requests reached the play seam with a resolved
 	 * sound. Without a world the actual audible playback is suppressed (tests,
 	 * NullRHI automation) — dispatched counts the play-seam handoffs, never
@@ -270,6 +290,14 @@ protected:
 	void HandleHitConfirmed(const FCombatHit& Hit);
 
 	/**
+	 * M1-033: playback seam for the bound combat source's local hit stop: the
+	 * default pauses/resumes the mesh's animation through
+	 * SetAnimInstancePausedForHitStop and records the dispatch. Tests observe
+	 * the recorded history instead of real playback.
+	 */
+	virtual void SetHitStopPaused(bool bPaused);
+
+	/**
 	 * M1-034: sound resolution seam behind the soft references. Returns the
 	 * loaded sound or nullptr (missing/empty reference) so a caller can skip
 	 * playback with one diagnostic; tests can rely on the null path instead
@@ -300,6 +328,10 @@ private:
 
 	void HandleStarted(FName AttackId, uint64 InstanceId);
 	void HandleFinished(FName AttackId, uint64 InstanceId);
+
+	/** M1-033: OnHitStopChanged handler (bound in SetSources). */
+	void HandleHitStopChanged(bool bFrozen);
+
 	void UnbindDelegates();
 
 	/** Injected sources; weak so neither side keeps the other alive. */
@@ -364,4 +396,7 @@ private:
 	bool bLoggedMissingHitSound = false;
 	bool bLoggedMissingLandSound = false;
 	int32 DispatchedAudioPlayCount = 0;
+
+	/** M1-033: SetHitStopPaused dispatch history (true = pause, false = resume). */
+	TArray<bool> HitStopPauseDispatchHistory;
 };

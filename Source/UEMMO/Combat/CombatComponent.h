@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "Delegates/DelegateCombinations.h"
+#include "Engine/EngineTypes.h"
 #include "Templates/Function.h"
 
 #include "AttackCatalog.h"
@@ -89,6 +90,13 @@ DECLARE_MULTICAST_DELEGATE_TwoParams(FOnCombatFinished, FName /*AttackId*/, uint
 
 /** Broadcast exactly once per accepted hit: ApplyDamage removed health (> 0). */
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCombatHitConfirmed, const FCombatHit& /*Hit*/);
+
+/**
+ * M1-033: broadcast when this component's local hit stop starts (true) and
+ * when it ends (false). Presentation components bind it to pause/resume their
+ * mesh playback for the freeze duration.
+ */
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnCombatHitStopChanged, bool /*bFrozen*/);
 
 /**
  * Injectable feet-origin source (interface contract section 5: the feet
@@ -300,6 +308,29 @@ public:
 	bool IsClockFrozen() const;
 
 	/**
+	 * M1-033: requests a local hit stop of DurationSeconds on this component
+	 * (the card's 40 ms rides in on FCombatHit::HitStopSeconds from the
+	 * definition). While the stop runs: the action clock freezes (the
+	 * bClockFrozen passthrough), the injected input game clock pins at the
+	 * frozen value (interface contract section 2: Pause/HitStop does not
+	 * advance it; presses still queue), and a character owner's movement saves
+	 * its velocity/mode once and integrates nothing until the stop ends
+	 * restores them. Reentry takes max(remaining, requested), never a sum.
+	 * ResetCombat and death clear a running stop. Non-finite and non-positive
+	 * requests are ignored; a dead component refuses. The trigger is the hit
+	 * presentation path (a bound UCombatPresentationComponent observing
+	 * OnHitConfirmed for the attacker and the hit target); a bare component
+	 * without a presenter keeps the pre-M1-033 behavior verbatim.
+	 */
+	void RequestHitStop(float DurationSeconds);
+
+	/** M1-033: true while a local hit stop freezes this component. */
+	bool IsHitStopActive() const;
+
+	/** M1-033: broadcast on the local hit stop start (true) and end (false). */
+	FOnCombatHitStopChanged OnHitStopChanged;
+
+	/**
 	 * M1-012: buffers one combat intent into the component's input buffer
 	 * (interface contract section 4). The buffer rejects duplicate or
 	 * regressing sequence numbers and non-finite timestamps; a rejected push
@@ -410,6 +441,34 @@ private:
 
 	/** Ends the current attack: clears state first, then broadcasts OnFinished once. */
 	void FinishCurrentAttack();
+
+	/**
+	 * M1-033: clears a running local hit stop: the clock freeze lifts, the
+	 * saved movement state restores exactly once, a presenter-less owner's
+	 * animation resumes and OnHitStopChanged broadcasts false. No-op without a
+	 * running stop.
+	 */
+	void EndHitStop();
+
+	/**
+	 * M1-033: saves the owner character's movement state exactly once (the
+	 * first save wins; a reentry keeps the pre-freeze state) and puts the
+	 * movement component into MOVE_None, which integrates nothing (an airborne
+	 * target neither falls nor drifts while the stop lasts). Non-character
+	 * owners skip (no movement to freeze).
+	 */
+	void FreezeOwnerMovementForHitStop();
+
+	/** M1-033: restores the saved movement state exactly once (velocity + mode). */
+	void RestoreOwnerMovementFromHitStop();
+
+	/**
+	 * M1-033: pauses/resumes a presenter-less owner's mesh animation directly
+	 * (the training enemy's single-node idle). Owners with a presentation
+	 * component pause through that component's OnHitStopChanged binding
+	 * instead, so the two paths never double-drive one mesh.
+	 */
+	void ApplyOwnerHitStopAnimationPause(bool bPause);
 
 	/**
 	 * M1-019: when the current frame sits inside the running attack's active
@@ -556,4 +615,29 @@ private:
 
 	/** M1-019: stable in-session attacker id minted once at construction. */
 	uint64 CachedInstigatorId = 0;
+
+	/** M1-033: true while a local hit stop owns this component's freeze state. */
+	bool bHitStopActive = false;
+
+	/** M1-033: real-time remainder of the running hit stop. */
+	double HitStopRemainingSeconds = 0.0;
+
+	/**
+	 * M1-033: per-frame dedup between the two advancement sources (an injected
+	 * input clock value and the TickCombat delta measure the same game frame):
+	 * set by a freeze-window injection, cleared by the next TickCombat, so one
+	 * frame consumes the remainder exactly once.
+	 */
+	bool bHitStopConsumedInjectedAdvance = false;
+
+	/** M1-033: last injected input clock value (the freeze-window delta base). */
+	double LastInjectedInputClockSeconds = 0.0;
+
+	/** M1-033: true while the owner character's movement is frozen by the stop. */
+	bool bOwnerMovementFrozenByHitStop = false;
+
+	/** M1-033: movement state saved once at the freeze start, restored at the end. */
+	FVector HitStopSavedVelocity = FVector::ZeroVector;
+	FVector HitStopSavedPendingLaunchVelocity = FVector::ZeroVector;
+	TEnumAsByte<EMovementMode> HitStopSavedMovementMode = MOVE_None;
 };

@@ -651,7 +651,11 @@ bool FUEMMOTasksM1_027TenConsecutiveResetsLeaveNoResidueAndIdsStayUnique::RunTes
 		PreviousInstanceId = PostResetInstanceId;
 
 		// Finish the instance so the next iteration can start a new attack.
-		M1_027_TickFrames(*Scene.PlayerCombat, 26);
+		// M1-033 adaptation: each accepted hit of the instance opens the 40 ms
+		// local hit stop through the player's own presentation component, and
+		// the frozen window drops 2 of the 60 Hz action ticks. The budget is
+		// the 26-frame timeline plus those 2 dropped ticks.
+		M1_027_TickFrames(*Scene.PlayerCombat, 28);
 	}
 
 	TestEqual(TEXT("ten resets ran exactly ten session resets"),
