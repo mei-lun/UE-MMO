@@ -173,6 +173,42 @@ void UProfileSubsystem::MarkSettlementApplied(uint64 SettlementId)
 	AppliedSettlementIds.Add(SettlementId);
 }
 
+bool UProfileSubsystem::RestoreFromSave(const FProfileSnapshot& Snapshot, const FInventoryModel& InInventory,
+	const TArray<FPendingReward>& InPendingRewards, const TSet<uint64>& InAppliedSettlementIds,
+	const TMap<EItemSlot, FGuid>& InEquippedMap)
+{
+	// M3-015: all-or-nothing restore. The load path already validated the
+	// save, but this entry is public - the structural invariants are checked
+	// again here so a bad caller can never produce a half-restored profile:
+	// a named identity, a level inside the closed design range, no negative
+	// XP. On rejection NOTHING below runs (the previous state survives).
+	if (!Snapshot.CharacterId.IsValid() || Snapshot.Level < 1 || Snapshot.Level > MaxLevel || Snapshot.XP < 0)
+	{
+		return false;
+	}
+
+	// Commit the full saved state: identity and progress (a restore never
+	// mints a new id - only NewProfile does), the inventory, the equipped
+	// bindings (the M3-004 placeholder map travels inside the save), the
+	// pending drafts and the applied settlement ids.
+	CharacterId = Snapshot.CharacterId;
+	Level = Snapshot.Level;
+	XP = Snapshot.XP;
+	bHasProfile = true;
+	Inventory = InInventory;
+	Equipment = InEquippedMap;
+	// The equipment stat bonus row resets to zero: the gameplay layer
+	// re-derives the sum once the restored bindings are re-applied (the same
+	// no-fossilized-sums rule as NewProfile/ResetNewGame).
+	EquippedStatBonus = FItemStats();
+	PendingRewards = InPendingRewards;
+	AppliedSettlementIds = InAppliedSettlementIds;
+	// AliveIds is not part of the save schema (no consumer yet): the restored
+	// state starts from the same empty placeholder as a fresh profile.
+	AliveIds.Reset();
+	return true;
+}
+
 FProfileSnapshot UProfileSubsystem::GetProfileSnapshot() const
 {
 	if (!bHasProfile)

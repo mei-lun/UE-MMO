@@ -198,6 +198,14 @@ enum class EProfileSaveResult : uint8
 	/** The existing index file is unreadable/corrupt: the save refuses to guess which slot is safe to overwrite. */
 	FailedIndexState,
 
+	/**
+	 * M3-015: the target slot is under the startup write guard armed by
+	 * StartupLoad (a future-schema save this old build must not destroy, or
+	 * corrupt evidence of an unrecoverable startup state); the write was
+	 * refused and the guarded slot file stays byte-identical.
+	 */
+	FailedGuardedSlot,
+
 	/** ProcessPendingSave without a queued snapshot (defensive; nothing happened). */
 	FailedNoPendingSave
 };
@@ -257,6 +265,74 @@ struct FProfileLoadOutcome
 	FString Message;
 
 	/** Restored profile state; default (empty) values on any failure. */
+	FProfileSnapshot Snapshot;
+	FInventoryModel Inventory;
+	TArray<FPendingReward> PendingRewards;
+	TSet<uint64> AppliedSettlementIds;
+	TMap<EItemSlot, FGuid> EquippedMap;
+};
+
+/**
+ * M3-015: result of the startup load pass (StartupLoad). The distinction the
+ * task card demands: NoSaveFound ("nothing is stored at all - the CALLER may
+ * decide to create a new profile") is a separate value from RecoveryError
+ * ("data exists but nothing usable - surface the error, keep the evidence,
+ * never silently start over"). A corrupt save must never masquerade as a
+ * fresh install, and StartupLoad itself never builds a profile.
+ */
+enum class EStartupLoadResult : uint8
+{
+	/** The index-active slot loaded exactly as the index points. */
+	Recovered = 0,
+
+	/** The active slot or the index was unusable; a valid slot was recovered instead. */
+	RecoveredFallback,
+
+	/** Nothing stored at all (no index file, no slot files): a fresh state, not corruption. */
+	NoSaveFound,
+
+	/** Data exists but no usable snapshot could be restored; the corrupt evidence stays on disk and the save path is guarded. */
+	RecoveryError
+};
+
+/**
+ * M3-015: the structured startup recovery report (task card: "the recovery
+ * report tells the user which slot was used and why the fallback happened").
+ * The data fields are filled ONLY for Recovered/RecoveredFallback - every
+ * failure outcome leaves them default so a failed load can never surface as
+ * a half-restored profile. The problem lists name every unusable piece so a
+ * startup failure is diagnosable from the report alone.
+ */
+struct FStartupLoadOutcome
+{
+	/** What happened; Summary carries the full one-line report. */
+	EStartupLoadResult Result = EStartupLoadResult::RecoveryError;
+
+	/** Slot the restored data came from: 0 = A, 1 = B (-1 on any failure/fresh state). */
+	int32 SlotIndex = -1;
+
+	/** Generation of the restored slot (0 when no slot was restored). */
+	int32 Generation = 0;
+
+	/**
+	 * Why the index-active slot was not used (empty on a direct Recovered
+	 * load): the active slot's problem, or the missing/corrupt index reason.
+	 */
+	FString FallbackReason;
+
+	/** One "'slot name': problem" entry per existing-but-unusable slot file. */
+	TArray<FString> CorruptedSlotReports;
+
+	/** Why the index itself was unusable (empty when the index was healthy). */
+	FString IndexProblem;
+
+	/** Slot names holding a future-schema save (version above this build's); the save path refuses to overwrite them. */
+	TArray<FString> FutureSchemaSlotNames;
+
+	/** One-line human-readable recovery report (which slot, why fallback, what stays guarded). */
+	FString Summary;
+
+	/** Restored profile state; default (empty) values unless the load recovered. */
 	FProfileSnapshot Snapshot;
 	FInventoryModel Inventory;
 	TArray<FPendingReward> PendingRewards;
@@ -362,6 +438,29 @@ public:
 	FProfileLoadOutcome LoadActiveProfile();
 
 	/**
+	 * M3-015: the startup entry point. Ordered load with an explicit recovery
+	 * report and corruption fallback:
+	 * 1. the index-active slot is tried first; when it is unusable the other
+	 *    slot is tried (a valid complete snapshot only);
+	 * 2. a missing or corrupt index falls back to a generation scan (highest
+	 *    valid generation wins, tie resolves to slot A);
+	 * 3. both slots unusable => RecoveryError with a per-slot problem list -
+	 *    the corrupt files stay untouched (evidence) and the save path is
+	 *    armed to refuse overwriting them (two bad slots => nothing is
+	 *    written at all); this is NEVER reported as a fresh state;
+	 * 4. only when NOTHING is stored (no index, no slot files) the result is
+	 *    NoSaveFound - creating a new profile is the caller's explicit
+	 *    decision (interface contract section 8: a load failure must never
+	 *    auto-run ResetNewGame/NewProfile).
+	 * A slot holding a future-schema save (SchemaVersion above this build's
+	 * CurrentSchemaVersion) is detected before any integrity check (a newer
+	 * build may use a different digest form), reported, and guarded: the save
+	 * path refuses to overwrite that slot for the rest of the session.
+	 * Every StartupLoad call clears and re-arms the guard from scratch.
+	 */
+	FStartupLoadOutcome StartupLoad();
+
+	/**
 	 * Deletes exactly this service's three slot names (A, B, Index under its
 	 * own prefix) - test cleanup. Returns how many slots actually existed
 	 * and were deleted; a slot outside the prefix is unreachable by
@@ -416,6 +515,58 @@ private:
 	 */
 	bool M3_014_VerifyReadBack(const USaveGame* RawLoaded, int32 ExpectedGeneration,
 		const UProfileSaveGame& SourcePayload, FString& OutProblem);
+
+	/**
+	 * M3-015: one slot read for the startup pass, classified into OutRead.
+	 * Classification order is deliberate: schema version gate FIRST (a newer
+	 * build's payload may not even validate under this build's digest, so
+	 * version detection must precede the integrity check - otherwise the old
+	 * build would classify the newer save as "just corrupt" and overwrite
+	 * it), then the M3-014 integrity envelope, then the M3-013 serializer
+	 * restore. A missing slot file is a plain "does not exist" problem, not
+	 * corruption.
+	 */
+	struct FM3_015_SlotRead
+	{
+		/** The slot file exists in storage. */
+		bool bExists = false;
+
+		/** The slot loaded and validated completely (data fields filled). */
+		bool bLoaded = false;
+
+		/** The slot holds a schema version above this build's (guarded, never overwritten). */
+		bool bFutureSchema = false;
+
+		/** The slot's stamped generation (0 when not loaded). */
+		int32 Generation = 0;
+
+		/** The slot's stored schema version (read before every other gate). */
+		int32 SchemaVersion = 0;
+
+		/** Why the slot is not loaded (empty when loaded). */
+		FString Problem;
+
+		/** Restored data (valid only when bLoaded). */
+		FProfileSnapshot Snapshot;
+		FInventoryModel Inventory;
+		TArray<FPendingReward> PendingRewards;
+		TSet<uint64> AppliedSettlementIds;
+		TMap<EItemSlot, FGuid> EquippedMap;
+	};
+
+	/** Fills OutRead for SlotNames[SlotIndex] per the classification order above. */
+	void M3_015_ClassifySlot(int32 SlotIndex, FM3_015_SlotRead& OutRead);
+
+	/**
+	 * M3-015 write guard: slot names the save path must refuse to overwrite,
+	 * armed (cleared and re-filled) by every StartupLoad call. Two sources:
+	 * a slot holding a future-schema save must never be overwritten by this
+	 * older build, and when the startup pass ends in RecoveryError every
+	 * EXISTING corrupt slot file is evidence that must be preserved (two bad
+	 * slots therefore block every slot write). A save never weakens the
+	 * guard; the value is the human-readable reason for the refusal message.
+	 */
+	TMap<FString, FString> M3_015_NoOverwriteSlots;
 
 	/** Prefix from Initialize ("" until then). */
 	FString SlotPrefix;

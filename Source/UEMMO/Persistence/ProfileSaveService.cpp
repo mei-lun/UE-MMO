@@ -401,6 +401,19 @@ FProfileSaveOutcome UProfileSaveService::ProcessPendingSave()
 	const int32 TargetSlot = (ActiveSlot == 0) ? 1 : 0;
 	const int32 NewGeneration = FMath::Max(Generations[0], Generations[1]) + 1;
 
+	// Step 2b: M3-015 write guard. StartupLoad may have armed slots this
+	// build must never overwrite (a future-schema save belonging to a newer
+	// build, or corrupt evidence of an unrecoverable startup state). Refusing
+	// here keeps the guarded file byte-identical; a save never weakens the
+	// guard (only the next StartupLoad re-arms it).
+	if (const FString* GuardReason = M3_015_NoOverwriteSlots.Find(SlotNames[TargetSlot]))
+	{
+		Outcome.Result = EProfileSaveResult::FailedGuardedSlot;
+		Outcome.Message = FString::Printf(TEXT("the save was refused: slot '%s' is under the startup write guard (%s); the file stays untouched"),
+			*SlotNames[TargetSlot], **GuardReason);
+		return Outcome;
+	}
+
 	// Step 3: build the transaction payload from the captured snapshot.
 	UProfileSlotSaveGame* SlotSave = M3_014_BuildSlotSave(Request, NewGeneration);
 	if (!SlotSave)
@@ -588,6 +601,264 @@ FProfileLoadOutcome UProfileSaveService::LoadActiveProfile()
 		bScanReason ? TEXT("missing") : TEXT("corrupt"),
 		*Problems[0], *Problems[1]);
 	return Outcome;
+}
+
+FStartupLoadOutcome UProfileSaveService::StartupLoad()
+{
+	FStartupLoadOutcome Outcome;
+	Outcome.SlotIndex = -1;
+
+	if (SlotPrefix.IsEmpty())
+	{
+		Outcome.Result = EStartupLoadResult::RecoveryError;
+		Outcome.Summary = TEXT("the save service was not initialized with a slot prefix");
+		return Outcome;
+	}
+
+	// Re-arm the write guard: every startup pass re-evaluates from scratch.
+	M3_015_NoOverwriteSlots.Reset();
+
+	// Classify both slots (schema gate first, then the integrity envelope,
+	// then the serializer restore). A future-schema slot is reported AND
+	// write-guarded no matter which result the load reaches: this older build
+	// must never overwrite a newer build's save.
+	FM3_015_SlotRead Reads[2];
+	for (int32 SlotIndex = 0; SlotIndex < 2; ++SlotIndex)
+	{
+		M3_015_ClassifySlot(SlotIndex, Reads[SlotIndex]);
+		if (Reads[SlotIndex].bExists && !Reads[SlotIndex].bLoaded)
+		{
+			// The recovery report always names every existing unusable slot,
+			// even when a fallback succeeded (the user must see what broke).
+			Outcome.CorruptedSlotReports.Add(
+				FString::Printf(TEXT("'%s': %s"), *SlotNames[SlotIndex], *Reads[SlotIndex].Problem));
+		}
+		if (Reads[SlotIndex].bFutureSchema)
+		{
+			Outcome.FutureSchemaSlotNames.Add(SlotNames[SlotIndex]);
+			M3_015_NoOverwriteSlots.Add(SlotNames[SlotIndex],
+				FString::Printf(TEXT("the slot holds a schema version %d save written by a newer game build (this build understands %d)"),
+					Reads[SlotIndex].SchemaVersion, UProfileSaveGame::CurrentSchemaVersion));
+		}
+	}
+
+	// Index state (M3_014_ReadIndex: a missing index is the legal fresh
+	// signal; a readable index can also record "nothing committed yet").
+	int32 ActiveSlot = UProfileIndexSaveGame::NoActiveSlot;
+	int32 Generations[2] = { 0, 0 };
+	bool bIndexMissing = false;
+	FString IndexProblem;
+	const bool bIndexUsable = M3_014_ReadIndex(ActiveSlot, Generations, bIndexMissing, IndexProblem);
+	if (!bIndexUsable)
+	{
+		Outcome.IndexProblem = IndexProblem;
+	}
+
+	// Why the index did not deliver a usable active slot (report text).
+	auto IndexStateText = [&]() -> FString
+	{
+		if (!bIndexUsable)
+		{
+			return FString::Printf(TEXT("the index is unreadable (%s)"), *IndexProblem);
+		}
+		if (bIndexMissing)
+		{
+			return TEXT("the index is missing");
+		}
+		if (ActiveSlot == UProfileIndexSaveGame::NoActiveSlot)
+		{
+			return TEXT("the index records no committed slot");
+		}
+		return FString::Printf(TEXT("the index points at '%s'"), *SlotNames[ActiveSlot]);
+	};
+
+	// Future-schema note appended to every summary that ships data (the
+	// report must state that the guard is armed).
+	auto GuardedSuffix = [&Outcome]() -> const TCHAR*
+	{
+		return Outcome.FutureSchemaSlotNames.Num() > 0
+			? TEXT("; a future-schema save stays guarded: the save path refuses to overwrite it")
+			: TEXT("");
+	};
+
+	// Arms the evidence guard for every existing-but-unusable NON-future-
+	// schema slot. Only called on the RecoveryError paths: with a valid
+	// recoverable state the M3-014 transaction keeps overwriting the failed
+	// slot (pinned behavior), but when NOTHING is recoverable the bad files
+	// are the only evidence and must not be touched by any save.
+	auto ArmEvidenceGuard = [&Reads, &Outcome, this]()
+	{
+		for (int32 SlotIndex = 0; SlotIndex < 2; ++SlotIndex)
+		{
+			if (Reads[SlotIndex].bExists && !Reads[SlotIndex].bLoaded && !Reads[SlotIndex].bFutureSchema)
+			{
+				M3_015_NoOverwriteSlots.Add(SlotNames[SlotIndex],
+					FString::Printf(TEXT("the slot file is unusable startup evidence (%s)"), *Reads[SlotIndex].Problem));
+			}
+		}
+	};
+
+	// Copies one classified slot's restored data into the outcome.
+	auto CopyLoadedData = [&](const FM3_015_SlotRead& Source)
+	{
+		Outcome.Snapshot = Source.Snapshot;
+		Outcome.Inventory = Source.Inventory;
+		Outcome.PendingRewards = Source.PendingRewards;
+		Outcome.AppliedSettlementIds = Source.AppliedSettlementIds;
+		Outcome.EquippedMap = Source.EquippedMap;
+		Outcome.Generation = Source.Generation;
+	};
+
+	// 1) The index names a real active slot: try it, then the other one.
+	if (bIndexUsable && (ActiveSlot == 0 || ActiveSlot == 1))
+	{
+		if (Reads[ActiveSlot].bLoaded)
+		{
+			Outcome.Result = EStartupLoadResult::Recovered;
+			Outcome.SlotIndex = ActiveSlot;
+			CopyLoadedData(Reads[ActiveSlot]);
+			Outcome.Summary = FString::Printf(TEXT("startup load: loaded the active slot '%s' (generation %d)%s"),
+				*SlotNames[ActiveSlot], Outcome.Generation, GuardedSuffix());
+			return Outcome;
+		}
+		const int32 OtherSlot = 1 - ActiveSlot;
+		if (Reads[OtherSlot].bLoaded)
+		{
+			Outcome.Result = EStartupLoadResult::RecoveredFallback;
+			Outcome.SlotIndex = OtherSlot;
+			CopyLoadedData(Reads[OtherSlot]);
+			Outcome.FallbackReason = FString::Printf(TEXT("the index points at '%s' but it is unusable (%s); recovered '%s' (generation %d)"),
+				*SlotNames[ActiveSlot], *Reads[ActiveSlot].Problem, *SlotNames[OtherSlot], Outcome.Generation);
+			Outcome.Summary = FString::Printf(TEXT("startup load: %s%s"), *Outcome.FallbackReason, GuardedSuffix());
+			return Outcome;
+		}
+
+		// Both candidates are unusable: explicit recovery error - the corrupt
+		// files are evidence and every slot write is refused from here on.
+		Outcome.Result = EStartupLoadResult::RecoveryError;
+		ArmEvidenceGuard();
+		Outcome.Summary = FString::Printf(TEXT("startup load: recovery failed (%s) - no profile was restored and the corrupt saves stay untouched"),
+			*IndexStateText());
+		for (const FString& Problem : Outcome.CorruptedSlotReports)
+		{
+			Outcome.Summary += FString::Printf(TEXT("; %s"), *Problem);
+		}
+		Outcome.Summary += GuardedSuffix();
+		return Outcome;
+	}
+
+	// 2) Index missing/unreadable/no-commit: scan both slot payloads, highest
+	//    generation wins (a tie resolves to A, matching the M3-014 recovery).
+	int32 BestSlot = -1;
+	for (int32 SlotIndex = 0; SlotIndex < 2; ++SlotIndex)
+	{
+		if (Reads[SlotIndex].bLoaded && (BestSlot == -1 || Reads[SlotIndex].Generation > Reads[BestSlot].Generation))
+		{
+			BestSlot = SlotIndex;
+		}
+	}
+	if (BestSlot != -1)
+	{
+		Outcome.Result = EStartupLoadResult::RecoveredFallback;
+		Outcome.SlotIndex = BestSlot;
+		CopyLoadedData(Reads[BestSlot]);
+		Outcome.FallbackReason = FString::Printf(TEXT("%s; recovered '%s' (generation %d) by generation scan"),
+			*IndexStateText(), *SlotNames[BestSlot], Outcome.Generation);
+		Outcome.Summary = FString::Printf(TEXT("startup load: %s%s"), *Outcome.FallbackReason, GuardedSuffix());
+		return Outcome;
+	}
+
+	// 3) Nothing usable: distinguish a fresh install from corruption. ONLY
+	//    when nothing at all is stored (no index, no slot files) the result
+	//    is NoSaveFound - creating a new profile is the CALLER's decision.
+	const bool bNothingStored = !ResolveStorage()->DoesSlotExist(SlotNames[0])
+		&& !ResolveStorage()->DoesSlotExist(SlotNames[1])
+		&& !ResolveStorage()->DoesSlotExist(IndexSlotName);
+	if (bNothingStored)
+	{
+		Outcome.Result = EStartupLoadResult::NoSaveFound;
+		Outcome.Summary = FString::Printf(TEXT("startup load: no profile save exists under prefix '%s' (no index, no slot files); creating a new profile is the caller's decision"), *SlotPrefix);
+		return Outcome;
+	}
+
+	// Data exists but nothing is loadable: keep the evidence, surface the
+	// error, refuse every slot write.
+	Outcome.Result = EStartupLoadResult::RecoveryError;
+	ArmEvidenceGuard();
+	Outcome.Summary = FString::Printf(TEXT("startup load: recovery failed (%s) - no profile was restored and the corrupt saves stay untouched"),
+		*IndexStateText());
+	for (const FString& Problem : Outcome.CorruptedSlotReports)
+	{
+		Outcome.Summary += FString::Printf(TEXT("; %s"), *Problem);
+	}
+	Outcome.Summary += GuardedSuffix();
+	return Outcome;
+}
+
+void UProfileSaveService::M3_015_ClassifySlot(int32 SlotIndex, FM3_015_SlotRead& OutRead)
+{
+	OutRead = FM3_015_SlotRead();
+	ISaveStorage* ActiveStorage = ResolveStorage();
+	if (!ActiveStorage->DoesSlotExist(SlotNames[SlotIndex]))
+	{
+		OutRead.Problem = FString::Printf(TEXT("the slot file '%s' does not exist"), *SlotNames[SlotIndex]);
+		return;
+	}
+	OutRead.bExists = true;
+
+	USaveGame* Raw = ActiveStorage->ReadSlot(SlotNames[SlotIndex]);
+	if (!Raw)
+	{
+		OutRead.Problem = FString::Printf(TEXT("the slot file '%s' exists but failed to load"), *SlotNames[SlotIndex]);
+		return;
+	}
+	const UProfileSlotSaveGame* Slot = Cast<UProfileSlotSaveGame>(Raw);
+	if (!Slot)
+	{
+		OutRead.Problem = FString::Printf(TEXT("the slot file '%s' is not a UProfileSlotSaveGame"), *SlotNames[SlotIndex]);
+		return;
+	}
+
+	// SCHEMA GATE FIRST: a newer build may store a different digest canonical
+	// form, so this build cannot even trust its integrity check on a future-
+	// schema payload. Version detection must precede every other gate -
+	// otherwise the old build would classify the newer save as "just corrupt"
+	// and (worse) overwrite it as a failed slot. Version above this build's =
+	// future schema (guarded, never overwritten); anything else unknown is
+	// left to the serializer gate below (which rejects it as UnsupportedSchema).
+	OutRead.SchemaVersion = Slot->SchemaVersion;
+	if (Slot->SchemaVersion > UProfileSaveGame::CurrentSchemaVersion)
+	{
+		OutRead.bFutureSchema = true;
+		OutRead.Problem = FString::Printf(TEXT("schema version %d was written by a newer game build (this build understands %d); refusing to load and guarding the file from overwrite"),
+			Slot->SchemaVersion, UProfileSaveGame::CurrentSchemaVersion);
+		return;
+	}
+
+	// The M3-014 integrity envelope: stored digest and the two field checks.
+	if (Slot->PayloadDigest != M3_014_ComputePayloadDigest(*Slot))
+	{
+		OutRead.Problem = FString::Printf(TEXT("the stored integrity digest of '%s' does not match its payload (integrity check failed)"), *SlotNames[SlotIndex]);
+		return;
+	}
+	if (Slot->PayloadInstanceCount != Slot->InventoryInstanceSnapshots.Num()
+		|| Slot->CharacterIdSummary != Slot->CharacterId.ToString())
+	{
+		OutRead.Problem = FString::Printf(TEXT("the stored integrity field checks of '%s' failed (instance count / character id summary)"), *SlotNames[SlotIndex]);
+		return;
+	}
+
+	// Full serializer gate: restores into the report's data fields on success
+	// and rejects every field-level corruption the envelope cannot see.
+	FProfileLoadError Error;
+	if (!FProfileSerializer::FromSaveGame(Slot, OutRead.Snapshot, OutRead.Inventory, OutRead.PendingRewards,
+		OutRead.AppliedSettlementIds, OutRead.EquippedMap, Error))
+	{
+		OutRead.Problem = FString::Printf(TEXT("the save of '%s' failed the serializer validation: %s"), *SlotNames[SlotIndex], *Error.Message);
+		return;
+	}
+	OutRead.bLoaded = true;
+	OutRead.Generation = Slot->SlotGeneration;
 }
 
 int32 UProfileSaveService::DeleteTestSlots()
