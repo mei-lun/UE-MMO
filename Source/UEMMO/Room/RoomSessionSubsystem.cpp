@@ -71,6 +71,8 @@ void URoomSessionSubsystem::Deinitialize()
 	KilledCount = 0;
 	RunStartClockSeconds = 0.0;
 	LastResult = FRoomResult();
+	CurrentWaveIndex = -1;
+	SpawnedEnemyCount = 0;
 }
 
 void URoomSessionSubsystem::SetSessionClockSeconds(double NowSeconds)
@@ -118,6 +120,8 @@ bool URoomSessionSubsystem::StartRoom(const URoomDefinition* Definition)
 	CurrentRoomId = Definition->RoomId;
 	KilledCount = 0;
 	RunStartClockSeconds = SessionClockSeconds;
+	CurrentWaveIndex = -1;
+	SpawnedEnemyCount = 0;
 
 	State = ERoomSessionState::Running;
 	RunStartedDelegate.Broadcast();
@@ -192,6 +196,8 @@ bool URoomSessionSubsystem::ResetToIdle()
 	CurrentRoomId = FName();
 	KilledCount = 0;
 	RunStartClockSeconds = 0.0;
+	CurrentWaveIndex = -1;
+	SpawnedEnemyCount = 0;
 	return true;
 }
 
@@ -216,6 +222,52 @@ bool URoomSessionSubsystem::NotifyEnemyKilled(FName EnemyId)
 FOnRoomSessionRunStarted& URoomSessionSubsystem::OnRunStarted()
 {
 	return RunStartedDelegate;
+}
+
+bool URoomSessionSubsystem::NotifyWaveStarted(int32 WaveIndex)
+{
+	if (State != ERoomSessionState::Running)
+	{
+		// Stale request of an already ended or exited run: ignored (the
+		// interface contract's idempotency rule, same as kill notifications).
+		UE_LOG(LogTemp, Verbose,
+			TEXT("UEMMO RoomSession: wave notification of wave %d ignored - the session is %d (only Running records waves)."),
+			WaveIndex, static_cast<int32>(State));
+		return false;
+	}
+	CurrentWaveIndex = WaveIndex;
+	UE_LOG(LogTemp, Verbose,
+		TEXT("UEMMO RoomSession: RunId %llu records wave %d."),
+		CurrentRunId, CurrentWaveIndex);
+	return true;
+}
+
+int32 URoomSessionSubsystem::GetCurrentWaveIndex() const
+{
+	return CurrentWaveIndex;
+}
+
+bool URoomSessionSubsystem::NotifyEnemySpawned(FName EnemyId)
+{
+	if (State != ERoomSessionState::Running)
+	{
+		// Stale spawn callback of an already ended or exited run: ignored
+		// (never counted, never crashes - the idempotency rule again).
+		UE_LOG(LogTemp, Verbose,
+			TEXT("UEMMO RoomSession: spawn notification of %s ignored - the session is %d (only Running counts spawns)."),
+			*EnemyId.ToString(), static_cast<int32>(State));
+		return false;
+	}
+	++SpawnedEnemyCount;
+	UE_LOG(LogTemp, Verbose,
+		TEXT("UEMMO RoomSession: RunId %llu registered spawn %s (total %d)."),
+		CurrentRunId, *EnemyId.ToString(), SpawnedEnemyCount);
+	return true;
+}
+
+int32 URoomSessionSubsystem::GetSpawnedEnemyCount() const
+{
+	return SpawnedEnemyCount;
 }
 
 FOnRoomSessionRunEnded& URoomSessionSubsystem::OnRunEnded()

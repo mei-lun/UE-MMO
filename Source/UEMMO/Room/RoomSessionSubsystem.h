@@ -83,9 +83,11 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnRoomSessionRunEnded, const FRoomResult& /
  * across worlds.
  *
  * Scope: this card implements state, identity and bookkeeping only. It does
- * not spawn waves (M2-007 owns WaveIndex/AliveIds/PendingSpawns and their
- * execution), does not persist inventory, and does not implement the exit
- * procedure itself (M2-011) - it only accepts the Exiting state transition.
+ * not execute waves (M2-007 owns their execution in UWaveSpawner; this session
+ * only records the current wave index and the spawned-enemy count through the
+ * M2-007 minimal Notify* additions below), does not persist inventory, and
+ * does not implement the exit procedure itself (M2-011) - it only accepts the
+ * Exiting state transition.
  * Time comes exclusively from the injected session clock
  * (SetSessionClockSeconds, same style as the combat input clock); no wall
  * clock is ever read here.
@@ -174,6 +176,31 @@ public:
 	 */
 	bool NotifyEnemyKilled(FName EnemyId);
 
+	// -- Wave bookkeeping (M2-007 minimal additions) --------------------------
+
+	/**
+	 * M2-007: records the wave index the running run is currently executing.
+	 * Accepted only while Running; rejected elsewhere (stale requests of an
+	 * ended run change nothing). Bookkeeping only - the spawning itself lives
+	 * in UWaveSpawner, which calls this once per accepted StartWave.
+	 */
+	bool NotifyWaveStarted(int32 WaveIndex);
+
+	/** M2-007: wave index of the last accepted NotifyWaveStarted; -1 when none. */
+	int32 GetCurrentWaveIndex() const;
+
+	/**
+	 * M2-007: registers one enemy successfully spawned for the running run.
+	 * Accepted only while Running; false outside Running (a spawn callback of
+	 * an already ended or exited run is ignored, same idempotency rule as
+	 * kill notifications). The caller owns the alive/dead tracking; the
+	 * session only counts registrations.
+	 */
+	bool NotifyEnemySpawned(FName EnemyId);
+
+	/** M2-007: enemies accepted by NotifyEnemySpawned in the current run. */
+	int32 GetSpawnedEnemyCount() const;
+
 	// -- Events ----------------------------------------------------------------
 
 	/** Fires exactly once per accepted StartRoom. */
@@ -231,6 +258,13 @@ private:
 	FName CurrentRoomId;
 	int32 KilledCount = 0;
 	double RunStartClockSeconds = 0.0;
+
+	/**
+	 * M2-007 per-run wave bookkeeping; reset by StartRoom / ResetToIdle /
+	 * Deinitialize like the rest of the per-run fields.
+	 */
+	int32 CurrentWaveIndex = -1;
+	int32 SpawnedEnemyCount = 0;
 
 	/** Result of the last finished run (default before the first terminal). */
 	FRoomResult LastResult;
