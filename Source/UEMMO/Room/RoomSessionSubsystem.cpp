@@ -99,6 +99,10 @@ void URoomSessionSubsystem::Deinitialize()
 	KilledCount = 0;
 	RunStartClockSeconds = 0.0;
 	LastResult = FRoomResult();
+	// M2-013: the result archive is world state too - a rebuilt world's fresh
+	// session starts with an empty archive (the process-global settlement
+	// counter deliberately survives, so ids are never handed out twice).
+	FinishedRunResults.Empty();
 	CurrentWaveIndex = -1;
 	SpawnedEnemyCount = 0;
 	ResetWaveOrchestration();
@@ -209,6 +213,13 @@ bool URoomSessionSubsystem::EndRun(bool bInCleared, const TCHAR* RequestName)
 	LastResult.bCleared = bInCleared;
 	LastResult.KilledCount = KilledCount;
 	LastResult.ElapsedSeconds = SessionClockSeconds - RunStartClockSeconds;
+
+	// M2-013: snapshot the settled result into the per-run archive, exactly
+	// once (EndRun only ever reaches this line once per run - first terminal
+	// state wins). The archive deliberately survives ResetToIdle (results are
+	// queried by RunId after the session moved on, and M3 claims rewards by
+	// SettlementId later); only Deinitialize drops it with the world.
+	FinishedRunResults.Add(CurrentRunId, LastResult);
 
 	State = bInCleared ? ERoomSessionState::Cleared : ERoomSessionState::Failed;
 	RunEndedDelegate.Broadcast(LastResult);
@@ -804,4 +815,44 @@ int32 URoomSessionSubsystem::GetKilledCount() const
 const FRoomResult& URoomSessionSubsystem::GetLastResult() const
 {
 	return LastResult;
+}
+
+// -- M2-013: run result archive and one-time settlement identity --------------
+// Every query reads only the archive that EndRun filled once per run; nothing
+// here ever re-generates an id, re-randomizes a seed or mutates the snapshot.
+
+bool URoomSessionSubsystem::GetRunResult(uint64 RunId, FRoomResult& OutResult) const
+{
+	if (const FRoomResult* Found = FinishedRunResults.Find(RunId))
+	{
+		// Immutable value hand-out: the caller owns a copy, so a UI can keep
+		// it after leaving the world and scribbling on it cannot touch the
+		// session's internal state.
+		OutResult = *Found;
+		return true;
+	}
+	// Non-terminal (still Running or exited mid-run), unknown or 0 ids: the
+	// out value is default-constructed and the request refused.
+	OutResult = FRoomResult();
+	return false;
+}
+
+uint64 URoomSessionSubsystem::GetSettlementId(uint64 RunId) const
+{
+	// The id was minted once at StartRoom and snapshotted with the result at
+	// the terminal transition, so every query of the same run returns the
+	// SAME id for the whole world lifetime; 0 only for runs that never
+	// settled (or unknown ones).
+	const FRoomResult* Found = FinishedRunResults.Find(RunId);
+	return Found != nullptr ? Found->SettlementId : 0;
+}
+
+bool URoomSessionSubsystem::IsRewardEligible(uint64 RunId) const
+{
+	// The ONLY gate into the future reward service: a Cleared result. A Failed
+	// result can never enter the reward path, and neither can unknown /
+	// non-terminal runs. M3 will claim the reward once by SettlementId
+	// (FPendingReward); this card stores no save game and grants no rewards.
+	const FRoomResult* Found = FinishedRunResults.Find(RunId);
+	return Found != nullptr && Found->bCleared;
 }

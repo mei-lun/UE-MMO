@@ -1,9 +1,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Containers/Map.h"
 #include "Containers/Set.h"
 #include "Delegates/Delegate.h"
 #include "Subsystems/WorldSubsystem.h"
+#include "RoomResult.h"
 #include "RoomSessionSubsystem.generated.h"
 
 class AActor;
@@ -31,34 +33,8 @@ enum class ERoomSessionState : uint8
 	Exiting
 };
 
-/**
- * Result data of one finished run (interface contract section 7).
- * Pure value type on purpose: the room session never stores an inventory or
- * any other cross-run state - it only produces this result (M2-006 card).
- */
-struct FRoomResult
-{
-	/** Monotonic run id inside the owning session; 0 = no run. */
-	uint64 RunId = 0;
-
-	/** Process-global unique settlement id; never repeats across runs or worlds. */
-	uint64 SettlementId = 0;
-
-	/** RoomId of the definition the run was started with. */
-	FName RoomId;
-
-	/** Deterministic seed derived from RunId (fixed formula, no randomness). */
-	int32 Seed = 0;
-
-	/** True when the run ended Cleared, false when it ended Failed. */
-	bool bCleared = false;
-
-	/** Enemies accepted through NotifyEnemyKilled while the run was Running. */
-	int32 KilledCount = 0;
-
-	/** Run duration in seconds, measured with the injected session clock. */
-	double ElapsedSeconds = 0.0;
-};
+// FRoomResult lives in RoomResult.h since M2-013 (migrated verbatim from this
+// header, semantics unchanged); this header includes it above.
 
 /** Fired exactly once per run, when StartRoom accepts a new run. */
 DECLARE_MULTICAST_DELEGATE(FOnRoomSessionRunStarted);
@@ -317,6 +293,40 @@ public:
 	/** Result of the last finished run; default value before the first one. */
 	const FRoomResult& GetLastResult() const;
 
+	// -- Run result archive and one-time settlement identity (M2-013) ---------
+
+	/**
+	 * M2-013: result snapshot of one finished run, returned as an immutable
+	 * VALUE copy (OutResult) so a UI can keep it after leaving the world
+	 * without dangling on session-internal storage. Accepts every RunId this
+	 * session ever settled (the archive survives ResetToIdle on purpose, so a
+	 * settled run stays queryable after the retry loop moved on); returns
+	 * false and leaves OutResult default-constructed for a run that never
+	 * reached a terminal state (still Running or exited mid-run) or is
+	 * unknown (including 0 = no run).
+	 */
+	bool GetRunResult(uint64 RunId, FRoomResult& OutResult) const;
+
+	/**
+	 * M2-013: settlement id of one finished run. The id was minted exactly
+	 * once when the run started and is snapshotted with its result at the
+	 * terminal transition, so repeated queries always return the SAME id -
+	 * nothing is ever re-generated or re-randomized. Returns 0 for a run that
+	 * has not reached a terminal state yet (or is unknown); a settled run's
+	 * id stays answerable for the whole world lifetime.
+	 */
+	uint64 GetSettlementId(uint64 RunId) const;
+
+	/**
+	 * M2-013: the ONLY gate into the future reward service. True exactly when
+	 * the run finished Cleared (interface contract section 7: only a Cleared
+	 * result may ever be handed to rewards); a Failed result is never reward
+	 * eligible, and unknown / non-terminal runs are not either. M3 will claim
+	 * the reward ONCE by SettlementId (FPendingReward); this card stores no
+	 * save game and grants no rewards.
+	 */
+	bool IsRewardEligible(uint64 RunId) const;
+
 private:
 	/**
 	 * Shared terminal transition body: guards the Running state, finalizes the
@@ -431,6 +441,17 @@ private:
 
 	/** Result of the last finished run (default before the first terminal). */
 	FRoomResult LastResult;
+
+	/**
+	 * M2-013: archive of every settled run's result snapshot, keyed by RunId.
+	 * EndRun fills it exactly once per run (first-terminal-wins makes the
+	 * transition itself once-only). Deliberately NOT part of the per-run
+	 * bookkeeping that ResetToIdle clears: results are the one thing that
+	 * must stay queryable after the session moved on (and M3 claims rewards
+	 * by SettlementId afterwards), so only Deinitialize (world cleanup)
+	 * drops the archive with the rest of the world state.
+	 */
+	TMap<uint64, FRoomResult> FinishedRunResults;
 
 	/** Events; Deinitialize clears them so world teardown never dangles. */
 	FOnRoomSessionRunStarted RunStartedDelegate;
