@@ -5,6 +5,9 @@
 #include "RoomResultWidget.generated.h"
 
 struct FRoomResult;
+struct FPendingReward;
+struct FRewardClaimAtomicOutcome;
+struct FItemDefinitionCatalog;
 
 class UBorder;
 class UButton;
@@ -41,21 +44,115 @@ struct FRoomResultViewModel
 	FString SummaryText;
 
 	/**
-	 * Reward line; ALWAYS empty in M2: this card has no reward/equipment
-	 * data, so nothing may be invented here (no fake counts, the card's
-	 * explicit rule). A later settlement task owns the real content; while
-	 * the line is empty the widget keeps the reward row hidden.
+	 * Reward line; ALWAYS empty in M2/M3-018: the M2 view model carries no
+	 * reward data (nothing is invented). The M3-018 settlement reward area is
+	 * a SEPARATE view model (FRoomRewardViewModel below) filled only from the
+	 * profile's pending draft; while that one is invalid the reward row stays
+	 * hidden.
 	 */
 	FString RewardText;
 };
 
-/**
- * Builds the display state of one finished run from the session's result.
- * Pure function (no world, no clock): the headline derives from bCleared,
- * the summary from ElapsedSeconds/KilledCount, and the reward line stays
- * empty because no reward data exists in M2 (never invented).
- */
 UEMMO_API FRoomResultViewModel MakeRoomResultViewModel(const FRoomResult& Result);
+
+// ----- M3-018: settlement reward area (pure view model) ----------------------
+
+/**
+ * M3-018: one display line of a pending draft item. The texts are built from
+ * the INSTANCE's owned data (rolled stats) plus its definition display name;
+ * a missing/unknown definition degrades to the readable "<unknown item>"
+ * placeholder (the M3-011 rule) and never crashes.
+ */
+struct FRoomRewardItemLine
+{
+	/** Definition display name; "<unknown item>" when no definition resolves. */
+	FString DisplayName;
+
+	/** Instance stats line "Atk+<a> Def+<d> HP+<h>" (zeros included). */
+	FString StatsText;
+};
+
+/**
+ * M3-018: the five display states of the settlement reward area. Pure value
+ * enum derived by DeriveRoomRewardClaimState from the reward draft plus one
+ * URewardService claim outcome - never from UI-internal assumptions.
+ */
+enum class ERoomRewardClaimState : uint8
+{
+	/** A draft snapshot is bound and no claim was attempted yet. */
+	Unclaimed,
+
+	/** The claim request is in flight (the save may take frames). */
+	Saving,
+
+	/** The claim committed (items entered the inventory) or was claimed earlier. */
+	Claimed,
+
+	/** Nothing fit (full inventory): the draft stays pending, retry stays possible. */
+	InventoryFull,
+
+	/** Save failure / rejection: a readable error, NO fake completion, retry stays possible. */
+	Failed
+};
+
+/**
+ * M3-018: display state of the reward area of one finished CLEARED run. Built
+ * by MakeRoomRewardViewModelFromDraft from the profile's pending draft
+ * snapshot - the SAME draft every re-presentation shows (the roll happened
+ * once at BeginReward time, the display never re-rolls). The claim state and
+ * the status text are updated by ApplyRoomRewardClaimOutcome from the real
+ * URewardService claim result (the UI reflects the actual save outcome).
+ */
+struct FRoomRewardViewModel
+{
+	/** True only when bound from a draft snapshot (the area stays hidden otherwise). */
+	bool bValid = false;
+
+	/** Business identity of the settlement this draft belongs to. */
+	uint64 SettlementId = 0;
+
+	/** XP granted by the settlement (design: 50 per cleared room). */
+	int32 XP = 0;
+
+	/** One display line per draft item (draft order; no invented entries). */
+	TArray<FRoomRewardItemLine> Items;
+
+	/** "Reward: XP <x>    <name> (<stats>)..."; the row text while pending. */
+	FString RewardText;
+
+	/** The five-state claim display state (Unclaimed right after a bind). */
+	ERoomRewardClaimState ClaimState = ERoomRewardClaimState::Unclaimed;
+
+	/** Readable claim feedback per state; empty while Unclaimed. */
+	FString StatusText;
+};
+
+/**
+ * Builds the reward display from one pending draft snapshot (pure function;
+ * no world, no clock, no re-roll). Catalog may be null or may not know a
+ * DefinitionId - the line degrades to the M3-011 placeholders while the
+ * instance's own stats still display. The state starts Unclaimed.
+ */
+UEMMO_API FRoomRewardViewModel MakeRoomRewardViewModelFromDraft(
+	const FPendingReward& Draft, const FItemDefinitionCatalog* Catalog);
+
+/**
+ * Pure mapping of one atomic claim outcome to the five display states:
+ * Claimed/PartiallyClaimed/AlreadyClaimed -> Claimed (an AlreadyClaimed
+ * answer is the persisted truth of an earlier claim, not a fake completion),
+ * InventoryFull -> InventoryFull, every failure/rejection value -> Failed.
+ */
+UEMMO_API ERoomRewardClaimState DeriveRoomRewardClaimState(const FRewardClaimAtomicOutcome& Claim);
+
+/**
+ * Returns a copy of Base with one claim outcome applied (pure function): the
+ * claim state derives via DeriveRoomRewardClaimState and the status text is
+ * the readable per-state feedback (the full-bag prompt, the saved-claim line
+ * or the failure reason). The item lines are the draft snapshot and never
+ * change here - a failure keeps the ORIGINAL reward visible and retryable.
+ */
+UEMMO_API FRoomRewardViewModel ApplyRoomRewardClaimOutcome(
+	const FRoomRewardViewModel& Base, const FRewardClaimAtomicOutcome& Claim);
 
 /**
  * M2-012: one-shot request guard of the result screen's action paths. The
@@ -161,8 +258,45 @@ public:
 	/** Fired by the Return button (the HUD executes the real leave path). */
 	FRoomResultActionRequested ReturnRequested;
 
+	/**
+	 * M3-018: fired by the Claim button (the HUD executes the real
+	 * URewardService::ClaimPendingAtomic; the widget never claims and never
+	 * re-rolls anything itself).
+	 */
+	FRoomResultActionRequested RewardClaimRequested;
+
 	/** Enables/disables both buttons together (the visible anti-double-click half). */
 	void SetActionButtonsEnabled(bool bNewEnabled);
+
+	// ----- M3-018: settlement reward area ------------------------------------
+
+	/**
+	 * Fills the reward area from one draft snapshot view model (pure fill;
+	 * works before the widget ever reaches a viewport). An invalid view model
+	 * (defeat, no draft) collapses the whole area - no invented reward.
+	 */
+	void BindReward(const FRoomRewardViewModel& Reward);
+
+	/** Flips the reward area to the Saving state (claim in flight; button disabled). */
+	void SetRewardClaimSaving();
+
+	/**
+	 * Applies one real claim outcome: derives the state via the pure
+	 * ApplyRoomRewardClaimOutcome and re-arms the Claim button exactly on the
+	 * retryable failures (InventoryFull/Failed) - a committed claim keeps the
+	 * button disabled (nothing left to claim).
+	 */
+	void ApplyRewardClaimOutcome(const FRewardClaimAtomicOutcome& Claim);
+
+	/**
+	 * M3-018: the Claim button's click path (public UFUNCTION so headless
+	 * tests can drive the exact click entry, the UInventoryRowButton::
+	 * HandleRowClicked precedent): the first click disables the button (the
+	 * visible anti-double-click half) and broadcasts once; a click on the
+	 * disabled button is dropped.
+	 */
+	UFUNCTION()
+	void HandleClaimButtonClicked();
 
 	// -- Read seams (tests and the HUD) ----------------------------------------
 
@@ -174,6 +308,13 @@ public:
 	UButton* PeekReturnButton() const { return ReturnButton; }
 	UTextBlock* PeekRetryLabel() const { return RetryLabel; }
 	UTextBlock* PeekReturnLabel() const { return ReturnLabel; }
+
+	// -- M3-018 read seams (tests and the HUD) ----------------------------------
+
+	const FRoomRewardViewModel& PeekRewardViewModel() const { return RewardViewModel; }
+	UButton* PeekClaimButton() const { return ClaimButton; }
+	UTextBlock* PeekClaimLabel() const { return ClaimLabel; }
+	UTextBlock* PeekRewardStatusBlock() const { return RewardStatusBlock; }
 
 private:
 	/** Builds the whole control tree in code (idempotent). */
@@ -187,6 +328,9 @@ private:
 
 	/** Re-fills every text from the current view model (reward row included). */
 	void ApplyViewModelToControls();
+
+	/** M3-018: applies the reward view model to the reward controls (texts, visibility, claim button). */
+	void ApplyRewardToControls();
 
 	UPROPERTY(Transient)
 	TObjectPtr<UCanvasPanel> RootCanvas;
@@ -215,6 +359,18 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UTextBlock> ReturnLabel;
 
+	// ----- M3-018: reward area controls ----------------------------------------
+
+	UPROPERTY(Transient)
+	TObjectPtr<UButton> ClaimButton;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> ClaimLabel;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> RewardStatusBlock;
+
 	FRoomResultViewModel ViewModel;
+	FRoomRewardViewModel RewardViewModel;
 	bool bControlsBuilt = false;
 };

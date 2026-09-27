@@ -17,9 +17,14 @@
 #include "Room/RoomSessionSubsystem.h"
 #include "UI/DamageNumberModel.h"
 #include "UI/InventoryWidget.h"
+#include "UI/PendingRewardsWidget.h"
 #include "Items/ItemDefinition.h"
 #include "Items/ItemInstance.h"
+#include "Items/InventoryModel.h"
+#include "Persistence/ProfileSaveService.h"
+#include "Profile/GameFlowSubsystem.h"
 #include "Profile/ProfileSubsystem.h"
+#include "Profile/RewardService.h"
 
 namespace
 {
@@ -72,7 +77,7 @@ namespace
 void APrototypeHUD::DrawHUD()
 {
     Super::DrawHUD();
-    DrawRect(FLinearColor(0.02f, 0.03f, 0.05f, 0.86f), 18, 18, 630, 84);
+    DrawRect(FLinearColor(0.02f, 0.03f, 0.05f, 0.86f), 18, 18, 630, 110);
     // M2-017: stage copy refreshed for the M2 room combat prototype (pending
     // playtest); the M1-only line is obsolete now that M2 rooms are in.
     DrawText(TEXT("UE-MMO | M2: room combat prototype (pending playtest)"), FLinearColor::White, 32, 28, nullptr, 1.2f);
@@ -83,6 +88,25 @@ void APrototypeHUD::DrawHUD()
     // M2-017: the stage note reflects the implemented M1 combat + M2 wave
     // room instead of the stale "M2 planned" text.
     DrawText(TEXT("Single-player. M1 combat + M2 wave room implemented; M3 progression planned."), FLinearColor(0.9f, 0.8f, 0.45f), 32, 77);
+
+    // M3-018: the pending-reward badge while the menu flow state owns the
+    // screen (the card's minimal HUD hook point: canvas text of the prototype
+    // HUD; a count of zero shows nothing). The pure badge text and the count
+    // itself are testable without a HUD.
+    if (const UGameFlowSubsystem* Flow = ResolveGameFlowSubsystem())
+    {
+        if (Flow->GetState() == EGameFlowState::Menu)
+        {
+            if (const UProfileSubsystem* Profile = ResolveProfileSubsystem())
+            {
+                const FString Badge = MakePendingRewardsBadgeText(Profile->GetPendingRewards().Num());
+                if (!Badge.IsEmpty())
+                {
+                    DrawText(Badge, FLinearColor(1.0f, 0.85f, 0.3f, 1.0f), 32, 101);
+                }
+            }
+        }
+    }
 
     // M1-028: the debug overlay is a pure display layer gated by the F1 flag.
     // With it off nothing below runs: no references resolved, no text, no box,
@@ -632,6 +656,15 @@ bool APrototypeHUD::EnsureResultWidget()
             HUD->HandleReturnRequested();
         }
     });
+    // M3-018: the Claim button forwards through the same delegate pattern; the
+    // HUD owns the real atomic claim (the widget never claims itself).
+    Widget->RewardClaimRequested.AddLambda([WeakHUD]()
+    {
+        if (APrototypeHUD* HUD = WeakHUD.Get())
+        {
+            HUD->HandleRewardClaimRequested();
+        }
+    });
     ResultWidgetPtr = Widget;
     return true;
 }
@@ -645,6 +678,18 @@ void APrototypeHUD::HandleRunEnded(const FRoomResult& Result)
     RoomResultViewModel = MakeRoomResultViewModel(Result);
     RetryGuard.ReArm();
     ReturnGuard.ReArm();
+
+    // M3-018: a CLEARED run settles its reward draft (the idempotent
+    // BeginReward answers a repeat of the same SettlementId with the ORIGINAL
+    // draft, so a re-presentation never re-rolls); a failed run binds no
+    // reward area at all (the card's Failed rule).
+    RoomRewardViewModel = FRoomRewardViewModel();
+    RewardClaimGuard.ReArm();
+    if (Result.bCleared)
+    {
+        PrepareRoomRewardDraft(Result);
+    }
+
     if (!EnsureResultWidget())
     {
         return;
@@ -652,6 +697,7 @@ void APrototypeHUD::HandleRunEnded(const FRoomResult& Result)
     if (URoomResultWidget* Widget = ResultWidgetPtr.Get())
     {
         Widget->BindResult(Result);
+        Widget->BindReward(RoomRewardViewModel);
     }
     ShowRoomResultScreen();
     // M3-012: a finished run lifts the equip block; if the inventory screen is
@@ -799,6 +845,174 @@ void APrototypeHUD::HandleReturnRequested()
     {
         UE_LOG(LogTemp, Warning, TEXT("UEMMO M2-012: return could not find the room session."));
     }
+}
+
+// ----- M3-018: settlement reward claim ----------------------------------------
+
+void APrototypeHUD::PrepareRoomRewardDraft(const FRoomResult& Result)
+{
+    // The draft lives in the GameInstance-level profile; without it (or the
+    // service) there is nowhere to settle, so the reward area stays hidden.
+    RoomRewardViewModel = FRoomRewardViewModel();
+    UProfileSubsystem* Profile = ResolveProfileSubsystem();
+    URewardService* Reward = EnsureRewardService();
+    if (Profile == nullptr || Reward == nullptr || !Profile->HasProfile())
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UEMMO M3-018: no profile or reward service - the victory screen shows no reward area."));
+        return;
+    }
+    if (!EnsureRewardSettlementCatalog())
+    {
+        return;
+    }
+
+    // Idempotent settlement entry: Applied creates the draft once, a repeat of
+    // the same SettlementId answers AlreadyApplied with the ORIGINAL draft (the
+    // display data source is that snapshot - same items on every re-open); an
+    // already-claimed settlement answers with a default draft and the area
+    // stays hidden (nothing pending).
+    const FRewardBeginOutcome Begin = Reward->BeginReward(Result, RewardSettlementCatalog);
+    if ((Begin.Result == ERewardBeginResult::Applied || Begin.Result == ERewardBeginResult::AlreadyApplied)
+        && Begin.Draft.SettlementId == Result.SettlementId)
+    {
+        RoomRewardViewModel = MakeRoomRewardViewModelFromDraft(Begin.Draft, &RewardSettlementCatalog);
+        UE_LOG(LogTemp, Display, TEXT("UEMMO M3-018: reward area bound (settlement %llu, XP %d, %d item(s), begin=%d)."),
+            RoomRewardViewModel.SettlementId, RoomRewardViewModel.XP, RoomRewardViewModel.Items.Num(),
+            static_cast<int32>(Begin.Result));
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UEMMO M3-018: the settlement did not produce a pending draft (result %d: %s) - no reward area."),
+            static_cast<int32>(Begin.Result), *Begin.Error);
+    }
+}
+
+URewardService* APrototypeHUD::EnsureRewardService()
+{
+    URewardService* Reward = RewardServicePtr.Get();
+    if (Reward == nullptr)
+    {
+        Reward = NewObject<URewardService>(this);
+        if (Reward == nullptr)
+        {
+            return nullptr;
+        }
+        RewardServicePtr = Reward;
+    }
+    // (Re)bind per use: a fresh GameInstance profile is picked up cheaply and
+    // a destroyed subsystem is detected on the service side (weak reference).
+    if (UProfileSubsystem* Profile = ResolveProfileSubsystem())
+    {
+        Reward->BindProfile(Profile);
+    }
+    return Reward;
+}
+
+UProfileSaveService* APrototypeHUD::EnsureRewardSaveService()
+{
+    if (RewardSaveService != nullptr && !RewardSaveService->GetSlotPrefix().IsEmpty())
+    {
+        return RewardSaveService;
+    }
+    // The production prefix of the M3-015/M3-017 chain: the claim's atomic
+    // snapshot travels through the same A/B slot pair the startup pass reads.
+    UProfileSaveService* Service = NewObject<UProfileSaveService>(this);
+    if (Service == nullptr || !Service->Initialize(TEXT("Profile_")))
+    {
+        // Graceful degradation: the claim answers RejectedNoSaveService, the
+        // UI shows a readable failure and the draft stays pending/retryable.
+        UE_LOG(LogTemp, Error, TEXT("UEMMO M3-018: the save service rejected the production prefix - the atomic claim will refuse and stay retryable."));
+        return nullptr;
+    }
+    RewardSaveService = Service;
+    return Service;
+}
+
+bool APrototypeHUD::EnsureRewardSettlementCatalog()
+{
+    if (bRewardCatalogReady)
+    {
+        return true;
+    }
+    // Interim production source: the code-built double of Data/items.json (the
+    // same values the M3-007 starter drop table references). A data-driven
+    // catalog wiring belongs to a later task; the display degrades to the
+    // readable "<unknown item>" placeholder for any unresolved id.
+    auto StageDefinition = [](FName Id, const FString& DisplayName, EItemSlot Slot,
+        float Attack, float Defense, float MaxHP)
+    {
+        FItemDefinition Definition;
+        Definition.DefinitionId = Id;
+        Definition.DisplayName = DisplayName;
+        Definition.Slot = Slot;
+        Definition.BaseStats.Attack = Attack;
+        Definition.BaseStats.Defense = Defense;
+        Definition.BaseStats.MaxHP = MaxHP;
+        Definition.Rarity = EItemRarity::Normal;
+        return Definition;
+    };
+    FString CatalogError;
+    RewardSettlementCatalog.AddDefinition(
+        StageDefinition(TEXT("weapon_training"), TEXT("Training Sword"), EItemSlot::Weapon, 5.0f, 0.0f, 0.0f), &CatalogError);
+    RewardSettlementCatalog.AddDefinition(
+        StageDefinition(TEXT("armor_training"), TEXT("Training Armor"), EItemSlot::Armor, 0.0f, 3.0f, 0.0f), &CatalogError);
+    RewardSettlementCatalog.AddDefinition(
+        StageDefinition(TEXT("charm_training"), TEXT("Training Charm"), EItemSlot::Accessory, 0.0f, 0.0f, 20.0f), &CatalogError);
+    bRewardCatalogReady = true;
+    return true;
+}
+
+void APrototypeHUD::HandleRewardClaimRequested()
+{
+    // Anti-double-click: the first request consumes the one-shot guard; the
+    // duplicate of a fast double click is dropped here (the widget's disabled
+    // button is the visible half).
+    if (!RewardClaimGuard.TryAccept())
+    {
+        UE_LOG(LogTemp, Verbose, TEXT("UEMMO M3-018: duplicate claim request dropped (anti double-click)."));
+        return;
+    }
+    URoomResultWidget* Widget = ResultWidgetPtr.Get();
+    UProfileSubsystem* Profile = ResolveProfileSubsystem();
+    URewardService* Reward = EnsureRewardService();
+    if (Widget == nullptr || Profile == nullptr || Reward == nullptr || !RoomRewardViewModel.bValid)
+    {
+        // Not a double click but a refused attempt: re-arm so a later press
+        // can retry once the context exists; the screen stays up.
+        RewardClaimGuard.ReArm();
+        if (Widget != nullptr)
+        {
+            FRewardClaimAtomicOutcome Refused;
+            Refused.Result = ERewardClaimAtomicResult::RejectedNoProfile;
+            Refused.Error = TEXT("no profile or reward context is available for the claim");
+            Widget->ApplyRewardClaimOutcome(Refused);
+        }
+        UE_LOG(LogTemp, Warning, TEXT("UEMMO M3-018: claim unavailable (missing profile/context) - the reward stays pending."));
+        return;
+    }
+
+    // The claim is in flight: the visible Saving state (the save may take
+    // frames; the returned outcome below is the only confirmation gate).
+    Widget->SetRewardClaimSaving();
+
+    // The M3-016 atomic commit: XP + items + PendingRewards + applied ids as
+    // ONE snapshot; without a save service it refuses and the UI stays
+    // retryable (graceful degradation, never a fake completion).
+    UProfileSaveService* SaveService = EnsureRewardSaveService();
+    const FRewardClaimAtomicOutcome Outcome = Reward->ClaimPendingAtomic(
+        RoomRewardViewModel.SettlementId, Profile, SaveService);
+    Widget->ApplyRewardClaimOutcome(Outcome);
+    RoomRewardViewModel = Widget->PeekRewardViewModel();
+
+    UE_LOG(LogTemp, Display, TEXT("UEMMO M3-018: claim outcome %d (stored %d, retained %d, xp %d, save %d): %s"),
+        static_cast<int32>(Outcome.Result), Outcome.ClaimedItemCount, Outcome.RetainedItemCount,
+        Outcome.bGrantedXP ? 1 : 0, Outcome.bSaveCommitted ? 1 : 0, *Outcome.Error);
+}
+
+const UGameFlowSubsystem* APrototypeHUD::ResolveGameFlowSubsystem() const
+{
+    const UGameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+    return GameInstance ? GameInstance->GetSubsystem<UGameFlowSubsystem>() : nullptr;
 }
 
 // ----- M3-011: read-only inventory list screen --------------------------------

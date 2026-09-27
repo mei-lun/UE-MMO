@@ -19,10 +19,13 @@ class ATrainingEnemy;
 class UAttackDefinition;
 class UCombatComponent;
 class UEnemyDefinition;
+class UGameFlowSubsystem;
 class UHealthComponent;
+class UProfileSaveService;
 class UProfileSubsystem;
 class URoomDefinition;
 class URoomSessionSubsystem;
+class URewardService;
 struct FCombatHit;
 struct FRoomResult;
 
@@ -205,6 +208,27 @@ public:
     /** M3-012 test seam: the presented inventory widget itself (weak-safe; null when dismissed). */
     UInventoryWidget* PeekInventoryWidget() const { return InventoryWidgetPtr.Get(); }
 
+    // ----- M3-018: settlement reward claim ------------------------------------
+
+    /**
+     * M3-018: the claim request path behind the result screen's Claim button
+     * (and the tests' direct driver, the M2-012 HandleRetryRequested
+     * precedent): the one-shot guard drops the duplicate of a fast double
+     * click, the claim runs through URewardService::ClaimPendingAtomic (the
+     * M3-016 atomic commit; the UI reflects the RETURNED outcome only), and a
+     * retryable failure re-arms the Claim button with a readable error.
+     */
+    void HandleRewardClaimRequested();
+
+    /** M3-018 test seam: the reward area is bound from a pending draft. */
+    bool HasRoomRewardDraft() const { return RoomRewardViewModel.bValid; }
+
+    /** M3-018 test seam: the reward view model of the current presentation. */
+    const FRoomRewardViewModel& PeekRoomRewardViewModel() const { return RoomRewardViewModel; }
+
+    /** M3-018 test seam: the one-shot guard behind the Claim request path. */
+    const FRoomResultActionGuard& PeekRewardClaimGuard() const { return RewardClaimGuard; }
+
 protected:
     virtual void BeginPlay() override;
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -285,6 +309,23 @@ private:
     /** M3-012: the session's Running state (false without a session). */
     bool IsRoomSessionRunning() const;
 
+    // ----- M3-018: settlement reward internals ----------------------------------
+
+    /** M3-018: binds the reward view model from the idempotent BeginReward draft (cleared runs only). */
+    void PrepareRoomRewardDraft(const FRoomResult& Result);
+
+    /** M3-018: the HUD-owned reward service (lazy; bound to the world's profile). */
+    URewardService* EnsureRewardService();
+
+    /** M3-018: the lazily initialized production save service (null when unavailable: the claim then refuses and stays retryable). */
+    UProfileSaveService* EnsureRewardSaveService();
+
+    /** M3-018: builds the interim settlement catalog (the code-built double of Data/items.json). */
+    bool EnsureRewardSettlementCatalog();
+
+    /** M3-018: the game-flow subsystem of the world's game instance (null-safe). */
+    const UGameFlowSubsystem* ResolveGameFlowSubsystem() const;
+
     /** M3-012: OnRunStarted handler - disables the equip actions live. */
     void HandleRoomRunStartedForInventory();
 
@@ -317,6 +358,27 @@ private:
 
     /** M3-011: the debug staging ran once for this HUD (items added exactly once). */
     bool bInventoryStaged = false;
+
+    // ----- M3-018: settlement reward state --------------------------------------
+
+    /** M3-018: the save service of the atomic claim (lazy; production prefix). */
+    UPROPERTY(Transient)
+    TObjectPtr<UProfileSaveService> RewardSaveService;
+
+    /** M3-018: the HUD-owned reward service (lazy; weak like the profile). */
+    TWeakObjectPtr<URewardService> RewardServicePtr;
+
+    /** M3-018: one-shot guard of the Claim request path. */
+    FRoomResultActionGuard RewardClaimGuard;
+
+    /** M3-018: the reward view model of the current presentation (invalid = no reward area). */
+    FRoomRewardViewModel RoomRewardViewModel;
+
+    /** M3-018: the interim settlement catalog (code-built Data/items.json double). */
+    FItemDefinitionCatalog RewardSettlementCatalog;
+
+    /** M3-018: the interim catalog was built once for this HUD. */
+    bool bRewardCatalogReady = false;
 
     /** M2-012: the presented result screen (weak; recreated per presentation). */
     TWeakObjectPtr<URoomResultWidget> ResultWidgetPtr;
