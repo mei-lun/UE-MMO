@@ -9,6 +9,13 @@
 // on wave-spawn maps only (never on the training map, which keeps its
 // render-only semantics).
 //
+// M2-016: after an accepted StartRoom the production session chain runs -
+// SetPlayer(entering pawn), BeginWaves(fallback-or-asset definition, enemy
+// definition from EnemyDefinitionPath) and SetRoomRetryContext on the
+// PrototypeHUD (the M2-012 retry button's production context). The session
+// clock itself is injected by APrototypeCharacter::Tick (the game frame
+// driver), so the wave pump advances with the real game frames.
+//
 // ARoomExit: the door state is driven exclusively by the session events
 // (OnRunStarted relocks, OnRunEnded unlocks for a Cleared result only) plus
 // one BeginPlay state sync; there is no timer and no win guessing. The lock
@@ -28,8 +35,14 @@
 #include "UObject/UObjectGlobals.h"
 
 #include "../PrototypeCharacter.h"
+#include "../PrototypeHUD.h"
+#include "../Enemy/EnemyDefinition.h"
 #include "RoomDefinition.h"
 #include "RoomSessionSubsystem.h"
+
+#include "Engine/World.h"
+#include "EngineUtils.h"
+#include "GameFramework/PlayerController.h"
 
 namespace
 {
@@ -64,6 +77,18 @@ namespace
 	/** Locked = red, unlocked = green (plain color marker, no physical blocking). */
 	const FLinearColor M2_009LockedColor(0.85f, 0.12f, 0.12f, 1.0f);
 	const FLinearColor M2_009UnlockedColor(0.16f, 0.75f, 0.22f, 1.0f);
+
+	// M2_016: production defaults of the session wiring. The enemy definition
+	// asset is the one Scripts/Editor/create_enemy_assets.py generates from
+	// Data/enemies.json (the melee_grunt row); the fallback wave shape mirrors
+	// the Data/rooms.json room_training_01 waves (2 + 3 melee_grunt at the
+	// catalog spawn locations, world space, cm). A trigger placed with class
+	// defaults - like the M2-009 map placement on L_CombatRoom01, which was
+	// saved before these properties existed - therefore carries them on load.
+	const TCHAR* M2_016DefaultEnemyAssetPath =
+		TEXT("/Game/UEMMO/Enemy/Definitions/DA_melee_grunt.DA_melee_grunt");
+
+	const TCHAR* M2_016DefaultEnemyId = TEXT("melee_grunt");
 }
 
 // -- ARoomTrigger -------------------------------------------------------------
@@ -81,6 +106,27 @@ ARoomTrigger::ARoomTrigger()
 	ActivationVolume->SetCollisionResponseToAllChannels(ECR_Ignore);
 	ActivationVolume->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	ActivationVolume->SetGenerateOverlapEvents(true);
+
+	// M2-016 production defaults: the melee_grunt enemy asset (generated from
+	// Data/enemies.json) and the Data/rooms.json room_training_01 wave shape
+	// for the transient fallback definition. The existing M2-009 map placement
+	// picks both up on load (the properties were never serialized there).
+	EnemyDefinitionPath = TSoftObjectPtr<UEnemyDefinition>(FSoftObjectPath(M2_016DefaultEnemyAssetPath));
+
+	FRoomWaveDefinition DefaultWave0;
+	DefaultWave0.EnemyId = FName(M2_016DefaultEnemyId);
+	DefaultWave0.Count = 2;
+	DefaultWave0.SpawnLocations.Add(FVector(300.0, 0.0, 88.0));
+	DefaultWave0.SpawnLocations.Add(FVector(450.0, -150.0, 88.0));
+	FallbackWaves.Add(DefaultWave0);
+
+	FRoomWaveDefinition DefaultWave1;
+	DefaultWave1.EnemyId = FName(M2_016DefaultEnemyId);
+	DefaultWave1.Count = 3;
+	DefaultWave1.SpawnLocations.Add(FVector(600.0, 100.0, 88.0));
+	DefaultWave1.SpawnLocations.Add(FVector(750.0, -100.0, 88.0));
+	DefaultWave1.SpawnLocations.Add(FVector(0.0, 300.0, 88.0));
+	FallbackWaves.Add(DefaultWave1);
 }
 
 void ARoomTrigger::BeginPlay()
@@ -125,6 +171,9 @@ void ARoomTrigger::HandleActivationBeginOverlap(UPrimitiveComponent* /*Overlappe
 		UE_LOG(LogTemp, Display,
 			TEXT("UEMMO RoomTrigger: player entered the activation volume; run started (RunId %llu, room %s)."),
 			Session->GetRunId(), *Definition->RoomId.ToString());
+		// M2-016: the production chain behind an accepted start - register the
+		// pawn, start the wave progression, hand the retry context to the HUD.
+		StartProductionSession(Player, Definition);
 	}
 	else
 	{
@@ -132,6 +181,99 @@ void ARoomTrigger::HandleActivationBeginOverlap(UPrimitiveComponent* /*Overlappe
 			TEXT("UEMMO RoomTrigger: player re-entry ignored - the session keeps its active run (RunId %llu)."),
 			Session->GetRunId());
 	}
+}
+
+void ARoomTrigger::StartProductionSession(APrototypeCharacter* Player, const URoomDefinition* Definition)
+{
+	URoomSessionSubsystem* Session = ResolveSession();
+	if (Session == nullptr || Player == nullptr || Definition == nullptr)
+	{
+		return;
+	}
+	// The death-failure binding (M2-010): the entering pawn is the run's
+	// player. Re-registering the same pawn is the retry-loop rebind and the
+	// SetPlayer guard keeps exactly one handler bound.
+	Session->SetPlayer(Player);
+
+	// The wave progression (M2-008) needs an enemy definition; without one the
+	// run stays StartRoom-only with exactly one diagnostic (no waves, no
+	// retries of the load inside the same actor lifetime).
+	UEnemyDefinition* EnemyDefinition = ResolveEnemyDefinition();
+	if (EnemyDefinition == nullptr)
+	{
+		UE_LOG(LogTemp, Warning,
+			TEXT("UEMMO RoomTrigger: run %llu started without waves - the enemy definition '%s' did not resolve."),
+			Session->GetRunId(), *EnemyDefinitionPath.ToString());
+		return;
+	}
+	if (Session->BeginWaves(Definition, EnemyDefinition))
+	{
+		UE_LOG(LogTemp, Display,
+			TEXT("UEMMO RoomTrigger: run %llu wave progression started (%d wave(s), enemy %s)."),
+			Session->GetRunId(), Definition->Waves.Num(), *EnemyDefinition->EnemyId.ToString());
+	}
+	// A refused BeginWaves (no waves on the definition, already active, ...)
+	// keeps the M2-009 StartRoom-only semantics; the session logged the reason.
+
+	// The M2-012 retry context: the HUD's retry button executes the real
+	// URoomRetryService flow with exactly these definitions (the HUD path was
+	// chosen over extending the session's public interface).
+	if (APrototypeHUD* Hud = ResolveHud())
+	{
+		Hud->SetRoomRetryContext(Definition, EnemyDefinition);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Verbose,
+			TEXT("UEMMO RoomTrigger: no prototype HUD in this world; the retry context was not handed over."));
+	}
+}
+
+UEnemyDefinition* ARoomTrigger::ResolveEnemyDefinition()
+{
+	if (CachedEnemyDefinition != nullptr)
+	{
+		return CachedEnemyDefinition;
+	}
+	if (EnemyDefinitionPath.IsNull())
+	{
+		return nullptr;
+	}
+	CachedEnemyDefinition = EnemyDefinitionPath.LoadSynchronous();
+	if (CachedEnemyDefinition == nullptr && !bEnemyDefinitionFailureLogged)
+	{
+		// Exactly one diagnostic per actor for a broken/missing asset; a later
+		// entry retries the load silently.
+		bEnemyDefinitionFailureLogged = true;
+		UE_LOG(LogTemp, Warning,
+			TEXT("UEMMO RoomTrigger: the enemy definition asset '%s' could not be loaded."),
+			*EnemyDefinitionPath.ToString());
+	}
+	return CachedEnemyDefinition;
+}
+
+APrototypeHUD* ARoomTrigger::ResolveHud()
+{
+	UWorld* World = GetWorld();
+	if (World == nullptr)
+	{
+		return nullptr;
+	}
+	// Production form first: the local player controller's HUD.
+	if (APlayerController* PlayerController = World->GetFirstPlayerController())
+	{
+		if (APrototypeHUD* Hud = Cast<APrototypeHUD>(PlayerController->GetHUD()))
+		{
+			return Hud;
+		}
+	}
+	// Headless/test fallback: one class-filtered iterator pass (the M1-028
+	// reference-resolution precedent). Overlaps are rare, per-entry events.
+	for (TActorIterator<APrototypeHUD> It(World); It; ++It)
+	{
+		return *It;
+	}
+	return nullptr;
 }
 
 URoomSessionSubsystem* ARoomTrigger::ResolveSession()
@@ -153,12 +295,14 @@ const URoomDefinition* ARoomTrigger::ResolveDefinition()
 		// room-catalog task fills this on the map; no code change needed).
 		return RoomDefinitionAsset.LoadSynchronous();
 	}
-	// Transient fallback carrying only the RoomId: exactly what StartRoom
-	// reads. Cached per actor; transient, so it never saves into the map.
+	// Transient fallback carrying the RoomId plus the trigger's wave table
+	// (M2-016): everything StartRoom and BeginWaves read. Cached per actor;
+	// transient, so it never saves into the map.
 	if (FallbackDefinition == nullptr)
 	{
 		FallbackDefinition = NewObject<URoomDefinition>(GetTransientPackage(), NAME_None, RF_Transient);
 		FallbackDefinition->RoomId = RoomId;
+		FallbackDefinition->Waves = FallbackWaves;
 	}
 	return FallbackDefinition;
 }

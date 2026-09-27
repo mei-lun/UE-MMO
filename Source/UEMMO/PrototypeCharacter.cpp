@@ -19,6 +19,7 @@
 #include "InputMappingContext.h"
 #include "InputModifiers.h"
 #include "PrototypeHUD.h"
+#include "Room/RoomSessionSubsystem.h"
 #include "Room/TrainingResetService.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -500,6 +501,41 @@ void APrototypeCharacter::ApplyTrainingRoomReset()
 void APrototypeCharacter::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+    // M2-016: the room session clock injection at the M1-041 injection point.
+    // The owner's second per-frame duty - hand the World game clock to this
+    // world's URoomSessionSubsystem every game frame, so the M2-008 wave pump
+    // advances with the real game frames (the session never reads a wall
+    // clock itself). The subsystem is resolved through GetSubsystem and cached
+    // as a weak reference (re-resolved when it expired or the world changed);
+    // a world-less pawn keeps the pre-M2-016 semantics: no injection.
+    //
+    // The injected value is the frame-start game time (GetTimeSeconds() minus
+    // this frame's delta = exactly the previous GetTimeSeconds accumulation),
+    // NOT the mid-tick value: UWorld::Tick advances TimeSeconds BEFORE the
+    // actor tick phase, so the raw mid-tick read sits a float-rounding step
+    // (~1e-8, world ahead) above any externally scripted session-clock driver
+    // of the same world. The session pump runs on EVERY injection, so a
+    // mid-tick read ahead of the scripted value flips due births from the
+    // between-ticks window into the actor-tick phase, which changes physics
+    // depenetration outcomes for actors born inside an overlapping capsule
+    // (the locked M2-010 retry suite regressed on exactly that). Injecting the
+    // frame-start value makes this production driver defer to an earlier
+    // injection of the same frame by construction (previous frame time <
+    // any same-frame scripted time) while staying strictly monotonic and
+    // advancing once per game frame when - as in the real game - it is the
+    // only driver.
+    if (UWorld* World = GetWorld())
+    {
+        URoomSessionSubsystem* Session = RoomSessionPtr.Get();
+        if (Session == nullptr || Session->GetWorld() != World)
+        {
+            RoomSessionPtr = Session = World->GetSubsystem<URoomSessionSubsystem>();
+        }
+        if (Session != nullptr)
+        {
+            Session->SetSessionClockSeconds(World->GetTimeSeconds() - static_cast<double>(DeltaSeconds));
+        }
+    }
     // M1-012: the combat component advances its own 60 Hz action clock from
     // here. M1-041 (M1-H01 fix): the owner's per-frame duty - inject the
     // input game clock once per game frame, BEFORE TickCombat, from the World

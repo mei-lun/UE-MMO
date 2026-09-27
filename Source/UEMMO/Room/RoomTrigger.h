@@ -2,9 +2,13 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "RoomDefinition.h"
 #include "RoomTrigger.generated.h"
 
+class APrototypeCharacter;
+class APrototypeHUD;
 class UBoxComponent;
+class UEnemyDefinition;
 class URoomDefinition;
 class URoomSessionSubsystem;
 class UStaticMeshComponent;
@@ -25,8 +29,21 @@ struct FRoomResult;
  *
  * The room definition is optional: when the soft asset reference is empty
  * (the current state of the map until a later room-catalog task provides
- * definition assets) the trigger builds a transient definition carrying only
- * its RoomId, which is everything StartRoom reads.
+ * definition assets) the trigger builds a transient definition carrying its
+ * RoomId and the FallbackWaves wave table (M2-016), which is everything
+ * StartRoom and BeginWaves read.
+ *
+ * M2-016: the production session chain. After an accepted StartRoom the
+ * trigger (1) registers the entering pawn through Session->SetPlayer (the
+ * M2-010 death-failure binding; the retry-loop rebind is idempotent there),
+ * (2) loads the enemy definition asset from EnemyDefinitionPath
+ * (LoadSynchronous; a failure keeps the run StartRoom-only with one
+ * diagnostic - no waves without a definition), (3) calls
+ * Session->BeginWaves(Definition, EnemyDef) so the M2-008 progression runs,
+ * and (4) hands the resolved definitions to the PrototypeHUD through
+ * SetRoomRetryContext, so the M2-012 retry button has a production context
+ * (HUD path chosen over a Session extension on purpose: the session's public
+ * interface stays untouched).
  *
  * The session is located through the owning world at first use and held
  * weakly, so world teardown can never leave a dangling pointer.
@@ -56,7 +73,9 @@ private:
 	/**
 	 * Player entry: resolves definition + session and requests one run start.
 	 * Every rejection (non-player overlap, missing session, refused StartRoom
-	 * while a run is active) is logged and changes nothing.
+	 * while a run is active) is logged and changes nothing. After an accepted
+	 * start the M2-016 production chain runs (SetPlayer, BeginWaves, the HUD
+	 * retry context).
 	 */
 	UFUNCTION()
 	void HandleActivationBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -65,8 +84,30 @@ private:
 	/** World-based session lookup; re-resolves after the weak pointer expired. */
 	URoomSessionSubsystem* ResolveSession();
 
-	/** The assigned definition asset, or a cached transient definition from RoomId. */
+	/** The assigned definition asset, or a cached transient definition from RoomId + FallbackWaves. */
 	const URoomDefinition* ResolveDefinition();
+
+	/**
+	 * M2-016: the enemy definition from EnemyDefinitionPath (LoadSynchronous,
+	 * cached per actor). Null when the path is empty or the asset fails to
+	 * load; a failure logs exactly one diagnostic per actor.
+	 */
+	UEnemyDefinition* ResolveEnemyDefinition();
+
+	/**
+	 * M2-016: resolves the HUD the retry context is handed to. The owning
+	 * player controller's HUD first (the production form), then one
+	 * class-filtered iterator pass (the M1-028 precedent) so the headless
+	 * test worlds without a player controller resolve a spawned HUD too.
+	 */
+	APrototypeHUD* ResolveHud();
+
+	/**
+	 * M2-016: the post-StartRoom production chain: registers the entering
+	 * pawn (SetPlayer), starts the wave progression (BeginWaves) when the
+	 * enemy definition resolved, and hands the retry context to the HUD.
+	 */
+	void StartProductionSession(APrototypeCharacter* Player, const URoomDefinition* Definition);
 
 	/** Activation volume: overlap-only, fires for the player pawn. */
 	UPROPERTY(VisibleAnywhere, Category = "Room|Trigger")
@@ -84,9 +125,37 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Room|Trigger")
 	TSoftObjectPtr<URoomDefinition> RoomDefinitionAsset;
 
-	/** Cached transient fallback definition (built once from RoomId). */
+	/**
+	 * M2-016: the enemy definition asset the wave progression is started with
+	 * (BeginWaves needs one; the M2-001 catalog is the source). Defaults to
+	 * the melee_grunt asset generated from Data/enemies.json by
+	 * Scripts/Editor/create_enemy_assets.py. Empty disables wave spawning for
+	 * this trigger (StartRoom-only behavior).
+	 */
+	UPROPERTY(EditAnywhere, Category = "Room|Trigger")
+	TSoftObjectPtr<UEnemyDefinition> EnemyDefinitionPath;
+
+	/**
+	 * M2-016: wave data of the transient fallback definition, used only when
+	 * no RoomDefinitionAsset is assigned. The default mirrors the
+	 * Data/rooms.json room_training_01 wave shape (2 + 3 melee_grunt at the
+	 * catalog spawn locations), so a trigger placed with class defaults - as
+	 * the M2-009 map placement is - spawns the catalog waves without any map
+	 * edit. Clear the array to get the plain M2-009 StartRoom-only behavior.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Room|Trigger")
+	TArray<FRoomWaveDefinition> FallbackWaves;
+
+	/** Cached transient fallback definition (built once from RoomId + FallbackWaves). */
 	UPROPERTY(Transient)
 	TObjectPtr<URoomDefinition> FallbackDefinition;
+
+	/** M2-016: cached enemy definition loaded from EnemyDefinitionPath. */
+	UPROPERTY(Transient)
+	TObjectPtr<UEnemyDefinition> CachedEnemyDefinition;
+
+	/** M2-016: the one-shot diagnostic guard of a failed enemy definition load. */
+	bool bEnemyDefinitionFailureLogged = false;
 
 	/** Session found through the world; re-resolved when the weak pointer expired. */
 	TWeakObjectPtr<URoomSessionSubsystem> SessionPtr;

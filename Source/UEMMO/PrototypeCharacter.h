@@ -10,6 +10,7 @@ class USideViewCameraComponent;
 class UCombatComponent;
 class UCombatPresentationComponent;
 class UHealthComponent;
+class URoomSessionSubsystem;
 class UTrainingResetService;
 class UInputAction;
 class UInputMappingContext;
@@ -205,6 +206,11 @@ private:
     // M1-027: the registered session reset service (weak: a destroyed service
     // falls the R-key path back to the M0 local reset); empty = fallback.
     TWeakObjectPtr<UTrainingResetService> TrainingResetService;
+    // M2-016: the room session subsystem the Tick injects the session clock
+    // into, resolved through the owning world and held weakly (re-resolved
+    // when the pointer expired or the world changed; a world-less pawn skips
+    // the injection entirely).
+    TWeakObjectPtr<URoomSessionSubsystem> RoomSessionPtr;
     // M1-029: accumulated planar axis input; applied centrally in Tick.
     UE::UEMMO::Tasks::M1_029::FPlanarAxisState PlanarAxes;
     // M1-012: next combat input sequence; strictly increases per submitted intent.
