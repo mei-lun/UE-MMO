@@ -1,5 +1,7 @@
 #include "HealthComponent.h"
 
+#include "../Items/StatCalculator.h"
+
 UHealthComponent::UHealthComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
@@ -38,6 +40,22 @@ void UHealthComponent::ResetHealth()
 {
 	Health = MaxHealth;
 	bDied = false;
+}
+
+void UHealthComponent::SetMaxHealth(float NewMaxHealth)
+{
+	// Garbage bounds are refused (see the header contract): a non-finite or
+	// non-positive max never rewrites the pool.
+	if (!FMath::IsFinite(NewMaxHealth) || NewMaxHealth <= 0.0f)
+	{
+		return;
+	}
+	const float OldMax = MaxHealth;
+	MaxHealth = NewMaxHealth;
+	// The M3-005 pure clamp (min(CurrentHP, NewMax) with its hardening) is the
+	// single source of the no-heal clamp semantics; MaxHealth was already
+	// validated above, so the fallback branch of that function stays inert.
+	Health = FStatCalculator::ClampHealthOnMaxChange(Health, OldMax, NewMaxHealth);
 }
 
 bool UHealthComponent::IsAlive() const

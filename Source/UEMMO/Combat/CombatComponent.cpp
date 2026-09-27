@@ -143,15 +143,15 @@ namespace
 	// The design damage formula (Docs/01 section 8.2):
 	// damage = max(1, round((baseDamage + AttackPower * coefficient)
 	//                        * 100 / (100 + max(0, Defense))))
-	// Attacker AttackPower and defender Defense have no growth source yet
-	// (profile stats belong to M3), so both stay 0 here and the result is
-	// max(1, round(BaseDamage)): light_01 deducts exactly 10 and stays
-	// verifiable. The formula keeps the two attribute entry points named so
-	// M3 can wire real stats without reshaping the call site.
-	float M1_019_ComputeHitDamage(const UAttackDefinition& Definition)
+	// M3-010: the two attribute entry points are the wired growth attributes -
+	// AttackPower is the ATTACKER's CombatAttackPower (this component) and
+	// Defense is the VICTIM's CombatDefense (the call site reads it from the
+	// target's combat component). An unwired combatant keeps the 0/0 defaults,
+	// so the pre-M3-010 results stay verbatim (light_01 deducts exactly 10).
+	// Rounding is FMath::RoundToFloat (Floor(x + 0.5): half away from zero for
+	// the positive raw results this formula produces).
+	float M1_019_ComputeHitDamage(const UAttackDefinition& Definition, float AttackPower, float Defense)
 	{
-		constexpr float AttackPower = 0.0f;
-		constexpr float Defense = 0.0f;
 		const float RawDamage = (Definition.BaseDamage + AttackPower * Definition.AttackCoefficient)
 			* 100.0f / (100.0f + FMath::Max(0.0f, Defense));
 		return FMath::Max(1.0f, FMath::RoundToFloat(RawDamage));
@@ -545,6 +545,27 @@ void UCombatComponent::SetClockFrozen(bool bNewFrozen)
 bool UCombatComponent::IsClockFrozen() const
 {
 	return bClockFrozen;
+}
+
+void UCombatComponent::SetCombatStats(float InAttackPower, float InDefense)
+{
+	// M3-010: the hardening mirrors FStatCalculator's equipped-row rules: a
+	// non-finite field reads as 0 and a negative field clamps to 0, so a
+	// poisoned stat row can never poison the formula through this entry. The
+	// values are stored only; the damage formula consumes them from the green
+	// implementation on.
+	CombatAttackPower = (FMath::IsFinite(InAttackPower) && InAttackPower > 0.0f) ? InAttackPower : 0.0f;
+	CombatDefense = (FMath::IsFinite(InDefense) && InDefense > 0.0f) ? InDefense : 0.0f;
+}
+
+float UCombatComponent::GetAttackPower() const
+{
+	return CombatAttackPower;
+}
+
+float UCombatComponent::GetDefense() const
+{
+	return CombatDefense;
 }
 
 void UCombatComponent::RequestHitStop(float DurationSeconds)
@@ -1163,20 +1184,23 @@ void UCombatComponent::TryApplyActiveWindowHits()
 				continue;
 			}
 		}
+		// M3-010: the victim's combat component is looked up exactly once here -
+		// it gates the hit (the M1-026 landing recovery below) and feeds the
+		// Defense half of the damage formula (this component is the attacker and
+		// contributes its own AttackPower); the M1-020 victim-side notify further
+		// below reuses the same lookup.
+		UCombatComponent* VictimCombat = Target->FindComponentByClass<UCombatComponent>();
 		// M1-026: a target inside its landing recovery (Knockdown or
 		// Recovering) refuses every hit in the fullest sense: no damage, no
 		// impulse, no dedup key and no event - the recovery period is
 		// unhittable by contract. The state lives on the victim's own combat
 		// component (the same lookup the victim-side notify uses below).
-		if (const UCombatComponent* VictimCombat = Target->FindComponentByClass<UCombatComponent>())
+		if (VictimCombat != nullptr && VictimCombat->IsInLandingRecovery())
 		{
-			if (VictimCombat->IsInLandingRecovery())
-			{
-				UE_LOG(LogTemp, Verbose,
-					TEXT("UEMMO UCombatComponent: hit on target %llu refused (target is inside its landing recovery)."),
-					TargetId);
-				continue;
-			}
+			UE_LOG(LogTemp, Verbose,
+				TEXT("UEMMO UCombatComponent: hit on target %llu refused (target is inside its landing recovery)."),
+				TargetId);
+			continue;
 		}
 		if (ActiveAttackId == M1_024_AerialLightAttackId
 			&& ShouldRefuseAerialFollowUp(TargetId, *Target))
@@ -1206,9 +1230,12 @@ void UCombatComponent::TryApplyActiveWindowHits()
 			continue;
 		}
 
-		// The design damage formula (Docs/01 section 8.2) with the current
-		// zero growth attributes; light_01 then deducts exactly 10.
-		const float Damage = M1_019_ComputeHitDamage(*Definition);
+		// The design damage formula (Docs/01 section 8.2) with the wired growth
+		// attributes (M3-010): the attacker's AttackPower comes from this
+		// component, the defender's Defense from the victim's combat component
+		// (0 when the target carries none, the pre-M3-010 result verbatim).
+		const float Damage = M1_019_ComputeHitDamage(*Definition, CombatAttackPower,
+			VictimCombat != nullptr ? VictimCombat->GetDefense() : 0.0f);
 		const float Applied = TargetHealth->ApplyDamage(Damage);
 		if (Applied <= 0.0f)
 		{
@@ -1292,8 +1319,9 @@ void UCombatComponent::TryApplyActiveWindowHits()
 		// M1-020: the accepted hit reaches the victim's combat component (when
 		// it has one) before the attacker-side broadcast, so any observer of
 		// OnHitConfirmed already sees the victim stunned or dead. The victim
-		// entry owns the stun/death decision (death has priority there).
-		if (UCombatComponent* VictimCombat = Target->FindComponentByClass<UCombatComponent>())
+		// entry owns the stun/death decision (death has priority there). The
+		// lookup is the one hoisted above (M3-010).
+		if (VictimCombat != nullptr)
 		{
 			VictimCombat->NotifyHitReceived(Hit);
 		}

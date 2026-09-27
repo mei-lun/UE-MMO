@@ -32,6 +32,18 @@ public:
 	/** Restores full health and Alive; opens a new death lifecycle. */
 	void ResetHealth();
 
+	/**
+	 * M3-010: applies a new maximum pool size with the M3-005
+	 * FStatCalculator::ClampHealthOnMaxChange semantics: the current pool is
+	 * min(CurrentHP, NewMax) - a LOWERED max clamps the pool down, a RAISED
+	 * max never restores already-lost health (no implicit heal). The death
+	 * lifecycle is untouched (revival stays ResetHealth's contract). A
+	 * non-finite or non-positive max is refused (no change): the wired
+	 * profile path can never produce one (FStatCalculator floors the final
+	 * MaxHP at 1), so this guard only protects direct callers.
+	 */
+	void SetMaxHealth(float NewMaxHealth);
+
 	bool IsAlive() const;
 
 	float GetHealth() const;
