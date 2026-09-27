@@ -11,6 +11,7 @@
 #include "RewardService.generated.h"
 
 class UProfileSubsystem;
+class UProfileSaveService;
 
 /**
  * One settlement reward draft (interface contract section 8, M3-008). A draft
@@ -147,6 +148,105 @@ struct FRewardClaimOutcome
 };
 
 /**
+ * M3-016: result of one URewardService::ClaimPendingAtomic request. The
+ * atomic claim commits the reward (XP, items, PendingRewards change and
+ * AppliedSettlementIds) as ONE profile snapshot save; the caller may confirm
+ * the claim to the UI only from the returned result - never from memory
+ * state. Only Claimed (and PartiallyClaimed) report stored items; a save
+ * failure NEVER reports a stored item.
+ */
+enum class ERewardClaimAtomicResult : uint8
+{
+	/**
+	 * Every pending item was stored into the inventory AND the post-claim
+	 * snapshot save committed: the persisted state and the memory agree, the
+	 * caller may confirm the claim to the UI.
+	 */
+	Claimed,
+
+	/**
+	 * At least one item was stored and at least one was retained (multi-item
+	 * drafts only); the post-claim snapshot (with the retained draft) save
+	 * committed.
+	 */
+	PartiallyClaimed,
+
+	/**
+	 * Nothing was stored (full inventory): the granted XP, the applied-id
+	 * record and the RETAINED pending draft are committed as one snapshot,
+	 * so the unclaimed item survives a restart with its original InstanceId.
+	 * Not a claim success: the UI surfaces the retention.
+	 */
+	InventoryFull,
+
+	/**
+	 * The persisted state already records this settlement as fully claimed
+	 * (applied record, no pending draft): idempotent repeat, nothing changed
+	 * and nothing saved. The decision came from the profile state (restored
+	 * from the last committed save), never from call-history assumptions.
+	 */
+	AlreadyClaimed,
+
+	/** No pending draft and no applied record carries this SettlementId: unknown id, nothing changed. */
+	UnknownSettlement,
+
+	/**
+	 * A save failed (draft persistence or claim-snapshot persistence): the
+	 * in-memory claim was rolled back to the exact last committed state, the
+	 * pending draft stays unchanged (original InstanceId, no re-roll), and
+	 * the UI must NOT show claim success. Error names the failing save step.
+	 */
+	SaveFailed,
+
+	/** No profile subsystem, no existing profile, or the passed pointers are null. */
+	RejectedNoProfile,
+
+	/** The save service is null or was never initialized with a slot prefix. */
+	RejectedNoSaveService,
+
+	/**
+	 * The last committed save exists but is unreadable (all slots corrupt):
+	 * the claim refuses to save on top of unreadable evidence and changes
+	 * nothing.
+	 */
+	RejectedUnreadableSave
+};
+
+/**
+ * Outcome of one ClaimPendingAtomic request. The UI contract: a claim may be
+ * surfaced as claimed ONLY when Result is Claimed/PartiallyClaimed (and
+ * InventoryFull surfaces the retention); every failure value keeps the
+ * pending draft untouched so a retry re-attempts the SAME pre-generated
+ * items.
+ */
+struct FRewardClaimAtomicOutcome
+{
+	/** What happened; check Error on every non-success value. */
+	ERewardClaimAtomicResult Result = ERewardClaimAtomicResult::RejectedNoProfile;
+
+	/** Number of items THIS call stored into the inventory (0..draft size). */
+	int32 ClaimedItemCount = 0;
+
+	/** Number of items still retained in the pending draft after this call (0 = draft consumed/removed). */
+	int32 RetainedItemCount = 0;
+
+	/** True when THIS call granted the settlement XP (exactly the first claim attempt ever does). */
+	bool bGrantedXP = false;
+
+	/**
+	 * True only when THIS call's post-claim snapshot save committed (the
+	 * Claimed/PartiallyClaimed/InventoryFull paths). AlreadyClaimed is durable
+	 * through the EARLIER committed save (the persisted applied record), so
+	 * the flag stays false there - it means "this call committed a save",
+	 * not "the state is durable".
+	 */
+	bool bSaveCommitted = false;
+
+	/** Empty on success paths; names the failing save step / rejection reason otherwise. */
+	FString Error;
+};
+
+/**
  * M3-008: settlement reward drafts with idempotent application. An independent
  * UObject service (no World, no subsystem registration): it holds a weak
  * reference to the GameInstance-level UProfileSubsystem (BindProfile) and
@@ -265,7 +365,58 @@ public:
 	 */
 	FRewardClaimOutcome TryClaimPending(uint64 SettlementId, FInventoryModel& Inventory);
 
+	// -- Atomic claim entry (M3-016) ------------------------------------------------
+
+	/**
+	 * Claims the pending reward draft of one settlement as ONE durable profile
+	 * snapshot commit (interface contract section 8: the XP, the inventory
+	 * items, the PendingRewards change and AppliedSettlementIds travel in the
+	 * same save; the caller may confirm the claim to the UI only after that
+	 * save committed). The profile and the save service are passed explicitly
+	 * (the same GameInstance-level UProfileSubsystem the drafts live in and
+	 * the UProfileSaveService owning the A/B slots), so the entry works on any
+	 * freshly restored profile without relying on call history.
+	 *
+	 * Ordered flow per request:
+	 * 1. Persisted-state gates: no profile / no save service is rejected; a
+	 *    fully-claimed settlement (persisted applied record, no draft) answers
+	 *    AlreadyClaimed and an unknown id answers UnknownSettlement - both
+	 *    from the profile state alone, no save, no mutation.
+	 * 2. Draft persistence FIRST ("StartRoom semantics"): the current profile
+	 *    state including the pending draft is saved, so the pre-generated
+	 *    item identity is durable before anything is claimed. A failure here
+	 *    ends the request with SaveFailed and NOTHING mutated.
+	 * 3. In-memory claim from the draft (M3-009 semantics via the shared
+	 *    claim body): XP granted exactly once, items stored under their
+	 *    original InstanceIds, rejections retained in the draft.
+	 * 4. Claim-snapshot save: the POST-claim profile state (XP, inventory,
+	 *    remaining pending drafts, applied ids) is saved as one snapshot.
+	 *    Success confirms the claim (Claimed/PartiallyClaimed/InventoryFull
+	 *    per the claim body). A failure rolls the in-memory commit back to
+	 *    the exact state step 2 committed (RestoreFromSave with the captured
+	 *    request) and reports SaveFailed: no half claim, no re-roll, the UI
+	 *    can never show claim success.
+	 *
+	 * Interrupt windows (the task card's three injection points live in the
+	 * claim-snapshot save): a process death before the slot write, after the
+	 * slot write, or at the index commit leaves the last COMMITTED save at
+	 * step 2's draft state (or, for a torn index commit, lets the startup
+	 * generation scan recover the committed claim snapshot). Either way a
+	 * restart + re-claim grants the XP exactly once and stores exactly the
+	 * original instances - idempotency is decided from persisted state.
+	 */
+	FRewardClaimAtomicOutcome ClaimPendingAtomic(uint64 SettlementId, UProfileSubsystem* Profile, UProfileSaveService* SaveService);
+
 private:
 	/** GameInstance-level profile holding PendingRewards; weak on purpose. */
 	TWeakObjectPtr<UProfileSubsystem> ProfilePtr;
+
+	/**
+	 * M3-016: the shared in-memory claim body of TryClaimPending and
+	 * ClaimPendingAtomic - locates the draft in the profile, grants the XP
+	 * exactly once (MarkSettlementApplied on the first attempt), stores items
+	 * under their original InstanceIds and retains every rejected item
+	 * unchanged. Pure memory semantics: no save happens here.
+	 */
+	static FRewardClaimOutcome M3_016_ApplyClaimInMemory(uint64 SettlementId, UProfileSubsystem& Profile, FInventoryModel& Inventory);
 };
