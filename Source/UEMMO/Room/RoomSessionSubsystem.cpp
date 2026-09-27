@@ -14,7 +14,15 @@
 
 #include "RoomDefinition.h"
 #include "WaveSpawner.h"
+#include "../Combat/CombatComponent.h"
+#include "../Combat/HealthComponent.h"
 #include "../Enemy/EnemyDefinition.h"
+#include "../Enemy/MeleeEnemy.h"
+#include "../PrototypeCharacter.h"
+
+#include "Engine/World.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/Controller.h"
 
 namespace
 {
@@ -72,6 +80,14 @@ void URoomSessionSubsystem::Deinitialize()
 	// instance (uniqueness is per session); the process-global settlement
 	// counter deliberately survives.
 	Super::Deinitialize();
+	// M2-010: drop the player death binding first, so a pawn broadcasting
+	// during teardown can never reach this half-destroyed session.
+	if (APrototypeCharacter* Player = PlayerPtr.Get())
+	{
+		Player->PlayerDied.Remove(PlayerDiedHandle);
+	}
+	PlayerPtr = nullptr;
+	PlayerDiedHandle.Reset();
 	RunStartedDelegate.Clear();
 	RunEndedDelegate.Clear();
 	State = ERoomSessionState::Idle;
@@ -97,6 +113,11 @@ void URoomSessionSubsystem::ResetWaveOrchestration()
 	// (plus the alive-id guard below) keeps late deaths of their enemies from
 	// ever touching a new run.
 	CurrentRunAliveEnemyIds.Empty();
+	// M2-010: the run-scoped enemy actor list is per-run bookkeeping too - it
+	// is dropped here WITHOUT destroying the actors (the session itself never
+	// destroys actors; URoomRetryService destroys through
+	// DestroyRunEnemyActors BEFORE ResetToIdle).
+	CurrentRunEnemyActors.Empty();
 	RunWaveSpawners.Empty();
 	StartedWaveCount = 0;
 	bWaveOrchestrationActive = false;
@@ -511,6 +532,186 @@ void URoomSessionSubsystem::CheckWaveProgressionAfterKill()
 FOnRoomSessionRunEnded& URoomSessionSubsystem::OnRunEnded()
 {
 	return RunEndedDelegate;
+}
+
+// -- M2-010: player failure and run-scoped enemy bookkeeping ------------------
+
+void URoomSessionSubsystem::SetPlayer(APrototypeCharacter* Player)
+{
+	if (PlayerPtr.Get() == Player)
+	{
+		// Already bound to this pawn: the retry flow re-registers the same
+		// pawn on every retry, and this guard keeps exactly one PlayerDied
+		// handler bound no matter how many retries run (one death broadcast
+		// must stay exactly one failure request, never a stacked fan-out).
+		return;
+	}
+	// A different pawn (or null): unbind the previous pawn's handler first so
+	// the old binding never dangles. A destroyed previous pawn needs no
+	// unbind - its delegate object died with it.
+	if (APrototypeCharacter* Previous = PlayerPtr.Get())
+	{
+		Previous->PlayerDied.Remove(PlayerDiedHandle);
+	}
+	PlayerPtr = Player;
+	PlayerDiedHandle.Reset();
+	if (Player != nullptr)
+	{
+		// The lambda captures the subsystem only; the delegate lives on the
+		// pawn, so world teardown cannot dangle either side (Deinitialize
+		// additionally removes this binding explicitly).
+		PlayerDiedHandle = Player->PlayerDied.AddLambda([this]()
+		{
+			HandlePlayerDied();
+		});
+	}
+}
+
+bool URoomSessionSubsystem::NotifyEnemyActorSpawned(FName EnemyId, AActor* Enemy)
+{
+	if (State != ERoomSessionState::Running)
+	{
+		// Stale registration of an already ended or exited run: ignored (the
+		// interface contract's idempotency rule, same as the other Notify*).
+		UE_LOG(LogTemp, Verbose,
+			TEXT("UEMMO RoomSession: actor registration of %s ignored - the session is %d (only Running registers run enemies)."),
+			*EnemyId.ToString(), static_cast<int32>(State));
+		return false;
+	}
+	if (Enemy == nullptr)
+	{
+		UE_LOG(LogTemp, Verbose,
+			TEXT("UEMMO RoomSession: actor registration of %s ignored - the actor is null."),
+			*EnemyId.ToString());
+		return false;
+	}
+	// The spawner registers every born enemy exactly once next to its id
+	// registration, so no dedupe is needed here. Weak references only: the
+	// session never keeps an enemy alive.
+	CurrentRunEnemyActors.Add(Enemy);
+	UE_LOG(LogTemp, Verbose,
+		TEXT("UEMMO RoomSession: RunId %llu registered run enemy actor %s (total %d)."),
+		CurrentRunId, *EnemyId.ToString(), CurrentRunEnemyActors.Num());
+	return true;
+}
+
+int32 URoomSessionSubsystem::GetRunPendingSpawnCount() const
+{
+	// Sum of the per-wave pending births (interface contract section 7 lists
+	// PendingSpawns as session-visible state; the spawners are per-run).
+	int32 Pending = 0;
+	for (const TObjectPtr<UWaveSpawner>& SpawnerPtr : RunWaveSpawners)
+	{
+		const UWaveSpawner* Spawner = SpawnerPtr.Get();
+		if (Spawner != nullptr)
+		{
+			Pending += Spawner->GetPendingSpawnCount();
+		}
+	}
+	return Pending;
+}
+
+int32 URoomSessionSubsystem::DestroyRunEnemyActors()
+{
+	if (State == ERoomSessionState::Running)
+	{
+		// Destroying the active run's enemies from outside is not any flow of
+		// this card: the retry cleanup only ever runs against an already
+		// failed (or otherwise non-Running) run.
+		UE_LOG(LogTemp, Warning,
+			TEXT("UEMMO RoomSession: DestroyRunEnemyActors refused - the session is Running (RunId %llu); destroy nothing."),
+			CurrentRunId);
+		return 0;
+	}
+	int32 DestroyedCount = 0;
+	for (const TWeakObjectPtr<AActor>& EnemyPtr : CurrentRunEnemyActors)
+	{
+		AActor* Enemy = EnemyPtr.Get();
+		if (Enemy != nullptr && IsValid(Enemy))
+		{
+			// Destroy() fires no health death event, so no kill bookkeeping,
+			// wave progression or death binding can ever run from a cleanup.
+			Enemy->Destroy();
+			++DestroyedCount;
+		}
+	}
+	UE_LOG(LogTemp, Verbose,
+		TEXT("UEMMO RoomSession: destroyed %d of %d registered run enemies (cleanup scope: this run only)."),
+		DestroyedCount, CurrentRunEnemyActors.Num());
+	CurrentRunEnemyActors.Empty();
+	return DestroyedCount;
+}
+
+void URoomSessionSubsystem::HandlePlayerDied()
+{
+	// Only a Running run fails from the player death (the M2-010 card rule):
+	// a death broadcast while Idle/Cleared/Failed/Exiting is a stale or
+	// out-of-run lifecycle event and must not fail, settle or re-settle
+	// anything (the interface contract's idempotency rule).
+	if (State != ERoomSessionState::Running)
+	{
+		UE_LOG(LogTemp, Verbose,
+			TEXT("UEMMO RoomSession: player death ignored - the session is %d (only Running fails from the player death)."),
+			static_cast<int32>(State));
+		return;
+	}
+	// The card's failure sequence, with the end event LAST so every observer
+	// reads the post-failure state: stop future births of the current wave,
+	// stop (never kill) the run's registered enemies, then FailRun applies
+	// first-terminal-wins and broadcasts OnRunEnded exactly once.
+	int32 CancelledSpawners = 0;
+	for (const TObjectPtr<UWaveSpawner>& SpawnerPtr : RunWaveSpawners)
+	{
+		UWaveSpawner* Spawner = SpawnerPtr.Get();
+		if (Spawner != nullptr && Spawner->GetState() == EWaveState::Spawning)
+		{
+			Spawner->CancelWave();
+			++CancelledSpawners;
+		}
+	}
+	UE_LOG(LogTemp, Verbose,
+		TEXT("UEMMO RoomSession: RunId %llu cancelled %d spawning wave(s) and stops its enemies for the player death."),
+		CurrentRunId, CancelledSpawners);
+	StopRunEnemies();
+	FailRun();
+}
+
+void URoomSessionSubsystem::StopRunEnemies()
+{
+	// The card's stop semantics: stop the chase and the attack, NEVER kill.
+	// The current spawner flow possesses no AI controller, so the minimal
+	// honest path is: halt the controller movement when one is wired (native
+	// AController::StopMovement), cancel any in-flight attack instance on the
+	// enemy's own combat component, and zero the movement velocity. Registered
+	// enemies stay alive and in the world - stopping is not destroying.
+	int32 StoppedCount = 0;
+	for (const TWeakObjectPtr<AActor>& EnemyPtr : CurrentRunEnemyActors)
+	{
+		AActor* Enemy = EnemyPtr.Get();
+		AMeleeEnemy* MeleeEnemyActor = Cast<AMeleeEnemy>(Enemy);
+		if (MeleeEnemyActor == nullptr)
+		{
+			continue;
+		}
+		if (AController* Controller = MeleeEnemyActor->GetController())
+		{
+			Controller->StopMovement();
+		}
+		if (UCombatComponent* Combat = MeleeEnemyActor->GetCombatComponent())
+		{
+			// An interrupted wind-up/instance is a cancel, not a Finished
+			// event (the M2-004 death-cancel precedent).
+			Combat->CancelCurrentAttack(FName(TEXT("RoomRunFailed")));
+		}
+		if (UCharacterMovementComponent* Movement = MeleeEnemyActor->GetCharacterMovement())
+		{
+			Movement->StopMovementImmediately();
+		}
+		++StoppedCount;
+	}
+	UE_LOG(LogTemp, Verbose,
+		TEXT("UEMMO RoomSession: RunId %llu stopped %d registered run enemy actor(s)."),
+		CurrentRunId, StoppedCount);
 }
 
 ERoomSessionState URoomSessionSubsystem::GetState() const

@@ -6,6 +6,8 @@
 #include "Subsystems/WorldSubsystem.h"
 #include "RoomSessionSubsystem.generated.h"
 
+class AActor;
+class APrototypeCharacter;
 class UEnemyDefinition;
 class URoomDefinition;
 class UWaveSpawner;
@@ -225,6 +227,48 @@ public:
 	/** M2-008: waves the current run has started so far (diagnostic). */
 	int32 GetStartedWaveCount() const;
 
+	// -- Player failure and run-scoped enemy bookkeeping (M2-010 minimal additions) ---
+
+	/**
+	 * M2-010: registers the player pawn whose death fails the running run.
+	 * While a run is Running, the pawn's PlayerDied broadcast (one per death
+	 * lifecycle, M2-004) cancels the current wave's future births, stops the
+	 * enemies this run registered (stop, never kill) and ends the run through
+	 * FailRun. Deaths outside Running (Idle/Cleared/Failed/Exiting) are
+	 * ignored - a stale lifecycle broadcast can never fail or settle anything.
+	 * Calling SetPlayer again with the SAME pawn is the retry-loop rebind: the
+	 * guard keeps exactly one death handler bound no matter how often a retry
+	 * re-registers the pawn; a different pawn unbinds the previous one first.
+	 * Passing null drops the binding.
+	 */
+	void SetPlayer(APrototypeCharacter* Player);
+
+	/**
+	 * M2-010: records the world actor of one enemy spawned for the running run
+	 * (UWaveSpawner calls this next to NotifyEnemySpawned). Accepted only while
+	 * Running; the list is per-run bookkeeping cleared with the rest by
+	 * StartRoom / ResetToIdle / Deinitialize. Bookkeeping only - the session
+	 * never steers these actors from here.
+	 */
+	bool NotifyEnemyActorSpawned(FName EnemyId, AActor* Enemy);
+
+	/**
+	 * M2-010: unborn enemies still queued by the current run's wave spawners
+	 * (sum of the per-wave PendingSpawns; 0 when no run or no pending births).
+	 * Diagnostic surface of the interface contract's PendingSpawns state.
+	 */
+	int32 GetRunPendingSpawnCount() const;
+
+	/**
+	 * M2-010: destroys every still-valid actor the current (usually already
+	 * failed) run registered through NotifyEnemyActorSpawned and returns how
+	 * many were destroyed. This is the retry cleanup's exact destruction scope:
+	 * run-registered enemies only, never a world scan over every Character.
+	 * Refused while a run is Running (destroying an active run's enemies from
+	 * outside is not this card's flow); the list is emptied either way.
+	 */
+	int32 DestroyRunEnemyActors();
+
 	// -- Events ----------------------------------------------------------------
 
 	/** Fires exactly once per accepted StartRoom. */
@@ -287,6 +331,23 @@ private:
 	 */
 	void CheckWaveProgressionAfterKill();
 
+	/**
+	 * M2-010: PlayerDied handler bound by SetPlayer. Only a Running run fails
+	 * from the player death: the current wave's future births are cancelled
+	 * (CancelWave), the run's registered enemies are stopped (never killed)
+	 * and FailRun applies first-terminal-wins. Any other state ignores the
+	 * broadcast (a stale lifecycle death changes nothing).
+	 */
+	void HandlePlayerDied();
+
+	/**
+	 * M2-010: stops (never kills) every valid enemy actor the running run
+	 * registered: stops any in-flight attack instance, halts the AI controller
+	 * movement when one is wired, and zeroes the movement velocity. Alive ids
+	 * stay alive - stopping is not destroying.
+	 */
+	void StopRunEnemies();
+
 	/** Session time comes from injections only; never read from a wall clock. */
 	double SessionClockSeconds = 0.0;
 
@@ -332,6 +393,23 @@ private:
 	double NextWaveStartClockSeconds = 0.0;
 	TWeakObjectPtr<const URoomDefinition> WaveRoomDefPtr;
 	TWeakObjectPtr<UEnemyDefinition> WaveEnemyDefPtr;
+
+	/**
+	 * M2-010 per-run enemy actor bookkeeping (weak references; parallel to the
+	 * spawned ids, but corpses are kept too so a retry cleanup can also remove
+	 * the failed run's bodies). Cleared by StartRoom / ResetToIdle /
+	 * Deinitialize like the rest of the per-run fields; only
+	 * DestroyRunEnemyActors ever destroys through it.
+	 */
+	TArray<TWeakObjectPtr<AActor>> CurrentRunEnemyActors;
+
+	/**
+	 * M2-010: the registered player pawn (weak) and its PlayerDied binding
+	 * handle. The handle is the duplicate-binding guard: re-registering the
+	 * same pawn never stacks a second handler.
+	 */
+	TWeakObjectPtr<APrototypeCharacter> PlayerPtr;
+	FDelegateHandle PlayerDiedHandle;
 
 	/** Result of the last finished run (default before the first terminal). */
 	FRoomResult LastResult;

@@ -248,6 +248,10 @@ bool UWaveSpawner::SpawnNextEnemy()
 		return FailWave(FString::Printf(
 			TEXT("the session refused the registration of %s (run no longer Running)"), *EnemyId.ToString()));
 	}
+	// M2-010: hand the born actor to the session's run-scoped enemy list - the
+	// retry cleanup (DestroyRunEnemyActors) destroys exactly these actors and
+	// never a world scan of Characters. Bookkeeping only.
+	Session->NotifyEnemyActorSpawned(EnemyId, Enemy);
 
 	// One death binding per born enemy: the first death removes the alive id
 	// and counts one session kill. The lambda holds weak references only, so
