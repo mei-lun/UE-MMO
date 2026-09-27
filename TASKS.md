@@ -80,7 +80,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M2-006 | [单局会话状态和唯一标识](Docs/Tasks/M2-006.md) | DONE | M2-005 | ZCode-20260925-A | 2026-09-27T05:32:10+08:00 | [report](Docs/Tasks/Reports/M2-006.md) |
 | M2-007 | [可取消的单波刷怪器](Docs/Tasks/M2-007.md) | DONE | M2-006,M2-004 | ZCode-20260925-A | 2026-09-27T09:47:41+08:00 | [report](Docs/Tasks/Reports/M2-007.md) |
 | M2-008 | [死亡驱动波次推进](Docs/Tasks/M2-008.md) | DONE | M2-007 | ZCode-20260925-A | 2026-09-27T10:39:28+08:00 | [report](Docs/Tasks/Reports/M2-008.md) |
-| M2-009 | [进房后激活与出口状态](Docs/Tasks/M2-009.md) | TODO | M2-008 | — | — | — |
+| M2-009 | [进房后激活与出口状态](Docs/Tasks/M2-009.md) | IN_PROGRESS | M2-008 | ZCode-20260925-A | 2026-09-27T10:39:34+08:00 | [report](Docs/Tasks/Reports/M2-009.md) |
 | M2-010 | [玩家失败与单局重试](Docs/Tasks/M2-010.md) | TODO | M2-009 | — | — | — |
 | M2-011 | [退出房间和地图卸载清理](Docs/Tasks/M2-011.md) | TODO | M2-010 | — | — | — |
 | M2-012 | [胜利失败界面和重试按钮](Docs/Tasks/M2-012.md) | TODO | M2-011 | — | — | — |
