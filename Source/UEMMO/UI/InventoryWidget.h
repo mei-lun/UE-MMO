@@ -3,14 +3,18 @@
 #include "CoreMinimal.h"
 #include "Misc/Guid.h"
 #include "Blueprint/UserWidget.h"
+// M3-012: FItemStats is a by-value member below and the equip/unequip result
+// enums appear in the pure helpers' signatures; the Items headers are plain
+// value types (no UObject, no engine coupling).
+#include "../Items/ItemDefinition.h"
+#include "../Items/EquipmentModel.h"
+#include "Components/Button.h"
 #include "InventoryWidget.generated.h"
 
 struct FItemInstance;
-struct FItemDefinition;
 struct FItemDefinitionCatalog;
 
 class UBorder;
-class UButton;
 class UCanvasPanel;
 class UScrollBox;
 class UTextBlock;
@@ -18,6 +22,18 @@ class UVerticalBox;
 
 /** Fired by the Close button and the Esc key; the HUD executes the real dismiss. */
 DECLARE_MULTICAST_DELEGATE(FInventoryCloseRequested);
+
+/** M3-012: fired on every row click (the HUD re-arms its one-shot action guard). */
+DECLARE_MULTICAST_DELEGATE(FInventorySelectionChanged);
+
+/** M3-012: fired by the Equip button; the HUD executes the real equip path. */
+DECLARE_MULTICAST_DELEGATE(FInventoryEquipRequested);
+
+/** M3-012: fired by the Unequip button; the HUD executes the real unequip path. */
+DECLARE_MULTICAST_DELEGATE(FInventoryUnequipRequested);
+
+/** M3-012: native select event of one inventory row (carries the row's instance id). */
+DECLARE_DELEGATE_OneParam(FOnInventoryRowSelected, const FGuid& /*InstanceId*/);
 
 /**
  * M3-011: pure display state of one inventory row. Built by MakeInventoryRowViewModel
@@ -122,6 +138,88 @@ private:
 };
 
 /**
+ * M3-012: pure display state of the equip stat-comparison preview. The
+ * CURRENT row is the complete recalculation over the level base plus every
+ * currently equipped instance; the AFTER row re-runs the SAME complete
+ * recalculation with the selected item swapped into its slot. Both rows come
+ * from FStatCalculator::Recalculate (the interface contract section 8 rule:
+ * never incremental add/remove bookkeeping) - the preview is a pure display
+ * value and never touches the real profile.
+ */
+struct FInventoryStatPreviewViewModel
+{
+	/** False for a default-constructed (never built) view model. */
+	bool bValid = false;
+
+	/** True when an item is selected; false keeps every line empty. */
+	bool bHasSelection = false;
+
+	/** "Current: Atk+<a> Def+<d> HP+<h>"; empty without a selection. */
+	FString CurrentLine;
+
+	/** "After equip: ..." (equals Current when the selection changes nothing). */
+	FString AfterLine;
+
+	/** "Delta: Atk+<d> Def+<d> HP+<h>" (signed) or "Delta: No change". */
+	FString DeltaLine;
+};
+
+/**
+ * M3-012: builds the comparison preview (pure function; no world, no profile
+ * access - the caller passes copies). EquippedStats holds one stats row per
+ * currently equipped instance. When the selection is already equipped the
+ * AFTER row keeps EquippedStats unchanged (an equip of the same item is the
+ * idempotent no-op, so nothing may change). Otherwise a slot occupant's row
+ * (bSlotOccupied + ReplacedStats) is removed once and the selection's row is
+ * added - mirroring exactly what the real Equip does to the mapping.
+ */
+UEMMO_API FInventoryStatPreviewViewModel MakeInventoryStatPreviewViewModel(
+	const FItemStats& BaseStats, const TArray<FItemStats>& EquippedStats,
+	bool bHasSelection, const FItemStats& SelectedStats, bool bSelectedAlreadyEquipped,
+	bool bSlotOccupied, const FItemStats& ReplacedStats);
+
+/** M3-012: readable text of an Equip result (every enum value names itself). */
+UEMMO_API FString MakeEquipResultText(EEquipmentEquipResult Result);
+
+/** M3-012: readable text of an Unequip result. */
+UEMMO_API FString MakeUnequipResultText(EEquipmentUnequipResult Result);
+
+/**
+ * M3-012: readable refusal reason for a context-blocked equip request
+ * (priority: missing profile > Running room > missing player); empty when
+ * none blocks. The HUD shows this instead of silently dropping the request.
+ */
+UEMMO_API FString MakeInventoryEquipBlockText(bool bMissingProfile, bool bSessionRunning,
+	bool bMissingPlayer);
+
+/**
+ * M3-012: one clickable inventory row. The M3-011 rows were plain text blocks
+ * (read-only list); selecting an item for the stat preview needs a clickable
+ * row, so each row is now a UButton carrying the instance id it displays. The
+ * dynamic OnClicked cannot bind a per-row lambda (UE dynamic delegates bind
+ * UFUNCTIONs only), so the button bridges its own click into the NATIVE
+ * OnRowSelected event, which the list widget binds per row with the id.
+ */
+UCLASS()
+class UEMMO_API UInventoryRowButton : public UButton
+{
+	GENERATED_BODY()
+
+public:
+	UInventoryRowButton();
+
+	/** The stored instance this row displays (set at row build time). */
+	FGuid InstanceId;
+
+	/** Native select event; executed with InstanceId when the row is clicked. */
+	FOnInventoryRowSelected OnRowSelected;
+
+	/** Bridges the dynamic button click into the native select event. */
+	UFUNCTION()
+	void HandleRowClicked();
+};
+
+/**
  * M3-011: the read-only inventory list screen (names, slots, stats, equipped
  * markers of up to 30 items). Native-only UUserWidget built in code inside
  * NativeOnInitialized (the M2-012 RoomResultWidget precedent - no UMG asset):
@@ -131,6 +229,13 @@ private:
  * fingerprint changed (no per-Tick rebuild). Esc (the widget is focusable) and
  * the Close button broadcast CloseRequested; the HUD owns the real dismissal
  * and the one-time input-focus switch.
+ *
+ * M3-012 additions: rows are clickable (UInventoryRowButton) and select the
+ * instance for the stat-comparison preview (Current vs After equip, computed
+ * purely from the bound snapshot copies); Equip/Unequip buttons forward the
+ * actions through plain delegates to the HUD, which owns the equipment model,
+ * the one-shot anti-double-click guard and the Running gate. The widget never
+ * touches the profile itself - it renders copies and broadcasts intents.
  */
 UCLASS()
 class UEMMO_API UInventoryWidget : public UUserWidget
@@ -166,6 +271,37 @@ public:
 	/** Fired by the Close button and the Esc key (the HUD executes the dismiss). */
 	FInventoryCloseRequested CloseRequested;
 
+	// ----- M3-012: equip actions, selection and context ------------------------
+
+	/** Fired on every row click (the HUD re-arms its one-shot action guard). */
+	FInventorySelectionChanged SelectionChanged;
+
+	/** Fired by the Equip button (the HUD executes the real equip path). */
+	FInventoryEquipRequested EquipRequested;
+
+	/** Fired by the Unequip button (the HUD executes the real unequip path). */
+	FInventoryUnequipRequested UnequipRequested;
+
+	/**
+	 * M3-012: pushes the equip context the HUD owns (copies only): whether a
+	 * profile exists, the level base stats row and whether a room run is
+	 * currently Running (buttons disabled while it is - the visible half of
+	 * the two-layer gate; the pawn's TryEquipStatBonus is the bottom half).
+	 * Recomputes the preview and the button states.
+	 */
+	void SetEquipContext(bool bHasProfile, const FItemStats& BaseStats, bool bSessionRunning);
+
+	/** M3-012: sets the status line (result text or refusal reason). */
+	void SetInventoryStatusText(const FString& Text);
+
+	/**
+	 * M3-012: recomputes the preview from the bound snapshot copies plus the
+	 * current selection/context and re-applies the button states. Public so
+	 * the HUD can force a refresh after its guard refused a duplicate request
+	 * (the disabled-by-click buttons must not stay stuck).
+	 */
+	void RefreshEquipPreviewAndActions();
+
 	// -- Read seams (tests and the HUD) ----------------------------------------
 
 	const FInventoryListViewModel& PeekViewModel() const { return ViewModel; }
@@ -174,9 +310,19 @@ public:
 	UScrollBox* PeekListScrollBox() const { return ListScrollBox; }
 	UButton* PeekCloseButton() const { return CloseButton; }
 	const FInventoryRefreshGuard& PeekRefreshGuard() const { return RefreshGuard; }
+	UButton* PeekEquipButton() const { return EquipButton; }
+	UButton* PeekUnequipButton() const { return UnequipButton; }
+	UTextBlock* PeekPreviewBlock() const { return PreviewBlock; }
+	UTextBlock* PeekStatusBlock() const { return StatusBlock; }
+	const FInventoryStatPreviewViewModel& PeekPreview() const { return Preview; }
+	const FGuid& PeekSelectedInstanceId() const { return SelectedInstanceId; }
+	bool HasSelection() const { return bHasSelection; }
 
 	/** Number of row controls actually built in the list (0 before a build). */
 	int32 PeekRowCount() const;
+
+	/** The row button at the given insertion index (nullptr out of range). */
+	UButton* PeekRowButton(int32 Index) const;
 
 private:
 	/** Builds the whole control tree in code (idempotent). */
@@ -185,8 +331,20 @@ private:
 	/** Applies the current view model to the controls (rows + empty state). */
 	void ApplyViewModelToControls();
 
+	/** M3-012: row click bridge (the row's own id arrives via OnRowSelected). */
+	void HandleRowSelected(const FGuid& InstanceId);
+
+	/** M3-012: re-applies the action-button enabled states from the context. */
+	void UpdateEquipActionButtons();
+
 	UFUNCTION()
 	void HandleCloseClicked();
+
+	UFUNCTION()
+	void HandleEquipClicked();
+
+	UFUNCTION()
+	void HandleUnequipClicked();
 
 	UPROPERTY(Transient)
 	TObjectPtr<UCanvasPanel> RootCanvas;
@@ -212,7 +370,56 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UTextBlock> CloseLabel;
 
+	// ----- M3-012: equip panel controls ---------------------------------------
+
+	UPROPERTY(Transient)
+	TObjectPtr<UButton> EquipButton;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> EquipLabel;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UButton> UnequipButton;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> UnequipLabel;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> PreviewBlock;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> StatusBlock;
+
 	FInventoryListViewModel ViewModel;
 	FInventoryRefreshGuard RefreshGuard;
 	bool bControlsBuilt = false;
+
+	// ----- M3-012: selection and equip context (copies; no profile access) ----
+
+	/** The snapshot the last bind/refresh presented (preview data source). */
+	TArray<FItemInstance> BoundInstances;
+
+	/** The definition source handed to the last bind/refresh (non-owning). */
+	const FItemDefinitionCatalog* BoundCatalog = nullptr;
+
+	/** The equipped-id set handed to the last bind/refresh. */
+	TSet<FGuid> BoundEquippedIds;
+
+	/** The row the user clicked (invalid until the first row click). */
+	FGuid SelectedInstanceId;
+
+	/** True once a row was clicked (the selection persists across refreshes). */
+	bool bHasSelection = false;
+
+	/** Level base stats row pushed by the HUD (zero until a context arrives). */
+	FItemStats EquipBaseStats;
+
+	/** True once a context with an existing profile was pushed. */
+	bool bHasEquipContext = false;
+
+	/** The HUD's Running push (buttons disabled while true). */
+	bool bSessionRunning = false;
+
+	/** The last built preview (empty until the first selection + context). */
+	FInventoryStatPreviewViewModel Preview;
 };
