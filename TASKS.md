@@ -86,7 +86,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M2-012 | [胜利失败界面和重试按钮](Docs/Tasks/M2-012.md) | DONE | M2-011 | ZCode-20260925-A | 2026-09-27T13:48:53+08:00 | [report](Docs/Tasks/Reports/M2-012.md) |
 | M2-013 | [单局结果与结算一次性标识](Docs/Tasks/M2-013.md) | DONE | M2-012 | ZCode-20260925-A | 2026-09-27T14:08:25+08:00 | [report](Docs/Tasks/Reports/M2-013.md) |
 | M2-014 | [两波刷怪完整场景回归](Docs/Tasks/M2-014.md) | DONE | M2-013 | ZCode-20260925-A | 2026-09-27T14:55:16+08:00 | [report](Docs/Tasks/Reports/M2-014.md) |
-| M2-015 | [M2独立包与用户试玩包](Docs/Tasks/M2-015.md) | IN_PROGRESS | M2-014 | ZCode-20260925-A | 2026-09-27T14:55:22+08:00 | [report](Docs/Tasks/Reports/M2-015.md) |
+| M2-015 | [M2独立包与用户试玩包](Docs/Tasks/M2-015.md) | DONE | M2-014 | ZCode-20260925-A | 2026-09-27T15:40:53+08:00 | [report](Docs/Tasks/Reports/M2-015.md) |
 | M2-H01 | [M2 用户阶段验收](Docs/Tasks/M2-H01.md) | TODO | M2-015 | 用户 | — | — |
 | M3-001 | [装备定义和稳定实例ID](Docs/Tasks/M3-001.md) | TODO | M2-H01 | — | — | — |
 | M3-002 | [30格背包增删与容量](Docs/Tasks/M3-002.md) | TODO | M3-001 | — | — | — |
