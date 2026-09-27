@@ -101,7 +101,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M3-009 | [满包时保留待领取奖励](Docs/Tasks/M3-009.md) | DONE | M3-008 | ZCode-20260925-A | 2026-09-28T01:28:31+08:00 | [report](Docs/Tasks/Reports/M3-009.md) |
 | M3-010 | [装备与成长接入本地战斗属性](Docs/Tasks/M3-010.md) | DONE | M3-005,M3-006 | ZCode-20260925-A | 2026-09-28T01:54:44+08:00 | [report](Docs/Tasks/Reports/M3-010.md) |
 | M3-011 | [背包只读列表界面](Docs/Tasks/M3-011.md) | DONE | M3-002,M3-003 | ZCode-20260925-A | 2026-09-28T02:34:56+08:00 | [report](Docs/Tasks/Reports/M3-011.md) |
-| M3-012 | [界面穿脱装备与属性对比](Docs/Tasks/M3-012.md) | TODO | M3-011,M3-004,M3-005 | — | — | — |
+| M3-012 | [界面穿脱装备与属性对比](Docs/Tasks/M3-012.md) | IN_PROGRESS | M3-011,M3-004,M3-005 | ZCode-20260925-A | 2026-09-28T02:35:04+08:00 | [report](Docs/Tasks/Reports/M3-012.md) |
 | M3-013 | [版本化存档结构与往返序列化](Docs/Tasks/M3-013.md) | TODO | M3-003,M3-009,M3-004,M3-006 | — | — | — |
 | M3-014 | [A/B双槽保存与索引提交](Docs/Tasks/M3-014.md) | TODO | M3-013 | — | — | — |
 | M3-015 | [启动加载与损坏回退](Docs/Tasks/M3-015.md) | TODO | M3-014 | — | — | — |
