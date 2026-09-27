@@ -131,13 +131,15 @@ public:
 	// -- State machine -------------------------------------------------------
 
 	/**
-	 * Starts one run from Idle: assigns a fresh RunId / SettlementId / Seed
-	 * (each unique for the lifetime they promise), stores the room id, zeroes
-	 * the kill counter, captures the run start time and fires OnRunStarted
-	 * exactly once. Returns false (with a diagnostic log) and changes nothing
-	 * when: the definition is null, or the session is not Idle - in
-	 * particular a second Start while Running is rejected and the current
-	 * RunId is never reset by it.
+	 * Starts one run from Idle - or from Exiting after LeaveRoom (M2-011: the
+	 * re-entered room starts a fresh run; the exit procedure already cleaned
+	 * the previous run's bookkeeping) - assigning a fresh RunId /
+	 * SettlementId / Seed (each unique for the lifetime they promise), storing
+	 * the room id, zeroing the kill counter, capturing the run start time and
+	 * firing OnRunStarted exactly once. Returns false (with a diagnostic log)
+	 * and changes nothing when: the definition is null, or the session is in
+	 * any other state - in particular a second Start while Running is
+	 * rejected and the current RunId is never reset by it.
 	 */
 	bool StartRoom(const URoomDefinition* Definition);
 
@@ -170,6 +172,22 @@ public:
 	 * still Running (it must end or exit first) and when already Idle.
 	 */
 	bool ResetToIdle();
+
+	/**
+	 * M2-011: the real room exit procedure behind the M2-006 Exiting state.
+	 * From Running/Failed/Cleared it moves the session into Exiting and cleans
+	 * the whole run scope: every still-spawning wave is cancelled (CancelWave:
+	 * future births only, no friendly fire), the run's player-death binding is
+	 * dropped and every per-run weak reference is cleared (alive ids,
+	 * registered enemy actors, the per-wave spawners with their pending
+	 * births). An exit is NOT a settlement: OnRunEnded never fires for it, so
+	 * repeated LeaveRoom calls are idempotent (no crash, no second
+	 * settlement); from Idle there is nothing to leave. A late enemy death of
+	 * the exited run is ignored like every other out-of-Running notification.
+	 * Afterwards StartRoom is accepted again from Exiting, so the re-entered
+	 * room starts a fresh run with new RunId / SettlementId.
+	 */
+	bool LeaveRoom();
 
 	// -- Kill bookkeeping ----------------------------------------------------
 

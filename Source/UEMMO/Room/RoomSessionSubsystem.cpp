@@ -155,14 +155,17 @@ bool URoomSessionSubsystem::StartRoom(const URoomDefinition* Definition)
 			TEXT("UEMMO RoomSession: StartRoom rejected - the room definition is null."));
 		return false;
 	}
-	if (State != ERoomSessionState::Idle)
+	if (State != ERoomSessionState::Idle && State != ERoomSessionState::Exiting)
 	{
 		// In particular a second Start while Running: refused WITHOUT touching
 		// the current RunId / SettlementId / Seed / room id (interface
 		// contract section 7: repeated events and stale callbacks stay
-		// idempotent; the running run keeps its identity).
+		// idempotent; the running run keeps its identity). Exiting is the one
+		// extra accepted source state (M2-011): the exit procedure already
+		// cleaned the previous run's bookkeeping, so a player re-entering the
+		// room starts a fresh run with new RunId / SettlementId.
 		UE_LOG(LogTemp, Warning,
-			TEXT("UEMMO RoomSession: StartRoom rejected - the session is %d (only Idle may start a run); current RunId %llu is kept."),
+			TEXT("UEMMO RoomSession: StartRoom rejected - the session is %d (only Idle or a post-exit Exiting may start a run); current RunId %llu is kept."),
 			static_cast<int32>(State), CurrentRunId);
 		return false;
 	}
@@ -256,6 +259,60 @@ bool URoomSessionSubsystem::ResetToIdle()
 	CurrentWaveIndex = -1;
 	SpawnedEnemyCount = 0;
 	ResetWaveOrchestration();
+	return true;
+}
+
+bool URoomSessionSubsystem::LeaveRoom()
+{
+	if (State == ERoomSessionState::Idle)
+	{
+		// Nothing was ever started: there is no room to leave and no state to
+		// move (the card's transition table lists Running/Failed/Cleared).
+		UE_LOG(LogTemp, Verbose,
+			TEXT("UEMMO RoomSession: LeaveRoom ignored - the session is Idle (there is no run to leave)."));
+		return false;
+	}
+	const bool bWasAlreadyExiting = State == ERoomSessionState::Exiting;
+	// Cancel every wave that still has future births (only the current one can
+	// be Spawning): CancelWave zeroes its PendingSpawns and stops the births
+	// for good, while born enemies and every other actor of the world stay
+	// untouched (the no-friendly-fire cancel rule).
+	int32 CancelledSpawners = 0;
+	for (const TObjectPtr<UWaveSpawner>& SpawnerPtr : RunWaveSpawners)
+	{
+		UWaveSpawner* Spawner = SpawnerPtr.Get();
+		if (Spawner != nullptr && Spawner->GetState() == EWaveState::Spawning)
+		{
+			Spawner->CancelWave();
+			++CancelledSpawners;
+		}
+	}
+	// Drop the run's player-death binding (SetPlayer(null) unbinds): a stale
+	// death broadcast after the exit can never reach this session again.
+	SetPlayer(nullptr);
+	// Per-run weak references and wave bookkeeping: alive ids, registered
+	// enemy actors, the per-wave spawners (with any remaining pending births),
+	// the orchestration flags and the definition references. Weak only: the
+	// actors stay in the world - the map unload owns their destruction, and a
+	// later retry/destroy helper works only on its own run's registrations.
+	ResetWaveOrchestration();
+	State = ERoomSessionState::Exiting;
+	if (bWasAlreadyExiting)
+	{
+		// Idempotency: the repeated leave re-ran the same cleanup over already
+		// empty bookkeeping - no crash, no state change, and (below) no event.
+		UE_LOG(LogTemp, Verbose,
+			TEXT("UEMMO RoomSession: repeated LeaveRoom while already Exiting - idempotent, nothing further changed."));
+	}
+	// The exit is NOT a settlement: OnRunEnded never fires here, whatever the
+	// state the run is left in (a Running run simply never ends; a Cleared or
+	// Failed run keeps its already-fired result). Late events of the exited
+	// run are ignored by the out-of-Running notification guards and the
+	// spawners' old-run filters. Deinitialize (M2-006) covers the world-destroy
+	// path with the same idempotent cleanup, so a torn-down world never dangles.
+	UE_LOG(LogTemp, Verbose,
+		TEXT("UEMMO RoomSession: RunId %llu left the room (state -> Exiting, %d spawning wave(s) cancelled; exit is not a settlement)."),
+		CurrentRunId, CancelledSpawners);
 	return true;
 }
 

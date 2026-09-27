@@ -115,6 +115,9 @@ EWaveStartResult UWaveSpawner::StartWave(const URoomDefinition* Definition, int3
 	// All validation passed: record the wave data. The births themselves
 	// happen on UpdateWave, never inside StartWave.
 	SessionPtr = Session;
+	// M2-011: the world the late callbacks (due births, deaths) must act on -
+	// checked against the session's current world on every callback.
+	SpawnWorldPtr = Session->GetWorld();
 	EnemyDefPtr = EnemyDef;
 	WaveIndex = InWaveIndex;
 	SpawnLocations = Wave.SpawnLocations;
@@ -216,6 +219,13 @@ bool UWaveSpawner::SpawnNextEnemy()
 	{
 		return FailWave(TEXT("the session, its world or the enemy definition was lost before a due birth"));
 	}
+	// M2-011: a late/async birth must act only on the world the wave was
+	// registered in. A tearing-down, destroyed or swapped world (the map
+	// switch of the exit flow) aborts the wave instead of spawning into it.
+	if (World->bIsTearingDown || !IsValid(World) || World != SpawnWorldPtr.Get())
+	{
+		return FailWave(TEXT("the wave's registered world is tearing down or was swapped before a due birth"));
+	}
 	if (!SpawnLocations.IsValidIndex(SpawnedCount))
 	{
 		return FailWave(TEXT("the wave data lost the spawn location of a due birth"));
@@ -315,6 +325,16 @@ void UWaveSpawner::HandleEnemyDied(FName EnemyId)
 		UE_LOG(LogTemp, Verbose,
 			TEXT("UEMMO WaveSpawner: death of %s ignored - its run %llu is not the session's current run."),
 			*EnemyId.ToString(), SpawnRunId);
+		return;
+	}
+	// M2-011: a death reported by a world other than the one this wave
+	// spawned in (a map switch between the birth and the death) is ignored as
+	// well - an old world's leftover must never write the new world's session.
+	if (Session->GetWorld() != SpawnWorldPtr.Get())
+	{
+		UE_LOG(LogTemp, Verbose,
+			TEXT("UEMMO WaveSpawner: death of %s ignored - its world is no longer the wave's registered world."),
+			*EnemyId.ToString());
 		return;
 	}
 	// Once-per-enemy guard: AliveEnemyIds membership is authoritative, so a

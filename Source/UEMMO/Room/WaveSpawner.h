@@ -8,6 +8,7 @@
 class UEnemyDefinition;
 class URoomDefinition;
 class URoomSessionSubsystem;
+class UWorld;
 
 /**
  * Lifecycle of the ONE wave a UWaveSpawner drives (M2-007 single-wave spawner).
@@ -180,6 +181,15 @@ private:
 
 	/** Session of the run this wave belongs to (weak: never owns it). */
 	TWeakObjectPtr<URoomSessionSubsystem> SessionPtr;
+
+	/**
+	 * M2-011: the world this wave was registered in, captured at the accepted
+	 * StartWave. The late/async callbacks (due births, enemy death events)
+	 * verify the session's current world against it and abort/ignore on a
+	 * mismatch (a lost, tearing-down or swapped world), so a map switch can
+	 * never make an old wave act on a world it does not belong to anymore.
+	 */
+	TWeakObjectPtr<UWorld> SpawnWorldPtr;
 
 	/**
 	 * M2-008: RunId of the session run this wave was started in, captured at
