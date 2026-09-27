@@ -7,6 +7,7 @@
 #include "Combat/HealthComponent.h"
 #include "Enemy/EnemyDefinition.h"
 #include "Enemy/TrainingEnemy.h"
+#include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
@@ -15,6 +16,10 @@
 #include "Room/RoomRetryService.h"
 #include "Room/RoomSessionSubsystem.h"
 #include "UI/DamageNumberModel.h"
+#include "UI/InventoryWidget.h"
+#include "Items/ItemDefinition.h"
+#include "Items/ItemInstance.h"
+#include "Profile/ProfileSubsystem.h"
 
 namespace
 {
@@ -786,6 +791,291 @@ void APrototypeHUD::HandleReturnRequested()
     {
         UE_LOG(LogTemp, Warning, TEXT("UEMMO M2-012: return could not find the room session."));
     }
+}
+
+// ----- M3-011: read-only inventory list screen --------------------------------
+
+void APrototypeHUD::UEMMODebugInventory(int32 Mode)
+{
+    UE_LOG(LogTemp, Display, TEXT("UEMMO M3-011: inventory exec mode %d"), Mode);
+    if (Mode == 0)
+    {
+        // The real close path (input focus restored to the game).
+        HandleInventoryCloseRequested();
+        return;
+    }
+    if (Mode == 2)
+    {
+        // Debug-only fill-to-capacity staging (never gameplay): tops the staged
+        // inventory up to the 30-slot capacity through the production TryAdd,
+        // then presents (or throttled-refreshes) the list - the scroll and
+        // rebuild evidence.
+        if (!EnsureInventoryStaging())
+        {
+            return;
+        }
+        if (UProfileSubsystem* Profile = ResolveProfileSubsystem())
+        {
+            FInventoryModel& Inventory = Profile->GetInventory();
+            const FItemDefinition* WeaponDef = InventoryStagingCatalog.Find(TEXT("weapon_training"));
+            int64 Seed = 100;
+            while (WeaponDef != nullptr && Inventory.Count() < FInventoryModel::Capacity)
+            {
+                if (Inventory.TryAdd(MakeItemInstance(*WeaponDef, Seed++)) != EInventoryAddResult::Added)
+                {
+                    break;
+                }
+            }
+            UE_LOG(LogTemp, Display, TEXT("UEMMO M3-011: staged inventory filled to %d/%d slots"),
+                Inventory.Count(), FInventoryModel::Capacity);
+        }
+        if (InventoryWidgetPtr.IsValid())
+        {
+            RefreshInventoryScreen();
+        }
+        else
+        {
+            ShowInventoryScreen();
+        }
+        return;
+    }
+
+    // Mode 1 (default): stage the starter inventory once, then present.
+    EnsureInventoryStaging();
+    ShowInventoryScreen();
+}
+
+void APrototypeHUD::RefreshInventoryScreen()
+{
+    // The HUD-side change-point entry (reward claim / equip UI call this later;
+    // the debug exec uses it today). No-op while no screen is presented.
+    UInventoryWidget* Widget = InventoryWidgetPtr.Get();
+    if (Widget == nullptr)
+    {
+        return;
+    }
+    UProfileSubsystem* Profile = ResolveProfileSubsystem();
+    TArray<FItemInstance> EmptyItems;
+    const TArray<FItemInstance>& Items = (Profile != nullptr) ? Profile->GetInventory().GetAll() : EmptyItems;
+    // Throttled: the widget's fingerprint gate skips identical snapshots, so
+    // calling this at every change point never rebuilds unchanged rows.
+    Widget->RefreshIfChanged(Items, InventoryDisplayCatalog, EquippedInventoryIds);
+    InventoryViewModel = Widget->PeekViewModel();
+}
+
+void APrototypeHUD::HandleInventoryCloseRequested()
+{
+    HideInventoryScreen();
+}
+
+void APrototypeHUD::SetEquippedInventoryIds(const TSet<FGuid>& Ids)
+{
+    // Debug/test seam: no production equipment mapping reaches the HUD yet
+    // (M3-010 wired stat rows only), so the empty default means "no markers".
+    EquippedInventoryIds = Ids;
+}
+
+bool APrototypeHUD::EnsureInventoryWidget()
+{
+    if (InventoryWidgetPtr.IsValid())
+    {
+        return true;
+    }
+    if (GetWorld() == nullptr)
+    {
+        return false;
+    }
+    // Native C++ widget: no UMG asset is involved anywhere on this path. The
+    // close delegate binds weakly, so a torn-down HUD can never be touched by
+    // a leftover widget.
+    UInventoryWidget* Widget = CreateWidget<UInventoryWidget>(GetWorld(), UInventoryWidget::StaticClass());
+    if (Widget == nullptr)
+    {
+        UE_LOG(LogTemp, Error, TEXT("UEMMO M3-011: the inventory widget could not be created."));
+        return false;
+    }
+    TWeakObjectPtr<APrototypeHUD> WeakHUD(this);
+    Widget->CloseRequested.AddLambda([WeakHUD]()
+    {
+        if (APrototypeHUD* HUD = WeakHUD.Get())
+        {
+            HUD->HandleInventoryCloseRequested();
+        }
+    });
+    InventoryWidgetPtr = Widget;
+    return true;
+}
+
+void APrototypeHUD::ShowInventoryScreen()
+{
+    if (!EnsureInventoryWidget() || GetWorld() == nullptr)
+    {
+        return;
+    }
+    UInventoryWidget* Widget = InventoryWidgetPtr.Get();
+
+    // Data source: the real profile inventory (a missing profile degrades to
+    // the empty state - the read-only screen never invents items) plus the
+    // equipped-id set and the display catalog (null -> placeholder rows).
+    UProfileSubsystem* Profile = ResolveProfileSubsystem();
+    TArray<FItemInstance> EmptyItems;
+    const TArray<FItemInstance>& Items = (Profile != nullptr) ? Profile->GetInventory().GetAll() : EmptyItems;
+    Widget->BindInventory(Items, InventoryDisplayCatalog, EquippedInventoryIds);
+    InventoryViewModel = Widget->PeekViewModel();
+
+    APlayerController* PC = GetWorld()->GetFirstPlayerController();
+    const bool bCanPresent = GEngine != nullptr && GEngine->GameViewport != nullptr && PC != nullptr;
+    if (bCanPresent && !Widget->IsInViewport())
+    {
+        Widget->AddToViewport();
+    }
+    ApplyInventoryInputCapture();
+    if (!bCanPresent)
+    {
+        // Headless context (world-less automation): the screen stays prepared
+        // (widget created and bound) without a viewport or an input switch.
+        UE_LOG(LogTemp, Verbose, TEXT("UEMMO M3-011: inventory screen prepared without presentation (no game viewport/player controller)."));
+    }
+    UE_LOG(LogTemp, Display, TEXT("UEMMO M3-011: inventory screen presented (%d items, %d equipped ids)"),
+        InventoryViewModel.Rows.Num(), EquippedInventoryIds.Num());
+}
+
+void APrototypeHUD::HideInventoryScreen()
+{
+    if (UInventoryWidget* Widget = InventoryWidgetPtr.Get())
+    {
+        if (Widget->IsInViewport())
+        {
+            Widget->RemoveFromParent();
+        }
+    }
+    InventoryWidgetPtr = nullptr;
+    ApplyInventoryInputRestore();
+}
+
+void APrototypeHUD::ApplyInventoryInputCapture()
+{
+    // The tracker records the decision first; the real engine input switch
+    // happens only on an actual phase transition (once per presentation).
+    if (!InventoryInputFocus.CaptureToUI())
+    {
+        return;
+    }
+    APlayerController* PC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
+    UInventoryWidget* Widget = InventoryWidgetPtr.Get();
+    if (PC != nullptr && Widget != nullptr)
+    {
+        // The game input pauses to the UI exactly once per presentation.
+        FInputModeUIOnly Mode;
+        Mode.SetWidgetToFocus(Widget->TakeWidget());
+        PC->SetInputMode(Mode);
+        PC->bShowMouseCursor = true;
+        UE_LOG(LogTemp, Display, TEXT("UEMMO M3-011: input captured to the inventory screen (UI focus, cursor shown)."));
+    }
+}
+
+void APrototypeHUD::ApplyInventoryInputRestore()
+{
+    if (!InventoryInputFocus.RestoreToGame())
+    {
+        return;
+    }
+    APlayerController* PC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
+    if (PC != nullptr)
+    {
+        // Back to the game: keyboard and mouse return to the character once.
+        PC->SetInputMode(FInputModeGameOnly());
+        PC->bShowMouseCursor = false;
+        UE_LOG(LogTemp, Display, TEXT("UEMMO M3-011: game input focus restored after the inventory screen."));
+    }
+}
+
+UProfileSubsystem* APrototypeHUD::ResolveProfileSubsystem()
+{
+    UGameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+    return GameInstance ? GameInstance->GetSubsystem<UProfileSubsystem>() : nullptr;
+}
+
+bool APrototypeHUD::EnsureInventoryStaging()
+{
+    // Debug-exec-only staging (headless render evidence and manual browsing;
+    // gameplay never calls this): a local profile through the production
+    // NewProfile when the world has none, transient definition doubles (the
+    // M2-007+ precedent - production display data arrives with a later task)
+    // and three starter items through the production TryAdd.
+    UProfileSubsystem* Profile = ResolveProfileSubsystem();
+    if (Profile == nullptr)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UEMMO M3-011: staging skipped (no profile subsystem in this world)."));
+        return false;
+    }
+    if (!Profile->HasProfile())
+    {
+        Profile->NewProfile();
+        UE_LOG(LogTemp, Display, TEXT("UEMMO M3-011: debug staging minted a local profile (debug-only)."));
+    }
+    if (bInventoryStaged)
+    {
+        return true;
+    }
+
+    auto StageDefinition = [](FName Id, const FString& DisplayName, EItemSlot Slot,
+        float Attack, float Defense, float MaxHP)
+    {
+        FItemDefinition Definition;
+        Definition.DefinitionId = Id;
+        Definition.DisplayName = DisplayName;
+        Definition.Slot = Slot;
+        Definition.BaseStats.Attack = Attack;
+        Definition.BaseStats.Defense = Defense;
+        Definition.BaseStats.MaxHP = MaxHP;
+        Definition.Rarity = EItemRarity::Normal;
+        return Definition;
+    };
+
+    const FItemDefinition Weapon = StageDefinition(TEXT("weapon_training"), TEXT("Training Sword"),
+        EItemSlot::Weapon, 5.0f, 0.0f, 0.0f);
+    const FItemDefinition Armor = StageDefinition(TEXT("armor_training"), TEXT("Training Armor"),
+        EItemSlot::Armor, 0.0f, 3.0f, 20.0f);
+    const FItemDefinition Charm = StageDefinition(TEXT("accessory_training"), TEXT("Training Charm"),
+        EItemSlot::Accessory, 1.0f, 0.0f, 5.0f);
+    FString CatalogError;
+    InventoryStagingCatalog.AddDefinition(Weapon, &CatalogError);
+    InventoryStagingCatalog.AddDefinition(Armor, &CatalogError);
+    InventoryStagingCatalog.AddDefinition(Charm, &CatalogError);
+    InventoryDisplayCatalog = &InventoryStagingCatalog;
+
+    FInventoryModel& Inventory = Profile->GetInventory();
+    const FItemDefinition* StageDefs[3] = {
+        InventoryStagingCatalog.Find(TEXT("weapon_training")),
+        InventoryStagingCatalog.Find(TEXT("armor_training")),
+        InventoryStagingCatalog.Find(TEXT("accessory_training"))
+    };
+    for (int32 Index = 0; Index < 3; ++Index)
+    {
+        if (StageDefs[Index] == nullptr)
+        {
+            continue;
+        }
+        const FItemInstance Item = MakeItemInstance(*StageDefs[Index], Index + 1);
+        if (Inventory.TryAdd(Item) == EInventoryAddResult::Added)
+        {
+            if (Index == 0)
+            {
+                // The first staged item is marked equipped so the marker
+                // rendering is visible in the evidence (debug-only; no
+                // production equipment mapping exists yet).
+                EquippedInventoryIds.Add(Item.InstanceId);
+            }
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("UEMMO M3-011: staging item %d was rejected by the inventory."), Index);
+        }
+    }
+    bInventoryStaged = true;
+    UE_LOG(LogTemp, Display, TEXT("UEMMO M3-011: staged 3 starter items (first marked equipped)."));
+    return true;
 }
 
 bool APrototypeHUD::EnsureStageDefinitions()
