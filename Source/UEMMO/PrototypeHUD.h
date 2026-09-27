@@ -2,14 +2,19 @@
 #include "CoreMinimal.h"
 #include "GameFramework/HUD.h"
 #include "UI/DamageNumberModel.h"
+#include "UI/RoomResultWidget.h"
 #include "PrototypeHUD.generated.h"
 
 class APrototypeCharacter;
 class ATrainingEnemy;
 class UAttackDefinition;
 class UCombatComponent;
+class UEnemyDefinition;
 class UHealthComponent;
+class URoomDefinition;
+class URoomSessionSubsystem;
 struct FCombatHit;
+struct FRoomResult;
 
 UCLASS()
 class UEMMO_API APrototypeHUD : public AHUD
@@ -73,6 +78,120 @@ public:
 
     /** M1-035 test seam: combo value at an explicitly injected clock. */
     int32 PeekComboCount(double NowSeconds) const { return ComboCounter.EvaluateCombo(NowSeconds); }
+
+    // ----- M2-012: room result screen ---------------------------------------
+
+    /**
+     * M2-012: registers the definitions the Retry button hands to
+     * URoomRetryService::RetryRoom. The future room-catalog task will wire
+     * the real assets; until then only explicit registration (tests / the
+     * debug staging) provides a context - a missing context refuses the
+     * retry with a diagnostic and keeps the screen up.
+     */
+    void SetRoomRetryContext(const URoomDefinition* RoomDef, UEnemyDefinition* EnemyDef);
+
+    /**
+     * M2-012: the retry path behind the Retry button (and the debug/test
+     * driver): the one-shot guard drops the duplicate of a fast double
+     * click, the screen is dismissed first (input focus restored) and the
+     * real URoomRetryService::RetryRoom restarts the failed run.
+     */
+    void HandleRetryRequested();
+
+    /** M2-012: the return path behind the Return button: guard, dismiss, LeaveRoom. */
+    void HandleReturnRequested();
+
+    /**
+     * M2-012: OnRunEnded handler (bound in BeginPlay through the world's
+     * session): fills the view model from the session's real terminal result,
+     * re-arms the action guards and presents the result screen. The M1 debug
+     * overlay and the M1-035 damage feed are untouched by all of this.
+     */
+    void HandleRunEnded(const FRoomResult& Result);
+
+    /**
+     * M2-012 debug staging console entry (headless render evidence only;
+     * gameplay never calls this). Mode 0 dismisses the screen, mode 1 stages
+     * one real run to Cleared (StartRoom + BeginWaves + the session's own
+     * MarkCleared), mode 2 to Failed (FailRun), mode 3 drives the real retry
+     * request path and mode 4 the real return path. The staged run uses a
+     * transient definition double (the M2-007+ test precedent) and registers
+     * it as the retry context, so the staged retry is fully real. The session
+     * clock is injected on the real SetSessionClockSeconds entry (the game
+     * frame driver is a later task, so no other injection exists in-game).
+     */
+    UFUNCTION(Exec)
+    void UEMMODebugRoomResult(int32 Mode = 1);
+
+    /** M2-012 test seam: a result widget is created and bound (headless-safe). */
+    bool HasRoomResultScreen() const { return ResultWidgetPtr.IsValid(); }
+
+    /** M2-012 test seam: the view model filled by the last HandleRunEnded. */
+    const FRoomResultViewModel& PeekRoomResultViewModel() const { return RoomResultViewModel; }
+
+    /** M2-012 test seam: pure input-focus state of the result screen flow. */
+    const FRoomResultInputFocusTracker& PeekRoomResultInputFocus() const { return ResultInputFocus; }
+
+protected:
+    virtual void BeginPlay() override;
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+private:
+    /** M2-012: binds the world session's OnRunEnded (BeginPlay; once). */
+    void BindRoomSessionEvents();
+
+    /** M2-012: drops the OnRunEnded binding (EndPlay; idempotent). */
+    void UnbindRoomSessionEvents();
+
+    /** M2-012: creates the native result widget once and wires its delegates. */
+    bool EnsureResultWidget();
+
+    /** M2-012: presents the bound screen (viewport + one-time input capture). */
+    void ShowRoomResultScreen();
+
+    /** M2-012: dismisses the screen and restores the game input focus. */
+    void HideRoomResultScreen();
+
+    /** M2-012: the capture half of the one-time input switch (tracker-gated). */
+    void ApplyResultScreenInputCapture();
+
+    /** M2-012: the restore half of the one-time input switch (tracker-gated). */
+    void ApplyResultScreenInputRestore();
+
+    /** M2-012: local player pawn (controller character first, then one iterator pass). */
+    APrototypeCharacter* ResolveLocalPlayer();
+
+    /** M2-012: builds the transient debug staging definitions (exec path only). */
+    bool EnsureStageDefinitions();
+
+    /** M2-012: the presented result screen (weak; recreated per presentation). */
+    TWeakObjectPtr<URoomResultWidget> ResultWidgetPtr;
+
+    /** M2-012: display state filled from the session's terminal result. */
+    FRoomResultViewModel RoomResultViewModel;
+
+    /** M2-012: one-shot guards of the retry/return request paths. */
+    FRoomResultActionGuard RetryGuard;
+    FRoomResultActionGuard ReturnGuard;
+
+    /** M2-012: pure record of the one-time input focus switch contract. */
+    FRoomResultInputFocusTracker ResultInputFocus;
+
+    /** M2-012: definitions the Retry button hands to URoomRetryService (weak). */
+    TWeakObjectPtr<const URoomDefinition> RetryRoomDefPtr;
+    TWeakObjectPtr<UEnemyDefinition> RetryEnemyDefPtr;
+
+    /** M2-012: transient staging doubles of the debug exec (never gameplay). */
+    UPROPERTY(Transient)
+    TObjectPtr<URoomDefinition> StageRoomDefinition;
+
+    UPROPERTY(Transient)
+    TObjectPtr<UEnemyDefinition> StageEnemyDefinition;
+
+    /** M2-012: session resolved at BeginPlay (weak) and its end-event handle. */
+    TWeakObjectPtr<URoomSessionSubsystem> RoomSessionPtr;
+    FDelegateHandle RoomRunEndedHandle;
+    bool bRoomSessionBound = false;
 
 private:
     /** Draws the debug panel: snapshot line, placeholder action, target HP. */
