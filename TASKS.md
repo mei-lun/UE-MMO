@@ -105,7 +105,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M3-013 | [版本化存档结构与往返序列化](Docs/Tasks/M3-013.md) | DONE | M3-003,M3-009,M3-004,M3-006 | ZCode-20260925-A | 2026-09-28T04:19:30+08:00 | [report](Docs/Tasks/Reports/M3-013.md) |
 | M3-014 | [A/B双槽保存与索引提交](Docs/Tasks/M3-014.md) | DONE | M3-013 | ZCode-20260925-A | 2026-09-28T05:14:06+08:00 | [report](Docs/Tasks/Reports/M3-014.md) |
 | M3-015 | [启动加载与损坏回退](Docs/Tasks/M3-015.md) | DONE | M3-014 | ZCode-20260925-A | 2026-09-28T06:03:54+08:00 | [report](Docs/Tasks/Reports/M3-015.md) |
-| M3-016 | [奖励与存档的原子提交](Docs/Tasks/M3-016.md) | TODO | M3-015,M3-009 | — | — | — |
+| M3-016 | [奖励与存档的原子提交](Docs/Tasks/M3-016.md) | IN_PROGRESS | M3-015,M3-009 | ZCode-20260925-A | 2026-09-28T06:04:05+08:00 | [report](Docs/Tasks/Reports/M3-016.md) |
 | M3-017 | [单图选择菜单与进出副本](Docs/Tasks/M3-017.md) | TODO | M3-015,M2-011 | — | — | — |
 | M3-018 | [结算奖励界面与待领取提示](Docs/Tasks/M3-018.md) | TODO | M3-016,M3-017,M2-012 | — | — | — |
 | M3-019 | [三种装备图标与显示资源登记](Docs/Tasks/M3-019.md) | TODO | M3-018 | — | — | — |
