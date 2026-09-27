@@ -8,6 +8,7 @@
 #include "Combat/HealthComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Engine/GameInstance.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
 #include "EnhancedInputComponent.h"
@@ -19,6 +20,7 @@
 #include "InputMappingContext.h"
 #include "InputModifiers.h"
 #include "PrototypeHUD.h"
+#include "Profile/ProfileSubsystem.h"
 #include "Room/RoomSessionSubsystem.h"
 #include "Room/TrainingResetService.h"
 #include "UObject/ConstructorHelpers.h"
@@ -189,6 +191,46 @@ void APrototypeCharacter::BeginPlay()
             HandlePlayerDied();
         });
     }
+    // M3-010: the growth wiring. The profile subsystem is resolved exactly
+    // once here through the owning game instance (the subsystem outlives the
+    // pawn, so a weak reference suffices); a GameInstance-less pawn - a bare
+    // test world - keeps the component defaults and an inert equip entry, the
+    // documented graceful degradation. The snapshot's final stats load
+    // immediately: MaxHP onto the health pool bound (the no-heal clamp) and
+    // Attack/Defense into the damage formula entries. The pawn's first load
+    // (spawn / entering the dungeon) opens the pool FULL at the new max, the
+    // same entry a new run uses; ordinary equipment changes never heal.
+    if (UWorld* World = GetWorld())
+    {
+        if (UGameInstance* GameInstance = World->GetGameInstance())
+        {
+            ProfilePtr = GameInstance->GetSubsystem<UProfileSubsystem>();
+        }
+    }
+    ApplyProfileFinalStats();
+    if (Health != nullptr)
+    {
+        Health->ResetHealth();
+    }
+    // M3-010: the run-start hook. One accepted StartRoom (the "enter the
+    // dungeon" moment, also the re-entry after LeaveRoom) re-loads the fresh
+    // snapshot and restores the pool to the CURRENT max - a new run always
+    // opens full. The subsystem is a World subsystem that already exists at
+    // pawn BeginPlay; the captured raw this dies with the pawn, and the
+    // subsystem only broadcasts while its world lives, so the binding can
+    // never dangle (the M2-004 death-binding precedent).
+    if (UWorld* World = GetWorld())
+    {
+        URoomSessionSubsystem* Session = World->GetSubsystem<URoomSessionSubsystem>();
+        if (Session != nullptr)
+        {
+            RoomSessionPtr = Session;
+            Session->OnRunStarted().AddLambda([this]()
+            {
+                HandleRoomRunStarted();
+            });
+        }
+    }
     UE_LOG(LogTemp, Display, TEXT("UEMMO: prototype character ready; X/Y movement enabled."));
 }
 
@@ -229,6 +271,78 @@ void APrototypeCharacter::HandlePlayerDied()
     // Broadcast last, so every observer reads the post-death state (combat
     // dead, animation detached).
     PlayerDied.Broadcast();
+}
+
+bool APrototypeCharacter::TryEquipStatBonus(const FItemStats& NewEquippedBonus)
+{
+    // M3-010: the player-side equip/unequip entry. Without a profile there is
+    // nothing to write into: refused (the future new-game flow creates the
+    // profile first).
+    UProfileSubsystem* Profile = ProfilePtr.Get();
+    if (Profile == nullptr || !Profile->HasProfile())
+    {
+        UE_LOG(LogTemp, Warning,
+            TEXT("UEMMO: equip request refused - no character profile exists yet."));
+        return false;
+    }
+    // The card's first-version rule: equipping is a non-combat operation, so a
+    // Running room run refuses every equip/unequip request ("exit the room
+    // first"). The gate sits exactly here, BEFORE the profile row is written,
+    // so a refused request cannot even half-apply. No session (or an
+    // unresolved one) means no run can be Running: the gate passes.
+    const URoomSessionSubsystem* Session = RoomSessionPtr.Get();
+    if (Session != nullptr && Session->GetState() == ERoomSessionState::Running)
+    {
+        UE_LOG(LogTemp, Warning,
+            TEXT("UEMMO: equip request refused - the room run is Running; leave the room before changing equipment."));
+        return false;
+    }
+    // Accepted: the row REPLACES the stored equipped bonus wholesale (the
+    // M3-005 SetEquippedStatBonus semantics; a zero row means "nothing
+    // equipped") and the fresh snapshot re-applies immediately with the
+    // no-heal clamp - an equipment change NEVER restores lost health.
+    Profile->SetEquippedStatBonus(NewEquippedBonus);
+    ApplyProfileFinalStats();
+    return true;
+}
+
+void APrototypeCharacter::ApplyProfileFinalStats()
+{
+    // M3-010: re-applies the profile's final stats to the pawn's combat
+    // attributes. No profile (or no subsystem): the component defaults stay.
+    // The pool itself is only clamped (SetMaxHealth), never healed here - the
+    // two explicit pool refills are the pawn's spawn load and the run-start
+    // handler, both via ResetHealth.
+    UProfileSubsystem* Profile = ProfilePtr.Get();
+    if (Profile == nullptr || !Profile->HasProfile())
+    {
+        return;
+    }
+    const FProfileSnapshot Snapshot = Profile->GetProfileSnapshot();
+    if (Health != nullptr)
+    {
+        // Lowered MaxHP clamps CurrentHP down; raised MaxHP never heals
+        // (FStatCalculator::ClampHealthOnMaxChange semantics, M3-005).
+        Health->SetMaxHealth(static_cast<float>(Snapshot.MaxHP));
+    }
+    if (Combat != nullptr)
+    {
+        Combat->SetCombatStats(static_cast<float>(Snapshot.Attack), static_cast<float>(Snapshot.Defense));
+    }
+}
+
+void APrototypeCharacter::HandleRoomRunStarted()
+{
+    // M3-010: the accepted StartRoom is the "enter the dungeon" load point.
+    // The fresh snapshot re-applies (equipment changed between runs is
+    // reflected) and the pool restores to the CURRENT max - a new run always
+    // opens full, while ordinary equipment changes never heal. Works without
+    // a profile too: the load is a no-op and the unchanged max is refilled.
+    ApplyProfileFinalStats();
+    if (Health != nullptr)
+    {
+        Health->ResetHealth();
+    }
 }
 
 void APrototypeCharacter::EnsureCombatInputActions()

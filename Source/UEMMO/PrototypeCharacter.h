@@ -10,11 +10,13 @@ class USideViewCameraComponent;
 class UCombatComponent;
 class UCombatPresentationComponent;
 class UHealthComponent;
+class UProfileSubsystem;
 class URoomSessionSubsystem;
 class UTrainingResetService;
 class UInputAction;
 class UInputMappingContext;
 struct FInputActionValue;
+struct FItemStats;
 
 /** Broadcast exactly once per player death lifecycle, when the health pool dies. */
 DECLARE_MULTICAST_DELEGATE(FOnPlayerDied);
@@ -118,6 +120,21 @@ public:
      */
     void SubmitSkillSlot(int32 SlotIndex);
 
+    /**
+     * M3-010: the player-side equip/unequip entry. NewEquippedBonus REPLACES
+     * the whole equipped stat bonus row of the profile (a zero row means
+     * "nothing equipped", the M3-005 SetEquippedStatBonus semantics), so the
+     * same entry serves equip and unequip. The request is REFUSED (returns
+     * false, nothing changes) while a room run is Running - equipping is a
+     * non-combat operation, the card requires exiting the room first - and
+     * without an existing profile (there is nothing to write into). On
+     * acceptance the fresh profile snapshot re-applies with the no-heal clamp
+     * semantics (a lowered MaxHP clamps CurrentHP, a raised one never heals).
+     * Public because it is the equipping surface the future equipment flow
+     * and the automation tests drive directly.
+     */
+    bool TryEquipStatBonus(const FItemStats& NewEquippedBonus);
+
     /** M1-040: how often skill slot 1..8 was pressed since spawn (0 out of range). */
     int32 GetSkillSlotPressCount(int32 SlotIndex) const;
 
@@ -157,6 +174,24 @@ private:
      * broadcasts PlayerDied exactly once per lifecycle.
      */
     void HandlePlayerDied();
+    /**
+     * M3-010: re-applies the profile's final stats to this pawn's combat
+     * attributes: snapshot MaxHP -> Health SetMaxHealth (no-heal clamp) and
+     * snapshot Attack/Defense -> Combat SetCombatStats. A no-op without a
+     * resolved profile subsystem or without an existing profile (the component
+     * defaults stay). Never heals by itself: the only pool refills are the
+     * pawn's spawn load in BeginPlay and the run-start handler's explicit
+     * ResetHealth - an ordinary equipment change keeps the current pool.
+     */
+    void ApplyProfileFinalStats();
+    /**
+     * M3-010: the RoomSessionSubsystem OnRunStarted handler (bound in
+     * BeginPlay): one accepted StartRoom re-loads the profile final stats
+     * (the "enter the dungeon" load point) and restores the pool to the
+     * CURRENT max via ResetHealth - a fresh run opens with a full pool, while
+     * ordinary equipment changes never heal.
+     */
+    void HandleRoomRunStarted();
     // M1-012: builds the mapping context and actions exactly once (guarded by
     // Mapping != nullptr); re-setup (re-possess) reuses them.
     void EnsureCombatInputActions();
@@ -211,6 +246,11 @@ private:
     // when the pointer expired or the world changed; a world-less pawn skips
     // the injection entirely).
     TWeakObjectPtr<URoomSessionSubsystem> RoomSessionPtr;
+    // M3-010: the profile subsystem resolved once in BeginPlay through the
+    // owning game instance and held weakly (the subsystem outlives the pawn;
+    // a game-instance-less pawn - bare test worlds - keeps the component
+    // defaults and no equip surface, the documented graceful degradation).
+    TWeakObjectPtr<UProfileSubsystem> ProfilePtr;
     // M1-029: accumulated planar axis input; applied centrally in Tick.
     UE::UEMMO::Tasks::M1_029::FPlanarAxisState PlanarAxes;
     // M1-012: next combat input sequence; strictly increases per submitted intent.

@@ -318,6 +318,24 @@ public:
 	bool IsClockFrozen() const;
 
 	/**
+	 * M3-010: injects this combatant's growth attributes into the M1-019
+	 * damage formula. AttackPower is read when this component attacks; Defense
+	 * is read from this component when it is a hit VICTIM (the attacker's
+	 * pipeline looks the value up on the target's combat component). Defaults
+	 * are 0/0, which keeps every pre-M3-010 result verbatim (the M1-019
+	 * constants that stood in before any growth source existed). Non-finite
+	 * fields are stored as 0 and negative fields are clamped to 0 (the same
+	 * hardening rule FStatCalculator applies to equipped stat rows).
+	 */
+	void SetCombatStats(float InAttackPower, float InDefense);
+
+	/** M3-010: attack power this component feeds the damage formula as an attacker. */
+	float GetAttackPower() const;
+
+	/** M3-010: defense this component contributes when it is a hit victim. */
+	float GetDefense() const;
+
+	/**
 	 * M1-033: requests a local hit stop of DurationSeconds on this component
 	 * (the card's 40 ms rides in on FCombatHit::HitStopSeconds from the
 	 * definition). While the stop runs: the action clock freezes (the
@@ -535,6 +553,14 @@ private:
 	/** Injected catalog; UPROPERTY keeps it alive for the GC. */
 	UPROPERTY(Transient)
 	TObjectPtr<UAttackCatalog> Catalog;
+
+	/**
+	 * M3-010: growth attributes injected via SetCombatStats (profile snapshot
+	 * final stats in the game owner). Defaults 0/0 keep the pre-M3-010 damage
+	 * results verbatim.
+	 */
+	float CombatAttackPower = 0.0f;
+	float CombatDefense = 0.0f;
 
 	ECombatActionState ActionState = ECombatActionState::Free;
 
