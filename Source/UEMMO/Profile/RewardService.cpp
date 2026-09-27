@@ -5,6 +5,9 @@
 // the room Seed (never a wall clock), and answers a repeat settlement with
 // the ORIGINAL draft (the random result is generated exactly once per
 // settlement and a retry never re-rolls it).
+// M3-009: TryClaimPending claims a pending draft into the inventory with
+// full-inventory retention (nothing is lost; a retry claims the original
+// instances) and grants the settlement XP exactly once.
 
 #include "RewardService.h"
 
@@ -138,5 +141,127 @@ FRewardBeginOutcome URewardService::BeginReward(const FRoomResult& Result, const
 	Outcome.Result = ERewardBeginResult::Applied;
 	Outcome.Error.Reset();
 	Outcome.Draft = Draft;
+	return Outcome;
+}
+
+// -- Claim entry (M3-009) ------------------------------------------------------
+
+// GREEN implementation of the M3-009 contract: the claim never loses a
+// pending item (only a verifiably stored instance leaves its draft, every
+// rejection is retained unchanged with its original InstanceId and one-time
+// roll) and the XP is granted exactly once per settlement (the first claim
+// attempt grants and records it; a full inventory does not hold XP back).
+
+FRewardClaimOutcome URewardService::TryClaimPending(uint64 SettlementId, FInventoryModel& Inventory)
+{
+	FRewardClaimOutcome Outcome;
+
+	// 1. The draft and the applied record live in the GameInstance-level
+	//    profile; without a bound subsystem or an existing profile there is
+	//    nothing to claim from.
+	UProfileSubsystem* Profile = ProfilePtr.Get();
+	if (Profile == nullptr || !Profile->HasProfile())
+	{
+		Outcome.Result = ERewardClaimResult::RejectedNoProfile;
+		Outcome.Error = TEXT("no bound profile subsystem or no existing profile: a pending reward needs a GameInstance-level profile to claim from");
+		return Outcome;
+	}
+
+	// 2. Locate the settlement's draft in the profile's PendingRewards.
+	TArray<FPendingReward>& Pending = Profile->GetPendingRewards();
+	int32 DraftIndex = INDEX_NONE;
+	for (int32 Index = 0; Index < Pending.Num(); ++Index)
+	{
+		if (Pending[Index].SettlementId == SettlementId)
+		{
+			DraftIndex = Index;
+			break;
+		}
+	}
+
+	if (DraftIndex == INDEX_NONE)
+	{
+		if (Profile->IsSettlementApplied(SettlementId))
+		{
+			// Fully claimed earlier (draft already removed, applied record
+			// kept): an idempotent repeat - no XP again, no items again,
+			// nothing changed.
+			Outcome.Result = ERewardClaimResult::AlreadyClaimed;
+			return Outcome;
+		}
+		Outcome.Result = ERewardClaimResult::UnknownSettlement;
+		Outcome.Error = FString::Printf(TEXT("SettlementId %llu has no pending reward draft and no applied record: nothing to claim"), SettlementId);
+		return Outcome;
+	}
+
+	// 3. XP exactly once per settlement: granted by the FIRST claim attempt
+	//    (a full inventory does not hold XP back - XP is settlement progress,
+	//    not inventory payload) and recorded in AppliedSettlementIds, so
+	//    every later attempt (repeat click, free-space retry) skips it.
+	FPendingReward& Draft = Pending[DraftIndex];
+	if (!Profile->IsSettlementApplied(SettlementId))
+	{
+		Profile->AddXP(Draft.XP);
+		Profile->MarkSettlementApplied(SettlementId);
+		Outcome.bGrantedXP = true;
+	}
+
+	// 4. Items one by one, keyed by their pre-generated InstanceId: only a
+	//    verifiably stored instance (TryAdd == Added) leaves the draft; every
+	//    rejection retains the instance UNCHANGED (original InstanceId and
+	//    rolled stats - the draft is the single source of the one-time roll,
+	//    a retry never re-rolls or re-identifies). Retained items keep their
+	//    draft order.
+	TArray<FItemInstance> Retained;
+	int32 ClaimedCount = 0;
+	bool bRetainedNonFullRejection = false;
+	for (int32 Index = 0; Index < Draft.Items.Num(); ++Index)
+	{
+		const FItemInstance& Item = Draft.Items[Index];
+		const EInventoryAddResult AddResult = Inventory.TryAdd(Item);
+		if (AddResult == EInventoryAddResult::Added)
+		{
+			++ClaimedCount;
+		}
+		else
+		{
+			Retained.Add(Item);
+			bRetainedNonFullRejection |= (AddResult != EInventoryAddResult::InventoryFull);
+		}
+	}
+
+	Outcome.ClaimedItemCount = ClaimedCount;
+	Outcome.RetainedItemCount = Retained.Num();
+
+	if (Retained.Num() == 0)
+	{
+		// 5a. Everything consumed (or the draft carried no items at all):
+		//     remove the empty draft; the applied record STAYS
+		//     (IsSettlementApplied remains true - a replayed BeginReward
+		//     answers AlreadyApplied with a default draft from here on).
+		Pending.RemoveAt(DraftIndex);
+		Outcome.Result = ERewardClaimResult::Claimed;
+		Outcome.Error.Reset();
+	}
+	else if (ClaimedCount > 0)
+	{
+		// 5b. Partial success (multi-item drafts): the stored items stay
+		//     stored, only the retained ones keep waiting in the draft.
+		Draft.Items = Retained;
+		Outcome.Result = ERewardClaimResult::PartiallyClaimed;
+		Outcome.Error.Reset();
+	}
+	else
+	{
+		// 5c. Nothing fit: the draft keeps every item unchanged and the
+		//     caller surfaces InventoryFull. The retention itself is
+		//     unconditional - the message names a non-full rejection when
+		//     one occurred (duplicate/invalid identity retained for retry).
+		Draft.Items = Retained;
+		Outcome.Result = ERewardClaimResult::InventoryFull;
+		Outcome.Error = bRetainedNonFullRejection
+			? TEXT("no pending item could enter the inventory; every item is retained unchanged in the pending draft (at least one rejection was not InventoryFull)")
+			: TEXT("inventory is full: every pending item is retained unchanged in the pending draft");
+	}
 	return Outcome;
 }

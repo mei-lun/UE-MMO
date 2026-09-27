@@ -164,6 +164,15 @@ bool UProfileSubsystem::IsSettlementApplied(uint64 SettlementId) const
 	return AppliedSettlementIds.Contains(SettlementId);
 }
 
+void UProfileSubsystem::MarkSettlementApplied(uint64 SettlementId)
+{
+	// M3-009: plain set insert (idempotent by construction). The claim flow
+	// marks the id exactly once at the first claim attempt, so a repeat claim
+	// (or a replayed BeginReward) sees the applied guard; the record stays
+	// even after the draft is fully consumed and removed.
+	AppliedSettlementIds.Add(SettlementId);
+}
+
 FProfileSnapshot UProfileSubsystem::GetProfileSnapshot() const
 {
 	if (!bHasProfile)
