@@ -181,6 +181,14 @@ private:
 	/** Session of the run this wave belongs to (weak: never owns it). */
 	TWeakObjectPtr<URoomSessionSubsystem> SessionPtr;
 
+	/**
+	 * M2-008: RunId of the session run this wave was started in, captured at
+	 * the accepted StartWave. The death binding uses it to swallow deaths of
+	 * this wave's enemies after the run already ended (a stale enemy of an old
+	 * run must never reach the new run's kill bookkeeping).
+	 */
+	uint64 SpawnRunId = 0;
+
 	/** Definition applied to every enemy of this wave (weak, caller-owned data). */
 	TWeakObjectPtr<UEnemyDefinition> EnemyDefPtr;
 
