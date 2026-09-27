@@ -1,11 +1,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Containers/Set.h"
 #include "Delegates/Delegate.h"
 #include "Subsystems/WorldSubsystem.h"
 #include "RoomSessionSubsystem.generated.h"
 
+class UEnemyDefinition;
 class URoomDefinition;
+class UWaveSpawner;
 
 /**
  * Lifecycle state of one room run (interface contract section 7).
@@ -201,6 +204,27 @@ public:
 	/** M2-007: enemies accepted by NotifyEnemySpawned in the current run. */
 	int32 GetSpawnedEnemyCount() const;
 
+	// -- Wave progression (M2-008 minimal additions) ---------------------------
+
+	/**
+	 * M2-008: starts the death-driven wave progression of the running run from
+	 * wave 0 of the handed room definition, spawning every wave's enemies
+	 * through one fresh UWaveSpawner instance per wave (the M2-007 per-instance
+	 * bookkeeping therefore always starts from zero, so a later wave can never
+	 * inherit an earlier wave's counters). Accepted only while Running and
+	 * while this run has no progression yet; the first wave starts immediately,
+	 * every later wave starts 1.0 s (injected session clock) after the previous
+	 * wave's last enemy died, and the run clears (MarkCleared, exactly once)
+	 * when the LAST wave is fully born and fully dead. Any StartWave refusal or
+	 * an aborted (Failed) wave ends the run through FailRun (first terminal
+	 * wins). Returns false and changes nothing for a rejected request; a wave
+	 * failure also returns false after the run was already failed.
+	 */
+	bool BeginWaves(const URoomDefinition* Definition, UEnemyDefinition* EnemyDef);
+
+	/** M2-008: waves the current run has started so far (diagnostic). */
+	int32 GetStartedWaveCount() const;
+
 	// -- Events ----------------------------------------------------------------
 
 	/** Fires exactly once per accepted StartRoom. */
@@ -239,6 +263,30 @@ private:
 	 */
 	bool EndRun(bool bInCleared, const TCHAR* RequestName);
 
+	/** M2-008: drops the per-run wave progression bookkeeping. */
+	void ResetWaveOrchestration();
+
+	/** M2-008: starts wave StartedWaveCount of the orchestrated room; on any StartWave refusal the run is failed and false returned. */
+	bool StartNextWave();
+
+	/**
+	 * M2-008: injected-clock pump, called from every accepted clock injection.
+	 * Drives the current wave's births (UpdateWave), fails the run when the
+	 * current wave aborted, and starts the next wave once the 1.0 s inter-wave
+	 * wait has elapsed. No-op while no progression is active or the run is not
+	 * Running.
+	 */
+	void PumpWaveProgression();
+
+	/**
+	 * M2-008: death-driven progression step, called from NotifyEnemyKilled for
+	 * a kill of an id the current run actually spawned. Advances only when the
+	 * current wave is fully born AND fully dead (PendingSpawns=0 and
+	 * AliveIds=0): the last wave clears the run exactly once, an earlier wave
+	 * arms the 1.0 s wait before the next one.
+	 */
+	void CheckWaveProgressionAfterKill();
+
 	/** Session time comes from injections only; never read from a wall clock. */
 	double SessionClockSeconds = 0.0;
 
@@ -265,6 +313,25 @@ private:
 	 */
 	int32 CurrentWaveIndex = -1;
 	int32 SpawnedEnemyCount = 0;
+
+	/**
+	 * M2-008 per-run wave progression; reset by StartRoom / ResetToIdle /
+	 * Deinitialize like the rest of the per-run fields. AliveEnemyIdSet is the
+	 * idempotency guard of the progression: only a kill of an id this run
+	 * actually spawned (NotifyEnemySpawned) may advance the waves, while the
+	 * M2-006 kill-counting semantics stay untouched. RunWaveSpawners holds one
+	 * fresh UWaveSpawner per started wave, so every wave's pending/alive
+	 * bookkeeping starts from zero (per-instance isolation).
+	 */
+	TSet<FName> CurrentRunAliveEnemyIds;
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UWaveSpawner>> RunWaveSpawners;
+	int32 StartedWaveCount = 0;
+	bool bWaveOrchestrationActive = false;
+	bool bWaitingNextWave = false;
+	double NextWaveStartClockSeconds = 0.0;
+	TWeakObjectPtr<const URoomDefinition> WaveRoomDefPtr;
+	TWeakObjectPtr<UEnemyDefinition> WaveEnemyDefPtr;
 
 	/** Result of the last finished run (default before the first terminal). */
 	FRoomResult LastResult;

@@ -124,6 +124,9 @@ EWaveStartResult UWaveSpawner::StartWave(const URoomDefinition* Definition, int3
 	bStartClockAnchored = false;
 	StartClockSeconds = 0.0;
 	LastFailure.Reset();
+	// M2-008: the run this wave belongs to - its death binding compares the
+	// session's current RunId against it to swallow stale old-run deaths.
+	SpawnRunId = Session->GetRunId();
 	State = EWaveState::Spawning;
 
 	UE_LOG(LogTemp, Verbose,
@@ -298,6 +301,18 @@ bool UWaveSpawner::FailWave(const FString& Reason)
 
 void UWaveSpawner::HandleEnemyDied(FName EnemyId)
 {
+	// M2-008 old-run filter: a death of this wave's enemy after its run already
+	// ended (the session moved on to a new RunId, or the session/world is gone)
+	// is swallowed here and never reaches the new run's kill bookkeeping - an
+	// old run's leftovers must not count, advance or settle a new run.
+	URoomSessionSubsystem* Session = SessionPtr.Get();
+	if (Session == nullptr || Session->GetRunId() != SpawnRunId)
+	{
+		UE_LOG(LogTemp, Verbose,
+			TEXT("UEMMO WaveSpawner: death of %s ignored - its run %llu is not the session's current run."),
+			*EnemyId.ToString(), SpawnRunId);
+		return;
+	}
 	// Once-per-enemy guard: AliveEnemyIds membership is authoritative, so a
 	// duplicate death notification of the same enemy (e.g. a second death
 	// lifecycle after a health reset) is ignored and never double-counts.
@@ -308,8 +323,5 @@ void UWaveSpawner::HandleEnemyDied(FName EnemyId)
 			*EnemyId.ToString());
 		return;
 	}
-	if (URoomSessionSubsystem* Session = SessionPtr.Get())
-	{
-		Session->NotifyEnemyKilled(EnemyId);
-	}
+	Session->NotifyEnemyKilled(EnemyId);
 }
