@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "items": [
+    {
+      "definition_id": "weapon_training",
+      "display_name": "Training Sword",
+      "slot": "Weapon",
+      "base_stats": { "attack": 5, "defense": 0, "max_hp": 0 },
+      "icon_path": "",
+      "rarity": 1
+    },
+    {
+      "definition_id": "armor_training",
+      "display_name": "Training Armor",
+      "slot": "Armor",
+      "base_stats": { "attack": 0, "defense": 3, "max_hp": 0 },
+      "icon_path": "",
+      "rarity": 1
+    },
+    {
+      "definition_id": "charm_training",
+      "display_name": "Training Charm",
+      "slot": "Accessory",
+      "base_stats": { "attack": 0, "defense": 0, "max_hp": 20 },
+      "icon_path": "",
+      "rarity": 1
+    }
+  ]
+}
