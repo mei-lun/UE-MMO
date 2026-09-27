@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Misc/Guid.h"
+#include "Templates/Function.h"
 
 #include "ItemInstance.h"
 
@@ -27,7 +28,9 @@ enum class EInventoryAddResult : uint8
 
 /**
  * Result of FInventoryModel::Remove. A NotFound removal leaves every stored
- * item untouched.
+ * item untouched; an ItemEquipped removal also leaves every stored item
+ * untouched (the instance is referenced by an equipment slot and must be
+ * unequipped first, M3-004).
  */
 enum class EInventoryRemoveResult : uint8
 {
@@ -35,7 +38,14 @@ enum class EInventoryRemoveResult : uint8
 	Removed,
 
 	/** No instance with that InstanceId exists; nothing changed. */
-	NotFound
+	NotFound,
+
+	/**
+	 * The instance exists but is currently referenced by an equipment slot
+	 * (the equip guard predicate returned true, M3-004); removal refused and
+	 * nothing changed. The caller must unequip the slot before removing.
+	 */
+	ItemEquipped
 };
 
 /**
@@ -59,6 +69,19 @@ struct FInventoryModel
 	/** Fixed maximum number of stored instances (design constant). */
 	static constexpr int32 Capacity = 30;
 
+	/** A fresh, empty, unguarded inventory. */
+	FInventoryModel() = default;
+
+	/**
+	 * Copy construction copies the stored items but deliberately drops the
+	 * equip guard (see SetEquippedPredicate): the copy is detached data and
+	 * must never keep querying the original wiring's equipment model.
+	 */
+	FInventoryModel(const FInventoryModel& Other);
+
+	/** Same rule as the copy constructor: items are copied, the guard is not. */
+	FInventoryModel& operator=(const FInventoryModel& Other);
+
 	/**
 	 * Adds one copy of Instance, keyed by its InstanceId. Rejects an invalid
 	 * InstanceId (InvalidInstance), an id that is already stored (Duplicate)
@@ -71,9 +94,32 @@ struct FInventoryModel
 	/**
 	 * Removes the one instance whose InstanceId matches. Returns Removed after
 	 * dropping exactly that entry, or NotFound without touching any other
-	 * item when no entry carries the id.
+	 * item when no entry carries the id. When an equip guard is installed
+	 * (SetEquippedPredicate) and the requested instance is currently
+	 * referenced by an equipment slot, returns ItemEquipped as a pure no-op:
+	 * an equipped item must be unequipped before it can be removed.
 	 */
 	EInventoryRemoveResult Remove(const FGuid& InstanceId);
+
+	/**
+	 * Equip-guard predicate type (M3-004): returns true when the given
+	 * InstanceId is currently referenced by an equipment slot. Stored as a
+	 * TFunction instead of a direct FEquipmentModel reference so the inventory
+	 * never needs to know the equipment type (no include cycle, no compile
+	 * coupling); the wiring is installed by FEquipmentModel::AttachToInventory.
+	 */
+	using FEquippedPredicate = TFunction<bool(const FGuid&)>;
+
+	/**
+	 * Installs (replaces, or clears with an empty TFunction) the equip guard
+	 * consulted by Remove. This is operational wiring, not container data: the
+	 * predicate is deliberately NOT carried along by copy construction or copy
+	 * assignment, so a detached copy (e.g. a profile snapshot's inventory copy)
+	 * always starts unguarded and can never call back into a foreign or
+	 * outlived equipment model. Re-attach after copying or wholesale
+	 * reassigning an inventory whose guard should stay live.
+	 */
+	void SetEquippedPredicate(FEquippedPredicate Predicate);
 
 	/** Number of currently stored instances (0..Capacity). */
 	int32 Count() const;
@@ -94,4 +140,7 @@ struct FInventoryModel
 private:
 	/** Stored instances in insertion order; never holds duplicate InstanceIds. */
 	TArray<FItemInstance> Slots;
+
+	/** Optional equip guard (M3-004); empty on every fresh or copied model. */
+	FEquippedPredicate EquippedPredicate;
 };

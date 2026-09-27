@@ -3,7 +3,34 @@
 // duplicates and full inventories without modifying the container, and Remove
 // drops exactly one entry or reports NotFound as a no-op. Slot order stays in
 // insertion order across removals (later entries shift up, nothing swaps).
+// M3-004: Remove additionally consults an optional equip guard predicate and
+// reports ItemEquipped (pure no-op) for instances an equipment model still
+// references; the guard is wiring and is never carried across copies.
 #include "InventoryModel.h"
+
+// M3-004: copies copy the items, never the guard predicate. The guard is
+// per-object wiring that captures external state (the equipment model), so a
+// detached copy must start unguarded or a stale capture could fire from a
+// snapshot-like copy. See SetEquippedPredicate in InventoryModel.h.
+FInventoryModel::FInventoryModel(const FInventoryModel& Other)
+	: Slots(Other.Slots)
+{
+}
+
+FInventoryModel& FInventoryModel::operator=(const FInventoryModel& Other)
+{
+	if (this != &Other)
+	{
+		Slots = Other.Slots;
+		EquippedPredicate = nullptr;
+	}
+	return *this;
+}
+
+void FInventoryModel::SetEquippedPredicate(FEquippedPredicate Predicate)
+{
+	EquippedPredicate = MoveTemp(Predicate);
+}
 
 EInventoryAddResult FInventoryModel::TryAdd(const FItemInstance& Instance)
 {
@@ -37,6 +64,13 @@ EInventoryRemoveResult FInventoryModel::Remove(const FGuid& InstanceId)
 	{
 		// Unknown (or all-zero) id: pure no-op, every stored item untouched.
 		return EInventoryRemoveResult::NotFound;
+	}
+	// M3-004 equip guard: an instance referenced by an equipment slot must not
+	// be deleted behind the equipment's back. Pure no-op; the caller has to
+	// unequip the slot first, then retry the removal.
+	if (EquippedPredicate && EquippedPredicate(InstanceId))
+	{
+		return EInventoryRemoveResult::ItemEquipped;
 	}
 	// RemoveAt keeps the relative order of the remaining entries.
 	Slots.RemoveAt(Index);
