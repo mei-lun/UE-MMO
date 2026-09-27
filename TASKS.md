@@ -103,7 +103,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M3-011 | [背包只读列表界面](Docs/Tasks/M3-011.md) | DONE | M3-002,M3-003 | ZCode-20260925-A | 2026-09-28T02:34:56+08:00 | [report](Docs/Tasks/Reports/M3-011.md) |
 | M3-012 | [界面穿脱装备与属性对比](Docs/Tasks/M3-012.md) | DONE | M3-011,M3-004,M3-005 | ZCode-20260925-A | 2026-09-28T03:33:28+08:00 | [report](Docs/Tasks/Reports/M3-012.md) |
 | M3-013 | [版本化存档结构与往返序列化](Docs/Tasks/M3-013.md) | DONE | M3-003,M3-009,M3-004,M3-006 | ZCode-20260925-A | 2026-09-28T04:19:30+08:00 | [report](Docs/Tasks/Reports/M3-013.md) |
-| M3-014 | [A/B双槽保存与索引提交](Docs/Tasks/M3-014.md) | IN_PROGRESS | M3-013 | ZCode-20260925-A | 2026-09-28T04:21:51+08:00 | [report](Docs/Tasks/Reports/M3-014.md) |
+| M3-014 | [A/B双槽保存与索引提交](Docs/Tasks/M3-014.md) | DONE | M3-013 | ZCode-20260925-A | 2026-09-28T05:14:06+08:00 | [report](Docs/Tasks/Reports/M3-014.md) |
 | M3-015 | [启动加载与损坏回退](Docs/Tasks/M3-015.md) | TODO | M3-014 | — | — | — |
 | M3-016 | [奖励与存档的原子提交](Docs/Tasks/M3-016.md) | TODO | M3-015,M3-009 | — | — | — |
 | M3-017 | [单图选择菜单与进出副本](Docs/Tasks/M3-017.md) | TODO | M3-015,M2-011 | — | — | — |
