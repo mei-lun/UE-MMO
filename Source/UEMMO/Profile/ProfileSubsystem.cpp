@@ -130,6 +130,21 @@ const FInventoryModel& UProfileSubsystem::GetInventory() const
 	return Inventory;
 }
 
+TArray<FPendingReward>& UProfileSubsystem::GetPendingRewards()
+{
+	return PendingRewards;
+}
+
+const TArray<FPendingReward>& UProfileSubsystem::GetPendingRewards() const
+{
+	return PendingRewards;
+}
+
+bool UProfileSubsystem::IsSettlementApplied(uint64 SettlementId) const
+{
+	return AppliedSettlementIds.Contains(SettlementId);
+}
+
 FProfileSnapshot UProfileSubsystem::GetProfileSnapshot() const
 {
 	if (!bHasProfile)
