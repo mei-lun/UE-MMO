@@ -9,6 +9,10 @@
 
 #include "ExperienceCurve.h"
 #include "../Items/StatCalculator.h"
+// M3-008: FPendingReward belongs to the profile domain (interface contract
+// section 8); its definition lives in RewardService.h next to the service
+// that produces the drafts this subsystem stores.
+#include "RewardService.h"
 
 #include "ProfileSubsystem.generated.h"
 
@@ -201,6 +205,27 @@ public:
 	/** Read-only access to the backing inventory. */
 	const FInventoryModel& GetInventory() const;
 
+	// -- Pending reward drafts (M3-008) -----------------------------------------
+
+	/**
+	 * Backing pending reward drafts in insertion order (M3-008): URewardService
+	 * appends one FPendingReward per settled Cleared run; the claim flow
+	 * (M3-009) removes claimed entries. Mutable on purpose, same style as
+	 * GetInventory: the profile owns the container, the service writes it.
+	 */
+	TArray<FPendingReward>& GetPendingRewards();
+
+	/** Read-only access to the pending reward drafts. */
+	const TArray<FPendingReward>& GetPendingRewards() const;
+
+	/**
+	 * True when the settlement id was already claimed into the profile (the
+	 * double-claim guard; M3-008's BeginReward checks it, M3-009's claim flow
+	 * fills the set). Read-only on purpose: no M3-008 path ever marks an id
+	 * applied.
+	 */
+	bool IsSettlementApplied(uint64 SettlementId) const;
+
 	// -- Read-only snapshot --------------------------------------------------------
 
 	/**
@@ -267,11 +292,12 @@ private:
 	FItemStats EquippedStatBonus;
 
 	/**
-	 * M3-008 placeholder: pending reward queue (that task introduces the real
-	 * FPendingReward element type; this card only owns the lifecycle - the
-	 * array exists, starts empty and is cleared by NewProfile/ResetNewGame).
+	 * M3-008: pending reward drafts (one FPendingReward per settled Cleared
+	 * run, appended by URewardService). Starts empty and is cleared by
+	 * NewProfile/ResetNewGame; a draft survives every World switch with the
+	 * rest of the profile state. Claiming belongs to M3-009.
 	 */
-	TArray<FGuid> PendingRewards;
+	TArray<FPendingReward> PendingRewards;
 
 	/**
 	 * M3-008 placeholder: settlement ids whose rewards were already claimed
