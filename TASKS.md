@@ -90,7 +90,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M2-016 | [会话生产接线与敌人定义资产](Docs/Tasks/M2-016.md) | DONE | M2-015 | ZCode-20260925-A | 2026-09-27T21:48:13+08:00 | [report](Docs/Tasks/Reports/M2-016.md) |
 | M2-017 | [HUD标题M2阶段文案](Docs/Tasks/M2-017.md) | DONE | M1-040 | ZCode-20260925-A | 2026-09-27T21:47:36+08:00 | [report](Docs/Tasks/Reports/M2-017.md) |
 | M2-H01 | [M2 用户阶段验收](Docs/Tasks/M2-H01.md) | TODO | M2-015 | 用户 | — | — |
-| M3-001 | [装备定义和稳定实例ID](Docs/Tasks/M3-001.md) | TODO | M2-H01 | — | — | — |
+| M3-001 | [装备定义和稳定实例ID](Docs/Tasks/M3-001.md) | TODO | M2-015 | — | — | — |
 | M3-002 | [30格背包增删与容量](Docs/Tasks/M3-002.md) | TODO | M3-001 | — | — | — |
 | M3-003 | [本地角色Profile与新游戏初值](Docs/Tasks/M3-003.md) | TODO | M3-002 | — | — | — |
 | M3-004 | [装备槽约束与穿脱](Docs/Tasks/M3-004.md) | TODO | M3-003 | — | — | — |
