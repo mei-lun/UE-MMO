@@ -94,10 +94,10 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M3-002 | [30格背包增删与容量](Docs/Tasks/M3-002.md) | DONE | M3-001 | ZCode-20260925-A | 2026-09-27T22:54:12+08:00 | [report](Docs/Tasks/Reports/M3-002.md) |
 | M3-003 | [本地角色Profile与新游戏初值](Docs/Tasks/M3-003.md) | DONE | M3-002 | ZCode-20260925-A | 2026-09-27T23:31:21+08:00 | [report](Docs/Tasks/Reports/M3-003.md) |
 | M3-004 | [装备槽约束与穿脱](Docs/Tasks/M3-004.md) | DONE | M3-003 | ZCode-20260925-A | 2026-09-28T00:14:11+08:00 | [report](Docs/Tasks/Reports/M3-004.md) |
-| M3-005 | [从装备重算最终属性](Docs/Tasks/M3-005.md) | IN_PROGRESS | M3-004 | ZCode-20260925-A | 2026-09-28T00:14:25+08:00 | [report](Docs/Tasks/Reports/M3-005.md) |
+| M3-005 | [从装备重算最终属性](Docs/Tasks/M3-005.md) | DONE | M3-004 | ZCode-20260925-A | 2026-09-28T00:55:55+08:00 | [report](Docs/Tasks/Reports/M3-005.md) |
 | M3-006 | [等级经验曲线与升级](Docs/Tasks/M3-006.md) | DONE | M3-003 | ZCode-20260925-A | 2026-09-28T00:14:15+08:00 | [report](Docs/Tasks/Reports/M3-006.md) |
 | M3-007 | [固定种子的掉落表](Docs/Tasks/M3-007.md) | DONE | M3-001 | ZCode-20260925-A | 2026-09-27T22:54:16+08:00 | [report](Docs/Tasks/Reports/M3-007.md) |
-| M3-008 | [结算奖励草稿与幂等申请](Docs/Tasks/M3-008.md) | TODO | M3-003,M3-006,M3-007,M2-013 | — | — | — |
+| M3-008 | [结算奖励草稿与幂等申请](Docs/Tasks/M3-008.md) | DONE | M3-003,M3-006,M3-007,M2-013 | ZCode-20260925-A | 2026-09-28T00:55:59+08:00 | [report](Docs/Tasks/Reports/M3-008.md) |
 | M3-009 | [满包时保留待领取奖励](Docs/Tasks/M3-009.md) | TODO | M3-008 | — | — | — |
 | M3-010 | [装备与成长接入本地战斗属性](Docs/Tasks/M3-010.md) | TODO | M3-005,M3-006 | — | — | — |
 | M3-011 | [背包只读列表界面](Docs/Tasks/M3-011.md) | TODO | M3-002,M3-003 | — | — | — |
