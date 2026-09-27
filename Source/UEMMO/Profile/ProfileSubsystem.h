@@ -235,6 +235,25 @@ public:
 	 */
 	void MarkSettlementApplied(uint64 SettlementId);
 
+	// -- Save-state restore (M3-015) ---------------------------------------------
+
+	/**
+	 * M3-015: restores the profile state from a loaded save (the startup flow
+	 * calls this after the save service reported a usable snapshot). Restores
+	 * identity, Level, XP, the inventory, the equipped-slot bindings (the
+	 * M3-004 placeholder map), the pending drafts and the applied settlement
+	 * ids; the equipment stat bonus row resets to zero (the gameplay layer
+	 * re-derives it once the restored bindings are re-applied - the same
+	 * no-fossilized-sums rule as NewProfile). Returns false and changes
+	 * NOTHING when the snapshot carries no valid CharacterId, a level outside
+	 * 1..MaxLevel or a negative XP: a half-restored profile is never
+	 * acceptable. This is the ONLY restore entry - a failed load keeps the
+	 * "no profile" state and never falls back to NewProfile/ResetNewGame.
+	 */
+	bool RestoreFromSave(const FProfileSnapshot& Snapshot, const FInventoryModel& InInventory,
+		const TArray<FPendingReward>& InPendingRewards, const TSet<uint64>& InAppliedSettlementIds,
+		const TMap<EItemSlot, FGuid>& InEquippedMap);
+
 	// -- Read-only snapshot --------------------------------------------------------
 
 	/**
