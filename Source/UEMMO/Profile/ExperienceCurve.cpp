@@ -95,17 +95,5 @@ bool FExperienceCurve::AddExperience(int32 Level, int32 XP, int32 Amount,
 	return bLeveledUp;
 }
 
-FLevelBaseStats FStatCalculator::Recalculate(const FLevelBaseStats& LevelBase,
-	const FLevelBaseStats& EquipmentBonus)
-{
-	// Complete from-scratch sum: level-curve base plus the (M3-005-reserved)
-	// equipment bonus entry, component-wise. Never incremental - every call
-	// recomputes the whole block, so repeated recalculation cannot accumulate
-	// drift. No HealthComponent is read or written: leveling up never
-	// auto-refills the HP pool.
-	FLevelBaseStats Final;
-	Final.MaxHP = LevelBase.MaxHP + EquipmentBonus.MaxHP;
-	Final.Attack = LevelBase.Attack + EquipmentBonus.Attack;
-	Final.Defense = LevelBase.Defense + EquipmentBonus.Defense;
-	return Final;
-}
+// M3-005 migration note: FStatCalculator::Recalculate used to be implemented
+// here and moved to Items/StatCalculator.cpp (header to Items/StatCalculator.h).

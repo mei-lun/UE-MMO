@@ -5,8 +5,10 @@
 /**
  * The three level-derived base attributes as one plain row (integers on
  * purpose: the design table is integral). Equipment bonuses (M3-005) add on
- * top through FStatCalculator; this struct is only the curve's own output and
- * never carries equipment or in-combat state.
+ * top through FStatCalculator - which M3-005 MIGRATED to Items/StatCalculator.h
+ * (the seed that lived at the bottom of this header was moved there verbatim
+ * and deleted here); this struct is only the curve's own output and never
+ * carries equipment or in-combat state.
  */
 struct FLevelBaseStats
 {
@@ -123,27 +125,7 @@ struct FExperienceCurve
 		int32& OutNewLevel, int32& OutRemainingXP);
 };
 
-/**
- * M3-006 seed of the stat recalculation entry point (interface contract
- * section 8: "FStatCalculator sums base and equipment completely" - never
- * incremental add/remove bookkeeping). The equipment bonus parameter is the
- * RESERVED entry M3-005 fills with the real equipped-instance totals; the
- * complete from-scratch sum is already the shape here so downstream tasks can
- * never accumulate drift through repeated +/-.
- *
- * Pure calculation only: it reads no HealthComponent and no World state and
- * it never restores or clamps current HP - leveling up must NOT auto-refill
- * the HP pool. When MaxHP changes, the caller (M3-005/M3-010 wiring) owns any
- * CurrentHP = min(CurrentHP, newMax) clamping. Negative/NaN hardening of the
- * final stats belongs to M3-005 (its card owns that acceptance).
- */
-struct FStatCalculator
-{
-	/**
-	 * Complete recalculation from scratch: the level-curve base row plus the
-	 * (default-zero, M3-005-reserved) equipment bonus, component-wise. Every
-	 * call recomputes the whole block; nothing is cached or accumulated.
-	 */
-	static FLevelBaseStats Recalculate(const FLevelBaseStats& LevelBase,
-		const FLevelBaseStats& EquipmentBonus = FLevelBaseStats());
-};
+// M3-005 migration note: FStatCalculator used to be seeded here and now lives
+// in Items/StatCalculator.h (its FLevelBaseStats overload moved verbatim).
+// Include Items/StatCalculator.h directly when the calculator is needed; this
+// header deliberately does not include it back (no reverse dependency).
