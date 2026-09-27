@@ -1,8 +1,14 @@
 #pragma once
 #include "CoreMinimal.h"
+#include "Misc/Guid.h"
 #include "GameFramework/HUD.h"
 #include "UI/DamageNumberModel.h"
 #include "UI/RoomResultWidget.h"
+// M3-011: FInventoryListViewModel is a by-value member below, so the widget
+// header (its owner) must be complete here; same pattern as RoomResultWidget.
+#include "UI/InventoryWidget.h"
+// M3-011: the debug display catalog is also a by-value member (plain struct).
+#include "Items/ItemDefinition.h"
 #include "PrototypeHUD.generated.h"
 
 class APrototypeCharacter;
@@ -11,6 +17,7 @@ class UAttackDefinition;
 class UCombatComponent;
 class UEnemyDefinition;
 class UHealthComponent;
+class UProfileSubsystem;
 class URoomDefinition;
 class URoomSessionSubsystem;
 struct FCombatHit;
@@ -132,6 +139,42 @@ public:
     /** M2-012 test seam: pure input-focus state of the result screen flow. */
     const FRoomResultInputFocusTracker& PeekRoomResultInputFocus() const { return ResultInputFocus; }
 
+    // ----- M3-011: read-only inventory list screen ---------------------------
+
+    /**
+     * M3-011 debug staging console entry (headless render evidence and manual
+     * browsing only; gameplay never calls this). Mode 0 dismisses the screen
+     * and restores the game input focus, mode 1 stages a small starter
+     * inventory once (debug-only; production entries NewProfile/TryAdd) and
+     * opens the list, mode 2 fills the staged inventory up to the 30-slot
+     * capacity and opens/refreshes the list (the scroll + throttle evidence).
+     */
+    UFUNCTION(Exec)
+    void UEMMODebugInventory(int32 Mode = 1);
+
+    /**
+     * M3-011: the HUD-side refresh entry the later change points (reward
+     * claim, equip UI) call when the profile inventory changed. No-op while
+     * the screen is not presented; throttled (fingerprint-gated) otherwise,
+     * so identical snapshots never rebuild the rows.
+     */
+    void RefreshInventoryScreen();
+
+    /** M3-011: the real close path behind the Close button and the Esc key. */
+    void HandleInventoryCloseRequested();
+
+    /** M3-011 debug-only seam: replaces the equipped-id set the list marks. */
+    void SetEquippedInventoryIds(const TSet<FGuid>& Ids);
+
+    /** M3-011 test seam: the inventory widget is created and presented. */
+    bool HasInventoryScreen() const { return InventoryWidgetPtr.IsValid(); }
+
+    /** M3-011 test seam: the view model filled by the last presentation. */
+    const FInventoryListViewModel& PeekInventoryViewModel() const { return InventoryViewModel; }
+
+    /** M3-011 test seam: pure input-focus state of the inventory flow. */
+    const FRoomResultInputFocusTracker& PeekInventoryInputFocus() const { return InventoryInputFocus; }
+
 protected:
     virtual void BeginPlay() override;
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -163,6 +206,50 @@ private:
 
     /** M2-012: builds the transient debug staging definitions (exec path only). */
     bool EnsureStageDefinitions();
+
+    // ----- M3-011: inventory screen internals ---------------------------------
+
+    /** M3-011: creates the native inventory widget once (headless-safe). */
+    bool EnsureInventoryWidget();
+
+    /** M3-011: fills from the profile inventory and presents the screen. */
+    void ShowInventoryScreen();
+
+    /** M3-011: dismisses the screen and restores the game input focus. */
+    void HideInventoryScreen();
+
+    /** M3-011: the capture half of the one-time input switch (tracker-gated). */
+    void ApplyInventoryInputCapture();
+
+    /** M3-011: the restore half of the one-time input switch (tracker-gated). */
+    void ApplyInventoryInputRestore();
+
+    /** M3-011: the profile subsystem of the world's game instance (weak-safe). */
+    UProfileSubsystem* ResolveProfileSubsystem();
+
+    /** M3-011: debug-only staging (profile + starter items + display catalog). */
+    bool EnsureInventoryStaging();
+
+    /** M3-011: the presented inventory screen (weak; recreated per presentation). */
+    TWeakObjectPtr<UInventoryWidget> InventoryWidgetPtr;
+
+    /** M3-011: display state filled by the last presentation (test seam copy). */
+    FInventoryListViewModel InventoryViewModel;
+
+    /** M3-011: pure record of the one-time input focus switch contract. */
+    FRoomResultInputFocusTracker InventoryInputFocus;
+
+    /** M3-011: equipped-id set the list marks (empty until a wiring task fills it). */
+    TSet<FGuid> EquippedInventoryIds;
+
+    /** M3-011: debug-only display catalog (transient doubles; never gameplay). */
+    FItemDefinitionCatalog InventoryStagingCatalog;
+
+    /** M3-011: catalog pointer handed to the view model (null = placeholders). */
+    const FItemDefinitionCatalog* InventoryDisplayCatalog = nullptr;
+
+    /** M3-011: the debug staging ran once for this HUD (items added exactly once). */
+    bool bInventoryStaged = false;
 
     /** M2-012: the presented result screen (weak; recreated per presentation). */
     TWeakObjectPtr<URoomResultWidget> ResultWidgetPtr;
