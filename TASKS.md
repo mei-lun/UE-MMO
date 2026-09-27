@@ -98,7 +98,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M3-006 | [等级经验曲线与升级](Docs/Tasks/M3-006.md) | DONE | M3-003 | ZCode-20260925-A | 2026-09-28T00:14:15+08:00 | [report](Docs/Tasks/Reports/M3-006.md) |
 | M3-007 | [固定种子的掉落表](Docs/Tasks/M3-007.md) | DONE | M3-001 | ZCode-20260925-A | 2026-09-27T22:54:16+08:00 | [report](Docs/Tasks/Reports/M3-007.md) |
 | M3-008 | [结算奖励草稿与幂等申请](Docs/Tasks/M3-008.md) | DONE | M3-003,M3-006,M3-007,M2-013 | ZCode-20260925-A | 2026-09-28T00:55:59+08:00 | [report](Docs/Tasks/Reports/M3-008.md) |
-| M3-009 | [满包时保留待领取奖励](Docs/Tasks/M3-009.md) | IN_PROGRESS | M3-008 | ZCode-20260925-A | 2026-09-28T00:56:10+08:00 | [report](Docs/Tasks/Reports/M3-009.md) |
+| M3-009 | [满包时保留待领取奖励](Docs/Tasks/M3-009.md) | DONE | M3-008 | ZCode-20260925-A | 2026-09-28T01:28:31+08:00 | [report](Docs/Tasks/Reports/M3-009.md) |
 | M3-010 | [装备与成长接入本地战斗属性](Docs/Tasks/M3-010.md) | TODO | M3-005,M3-006 | — | — | — |
 | M3-011 | [背包只读列表界面](Docs/Tasks/M3-011.md) | TODO | M3-002,M3-003 | — | — | — |
 | M3-012 | [界面穿脱装备与属性对比](Docs/Tasks/M3-012.md) | TODO | M3-011,M3-004,M3-005 | — | — | — |
