@@ -10,6 +10,10 @@ public class UEMMO : ModuleRules
         // TestTolerance). Per-file compilation is deterministic.
         bUseUnity = false;
         PublicDependencyModuleNames.AddRange(new[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "AnimGraphRuntime" });
+        // M2-012: the room result screen is a native UUserWidget (URoomResultWidget)
+        // built in code; UMG is required for UUserWidget/UButton/UTextBlock and
+        // SlateCore for FCoreStyle::GetDefaultFontStyle (the headline font).
+        PublicDependencyModuleNames.AddRange(new[] { "UMG", "Slate", "SlateCore" });
         // M2-002: AMeleeEnemyController extends AAIController (AIModule type);
         // the module is otherwise unused (no behavior tree, no nav mesh).
         PublicDependencyModuleNames.AddRange(new[] { "AIModule" });

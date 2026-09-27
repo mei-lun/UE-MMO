@@ -5,10 +5,15 @@
 #include "Combat/CombatComponent.h"
 #include "Combat/CombatGeometry.h"
 #include "Combat/HealthComponent.h"
+#include "Enemy/EnemyDefinition.h"
 #include "Enemy/TrainingEnemy.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "GameFramework/PlayerController.h"
 #include "PrototypeCharacter.h"
+#include "Room/RoomDefinition.h"
+#include "Room/RoomRetryService.h"
+#include "Room/RoomSessionSubsystem.h"
 #include "UI/DamageNumberModel.h"
 
 namespace
@@ -527,5 +532,354 @@ void APrototypeHUD::StartDebugRepeatStrike()
     if (Combat->TryStartAttack(FName(TEXT("light_01")), Facing))
     {
         UE_LOG(LogTemp, Display, TEXT("UEMMO M1-035: staged real strike (light_01, facing %d)"), Facing);
+    }
+}
+
+// ----- M2-012: room result screen --------------------------------------------
+
+void APrototypeHUD::BeginPlay()
+{
+    Super::BeginPlay();
+    BindRoomSessionEvents();
+}
+
+void APrototypeHUD::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    UnbindRoomSessionEvents();
+    Super::EndPlay(EndPlayReason);
+}
+
+void APrototypeHUD::BindRoomSessionEvents()
+{
+    if (bRoomSessionBound || GetWorld() == nullptr)
+    {
+        return;
+    }
+    URoomSessionSubsystem* Session = GetWorld()->GetSubsystem<URoomSessionSubsystem>();
+    if (Session == nullptr)
+    {
+        return;
+    }
+    RoomSessionPtr = Session;
+    RoomRunEndedHandle = Session->OnRunEnded().AddUObject(this, &APrototypeHUD::HandleRunEnded);
+    bRoomSessionBound = true;
+}
+
+void APrototypeHUD::UnbindRoomSessionEvents()
+{
+    if (!bRoomSessionBound)
+    {
+        return;
+    }
+    if (URoomSessionSubsystem* Session = RoomSessionPtr.Get())
+    {
+        Session->OnRunEnded().Remove(RoomRunEndedHandle);
+    }
+    RoomSessionPtr = nullptr;
+    RoomRunEndedHandle.Reset();
+    bRoomSessionBound = false;
+}
+
+void APrototypeHUD::SetRoomRetryContext(const URoomDefinition* RoomDef, UEnemyDefinition* EnemyDef)
+{
+    RetryRoomDefPtr = RoomDef;
+    RetryEnemyDefPtr = EnemyDef;
+    UE_LOG(LogTemp, Display, TEXT("UEMMO M2-012: retry context registered (room %s)"),
+        RoomDef != nullptr ? *RoomDef->RoomId.ToString() : TEXT("none"));
+}
+
+bool APrototypeHUD::EnsureResultWidget()
+{
+    if (ResultWidgetPtr.IsValid())
+    {
+        return true;
+    }
+    if (GetWorld() == nullptr)
+    {
+        return false;
+    }
+    // Native C++ widget: no UMG asset is involved anywhere on this path. The
+    // delegates bind weakly, so a torn-down HUD can never be touched by a
+    // leftover widget.
+    URoomResultWidget* Widget = CreateWidget<URoomResultWidget>(GetWorld(), URoomResultWidget::StaticClass());
+    if (Widget == nullptr)
+    {
+        UE_LOG(LogTemp, Error, TEXT("UEMMO M2-012: the result widget could not be created."));
+        return false;
+    }
+    TWeakObjectPtr<APrototypeHUD> WeakHUD(this);
+    Widget->RetryRequested.AddLambda([WeakHUD]()
+    {
+        if (APrototypeHUD* HUD = WeakHUD.Get())
+        {
+            HUD->HandleRetryRequested();
+        }
+    });
+    Widget->ReturnRequested.AddLambda([WeakHUD]()
+    {
+        if (APrototypeHUD* HUD = WeakHUD.Get())
+        {
+            HUD->HandleReturnRequested();
+        }
+    });
+    ResultWidgetPtr = Widget;
+    return true;
+}
+
+void APrototypeHUD::HandleRunEnded(const FRoomResult& Result)
+{
+    // Pure display fill from the session's real terminal result; the action
+    // guards re-arm with the fresh screen and the input-focus tracker moves
+    // exactly once. The M1 debug overlay and the M1-035 damage feed are
+    // untouched (pure additive wiring behind their own flags).
+    RoomResultViewModel = MakeRoomResultViewModel(Result);
+    RetryGuard.ReArm();
+    ReturnGuard.ReArm();
+    if (!EnsureResultWidget())
+    {
+        return;
+    }
+    if (URoomResultWidget* Widget = ResultWidgetPtr.Get())
+    {
+        Widget->BindResult(Result);
+    }
+    ShowRoomResultScreen();
+    UE_LOG(LogTemp, Display, TEXT("UEMMO M2-012: result screen prepared (%s, %.1f s, %d kills)"),
+        *RoomResultViewModel.HeadlineText, RoomResultViewModel.ElapsedSeconds, RoomResultViewModel.KilledCount);
+}
+
+void APrototypeHUD::ShowRoomResultScreen()
+{
+    URoomResultWidget* Widget = ResultWidgetPtr.Get();
+    if (Widget == nullptr || GetWorld() == nullptr)
+    {
+        return;
+    }
+    APlayerController* PC = GetWorld()->GetFirstPlayerController();
+    const bool bCanPresent = GEngine != nullptr && GEngine->GameViewport != nullptr && PC != nullptr;
+    if (bCanPresent && !Widget->IsInViewport())
+    {
+        Widget->AddToViewport();
+    }
+    // The input-focus decision is recorded regardless of the presentation
+    // ability (the pure tracker is the card's state flag); the real engine
+    // input switch happens inside, only where a player controller exists.
+    ApplyResultScreenInputCapture();
+    if (!bCanPresent)
+    {
+        // Headless context (world-less automation): the screen stays prepared
+        // (widget created and bound) without a viewport or an input switch.
+        UE_LOG(LogTemp, Verbose, TEXT("UEMMO M2-012: result screen prepared without presentation (no game viewport/player controller)."));
+    }
+}
+
+void APrototypeHUD::ApplyResultScreenInputCapture()
+{
+    // The tracker records the decision first; the real engine input switch
+    // happens only on an actual phase transition (once per presentation).
+    if (!ResultInputFocus.CaptureToUI())
+    {
+        return;
+    }
+    APlayerController* PC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
+    URoomResultWidget* Widget = ResultWidgetPtr.Get();
+    if (PC != nullptr && Widget != nullptr)
+    {
+        // The game input pauses to the UI exactly once per presentation.
+        FInputModeUIOnly Mode;
+        Mode.SetWidgetToFocus(Widget->TakeWidget());
+        PC->SetInputMode(Mode);
+        PC->bShowMouseCursor = true;
+        UE_LOG(LogTemp, Display, TEXT("UEMMO M2-012: input captured to the result screen (UI focus, cursor shown)."));
+    }
+}
+
+void APrototypeHUD::HideRoomResultScreen()
+{
+    if (URoomResultWidget* Widget = ResultWidgetPtr.Get())
+    {
+        if (Widget->IsInViewport())
+        {
+            Widget->RemoveFromParent();
+        }
+    }
+    ResultWidgetPtr = nullptr;
+    ApplyResultScreenInputRestore();
+}
+
+void APrototypeHUD::ApplyResultScreenInputRestore()
+{
+    if (!ResultInputFocus.RestoreToGame())
+    {
+        return;
+    }
+    APlayerController* PC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
+    if (PC != nullptr)
+    {
+        // Back to the game: keyboard and mouse return to the character once.
+        PC->SetInputMode(FInputModeGameOnly());
+        PC->bShowMouseCursor = false;
+        UE_LOG(LogTemp, Display, TEXT("UEMMO M2-012: game input focus restored after the result screen."));
+    }
+}
+
+APrototypeCharacter* APrototypeHUD::ResolveLocalPlayer()
+{
+    APrototypeCharacter* Resolved = nullptr;
+    if (APlayerController* PC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr)
+    {
+        Resolved = Cast<APrototypeCharacter>(PC->GetCharacter());
+    }
+    if (Resolved == nullptr && GetWorld() != nullptr)
+    {
+        for (TActorIterator<APrototypeCharacter> It(GetWorld()); It; ++It)
+        {
+            Resolved = *It;
+            break;
+        }
+    }
+    return Resolved;
+}
+
+void APrototypeHUD::HandleRetryRequested()
+{
+    // Anti-double-click: the first request consumes the one-shot guard; the
+    // duplicate of a fast double click is dropped here.
+    if (!RetryGuard.TryAccept())
+    {
+        UE_LOG(LogTemp, Verbose, TEXT("UEMMO M2-012: duplicate retry request dropped (anti double-click)."));
+        return;
+    }
+    const URoomDefinition* RoomDef = RetryRoomDefPtr.Get();
+    UEnemyDefinition* EnemyDef = RetryEnemyDefPtr.Get();
+    APrototypeCharacter* Player = ResolveLocalPlayer();
+    if (GetWorld() == nullptr || RoomDef == nullptr || EnemyDef == nullptr || Player == nullptr)
+    {
+        // Not a double click but a refused attempt: re-arm so a later press
+        // can retry once the context exists; the screen stays up.
+        RetryGuard.ReArm();
+        if (URoomResultWidget* Widget = ResultWidgetPtr.Get())
+        {
+            Widget->SetActionButtonsEnabled(true);
+        }
+        UE_LOG(LogTemp, Warning, TEXT("UEMMO M2-012: retry unavailable (missing retry context or player) - the result screen stays up."));
+        return;
+    }
+    // Dismiss first: the input focus returns to the game before the restart.
+    HideRoomResultScreen();
+    URoomRetryService::RetryRoom(GetWorld(), RoomDef, EnemyDef, Player);
+}
+
+void APrototypeHUD::HandleReturnRequested()
+{
+    if (!ReturnGuard.TryAccept())
+    {
+        UE_LOG(LogTemp, Verbose, TEXT("UEMMO M2-012: duplicate return request dropped (anti double-click)."));
+        return;
+    }
+    HideRoomResultScreen();
+    if (URoomSessionSubsystem* Session = RoomSessionPtr.Get())
+    {
+        Session->LeaveRoom();
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UEMMO M2-012: return could not find the room session."));
+    }
+}
+
+bool APrototypeHUD::EnsureStageDefinitions()
+{
+    if (StageRoomDefinition != nullptr && StageEnemyDefinition != nullptr)
+    {
+        SetRoomRetryContext(StageRoomDefinition, StageEnemyDefinition);
+        return true;
+    }
+    APrototypeCharacter* Player = ResolveLocalPlayer();
+    if (Player == nullptr || GetWorld() == nullptr)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UEMMO M2-012: staging skipped (no player to anchor the stage room)."));
+        return false;
+    }
+    // Transient definition double (the M2-007+ test precedent: runtime
+    // definitions; the JSON-to-asset catalog belongs to a later task).
+    UEnemyDefinition* Enemy = NewObject<UEnemyDefinition>(GetTransientPackage(), NAME_None, RF_Transient);
+    Enemy->EnemyId = FName(TEXT("melee_grunt"));
+    Enemy->MaxHP = 60.0f;
+    Enemy->AttackPower = 0.0f;
+    Enemy->MoveSpeed = 220.0f;
+    Enemy->AttackRangeX = 160.0f;
+    Enemy->AlignYTolerance = 35.0f;
+    Enemy->TelegraphSeconds = 0.35f;
+    Enemy->SpawnGraceSeconds = 0.5f;
+    Enemy->MeleeAttackId = FName(TEXT("light_01"));
+
+    URoomDefinition* Room = NewObject<URoomDefinition>(GetTransientPackage(), NAME_None, RF_Transient);
+    Room->RoomId = FName(TEXT("room_m2_012_stage"));
+    Room->RewardTableId = FName(TEXT("starter"));
+    FRoomWaveDefinition Wave;
+    Wave.EnemyId = FName(TEXT("melee_grunt"));
+    Wave.Count = 1;
+    Wave.SpawnLocations.Add(Player->GetActorLocation() + FVector(420.0, 0.0, 0.0));
+    Room->Waves.Add(Wave);
+
+    StageRoomDefinition = Room;
+    StageEnemyDefinition = Enemy;
+    SetRoomRetryContext(Room, Enemy);
+    return true;
+}
+
+void APrototypeHUD::UEMMODebugRoomResult(int32 Mode)
+{
+    UE_LOG(LogTemp, Display, TEXT("UEMMO M2-012: result screen exec mode %d"), Mode);
+    if (Mode == 0)
+    {
+        HideRoomResultScreen();
+        return;
+    }
+    if (Mode == 3)
+    {
+        HandleRetryRequested(); // the real request path (a context must exist)
+        return;
+    }
+    if (Mode == 4)
+    {
+        HandleReturnRequested(); // the real request path
+        return;
+    }
+    if (Mode != 1 && Mode != 2)
+    {
+        return;
+    }
+    URoomSessionSubsystem* Session = GetWorld() ? GetWorld()->GetSubsystem<URoomSessionSubsystem>() : nullptr;
+    if (Session == nullptr || !EnsureStageDefinitions())
+    {
+        return;
+    }
+    if (Session->GetState() == ERoomSessionState::Running)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UEMMO M2-012: staging refused - a run is already active."));
+        return;
+    }
+    // Debug-only session clock injection through the real SetSessionClockSeconds
+    // entry (the game frame driver is a later task, so no other injection
+    // exists in-game); the elapsed display is the session's own measured truth.
+    Session->SetSessionClockSeconds(GetWorld()->GetTimeSeconds());
+    if (!Session->StartRoom(StageRoomDefinition) || !Session->BeginWaves(StageRoomDefinition, StageEnemyDefinition))
+    {
+        return;
+    }
+    Session->SetSessionClockSeconds(GetWorld()->GetTimeSeconds());
+    // The session's own production terminal entries drive the real broadcast:
+    // mode 1 -> MarkCleared (the wave progression's clearing entry), mode 2 ->
+    // FailRun (the player-death failure entry). The OnRunEnded handler then
+    // presents the screen through the exact gameplay path.
+    if (Mode == 1)
+    {
+        Session->MarkCleared();
+    }
+    else
+    {
+        Session->FailRun();
     }
 }
