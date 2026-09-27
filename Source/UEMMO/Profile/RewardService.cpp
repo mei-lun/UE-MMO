@@ -8,10 +8,16 @@
 // M3-009: TryClaimPending claims a pending draft into the inventory with
 // full-inventory retention (nothing is lost; a retry claims the original
 // instances) and grants the settlement XP exactly once.
+// M3-016: ClaimPendingAtomic commits the claim durably - the pending draft
+// is persisted FIRST ("StartRoom semantics"), the shared in-memory claim
+// body applies the reward to the profile, and the post-claim snapshot save
+// is the only confirmation gate; a failed save rolls the memory back to the
+// committed state so a claim never halves, duplicates or re-rolls.
 
 #include "RewardService.h"
 
 #include "ProfileSubsystem.h"
+#include "../Persistence/ProfileSaveService.h"
 
 #include "../Items/DropGenerator.h"
 #include "../Items/DropTable.h"
@@ -36,6 +42,50 @@ namespace
 	// Purpose salt for RoomSeed -> RewardSeed. Fixed by design: the seed must
 	// never depend on a wall clock, the global random stream or call order.
 	constexpr uint64 RewardSaltRoomSeed = 0xA24BAED4963EE407ull;
+
+	// M3-016 helpers (file-local, uniquely prefixed like every suite's
+	// constants): draft location plus save-request assembly for the atomic
+	// claim. No state, no engine services beyond the passed objects.
+
+	/**
+	 * The pending draft index of one settlement in the profile (INDEX_NONE
+	 * when the profile holds no draft for it).
+	 */
+	int32 M3_016_FindDraftIndex(const UProfileSubsystem& Profile, uint64 SettlementId)
+	{
+		const TArray<FPendingReward>& Pending = Profile.GetPendingRewards();
+		for (int32 Index = 0; Index < Pending.Num(); ++Index)
+		{
+			if (Pending[Index].SettlementId == SettlementId)
+			{
+				return Index;
+			}
+		}
+		return INDEX_NONE;
+	}
+
+	/**
+	 * Assembles one FProfileSaveRequest from the live profile state. The
+	 * snapshot, the inventory and the pending drafts are read from the
+	 * profile; the applied-id set and the equipment bindings TRAVEL from the
+	 * last committed save: UProfileSubsystem exposes membership checks only
+	 * (no enumeration), so the atomic claim - the persistence point of the
+	 * claim flow - carries the previously persisted values forward unchanged
+	 * and merges the one id it claims. Rule: every settlement marked applied
+	 * is persisted by the claim that marked it, so the last committed save
+	 * always holds the complete applied history of the claim flow.
+	 */
+	FProfileSaveRequest M3_016_MakeRequestFromProfile(const UProfileSubsystem& Profile,
+		const TSet<uint64>& CarriedAppliedIds, const TMap<EItemSlot, FGuid>& CarriedEquippedMap)
+	{
+		FProfileSaveRequest Request;
+		Request.Snapshot = Profile.GetProfileSnapshot();
+		Request.Inventory = Profile.GetInventory();
+		Request.PendingRewards = Profile.GetPendingRewards();
+		Request.AppliedSettlementIds = CarriedAppliedIds;
+		Request.EquippedMap = CarriedEquippedMap;
+		return Request;
+	}
 }
 
 void URewardService::BindProfile(UProfileSubsystem* Profile)
@@ -151,6 +201,9 @@ FRewardBeginOutcome URewardService::BeginReward(const FRoomResult& Result, const
 // rejection is retained unchanged with its original InstanceId and one-time
 // roll) and the XP is granted exactly once per settlement (the first claim
 // attempt grants and records it; a full inventory does not hold XP back).
+// M3-016: the memory semantics moved verbatim into the shared
+// M3_016_ApplyClaimInMemory body so the atomic claim executes the exact same
+// claim (same messages, same retention) - only the persistence differs.
 
 FRewardClaimOutcome URewardService::TryClaimPending(uint64 SettlementId, FInventoryModel& Inventory)
 {
@@ -167,8 +220,19 @@ FRewardClaimOutcome URewardService::TryClaimPending(uint64 SettlementId, FInvent
 		return Outcome;
 	}
 
-	// 2. Locate the settlement's draft in the profile's PendingRewards.
-	TArray<FPendingReward>& Pending = Profile->GetPendingRewards();
+	// 2. The shared memory claim (no save here - M3-009 stays memory-only).
+	return M3_016_ApplyClaimInMemory(SettlementId, *Profile, Inventory);
+}
+
+// The shared claim body: locates the draft in the profile, grants the XP
+// exactly once (MarkSettlementApplied on the first attempt), stores the items
+// under their original InstanceIds and retains every rejection unchanged.
+FRewardClaimOutcome URewardService::M3_016_ApplyClaimInMemory(uint64 SettlementId, UProfileSubsystem& Profile, FInventoryModel& Inventory)
+{
+	FRewardClaimOutcome Outcome;
+
+	// 1. Locate the settlement's draft in the profile's PendingRewards.
+	TArray<FPendingReward>& Pending = Profile.GetPendingRewards();
 	int32 DraftIndex = INDEX_NONE;
 	for (int32 Index = 0; Index < Pending.Num(); ++Index)
 	{
@@ -181,7 +245,7 @@ FRewardClaimOutcome URewardService::TryClaimPending(uint64 SettlementId, FInvent
 
 	if (DraftIndex == INDEX_NONE)
 	{
-		if (Profile->IsSettlementApplied(SettlementId))
+		if (Profile.IsSettlementApplied(SettlementId))
 		{
 			// Fully claimed earlier (draft already removed, applied record
 			// kept): an idempotent repeat - no XP again, no items again,
@@ -194,19 +258,19 @@ FRewardClaimOutcome URewardService::TryClaimPending(uint64 SettlementId, FInvent
 		return Outcome;
 	}
 
-	// 3. XP exactly once per settlement: granted by the FIRST claim attempt
+	// 2. XP exactly once per settlement: granted by the FIRST claim attempt
 	//    (a full inventory does not hold XP back - XP is settlement progress,
 	//    not inventory payload) and recorded in AppliedSettlementIds, so
 	//    every later attempt (repeat click, free-space retry) skips it.
 	FPendingReward& Draft = Pending[DraftIndex];
-	if (!Profile->IsSettlementApplied(SettlementId))
+	if (!Profile.IsSettlementApplied(SettlementId))
 	{
-		Profile->AddXP(Draft.XP);
-		Profile->MarkSettlementApplied(SettlementId);
+		Profile.AddXP(Draft.XP);
+		Profile.MarkSettlementApplied(SettlementId);
 		Outcome.bGrantedXP = true;
 	}
 
-	// 4. Items one by one, keyed by their pre-generated InstanceId: only a
+	// 3. Items one by one, keyed by their pre-generated InstanceId: only a
 	//    verifiably stored instance (TryAdd == Added) leaves the draft; every
 	//    rejection retains the instance UNCHANGED (original InstanceId and
 	//    rolled stats - the draft is the single source of the one-time roll,
@@ -235,7 +299,7 @@ FRewardClaimOutcome URewardService::TryClaimPending(uint64 SettlementId, FInvent
 
 	if (Retained.Num() == 0)
 	{
-		// 5a. Everything consumed (or the draft carried no items at all):
+		// 4a. Everything consumed (or the draft carried no items at all):
 		//     remove the empty draft; the applied record STAYS
 		//     (IsSettlementApplied remains true - a replayed BeginReward
 		//     answers AlreadyApplied with a default draft from here on).
@@ -245,7 +309,7 @@ FRewardClaimOutcome URewardService::TryClaimPending(uint64 SettlementId, FInvent
 	}
 	else if (ClaimedCount > 0)
 	{
-		// 5b. Partial success (multi-item drafts): the stored items stay
+		// 4b. Partial success (multi-item drafts): the stored items stay
 		//     stored, only the retained ones keep waiting in the draft.
 		Draft.Items = Retained;
 		Outcome.Result = ERewardClaimResult::PartiallyClaimed;
@@ -253,7 +317,7 @@ FRewardClaimOutcome URewardService::TryClaimPending(uint64 SettlementId, FInvent
 	}
 	else
 	{
-		// 5c. Nothing fit: the draft keeps every item unchanged and the
+		// 4c. Nothing fit: the draft keeps every item unchanged and the
 		//     caller surfaces InventoryFull. The retention itself is
 		//     unconditional - the message names a non-full rejection when
 		//     one occurred (duplicate/invalid identity retained for retry).
@@ -262,6 +326,154 @@ FRewardClaimOutcome URewardService::TryClaimPending(uint64 SettlementId, FInvent
 		Outcome.Error = bRetainedNonFullRejection
 			? TEXT("no pending item could enter the inventory; every item is retained unchanged in the pending draft (at least one rejection was not InventoryFull)")
 			: TEXT("inventory is full: every pending item is retained unchanged in the pending draft");
+	}
+	return Outcome;
+}
+
+// -- Atomic claim entry (M3-016) ---------------------------------------------------
+
+// GREEN implementation of the atomic commit (interface contract section 8:
+// the reward claim, AppliedSettlementIds, inventory and XP persist as ONE
+// profile snapshot; only a committed save may confirm the claim). Ordered
+// flow: persisted-state gates -> draft persistence ("StartRoom semantics")
+// -> the shared in-memory claim -> claim-snapshot save (failure rolls the
+// memory back to the committed state). Restart idempotency is decided from
+// the persisted state alone: an interrupted claim-snapshot save leaves the
+// draft save committed (the startup pass recovers it), so a re-claim grants
+// the XP exactly once and stores exactly the original instances.
+
+FRewardClaimAtomicOutcome URewardService::ClaimPendingAtomic(uint64 SettlementId, UProfileSubsystem* Profile, UProfileSaveService* SaveService)
+{
+	FRewardClaimAtomicOutcome Outcome;
+
+	// 1. Explicit-parameter guards: the claim needs a GameInstance-level
+	//    profile with existing state and an initialized save service (the
+	//    same objects the caller restored from the last committed save).
+	if (Profile == nullptr || !Profile->HasProfile())
+	{
+		Outcome.Result = ERewardClaimAtomicResult::RejectedNoProfile;
+		Outcome.Error = TEXT("no profile subsystem or no existing profile: an atomic claim needs a GameInstance-level profile to claim from");
+		return Outcome;
+	}
+	if (SaveService == nullptr || SaveService->GetSlotPrefix().IsEmpty())
+	{
+		Outcome.Result = ERewardClaimAtomicResult::RejectedNoSaveService;
+		Outcome.Error = TEXT("no save service or no initialized slot prefix: an atomic claim must persist the profile snapshot");
+		return Outcome;
+	}
+
+	// 2. Persisted-state gates: the in-memory profile is the restore of the
+	//    last committed save, so these answers carry across restarts (a
+	//    restart re-processing the same SettlementId never re-rolls or
+	//    re-grants from call history).
+	if (M3_016_FindDraftIndex(*Profile, SettlementId) == INDEX_NONE)
+	{
+		if (Profile->IsSettlementApplied(SettlementId))
+		{
+			// Fully claimed earlier (the applied record stays even after the
+			// draft was consumed): idempotent repeat - no XP again, no item
+			// again, nothing changed, nothing saved.
+			Outcome.Result = ERewardClaimAtomicResult::AlreadyClaimed;
+			Outcome.Error = TEXT("the settlement was already claimed (persisted applied record); nothing left to claim");
+			return Outcome;
+		}
+		Outcome.Result = ERewardClaimAtomicResult::UnknownSettlement;
+		Outcome.Error = FString::Printf(TEXT("SettlementId %llu has no pending reward draft and no applied record: nothing to claim"), SettlementId);
+		return Outcome;
+	}
+
+	// 3. The applied-id set and the equipment bindings of every request
+	//    travel from the LAST COMMITTED save (step 4's rule). Data exists
+	//    but is unreadable (all slots corrupt): refuse instead of saving on
+	//    top of the evidence.
+	const FProfileLoadOutcome LastCommitted = SaveService->LoadActiveProfile();
+	if (LastCommitted.Result == EProfileLoadResult::FailedCorrupt)
+	{
+		Outcome.Result = ERewardClaimAtomicResult::RejectedUnreadableSave;
+		Outcome.Error = FString::Printf(TEXT("the last committed profile save is unreadable (%s); the atomic claim refuses to save on top of it"),
+			*LastCommitted.Message);
+		return Outcome;
+	}
+
+	// 4. SAVE A - persist the pending draft FIRST ("StartRoom semantics":
+	//    the profile save carries PendingRewards). After this commit the
+	//    pre-generated item identity is durable; any interruption during the
+	//    rest of the request restarts from a state that still owns the
+	//    original draft. Nothing was mutated yet, so a failure here simply
+	//    leaves the pending draft as it was.
+	const FProfileSaveRequest DraftRequest = M3_016_MakeRequestFromProfile(*Profile,
+		LastCommitted.AppliedSettlementIds, LastCommitted.EquippedMap);
+	const FProfileSaveOutcome DraftSave = SaveService->SaveProfile(DraftRequest);
+	if (DraftSave.Result != EProfileSaveResult::Success)
+	{
+		Outcome.Result = ERewardClaimAtomicResult::SaveFailed;
+		Outcome.Error = FString::Printf(TEXT("the pending-draft save failed before any claim mutation (%s); the draft stays pending unchanged"),
+			*DraftSave.Message);
+		return Outcome;
+	}
+
+	// 5. In-memory claim from the durable draft - the exact M3-009 body
+	//    (XP exactly once, items under their original InstanceIds, rejections
+	//    retained). The equipped bonus row is captured because the rollback
+	//    below re-pushes it (RestoreFromSave resets the row like every
+	//    restore; the gameplay layer would re-derive it).
+	const FItemStats BonusBeforeClaim = Profile->GetEquippedStatBonus();
+	const FRewardClaimOutcome Claim = M3_016_ApplyClaimInMemory(SettlementId, *Profile, Profile->GetInventory());
+	Outcome.ClaimedItemCount = Claim.ClaimedItemCount;
+	Outcome.RetainedItemCount = Claim.RetainedItemCount;
+	Outcome.bGrantedXP = Claim.bGrantedXP;
+
+	// 6. SAVE C - persist the POST-claim profile state as ONE snapshot: the
+	//    XP, the inventory, the remaining pending drafts and the applied ids
+	//    (the carried set merged with this settlement's record). The A/B
+	//    transaction commits only after the verified index commit, so this
+	//    snapshot is all-or-nothing on disk.
+	FProfileSaveRequest ClaimRequest = M3_016_MakeRequestFromProfile(*Profile,
+		LastCommitted.AppliedSettlementIds, LastCommitted.EquippedMap);
+	if (Profile->IsSettlementApplied(SettlementId))
+	{
+		ClaimRequest.AppliedSettlementIds.Add(SettlementId);
+	}
+	const FProfileSaveOutcome ClaimSave = SaveService->SaveProfile(ClaimRequest);
+	if (ClaimSave.Result != EProfileSaveResult::Success)
+	{
+		// Roll the in-memory commit back to the exact state SAVE A
+		// committed: memory and disk agree again, the draft is pending
+		// unchanged (original InstanceId - no re-roll), and the returned
+		// failure keeps the UI from ever showing claim success. The
+		// counters describe the NET effect of the call: nothing was stored,
+		// the rolled-back draft retains its original items again, no XP
+		// stayed granted.
+		Profile->RestoreFromSave(DraftRequest.Snapshot, DraftRequest.Inventory, DraftRequest.PendingRewards,
+			DraftRequest.AppliedSettlementIds, DraftRequest.EquippedMap);
+		Profile->SetEquippedStatBonus(BonusBeforeClaim);
+		const int32 RolledBackIndex = M3_016_FindDraftIndex(*Profile, SettlementId);
+		Outcome.ClaimedItemCount = 0;
+		Outcome.RetainedItemCount = (RolledBackIndex != INDEX_NONE)
+			? Profile->GetPendingRewards()[RolledBackIndex].Items.Num()
+			: 0;
+		Outcome.bGrantedXP = false;
+		Outcome.Result = ERewardClaimAtomicResult::SaveFailed;
+		Outcome.Error = FString::Printf(TEXT("the claim-snapshot save failed (%s); the claim was rolled back and the draft stays pending unchanged"),
+			*ClaimSave.Message);
+		return Outcome;
+	}
+
+	// 7. Committed: memory and disk agree; the caller may confirm the claim
+	//    (the retention shape keeps its M3-009 message for the UI).
+	Outcome.bSaveCommitted = true;
+	switch (Claim.Result)
+	{
+	case ERewardClaimResult::PartiallyClaimed:
+		Outcome.Result = ERewardClaimAtomicResult::PartiallyClaimed;
+		break;
+	case ERewardClaimResult::InventoryFull:
+		Outcome.Result = ERewardClaimAtomicResult::InventoryFull;
+		Outcome.Error = Claim.Error;
+		break;
+	default:
+		Outcome.Result = ERewardClaimAtomicResult::Claimed;
+		break;
 	}
 	return Outcome;
 }
