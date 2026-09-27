@@ -5,17 +5,7 @@
 // the derived stats are recomputed from the level formulas at copy time.
 
 #include "ProfileSubsystem.h"
-
-namespace
-{
-	// Card-local clamp: the design level range is closed [1, MaxLevel]; every
-	// formula treats out-of-range input as the nearest legal level, so a bad
-	// caller can never synthesize a stat outside the design table.
-	int32 M3_003_ClampLevel(int32 Level)
-	{
-		return FMath::Clamp(Level, 1, UProfileSubsystem::MaxLevel);
-	}
-}
+#include "ExperienceCurve.h"
 
 void UProfileSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -55,24 +45,24 @@ bool UProfileSubsystem::HasProfile() const
 
 int32 UProfileSubsystem::GetNextLevelXP(int32 Level)
 {
-	const int32 ClampedLevel = M3_003_ClampLevel(Level);
-	// The max level has no next level to buy: its requirement reads 0.
-	return ClampedLevel >= MaxLevel ? 0 : XPPerLevelFactor * ClampedLevel;
+	// M3-006 extraction: FExperienceCurve is the single implementation of
+	// every level formula (same values, same [1, MaxLevel] clamping).
+	return FExperienceCurve::GetNextLevelXP(Level);
 }
 
 int32 UProfileSubsystem::GetMaxHPForLevel(int32 Level)
 {
-	return BaseMaxHP + MaxHPPerLevel * (M3_003_ClampLevel(Level) - 1);
+	return FExperienceCurve::GetMaxHPForLevel(Level);
 }
 
 int32 UProfileSubsystem::GetAttackForLevel(int32 Level)
 {
-	return BaseAttack + AttackPerLevel * (M3_003_ClampLevel(Level) - 1);
+	return FExperienceCurve::GetAttackForLevel(Level);
 }
 
 int32 UProfileSubsystem::GetDefenseForLevel(int32 Level)
 {
-	return BaseDefense + DefensePerLevel * (M3_003_ClampLevel(Level) - 1);
+	return FExperienceCurve::GetDefenseForLevel(Level);
 }
 
 bool UProfileSubsystem::AddXP(int32 Amount)
@@ -96,6 +86,10 @@ bool UProfileSubsystem::AddXP(int32 Amount)
 
 	// Cascade while the accumulated XP covers the next requirement: one call
 	// can pass several level boundaries and always ends below the next one.
+	// M3-006: the requirement now comes from the shared FExperienceCurve
+	// (via the delegating static below). The counter deliberately keeps the
+	// M3-003 max-level semantics (XP still accumulates, saturating) - the
+	// pure curve's AddExperience instead clamps the remaining XP to 0 there.
 	bool bLeveledUp = false;
 	while (Level < MaxLevel)
 	{

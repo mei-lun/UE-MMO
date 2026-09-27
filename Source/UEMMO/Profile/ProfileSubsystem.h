@@ -7,6 +7,8 @@
 #include "../Items/InventoryModel.h"
 #include "../Items/ItemDefinition.h"
 
+#include "ExperienceCurve.h"
+
 #include "ProfileSubsystem.generated.h"
 
 /**
@@ -89,30 +91,32 @@ class UEMMO_API UProfileSubsystem : public UGameInstanceSubsystem
 
 public:
 	// -- Design constants (interface contract section 8) ----------------------
+	// M3-006: the values live on FExperienceCurve (the shared pure module);
+	// these aliases keep the public surface unchanged with one source of truth.
 
 	/** Closed level range top; there is no level beyond this one. */
-	static constexpr int32 MaxLevel = 10;
+	static constexpr int32 MaxLevel = FExperienceCurve::MaxLevel;
 
 	/** Level-1 base HP (the GetMaxHPForLevel intercept). */
-	static constexpr int32 BaseMaxHP = 100;
+	static constexpr int32 BaseMaxHP = FExperienceCurve::BaseMaxHP;
 
 	/** Level-1 base attack (the GetAttackForLevel intercept). */
-	static constexpr int32 BaseAttack = 0;
+	static constexpr int32 BaseAttack = FExperienceCurve::BaseAttack;
 
 	/** Level-1 base defense (the GetDefenseForLevel intercept). */
-	static constexpr int32 BaseDefense = 0;
+	static constexpr int32 BaseDefense = FExperienceCurve::BaseDefense;
 
 	/** XP requirement per level: 100 x current level. */
-	static constexpr int32 XPPerLevelFactor = 100;
+	static constexpr int32 XPPerLevelFactor = FExperienceCurve::XPPerLevelFactor;
 
 	/** MaxHP gain per level above 1. */
-	static constexpr int32 MaxHPPerLevel = 10;
+	static constexpr int32 MaxHPPerLevel = FExperienceCurve::MaxHPPerLevel;
 
 	/** Attack gain per level above 1. */
-	static constexpr int32 AttackPerLevel = 2;
+	static constexpr int32 AttackPerLevel = FExperienceCurve::AttackPerLevel;
 
 	/** Defense gain per level above 1. */
-	static constexpr int32 DefensePerLevel = 1;
+	static constexpr int32 DefensePerLevel = FExperienceCurve::DefensePerLevel;
 
 	// -- Lifecycle -------------------------------------------------------------
 
@@ -139,7 +143,8 @@ public:
 	/** True once a profile exists (NewProfile/ResetNewGame ran at least once). */
 	bool HasProfile() const;
 
-	// -- Level formulas (pure static functions) --------------------------------
+	// -- Level formulas (pure static functions; M3-006 one-line delegations ----
+	//    to the shared FExperienceCurve module - same values, same clamping) --
 
 	/**
 	 * XP needed to advance FROM the given level to the next: 100 x Level for
@@ -166,6 +171,11 @@ public:
 	 * requirement is subtracted and the level increases - so one call can
 	 * cascade through several levels. Returns true when at least one level-up
 	 * happened (UI hook), false otherwise.
+	 *
+	 * M3-006: the requirement comes from the shared FExperienceCurve, but
+	 * this counter deliberately keeps the M3-003 semantics at the max level
+	 * (XP still accumulates, saturating) - distinct from the pure curve's
+	 * AddExperience, which clamps the remaining XP to 0 there.
 	 */
 	bool AddXP(int32 Amount);
 
