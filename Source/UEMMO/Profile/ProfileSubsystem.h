@@ -226,6 +226,15 @@ public:
 	 */
 	bool IsSettlementApplied(uint64 SettlementId) const;
 
+	/**
+	 * M3-009: records the settlement id as claimed - the XP-once guard of the
+	 * claim flow (the first claim attempt marks the id, every later attempt
+	 * skips the XP) and the double-claim guard BeginReward checks. Plain set
+	 * insert (idempotent by construction); part of the same profile state as
+	 * PendingRewards: cleared by NewProfile/ResetNewGame.
+	 */
+	void MarkSettlementApplied(uint64 SettlementId);
+
 	// -- Read-only snapshot --------------------------------------------------------
 
 	/**

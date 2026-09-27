@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
 
+#include "../Items/InventoryModel.h"
 #include "../Items/ItemInstance.h"
 #include "../Items/ItemDefinition.h"
 #include "../Room/RoomResult.h"
@@ -88,6 +89,64 @@ struct FRewardBeginOutcome
 };
 
 /**
+ * Result of one URewardService::TryClaimPending request (M3-009). The claim
+ * never loses a pending item: only an instance verifiably stored by the
+ * inventory (TryAdd == Added) leaves its draft, every rejection retains the
+ * instance unchanged with its original InstanceId and one-time roll.
+ */
+enum class ERewardClaimResult : uint8
+{
+	/**
+	 * Every pending item was stored (a defensively empty draft is consumed
+	 * too); the draft was removed from PendingRewards and the settlement id
+	 * stays recorded as applied.
+	 */
+	Claimed,
+
+	/** At least one item was stored and at least one was retained in the draft (multi-item drafts only). */
+	PartiallyClaimed,
+
+	/**
+	 * Nothing was stored; every pending item is retained unchanged (the
+	 * full-inventory shape the caller surfaces as "InventoryFull").
+	 */
+	InventoryFull,
+
+	/** The settlement was fully claimed earlier: nothing left to grant, nothing changed (idempotent repeat). */
+	AlreadyClaimed,
+
+	/** No pending draft and no applied record carries this SettlementId: unknown id, nothing changed. */
+	UnknownSettlement,
+
+	/** No bound profile subsystem or no existing profile to claim from. */
+	RejectedNoProfile
+};
+
+/** Outcome of one TryClaimPending request: result enum, per-call counters, XP flag, error text. */
+struct FRewardClaimOutcome
+{
+	/** What happened; check Error on InventoryFull/UnknownSettlement/RejectedNoProfile. */
+	ERewardClaimResult Result = ERewardClaimResult::RejectedNoProfile;
+
+	/** Number of items THIS call stored into the inventory (0..draft size). */
+	int32 ClaimedItemCount = 0;
+
+	/** Number of items still retained in the pending draft after this call (0 = draft consumed/removed). */
+	int32 RetainedItemCount = 0;
+
+	/**
+	 * True when THIS call granted the settlement XP: exactly the first claim
+	 * attempt grants it (a full inventory does not hold XP back - XP is
+	 * settlement progress, not inventory payload); every later attempt for
+	 * the same SettlementId grants nothing again.
+	 */
+	bool bGrantedXP = false;
+
+	/** Empty on Claimed/PartiallyClaimed/AlreadyClaimed; names the retention/rejection reason otherwise. */
+	FString Error;
+};
+
+/**
  * M3-008: settlement reward drafts with idempotent application. An independent
  * UObject service (no World, no subsystem registration): it holds a weak
  * reference to the GameInstance-level UProfileSubsystem (BindProfile) and
@@ -167,6 +226,44 @@ public:
 	 * the generator's field-naming error; nothing is stored.
 	 */
 	FRewardBeginOutcome BeginReward(const FRoomResult& Result, const FItemDefinitionCatalog& Catalog);
+
+	// -- Claim entry (M3-009) ------------------------------------------------------
+
+	/**
+	 * Claims the pending reward draft of one settlement into the caller's
+	 * inventory (interface contract section 8: items that fit enter the
+	 * inventory by their pre-generated InstanceId, items that do not fit stay
+	 * pending; the XP is granted exactly once per settlement). The draft and
+	 * the applied-id record live in the bound GameInstance-level profile, so
+	 * a claim survives World switches like the rest of the profile state.
+	 *
+	 * Per request:
+	 * - No bound profile / no profile: RejectedNoProfile, nothing changed.
+	 * - Unknown SettlementId (no pending draft AND no applied record):
+	 *   UnknownSettlement with a naming error, nothing changed.
+	 * - Fully claimed earlier (applied record, draft already removed):
+	 *   AlreadyClaimed, nothing changed - a repeat click is always safe.
+	 * - Draft found:
+	 *   - XP: granted exactly once per settlement on the FIRST claim attempt
+	 *     (Profile.AddXP with the draft's XP) and recorded via
+	 *     UProfileSubsystem::MarkSettlementApplied; a full inventory does not
+	 *     hold the XP back, and every later attempt for the same id grants
+	 *     nothing again (the total stays the design 50, never 100).
+	 *   - Items one by one: only TryAdd == Added removes the instance from
+	 *     the draft (stored under its ORIGINAL InstanceId - no new FGuid, no
+	 *     re-roll, no random refresh); every rejection retains the instance
+	 *     unchanged, keeping its draft order.
+	 *   - All items consumed: the empty draft is removed from PendingRewards
+	 *     while the applied record STAYS (IsSettlementApplied remains true,
+	 *     and a replayed BeginReward answers AlreadyApplied with a default
+	 *     draft). Some retained: the draft stays with only the retained
+	 *     items, so freeing inventory space and claiming again adds exactly
+	 *     the original instances.
+	 *
+	 * No disk persistence here (M3-016 owns the atomic commit of the claim
+	 * with the inventory/XP snapshot; M3-013 the save layer).
+	 */
+	FRewardClaimOutcome TryClaimPending(uint64 SettlementId, FInventoryModel& Inventory);
 
 private:
 	/** GameInstance-level profile holding PendingRewards; weak on purpose. */
