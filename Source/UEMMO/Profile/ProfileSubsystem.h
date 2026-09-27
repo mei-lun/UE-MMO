@@ -8,6 +8,7 @@
 #include "../Items/ItemDefinition.h"
 
 #include "ExperienceCurve.h"
+#include "../Items/StatCalculator.h"
 
 #include "ProfileSubsystem.generated.h"
 
@@ -211,6 +212,22 @@ public:
 	 */
 	FProfileSnapshot GetProfileSnapshot() const;
 
+	// -- Equipped stat bonus (M3-005) ---------------------------------------------
+
+	/**
+	 * M3-005: feeds the equipment stat sum (Base + Sigma of every equipped
+	 * instance's rolled stats, computed by FStatCalculator) into the profile.
+	 * The subsystem deliberately stays decoupled from the definition catalog
+	 * and the FEquipmentModel wiring: whoever owns the equipment flow (the
+	 * future M3-010 wiring task) recalculates the sum on every equip/unequip
+	 * and pushes it here; a zero row means "no equipment". NewProfile/
+	 * ResetNewGame clear the bonus with the rest of the state.
+	 */
+	void SetEquippedStatBonus(const FItemStats& Bonus);
+
+	/** M3-005: the currently stored equipment bonus row (zero when unequipped). */
+	const FItemStats& GetEquippedStatBonus() const;
+
 private:
 	/**
 	 * Shared body of NewProfile/ResetNewGame: mints a fresh unique
@@ -241,6 +258,13 @@ private:
 	 * future implementation starts from the same lifecycle.
 	 */
 	TMap<EItemSlot, FGuid> Equipment;
+
+	/**
+	 * M3-005: the equipment stat sum pushed via SetEquippedStatBonus (zero
+	 * row when nothing is equipped). The snapshot's derived stats are the
+	 * complete FStatCalculator recalculation of the level base plus this row.
+	 */
+	FItemStats EquippedStatBonus;
 
 	/**
 	 * M3-008 placeholder: pending reward queue (that task introduces the real

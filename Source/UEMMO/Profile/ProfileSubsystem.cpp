@@ -7,6 +7,24 @@
 #include "ProfileSubsystem.h"
 #include "ExperienceCurve.h"
 
+namespace
+{
+	/**
+	 * M3-005: float final stat -> int32 snapshot stat (the M3-003 snapshot
+	 * contract stays integral). Rounds half away from zero, never negative,
+	 * and saturates into int32 so a huge bonus row cannot overflow the copy.
+	 */
+	int32 ToSnapshotStat(float Value)
+	{
+		Value = FMath::Max(0.0f, Value);
+		if (Value >= static_cast<float>(MAX_int32))
+		{
+			return MAX_int32;
+		}
+		return FMath::RoundToInt(Value);
+	}
+}
+
 void UProfileSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -20,6 +38,7 @@ void UProfileSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	bHasProfile = false;
 	Inventory = FInventoryModel();
 	Equipment.Reset();
+	EquippedStatBonus = FItemStats();
 	PendingRewards.Reset();
 	AppliedSettlementIds.Reset();
 	AliveIds.Reset();
@@ -142,12 +161,26 @@ FProfileSnapshot UProfileSubsystem::GetProfileSnapshot() const
 	Snapshot.CharacterId = CharacterId;
 	Snapshot.Level = Level;
 	Snapshot.XP = XP;
-	// The derived stats are recomputed from the level formulas at copy time -
-	// never copied out of a World's HealthComponent - so a snapshot can never
-	// fossilize temporary in-combat HP as the permanent base.
-	Snapshot.MaxHP = GetMaxHPForLevel(Level);
-	Snapshot.Attack = GetAttackForLevel(Level);
-	Snapshot.Defense = GetDefenseForLevel(Level);
+	// The derived stats are recomputed at copy time - never copied out of a
+	// World's HealthComponent - so a snapshot can never fossilize temporary
+	// in-combat HP as the permanent base.
+	//
+	// M3-005: the stats are the COMPLETE FStatCalculator recalculation of the
+	// level-curve base row plus the stored equipment bonus row (base + Sigma
+	// of every equipped instance, hardened and MaxHP-floored by the shared
+	// calculator) - the same from-scratch path every future consumer uses,
+	// never an incremental add/remove on top of a previous snapshot.
+	const FLevelBaseStats LevelBase = FExperienceCurve::GetBaseStatsForLevel(Level);
+	FItemStats BaseRow;
+	BaseRow.Attack = static_cast<float>(LevelBase.Attack);
+	BaseRow.Defense = static_cast<float>(LevelBase.Defense);
+	BaseRow.MaxHP = static_cast<float>(LevelBase.MaxHP);
+	TArray<FItemStats> EquippedRows;
+	EquippedRows.Add(EquippedStatBonus);
+	const FItemStats FinalRow = FStatCalculator::Recalculate(BaseRow, EquippedRows);
+	Snapshot.MaxHP = ToSnapshotStat(FinalRow.MaxHP);
+	Snapshot.Attack = ToSnapshotStat(FinalRow.Attack);
+	Snapshot.Defense = ToSnapshotStat(FinalRow.Defense);
 	// Value copy: the UI/save layer never aliases the live backing model.
 	Snapshot.Inventory = Inventory;
 	return Snapshot;
@@ -164,7 +197,22 @@ void UProfileSubsystem::ApplyFreshProfileState(bool bGenerateNewCharacterId)
 	bHasProfile = bGenerateNewCharacterId;
 	Inventory = FInventoryModel();
 	Equipment.Reset();
+	EquippedStatBonus = FItemStats();
 	PendingRewards.Reset();
 	AppliedSettlementIds.Reset();
 	AliveIds.Reset();
+}
+
+void UProfileSubsystem::SetEquippedStatBonus(const FItemStats& Bonus)
+{
+	// M3-005: plain value store. Hardening of the row itself (NaN/negative
+	// rejection) belongs to FStatCalculator at recalculation time, so the
+	// stored raw row stays the caller's honest input and the snapshot is the
+	// single hardened output point.
+	EquippedStatBonus = Bonus;
+}
+
+const FItemStats& UProfileSubsystem::GetEquippedStatBonus() const
+{
+	return EquippedStatBonus;
 }
