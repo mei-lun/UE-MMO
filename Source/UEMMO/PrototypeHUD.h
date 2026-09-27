@@ -7,6 +7,9 @@
 // M3-011: FInventoryListViewModel is a by-value member below, so the widget
 // header (its owner) must be complete here; same pattern as RoomResultWidget.
 #include "UI/InventoryWidget.h"
+// M3-012: the HUD-owned equipment model and the one-shot action guard are
+// by-value members (plain structs).
+#include "Items/EquipmentModel.h"
 // M3-011: the debug display catalog is also a by-value member (plain struct).
 #include "Items/ItemDefinition.h"
 #include "PrototypeHUD.generated.h"
@@ -175,6 +178,33 @@ public:
     /** M3-011 test seam: pure input-focus state of the inventory flow. */
     const FRoomResultInputFocusTracker& PeekInventoryInputFocus() const { return InventoryInputFocus; }
 
+    // ----- M3-012: inventory equip actions ------------------------------------
+
+    /**
+     * M3-012: the real equip request path behind the inventory screen's Equip
+     * button (and the tests' direct driver, the M2-012 HandleRetryRequested
+     * precedent): the one-shot guard drops a fast double click, the shared
+     * pre-checks refuse a blocked context with a readable reason, then the
+     * equipment model equips the selected instance and the fresh bonus row is
+     * pushed through the pawn's TryEquipStatBonus (the bottom Running gate).
+     */
+    void HandleInventoryEquipRequested();
+
+    /** M3-012: the real unequip request path behind the Unequip button. */
+    void HandleInventoryUnequipRequested();
+
+    /** M3-012 test seam: the HUD-owned equipment slot mapping. */
+    const FEquipmentModel& PeekInventoryEquipment() const { return InventoryEquipment; }
+
+    /** M3-012 test seam: the one-shot guard behind both action buttons. */
+    const FRoomResultActionGuard& PeekInventoryActionGuard() const { return InventoryActionGuard; }
+
+    /** M3-012 test seam: the preview state of the presented screen. */
+    const FInventoryStatPreviewViewModel& PeekInventoryPreview() const { return InventoryPreview; }
+
+    /** M3-012 test seam: the presented inventory widget itself (weak-safe; null when dismissed). */
+    UInventoryWidget* PeekInventoryWidget() const { return InventoryWidgetPtr.Get(); }
+
 protected:
     virtual void BeginPlay() override;
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -230,11 +260,48 @@ private:
     /** M3-011: debug-only staging (profile + starter items + display catalog). */
     bool EnsureInventoryStaging();
 
+    // ----- M3-012: inventory equip internals -----------------------------------
+
+    /**
+     * M3-012: shared body of the two request paths (bEquip decides the verb):
+     * one-shot guard, context pre-checks (profile / Running / player), the
+     * equipment model mutation, the bonus push through the pawn entry and the
+     * success tail (markers + throttled list refresh + context push).
+     */
+    void HandleInventoryEquipAction(bool bEquip);
+
+    /** M3-012: binds the model's catalog + inventory guard (idempotent). */
+    bool EnsureInventoryEquipmentWiring();
+
+    /** M3-012: the slot mapping rebuilt into the M3-011 equipped-id set. */
+    void RebuildEquippedInventoryIds();
+
+    /** M3-012: the hardened sum of every model-equipped instance's stats. */
+    FItemStats ComputeEquippedBonusFromModel();
+
+    /** M3-012: pushes base stats + Running state into the widget (if open). */
+    void UpdateInventoryEquipContext();
+
+    /** M3-012: the session's Running state (false without a session). */
+    bool IsRoomSessionRunning() const;
+
+    /** M3-012: OnRunStarted handler - disables the equip actions live. */
+    void HandleRoomRunStartedForInventory();
+
     /** M3-011: the presented inventory screen (weak; recreated per presentation). */
     TWeakObjectPtr<UInventoryWidget> InventoryWidgetPtr;
 
     /** M3-011: display state filled by the last presentation (test seam copy). */
     FInventoryListViewModel InventoryViewModel;
+
+    /** M3-012: preview display state copied from the widget (test seam). */
+    FInventoryStatPreviewViewModel InventoryPreview;
+
+    /** M3-012: the HUD-owned equipment slot mapping (references the profile inventory). */
+    FEquipmentModel InventoryEquipment;
+
+    /** M3-012: one-shot guard of the Equip/Unequip request paths. */
+    FRoomResultActionGuard InventoryActionGuard;
 
     /** M3-011: pure record of the one-time input focus switch contract. */
     FRoomResultInputFocusTracker InventoryInputFocus;
@@ -278,6 +345,8 @@ private:
     /** M2-012: session resolved at BeginPlay (weak) and its end-event handle. */
     TWeakObjectPtr<URoomSessionSubsystem> RoomSessionPtr;
     FDelegateHandle RoomRunEndedHandle;
+    /** M3-012: handle of the run-started binding (the equip actions' disable push). */
+    FDelegateHandle RoomRunStartedHandle;
     bool bRoomSessionBound = false;
 
 private:

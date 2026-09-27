@@ -567,6 +567,9 @@ void APrototypeHUD::BindRoomSessionEvents()
     }
     RoomSessionPtr = Session;
     RoomRunEndedHandle = Session->OnRunEnded().AddUObject(this, &APrototypeHUD::HandleRunEnded);
+    // M3-012: a run starting while the inventory screen is open must disable
+    // the equip actions immediately (the visible half of the two-layer gate).
+    RoomRunStartedHandle = Session->OnRunStarted().AddUObject(this, &APrototypeHUD::HandleRoomRunStartedForInventory);
     bRoomSessionBound = true;
 }
 
@@ -579,9 +582,11 @@ void APrototypeHUD::UnbindRoomSessionEvents()
     if (URoomSessionSubsystem* Session = RoomSessionPtr.Get())
     {
         Session->OnRunEnded().Remove(RoomRunEndedHandle);
+        Session->OnRunStarted().Remove(RoomRunStartedHandle);
     }
     RoomSessionPtr = nullptr;
     RoomRunEndedHandle.Reset();
+    RoomRunStartedHandle.Reset();
     bRoomSessionBound = false;
 }
 
@@ -649,6 +654,9 @@ void APrototypeHUD::HandleRunEnded(const FRoomResult& Result)
         Widget->BindResult(Result);
     }
     ShowRoomResultScreen();
+    // M3-012: a finished run lifts the equip block; if the inventory screen is
+    // also open, its action buttons must come back immediately.
+    UpdateInventoryEquipContext();
     UE_LOG(LogTemp, Display, TEXT("UEMMO M2-012: result screen prepared (%s, %.1f s, %d kills)"),
         *RoomResultViewModel.HeadlineText, RoomResultViewModel.ElapsedSeconds, RoomResultViewModel.KilledCount);
 }
@@ -861,6 +869,10 @@ void APrototypeHUD::RefreshInventoryScreen()
     // calling this at every change point never rebuilds unchanged rows.
     Widget->RefreshIfChanged(Items, InventoryDisplayCatalog, EquippedInventoryIds);
     InventoryViewModel = Widget->PeekViewModel();
+    // M3-012: the context push recomputes the preview and the button states
+    // (the running flag and the base stats may have changed independently of
+    // the list fingerprint).
+    UpdateInventoryEquipContext();
 }
 
 void APrototypeHUD::HandleInventoryCloseRequested()
@@ -902,6 +914,30 @@ bool APrototypeHUD::EnsureInventoryWidget()
             HUD->HandleInventoryCloseRequested();
         }
     });
+    // M3-012: the equip panel's intents route through the HUD (the M2-012
+    // button-callback pattern): every row click re-arms the one-shot action
+    // guard, the buttons execute the real request paths.
+    Widget->SelectionChanged.AddLambda([WeakHUD]()
+    {
+        if (APrototypeHUD* HUD = WeakHUD.Get())
+        {
+            HUD->InventoryActionGuard.ReArm();
+        }
+    });
+    Widget->EquipRequested.AddLambda([WeakHUD]()
+    {
+        if (APrototypeHUD* HUD = WeakHUD.Get())
+        {
+            HUD->HandleInventoryEquipRequested();
+        }
+    });
+    Widget->UnequipRequested.AddLambda([WeakHUD]()
+    {
+        if (APrototypeHUD* HUD = WeakHUD.Get())
+        {
+            HUD->HandleInventoryUnequipRequested();
+        }
+    });
     InventoryWidgetPtr = Widget;
     return true;
 }
@@ -922,6 +958,13 @@ void APrototypeHUD::ShowInventoryScreen()
     const TArray<FItemInstance>& Items = (Profile != nullptr) ? Profile->GetInventory().GetAll() : EmptyItems;
     Widget->BindInventory(Items, InventoryDisplayCatalog, EquippedInventoryIds);
     InventoryViewModel = Widget->PeekViewModel();
+
+    // M3-012: bind the equipment model to the (possibly new) profile inventory
+    // and push the fresh context; a fresh presentation re-arms the one-shot
+    // action guard (one action token per presentation, like the M2-012 screen).
+    EnsureInventoryEquipmentWiring();
+    InventoryActionGuard.ReArm();
+    UpdateInventoryEquipContext();
 
     APlayerController* PC = GetWorld()->GetFirstPlayerController();
     const bool bCanPresent = GEngine != nullptr && GEngine->GameViewport != nullptr && PC != nullptr;
@@ -1051,6 +1094,7 @@ bool APrototypeHUD::EnsureInventoryStaging()
         InventoryStagingCatalog.Find(TEXT("armor_training")),
         InventoryStagingCatalog.Find(TEXT("accessory_training"))
     };
+    TOptional<FGuid> FirstStagedWeaponId;
     for (int32 Index = 0; Index < 3; ++Index)
     {
         if (StageDefs[Index] == nullptr)
@@ -1062,10 +1106,7 @@ bool APrototypeHUD::EnsureInventoryStaging()
         {
             if (Index == 0)
             {
-                // The first staged item is marked equipped so the marker
-                // rendering is visible in the evidence (debug-only; no
-                // production equipment mapping exists yet).
-                EquippedInventoryIds.Add(Item.InstanceId);
+                FirstStagedWeaponId = Item.InstanceId;
             }
         }
         else
@@ -1073,9 +1114,346 @@ bool APrototypeHUD::EnsureInventoryStaging()
             UE_LOG(LogTemp, Warning, TEXT("UEMMO M3-011: staging item %d was rejected by the inventory."), Index);
         }
     }
+
+    // M3-012: the first staged weapon equips through the real equipment model
+    // (the marker comes from the model now, not a hand-made id set) and the
+    // matching bonus row is pushed so the staged "current" stats match the
+    // staged mapping. Debug staging pushes the row directly (headless-safe,
+    // no pawn exists in the render-evidence worlds); the PRODUCTION equip flow
+    // always goes through the pawn's TryEquipStatBonus gate.
+    if (FirstStagedWeaponId.IsSet() && EnsureInventoryEquipmentWiring())
+    {
+        const EEquipmentEquipResult EquipResult = InventoryEquipment.Equip(
+            EItemSlot::Weapon, FirstStagedWeaponId.GetValue(), Profile->GetInventory());
+        if (EquipResult == EEquipmentEquipResult::Equipped)
+        {
+            RebuildEquippedInventoryIds();
+            Profile->SetEquippedStatBonus(ComputeEquippedBonusFromModel());
+            UE_LOG(LogTemp, Display, TEXT("UEMMO M3-012: staged the first weapon equipped through the real model."));
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("UEMMO M3-012: staging equip refused (result %d)."),
+                static_cast<int32>(EquipResult));
+        }
+    }
+
     bInventoryStaged = true;
     UE_LOG(LogTemp, Display, TEXT("UEMMO M3-011: staged 3 starter items (first marked equipped)."));
     return true;
+}
+
+// ----- M3-012: inventory equip actions ----------------------------------------
+
+void APrototypeHUD::HandleInventoryEquipRequested()
+{
+    HandleInventoryEquipAction(/*bEquip*/ true);
+}
+
+void APrototypeHUD::HandleInventoryUnequipRequested()
+{
+    HandleInventoryEquipAction(/*bEquip*/ false);
+}
+
+void APrototypeHUD::HandleInventoryEquipAction(bool bEquip)
+{
+    UInventoryWidget* Widget = InventoryWidgetPtr.Get();
+    UProfileSubsystem* Profile = ResolveProfileSubsystem();
+
+    // One-shot guard first (the M2-012 pattern): the fast duplicate of a
+    // double click is dropped here; the click-disabled buttons are re-derived
+    // so they cannot stay stuck when nothing was processed.
+    if (!InventoryActionGuard.TryAccept())
+    {
+        UE_LOG(LogTemp, Verbose, TEXT("UEMMO M3-012: duplicate %s request dropped (anti double-click)."),
+            bEquip ? TEXT("equip") : TEXT("unequip"));
+        if (Widget != nullptr)
+        {
+            Widget->RefreshEquipPreviewAndActions();
+        }
+        return;
+    }
+
+    // Context pre-checks BEFORE any mapping write: the same gate the pawn's
+    // TryEquipStatBonus enforces (profile exists, not Running, player entry
+    // available), so a blocked request cannot even half-apply to the model.
+    const bool bMissingProfile = (Profile == nullptr || !Profile->HasProfile());
+    const bool bRunning = IsRoomSessionRunning();
+    APrototypeCharacter* Player = ResolveLocalPlayer();
+    const FString BlockReason = MakeInventoryEquipBlockText(bMissingProfile, bRunning, Player == nullptr);
+    if (!BlockReason.IsEmpty())
+    {
+        // A refused attempt re-arms (the M2-012 refused-retry precedent) so a
+        // later request can proceed once the context allows it.
+        InventoryActionGuard.ReArm();
+        if (Widget != nullptr)
+        {
+            Widget->SetInventoryStatusText(BlockReason);
+        }
+        UpdateInventoryEquipContext();
+        return;
+    }
+
+    // The selection decides the target instance; the widget owns it. The
+    // selection is re-resolved against the LIVE inventory (a reward claim or
+    // another flow may have changed it since the row was clicked).
+    const FGuid SelectedId = (Widget != nullptr && Widget->HasSelection())
+        ? Widget->PeekSelectedInstanceId() : FGuid();
+    const FItemInstance* Selected = nullptr;
+    if (SelectedId.IsValid())
+    {
+        for (const FItemInstance& Instance : Profile->GetInventory().GetAll())
+        {
+            if (Instance.InstanceId == SelectedId)
+            {
+                Selected = &Instance;
+                break;
+            }
+        }
+    }
+    if (!SelectedId.IsValid() || Selected == nullptr)
+    {
+        InventoryActionGuard.ReArm();
+        if (Widget != nullptr)
+        {
+            Widget->SetInventoryStatusText(TEXT("Select an item first"));
+        }
+        UpdateInventoryEquipContext();
+        return;
+    }
+
+    // The slot of the selection; the model re-verifies the slot match itself
+    // (an unknown definition cannot confirm any slot and Equip rejects it).
+    EItemSlot Slot = EItemSlot::Weapon;
+    if (const FItemDefinition* Definition = (InventoryDisplayCatalog != nullptr)
+        ? InventoryDisplayCatalog->Find(Selected->DefinitionId) : nullptr)
+    {
+        Slot = Definition->Slot;
+    }
+
+    // The pre-action mapping and bonus row, for the defensive rollback if the
+    // bottom entry refuses AFTER the mapping moved (both sides are
+    // pre-checked above, so this is unreachable in practice - kept honest).
+    const FGuid* PreviousIdPtr = InventoryEquipment.GetEquippedId(Slot);
+    const FGuid PreviousId = (PreviousIdPtr != nullptr) ? *PreviousIdPtr : FGuid();
+    const FItemStats PreviousBonus = ComputeEquippedBonusFromModel();
+    bool bSucceeded = false;
+    FString ResultText;
+
+    if (bEquip)
+    {
+        const EEquipmentEquipResult Result = InventoryEquipment.Equip(Slot, SelectedId, Profile->GetInventory());
+        if (Result == EEquipmentEquipResult::Equipped || Result == EEquipmentEquipResult::AlreadyEquipped)
+        {
+            // The production push: the fresh bonus row goes through the pawn's
+            // TryEquipStatBonus (the bottom Running gate + the no-heal clamp).
+            if (Player->TryEquipStatBonus(ComputeEquippedBonusFromModel()))
+            {
+                bSucceeded = true;
+                ResultText = MakeEquipResultText(Result);
+            }
+            else
+            {
+                // Roll the mapping and the stored row back (defensive).
+                if (PreviousId.IsValid())
+                {
+                    InventoryEquipment.Equip(Slot, PreviousId, Profile->GetInventory());
+                }
+                else
+                {
+                    InventoryEquipment.Unequip(Slot);
+                }
+                Player->TryEquipStatBonus(PreviousBonus);
+                ResultText = TEXT("The equip entry refused the request");
+            }
+        }
+        else
+        {
+            // Pure model rejection: no mapping changed; show the reason.
+            ResultText = MakeEquipResultText(Result);
+        }
+    }
+    else
+    {
+        // Unequip acts on the slot that holds the selection (no definition
+        // needed): a selection that equips nothing is the NotEquipped no-op.
+        EItemSlot HeldSlot = EItemSlot::Weapon;
+        bool bHeld = false;
+        for (int32 SlotIndex = 0; SlotIndex < 3; ++SlotIndex)
+        {
+            const EItemSlot Candidate = static_cast<EItemSlot>(SlotIndex);
+            const FGuid* HeldId = InventoryEquipment.GetEquippedId(Candidate);
+            if (HeldId != nullptr && *HeldId == SelectedId)
+            {
+                HeldSlot = Candidate;
+                bHeld = true;
+                break;
+            }
+        }
+        if (bHeld)
+        {
+            const EEquipmentUnequipResult Result = InventoryEquipment.Unequip(HeldSlot);
+            if (Result == EEquipmentUnequipResult::Unequipped)
+            {
+                if (Player->TryEquipStatBonus(ComputeEquippedBonusFromModel()))
+                {
+                    bSucceeded = true;
+                    ResultText = MakeUnequipResultText(Result);
+                }
+                else
+                {
+                    // Roll the mapping and the stored row back (defensive).
+                    InventoryEquipment.Equip(HeldSlot, SelectedId, Profile->GetInventory());
+                    Player->TryEquipStatBonus(PreviousBonus);
+                    ResultText = TEXT("The equip entry refused the request");
+                }
+            }
+            else
+            {
+                ResultText = MakeUnequipResultText(Result);
+            }
+        }
+        else
+        {
+            ResultText = MakeUnequipResultText(EEquipmentUnequipResult::NotEquipped);
+        }
+    }
+
+    if (bSucceeded)
+    {
+        // Success tail: the markers rebuild from the model and the throttled
+        // M3-011 refresh entry rebuilds the list (the fingerprint changed).
+        // The guard stays CONSUMED: acting again on the same selection needs
+        // an explicit re-select (the anti-double-click rule; SelectionChanged
+        // re-arms, as does any failed attempt or a fresh presentation).
+        RebuildEquippedInventoryIds();
+        RefreshInventoryScreen();
+    }
+    else
+    {
+        InventoryActionGuard.ReArm();
+    }
+    if (Widget != nullptr)
+    {
+        Widget->SetInventoryStatusText(ResultText);
+    }
+    UpdateInventoryEquipContext();
+}
+
+bool APrototypeHUD::EnsureInventoryEquipmentWiring()
+{
+    UProfileSubsystem* Profile = ResolveProfileSubsystem();
+    if (Profile == nullptr || !Profile->HasProfile())
+    {
+        return false;
+    }
+    // The display catalog doubles as the equip slot-match source today (the
+    // debug staging registers the transient training definitions; a
+    // production catalog asset arrives with a later task). A missing catalog
+    // makes every Equip fail with MissingDefinitions - never silently.
+    InventoryEquipment.SetDefinitionCatalog(InventoryDisplayCatalog);
+    // Re-attach on every call: NewProfile reassigns the backing inventory and
+    // FInventoryModel drops equip guards on copy/assignment, so the guard must
+    // be (re-)registered against the CURRENT inventory object.
+    InventoryEquipment.AttachToInventory(Profile->GetInventory());
+    return true;
+}
+
+void APrototypeHUD::RebuildEquippedInventoryIds()
+{
+    // The M3-011 equipped-id set is DERIVED from the model mapping now (one
+    // id per occupied slot), so the list markers can never disagree with it.
+    EquippedInventoryIds.Reset();
+    for (int32 SlotIndex = 0; SlotIndex < 3; ++SlotIndex)
+    {
+        const EItemSlot Slot = static_cast<EItemSlot>(SlotIndex);
+        if (const FGuid* EquippedId = InventoryEquipment.GetEquippedId(Slot))
+        {
+            EquippedInventoryIds.Add(*EquippedId);
+        }
+    }
+}
+
+FItemStats APrototypeHUD::ComputeEquippedBonusFromModel()
+{
+    // The equipment STAT SUM pushed into the profile (the M3-005 contract:
+    // "Base + Sigma of every equipped instance's rolled stats" - this is the
+    // Sigma side). This row is NOT a final row, so the final-only MaxHP floor
+    // of FStatCalculator::Recalculate must NOT apply here (a no-HP loadout is
+    // a zero row, never a +1; the floor belongs to the profile's FINAL
+    // recalculation, which runs on the level base plus this row). The
+    // per-entry hardening mirrors the M3-005 rules: a non-finite entry is
+    // skipped as a whole (no trustworthy magnitude) and a negative field
+    // clamps to 0 (corrupted data of that field, never a stat drain).
+    FItemStats Bonus;
+    UProfileSubsystem* Profile = ResolveProfileSubsystem();
+    if (Profile != nullptr)
+    {
+        for (int32 SlotIndex = 0; SlotIndex < 3; ++SlotIndex)
+        {
+            const FGuid* EquippedId = InventoryEquipment.GetEquippedId(static_cast<EItemSlot>(SlotIndex));
+            if (EquippedId == nullptr)
+            {
+                continue;
+            }
+            for (const FItemInstance& Instance : Profile->GetInventory().GetAll())
+            {
+                if (Instance.InstanceId != *EquippedId)
+                {
+                    continue;
+                }
+                const FItemStats& Stats = Instance.RolledStats;
+                if (FMath::IsFinite(Stats.Attack) && FMath::IsFinite(Stats.Defense) && FMath::IsFinite(Stats.MaxHP))
+                {
+                    Bonus.Attack += FMath::Max(Stats.Attack, 0.0f);
+                    Bonus.Defense += FMath::Max(Stats.Defense, 0.0f);
+                    Bonus.MaxHP += FMath::Max(Stats.MaxHP, 0.0f);
+                }
+                break;
+            }
+        }
+    }
+    return Bonus;
+}
+
+void APrototypeHUD::UpdateInventoryEquipContext()
+{
+    UInventoryWidget* Widget = InventoryWidgetPtr.Get();
+    if (Widget == nullptr)
+    {
+        return;
+    }
+    // The level base row comes from the shared static formulas (never from a
+    // World's HealthComponent - the snapshot rule, interface contract 8).
+    bool bHasProfile = false;
+    FItemStats Base;
+    if (UProfileSubsystem* Profile = ResolveProfileSubsystem())
+    {
+        if (Profile->HasProfile())
+        {
+            bHasProfile = true;
+            const int32 Level = Profile->GetLevel();
+            Base.MaxHP = static_cast<float>(UProfileSubsystem::GetMaxHPForLevel(Level));
+            Base.Attack = static_cast<float>(UProfileSubsystem::GetAttackForLevel(Level));
+            Base.Defense = static_cast<float>(UProfileSubsystem::GetDefenseForLevel(Level));
+        }
+    }
+    Widget->SetEquipContext(bHasProfile, Base, IsRoomSessionRunning());
+    InventoryPreview = Widget->PeekPreview();
+}
+
+bool APrototypeHUD::IsRoomSessionRunning() const
+{
+    const URoomSessionSubsystem* Session = RoomSessionPtr.Get();
+    return Session != nullptr && Session->GetState() == ERoomSessionState::Running;
+}
+
+void APrototypeHUD::HandleRoomRunStartedForInventory()
+{
+    // A run started while the inventory screen may be open: refresh the
+    // context so the equip actions disable immediately (the visible half of
+    // the two-layer Running gate; the pawn's TryEquipStatBonus is the other).
+    UpdateInventoryEquipContext();
 }
 
 bool APrototypeHUD::EnsureStageDefinitions()
