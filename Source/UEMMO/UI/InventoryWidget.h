@@ -16,8 +16,10 @@ struct FItemDefinitionCatalog;
 
 class UBorder;
 class UCanvasPanel;
+class UImage;
 class UScrollBox;
 class UTextBlock;
+class UTexture2D;
 class UVerticalBox;
 
 /** Fired by the Close button and the Esc key; the HUD executes the real dismiss. */
@@ -34,6 +36,38 @@ DECLARE_MULTICAST_DELEGATE(FInventoryUnequipRequested);
 
 /** M3-012: native select event of one inventory row (carries the row's instance id). */
 DECLARE_DELEGATE_OneParam(FOnInventoryRowSelected, const FGuid& /*InstanceId*/);
+
+/**
+ * M3-019: resolved icon display configuration of one equipment slot (the ONE
+ * shared source the inventory rows AND the settlement reward lines read).
+ * All textures are ENGINE BUILT-IN placeholder icons (no external asset, no
+ * download; the registration and the placeholder status live in
+ * SourceAssets/manifest.json and Docs/03); a formal icon pass belongs to
+ * M3-H01.
+ */
+struct FInventorySlotIconConfig
+{
+	/** Soft object path of the configured placeholder texture; empty = no icon. */
+	FString TexturePath;
+
+	/** Short fallback label ("WPN"/"ARM"/"ACC"); "-" for an unknown slot. */
+	FString Tag;
+};
+
+/**
+ * M3-019: resolves the shared icon config of one slot. Only the three closed
+ * enum values resolve a texture + tag; every other value degrades to an empty
+ * path and the readable "-" tag (no slot is invented).
+ */
+UEMMO_API FInventorySlotIconConfig MakeInventorySlotIconConfig(EItemSlot Slot);
+
+/**
+ * M3-019: loads one configured row icon texture synchronously; nullptr on an
+ * empty path or any load failure (the tag fallback trigger). Synchronous on
+ * purpose: the config points at tiny engine built-in textures and a missing
+ * texture must degrade to the tag within the same row build (no pop-in).
+ */
+UEMMO_API UTexture2D* LoadInventoryRowIconTexture(const FString& SoftObjectPath);
 
 /**
  * M3-011: pure display state of one inventory row. Built by MakeInventoryRowViewModel
@@ -54,6 +88,21 @@ struct FInventoryRowViewModel
 	 * missing or carries an out-of-enum slot (no slot can be invented).
 	 */
 	FString SlotName;
+
+	/**
+	 * M3-019: short slot tag of the row ("WPN"/"ARM"/"ACC"); "-" when the
+	 * definition is missing or carries an out-of-enum slot (no slot invented).
+	 * The SAME shared config resolves it for the settlement reward lines, so
+	 * both surfaces read one icon source.
+	 */
+	FString SlotTag;
+
+	/**
+	 * M3-019: soft object path of the row's configured placeholder icon (the
+	 * shared slot config); empty when no icon resolves. The row render loads
+	 * it synchronously and falls back to the visible short tag on any failure.
+	 */
+	FString IconPath;
 
 	/**
 	 * Instance stats line "Atk+<a> Def+<d> HP+<h>". All three attributes are
@@ -324,6 +373,21 @@ public:
 	/** The row button at the given insertion index (nullptr out of range). */
 	UButton* PeekRowButton(int32 Index) const;
 
+	/**
+	 * M3-019: the icon image of the row at the given insertion index (nullptr
+	 * out of range or before a build). The brush carries the loaded placeholder
+	 * texture while one resolves; the control stays built but COLLAPSED on the
+	 * tag fallback (the paired tag block is the visible half then).
+	 */
+	UImage* PeekRowIconImage(int32 Index) const;
+
+	/**
+	 * M3-019: the short-tag text of the row at the given insertion index
+	 * (nullptr out of range). Visible ONLY on the fallback (no configured icon
+	 * resolved); collapsed while the icon image shows.
+	 */
+	UTextBlock* PeekRowIconTagText(int32 Index) const;
+
 private:
 	/** Builds the whole control tree in code (idempotent). */
 	void BuildControls();
@@ -389,6 +453,14 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UTextBlock> StatusBlock;
+
+	// ----- M3-019: per-row icon controls (parallel to the row order) ----------
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UImage>> RowIconImages;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UTextBlock>> RowIconTags;
 
 	FInventoryListViewModel ViewModel;
 	FInventoryRefreshGuard RefreshGuard;

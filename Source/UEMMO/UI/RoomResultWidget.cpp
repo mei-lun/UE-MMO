@@ -69,8 +69,12 @@ FRoomRewardViewModel MakeRoomRewardViewModelFromDraft(const FPendingReward& Draf
 		FRoomRewardItemLine Line;
 		Line.DisplayName = Row.DisplayName;
 		Line.StatsText = Row.StatsText;
+		// M3-019: the SAME shared slot icon config the inventory rows read
+		// (resolved inside MakeInventoryRowViewModel) - one icon source, both
+		// surfaces; an unresolved slot degrades to the dash tag here too.
+		Line.SlotTag = Row.SlotTag;
 		ViewModel.Items.Add(Line);
-		ItemTexts.Add(FString::Printf(TEXT("%s (%s)"), *Row.DisplayName, *Row.StatsText));
+		ItemTexts.Add(FString::Printf(TEXT("[%s] %s (%s)"), *Row.SlotTag, *Row.DisplayName, *Row.StatsText));
 	}
 
 	ViewModel.RewardText = FString::Printf(TEXT("Reward: XP %d"), Draft.XP);

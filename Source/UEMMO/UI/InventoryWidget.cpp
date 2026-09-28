@@ -7,13 +7,16 @@
 #include "Components/CanvasPanelSlot.h"
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
+#include "Components/Image.h"
 #include "Components/ScrollBox.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
 #include "Components/SlateWrapperTypes.h"
+#include "Engine/Texture2D.h"
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateColor.h"
+#include "UObject/SoftObjectPtr.h"
 
 #include "../Items/InventoryModel.h"
 #include "../Items/ItemInstance.h"
@@ -98,6 +101,70 @@ namespace
     }
 }
 
+// ----- M3-019: the shared icon config ----------------------------------------
+
+namespace
+{
+	// M3-019: the ONE shared icon table (the inventory rows and the settlement
+	// reward lines both resolve through it). All three textures are ENGINE
+	// BUILT-IN placeholder resources (no external asset, no download, no
+	// license question; the registration and the placeholder status live in
+	// SourceAssets/manifest.json and Docs/03) - a formal icon pass belongs to
+	// M3-H01 and only touches this table. Engine content is always mounted in
+	// game, so the paths resolve on every target.
+	const TCHAR* M3_019_WeaponIconPath = TEXT("/Engine/EngineResources/AICON-Red.AICON-Red");
+	const TCHAR* M3_019_ArmorIconPath = TEXT("/Engine/EngineResources/AICON-Green.AICON-Green");
+	const TCHAR* M3_019_AccessoryIconPath = TEXT("/Engine/EngineResources/GradientTexture0.GradientTexture0");
+	const TCHAR* M3_019_WeaponTag = TEXT("WPN");
+	const TCHAR* M3_019_ArmorTag = TEXT("ARM");
+	const TCHAR* M3_019_AccessoryTag = TEXT("ACC");
+}
+
+FInventorySlotIconConfig MakeInventorySlotIconConfig(EItemSlot Slot)
+{
+	// Only the three closed enum values resolve an icon; every other value
+	// degrades to an empty path and the readable dash tag (no slot invented).
+	FInventorySlotIconConfig Config;
+	switch (Slot)
+	{
+	case EItemSlot::Weapon:
+		Config.TexturePath = M3_019_WeaponIconPath;
+		Config.Tag = M3_019_WeaponTag;
+		break;
+	case EItemSlot::Armor:
+		Config.TexturePath = M3_019_ArmorIconPath;
+		Config.Tag = M3_019_ArmorTag;
+		break;
+	case EItemSlot::Accessory:
+		Config.TexturePath = M3_019_AccessoryIconPath;
+		Config.Tag = M3_019_AccessoryTag;
+		break;
+	default:
+		Config.TexturePath.Reset();
+		Config.Tag = M3_011_UnknownSlotLabel;
+		break;
+	}
+	return Config;
+}
+
+UTexture2D* LoadInventoryRowIconTexture(const FString& SoftObjectPath)
+{
+	if (SoftObjectPath.IsEmpty())
+	{
+		return nullptr;
+	}
+	// Synchronous load on purpose: the config points at tiny engine built-in
+	// textures, the row build is the only caller and a missing texture must
+	// degrade to the visible short tag within the same row build (no pop-in).
+	// An already-resolved object short-circuits the load.
+	const FSoftObjectPath Path(SoftObjectPath);
+	if (UTexture2D* Resolved = Cast<UTexture2D>(Path.ResolveObject()))
+	{
+		return Resolved;
+	}
+	return Cast<UTexture2D>(Path.TryLoad());
+}
+
 // ----- M3-011: pure view model -----------------------------------------------
 
 FInventoryRowViewModel MakeInventoryRowViewModel(
@@ -114,6 +181,18 @@ FInventoryRowViewModel MakeInventoryRowViewModel(
 	// Slot: definition data only; missing definition or an out-of-enum slot
 	// value shows "-" instead of an invented label.
 	Row.SlotName = (Definition != nullptr) ? M3_011_SlotLabel(Definition->Slot) : M3_011_UnknownSlotLabel;
+
+	// M3-019: the icon source resolves from the SLOT through the ONE shared
+	// config (the settlement reward lines read the same fields via the same
+	// row view model). A missing definition degrades to the dash tag with no
+	// icon path; an out-of-enum slot is degraded by the config itself.
+	Row.SlotTag = M3_011_UnknownSlotLabel;
+	if (Definition != nullptr)
+	{
+		const FInventorySlotIconConfig Icon = MakeInventorySlotIconConfig(Definition->Slot);
+		Row.SlotTag = Icon.Tag;
+		Row.IconPath = Icon.TexturePath;
+	}
 
 	// Stats: the INSTANCE's rolled stats are owned data and display even when
 	// the definition is stale; all three attributes show (zeros included).
@@ -383,6 +462,18 @@ UButton* UInventoryWidget::PeekRowButton(int32 Index) const
 		return nullptr;
 	}
 	return Cast<UButton>(RowsBox->GetChildAt(Index));
+}
+
+UImage* UInventoryWidget::PeekRowIconImage(int32 Index) const
+{
+	// The parallel arrays fill while the rows rebuild; a peek before the first
+	// build (or out of range) misses.
+	return (Index >= 0 && Index < RowIconImages.Num()) ? RowIconImages[Index].Get() : nullptr;
+}
+
+UTextBlock* UInventoryWidget::PeekRowIconTagText(int32 Index) const
+{
+	return (Index >= 0 && Index < RowIconTags.Num()) ? RowIconTags[Index].Get() : nullptr;
 }
 
 void UInventoryWidget::SetEquipContext(bool bHasProfile, const FItemStats& BaseStats,
@@ -661,7 +752,11 @@ void UInventoryWidget::ApplyViewModelToControls()
 	// M3-012: each row is a clickable button carrying its instance id; the
 	// dynamic click bridges into the row's native select event (per-row ids
 	// cannot bind as dynamic-delegate lambdas).
+	// M3-019: each row also carries an icon area (a fixed-size image plus the
+	// short-tag text); the parallel control arrays are rebuilt with the rows.
 	RowsBox->ClearChildren();
+	RowIconImages.Reset();
+	RowIconTags.Reset();
 	for (const FInventoryRowViewModel& Row : ViewModel.Rows)
 	{
 		UInventoryRowButton* RowButton = WidgetTree->ConstructWidget<UInventoryRowButton>(
@@ -673,6 +768,31 @@ void UInventoryWidget::ApplyViewModelToControls()
 		});
 		RowButton->OnClicked.AddDynamic(RowButton, &UInventoryRowButton::HandleRowClicked);
 
+		// M3-019: the icon area. The configured engine placeholder texture is
+		// loaded synchronously; when it resolves the image shows and the tag
+		// stays collapsed. When it does NOT resolve (no config, a stale path
+		// or a load failure) the image stays collapsed and the readable short
+		// tag becomes visible - the tested fallback path. Both controls are
+		// built either way, so the row layout never depends on the data.
+		UImage* IconImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
+		IconImage->SetDesiredSizeOverride(FVector2D(18.0f, 18.0f));
+		IconImage->SetVisibility(ESlateVisibility::Collapsed);
+		UTextBlock* IconTag = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
+		IconTag->SetFont(FCoreStyle::GetDefaultFontStyle("Bold", 10));
+		IconTag->SetColorAndOpacity(FSlateColor(FLinearColor(0.55f, 0.75f, 1.0f, 1.0f)));
+		IconTag->SetVisibility(ESlateVisibility::Collapsed);
+		UTexture2D* IconTexture = LoadInventoryRowIconTexture(Row.IconPath);
+		if (IconTexture != nullptr)
+		{
+			IconImage->SetBrushFromTexture(IconTexture);
+			IconImage->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		}
+		else
+		{
+			IconTag->SetText(FText::FromString(Row.SlotTag));
+			IconTag->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		}
+
 		UTextBlock* RowBlock = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
 		const FString RowText = FString::Printf(TEXT("%s%s | %s | %s"),
 			Row.bEquipped ? M3_011_EquippedPrefix : TEXT(""),
@@ -683,11 +803,27 @@ void UInventoryWidget::ApplyViewModelToControls()
 			? FLinearColor(1.0f, 0.85f, 0.3f, 1.0f)
 			: FLinearColor(0.85f, 0.95f, 1.0f, 1.0f)));
 		RowBlock->SetJustification(ETextJustify::Left);
-		RowButton->AddChild(RowBlock);
+
+		UHorizontalBox* RowContent = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
+		if (UHorizontalBoxSlot* IconSlot = RowContent->AddChildToHorizontalBox(IconImage))
+		{
+			// Tight paddings: the longest row ([Equipped] + a full stats line)
+			// must still fit the fixed panel width without clipping.
+			IconSlot->SetPadding(FMargin(0.0f, 0.0f, 4.0f, 0.0f));
+		}
+		if (UHorizontalBoxSlot* TagSlot = RowContent->AddChildToHorizontalBox(IconTag))
+		{
+			TagSlot->SetPadding(FMargin(0.0f, 0.0f, 4.0f, 0.0f));
+		}
+		RowContent->AddChildToHorizontalBox(RowBlock);
+		RowButton->AddChild(RowContent);
 		if (UVerticalBoxSlot* RowSlot = RowsBox->AddChildToVerticalBox(RowButton))
 		{
 			RowSlot->SetPadding(FMargin(4.0f, 3.0f));
 		}
+
+		RowIconImages.Add(IconImage);
+		RowIconTags.Add(IconTag);
 	}
 }
 

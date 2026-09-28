@@ -70,6 +70,13 @@ struct FRoomRewardItemLine
 
 	/** Instance stats line "Atk+<a> Def+<d> HP+<h>" (zeros included). */
 	FString StatsText;
+
+	/**
+	 * M3-019: short slot tag resolved by the SAME shared icon config the
+	 * inventory rows read ("WPN"/"ARM"/"ACC"; "-" when unresolved) - the
+	 * settlement-side prefix of the identical icon source.
+	 */
+	FString SlotTag;
 };
 
 /**
