@@ -49,6 +49,18 @@
       "license": "Pending archive-level verification",
       "status": "candidate; download unavailable; dedicated launcher/airborne coverage not verified",
       "required_for_m0": false
+    },
+    {
+      "id": "engine_builtin_ui_icons",
+      "author": "Epic Games",
+      "source": "UE 5.8.3 installed Engine/Content/EngineResources; referenced in place, nothing downloaded or copied into the project",
+      "page": "https://dev.epicgames.com/documentation/en-us/unreal-engine",
+      "destination": "/Engine/EngineResources/AICON-Red, /Engine/EngineResources/AICON-Green, /Engine/EngineResources/GradientTexture0",
+      "license": "Epic engine content under the Unreal Engine EULA (same class as the template mannequins: not CC0); engine content only, not redistributed as project assets",
+      "registered_at": "2026-09-28",
+      "status": "loaded and rendered in UE 5.8.3 (UEMMO.Tasks.M3_019 tests + capture screenshots viewed); used as PLACEHOLDER item icons of the inventory rows and the settlement reward lines - formal icons pending M3-H01 user judgement",
+      "placeholder": true,
+      "required_for_m0": false
     }
   ]
 }
