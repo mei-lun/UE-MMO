@@ -110,7 +110,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M3-018 | [结算奖励界面与待领取提示](Docs/Tasks/M3-018.md) | DONE | M3-016,M3-017,M2-012 | ZCode-20260925-A | 2026-09-28T07:44:36+08:00 | [report](Docs/Tasks/Reports/M3-018.md) |
 | M3-019 | [三种装备图标与显示资源登记](Docs/Tasks/M3-019.md) | DONE | M3-018 | ZCode-20260925-A | 2026-09-28T08:36:35+08:00 | [report](Docs/Tasks/Reports/M3-019.md) |
 | M3-020 | [单机成长循环集成测试](Docs/Tasks/M3-020.md) | DONE | M3-019,M3-010 | ZCode-20260925-A | 2026-09-30T12:08:24+08:00 | [report](Docs/Tasks/Reports/M3-020.md) |
-| M3-021 | [保存恢复和重复领取故障回归](Docs/Tasks/M3-021.md) | TODO | M3-020 | — | — | — |
+| M3-021 | [保存恢复和重复领取故障回归](Docs/Tasks/M3-021.md) | IN_PROGRESS | M3-020 | ZCode-20260925-A | 2026-09-30T12:08:33+08:00 | [report](Docs/Tasks/Reports/M3-021.md) |
 | M3-022 | [单机原型发布包与完整交接](Docs/Tasks/M3-022.md) | TODO | M3-021 | — | — | — |
 | M3-H01 | [M3 用户阶段验收](Docs/Tasks/M3-H01.md) | TODO | M3-022 | 用户 | — | — |
 | M4-000 | [后续服务端接入范围](Docs/Tasks/M4-000.md) | DEFERRED | M3-H01 | — | — | — |
