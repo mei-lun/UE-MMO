@@ -80,14 +80,14 @@ void APrototypeHUD::DrawHUD()
     DrawRect(FLinearColor(0.02f, 0.03f, 0.05f, 0.86f), 18, 18, 630, 110);
     // M2-017: stage copy refreshed for the M2 room combat prototype (pending
     // playtest); the M1-only line is obsolete now that M2 rooms are in.
-    DrawText(TEXT("UE-MMO | M2: room combat prototype (pending playtest)"), FLinearColor::White, 32, 28, nullptr, 1.2f);
+    DrawText(TEXT("UE-MMO | M3: single-player prototype (pending playtest)"), FLinearColor::White, 32, 28, nullptr, 1.2f);
     // M1-040: DNF-style keymap hints. Arrows move (X/Y incl. depth), X attack,
     // Z launcher, C jump (Space stays a jump alias), F2 resets, QWERASDF are
     // the reserved skill slots (no skill effect yet), F1 the debug overlay.
     DrawText(TEXT("Arrows: move  X: attack  Z: launcher  C: jump  F2: reset  QWERASDF: skills (reserved)  F1: debug"), FLinearColor(0.6f, 0.85f, 1.f), 32, 53);
     // M2-017: the stage note reflects the implemented M1 combat + M2 wave
     // room instead of the stale "M2 planned" text.
-    DrawText(TEXT("Single-player. M1 combat + M2 wave room implemented; M3 progression planned."), FLinearColor(0.9f, 0.8f, 0.45f), 32, 77);
+    DrawText(TEXT("Single-player. M1 combat + M2 wave room + M3 progression implemented; M4 server integration not started."), FLinearColor(0.9f, 0.8f, 0.45f), 32, 77);
 
     // M3-018: the pending-reward badge while the menu flow state owns the
     // screen (the card's minimal HUD hook point: canvas text of the prototype
