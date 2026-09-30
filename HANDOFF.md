@@ -1,44 +1,43 @@
 # 最近一轮交接
 
-- 日期：2026-09-25，Asia/Shanghai。Owner：ZCode-20260925-A（协调者）。
-- **并行开发模式已启用并已收尾**：36 个 worktree 分支全部合并后清理完毕；`.worktrees/M1-036` 残留 71MB 被旧 UE 进程锁定，进程退出后可删。
-- 批次47：2026-09-28T03:02 至 04:00（+08:00），合并 M3-012（穿脱界面与属性对比），集成验证 418/418。DONE=79。批次1..47副本见 Docs/Tasks/Handoffs/，本批明细见 2026-09-28-ZCode-20260925-A-batch47.md。
+- Owner：ZCode-20260925-A（协调者）。本文件为最新摘要；56+ 份历史批次副本见 `Docs/Tasks/Handoffs/`。
+- 任务板：`Scripts/CheckTaskBoard.ps1` → **valid=True，total=92，DONE=87，TODO=2（M2-H01/M3-H01 用户验收），IN_PROGRESS=0**。
+- 最终提交：`git log -1`（验收摘要文档提交后为最新）；分支 main；工作区干净。
 
-## 本批完成
+## 项目当前状态（单机原型三阶段技术全完成）
 
-1. **M1-004** 输入过期与复位清理：`FCombatInputBuffer` 增加 `PruneExpired(Now, Lifetime=0.150)` 与 `Consume(Action, Now, Lifetime, Out)`（先清后费）；恰好 150ms 仍可用；NaN 拒绝入队、未来时间清理剔除。红 6 失败→绿 6/6。feat `a1fe852`。
-2. **M1-005** 半开窗口：`FCombatWindow`（[start,end)，IsValid/Contains/Crosses，O(1) 跨帧判定，非正向推进 false）。红 4 失败→绿 4/4。feat `ddb7bdf`。
-3. **M1-015** 生命值：`UHealthComponent`（ApplyDamage 返回实扣、非有限/负拒绝、零伤害无事件、OnDied 至多一次、ResetHealth 新生命周期、原生多播委托）。红 6 失败→绿 6/6。feat `38f8979`。
+| 阶段 | 内容 | 技术状态 |
+|---|---|---|
+| M0 | 工程/角色/地图/资源 + DNF 键位（方向键/X/Z/C/F2/QWERASDF） | 42 项中 42 DONE（含 M1-040/041/042 修复） |
+| M1 | 战斗：连招/命中/硬直/浮空/倒地/调试面板 | M1-001..042 全 DONE |
+| M2 | 刷怪房：敌人 AI/波次/会话/失败重试/退出/L_CombatRoom01 | M2-001..017 全 DONE |
+| M3 | 成长：装备/背包/穿脱/等级/掉落/领奖/存档 A/B 槽/损坏回退/地图菜单 | M3-001..023 全 DONE |
+| 关卡 | M0-H01（REVIEW）、M2-H01（TODO）、M3-H01（TODO）均待用户；M4-000（DEFERRED）待用户提供服务端接口信息 | |
 
-三项由三个并行子代理完成（各自红→绿证据在各自 worktree Artifacts），合并后在 main 集成验证。
+## 交付物
 
-## 本批集成验证（协调者执行）
+- **M3 完整包（最新，含全部内容）**：`Artifacts\Package\Windows\UEMMO.exe`（929MB，2026-09-30 重建；离屏冒烟 success/rendering=true 实测可启动）。
+- 进刷怪房：exe 加参数 `/Game/UEMMO/Maps/L_CombatRoom01` 或游戏内控制台 `open /Game/UEMMO/Maps/L_CombatRoom01`。
+- **综合验收入口（用户从这里开始）**：`Docs/07-综合验收摘要.md`——交付清单/验证证据/三关验收步骤/已知限制/资源许可/M4 采集要求，一次看全。
 
-- `git merge` 三分支无冲突 → `569c264`。
-- `Scripts/Build.ps1` exit 0。
-- `TestAutomation.ps1 -Filter UEMMO.Tasks -TaskId Integration`：**22/22 通过**（1+5+6+4+6）。
-- CheckTaskBoard：valid=true，DONE=11，TODO=73。
+## 最终集成验证（2026-09-30 当日）
 
-## 状态与统计
+- Build exit 0；编辑器全量自动化 **480/480**。
+- 包内（打包 exe 新进程）三层验证：全量 480（456 passed + 24 条设计豁免全名单显式输出）+ M1/M2/M3 三套场景包内通过 + 成长循环事件 JSON。
+- 三套场景脚本：TestCombatScenario（M1-037 3/3、M1-038 4/4）、TestRoomScenario（M2-014 5/5）、TestProgressionScenario（M3-020 4/4、M3-021 6/6）。
+- 渲染冒烟 success=true/rendering=true，截图已目击（HUD M3 文案）。
+- 删全部五个开发 JSON 后包内全链再通过（源文件 SHA 恢复一致）。
 
-- 累计本轮会话新增 DONE：**6**（M1-001…M1-005、M1-015）；含批次1的3项。
-- M0-H01 仍 REVIEW（等用户实际试玩反馈，不能代签）。
+## 流程要点（给下一个 AI）
 
-## 下批（并行批次5，进行中或接续）
-
-1. **M3-013** 版本化存档结构与往返序列化（依赖 M3-012 ✓）
-2. 其后 014→015→016∥017→018→019→020→021→022
-3. **M2-H01/M1-H01** 保持 BLOCKED/REVIEW：用户最终签字随时可补，问题走新修复任务
-3. M1-H01 保持 BLOCKED：最终签字仍待用户
-
-后续候选：M1-008（需 M1-007）→ M1-009 → M1-010 → M1-011（需 M1-004/006/010）；M1-016（需 M1-015）；M1-012→013。
-
-## 流程要点（给下一个协调者）
-
-- 子代理只改卡面文件与自己的报告（Owner 统一 ZCode-20260925-A）；TASKS.md/HANDOFF/Scripts 只由协调者动。
-- 合并前清掉主检出同名未跟踪报告存根；合并后必须 Build + `TestAutomation.ps1 -Filter UEMMO.Tasks -TaskId Integration` 全绿才标 DONE。
-- `.ps1` 字符串保持 ASCII；模块根不在 include 路径（用相对路径 include）；TestTrue 首参是描述。
+1. 总表/HANDOFF 只由协调者更新；实现者用独立 worktree（本轮已全清）。
+2. 报告字段格式：`- Implementation-Revision: <sha>` 与 `- Verification: PASS` 必须独立成行（多批次踩过 `=` 写法/缺行/缺前导短横的坑——已全量修正）。
+3. 包迁移：必须以 `Artifacts/Package/Windows/`（含 Engine/）整目录为单位，不可只搬项目子文件夹（batch56 补记事故）。
+4. 用户豁免记录：M2/M3 在 H01 签字前开工，豁免链记录于 Docs/Tasks/Reports/M1-H01.md 与各批次交接——**M2-H01/M3-H01 仍待用户真实反馈，不得代签**。
+5. 已登记的后续接线（不阻塞验收）：房间瞬态定义→目录资产化、菜单 HUD 完整挂载、HUD 标题行"(M1)"调试字样、装备加成重启自动重挂的边界。
 
 ## 待用户事项
 
-M0-H01 试玩（A/D、W/S、Space、R、镜头方向）；用户已授权连续执行，但人工验收本身仍需真实反馈。
+1. **综合验收**：按 `Docs/07-综合验收摘要.md` §4 清单试玩（M0 基础/M2 刷怪房/M3 成长循环，一次做完约 15-20 分钟），回"通过"或问题清单。
+2. 通过后：三 H01 转 DONE → **M4-000 服务端接口采集**启动（需用户提供协议格式/认证/ID 规则等十项信息，清单已备）。
+3. 有问题：回原话描述，走独立修复任务，不取消已通过的技术任务。
