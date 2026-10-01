@@ -471,6 +471,14 @@ public:
 	int32 DeleteTestSlots();
 
 private:
+	/**
+	 * M3-023: the verbatim StartupLoad body (moved unchanged so the public
+	 * entry can log the recovery report exactly once, every result shape
+	 * alike, without touching the recovery logic).
+	 */
+	FStartupLoadOutcome M3_023_StartupLoadBody();
+
+private:
 	/** Default storage resolution (lazy engine-backed storage creation). */
 	ISaveStorage* ResolveStorage();
 

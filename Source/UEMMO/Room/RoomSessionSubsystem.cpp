@@ -23,9 +23,30 @@
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
+#include "../Logging/OperationLogSubsystem.h"
 
 namespace
 {
+	// M3-023: logs one room-session row through the world's game instance log
+	// subsystem; skipped silently without one (bare test worlds). bResponse
+	// picks the Response category for run outcomes, State for transitions.
+	void M3_023_LogRoom(const URoomSessionSubsystem& Session, bool bResponse, const FString& Message)
+	{
+		UOperationLogSubsystem* OpLog = UOperationLogSubsystem::FindForContext(&Session);
+		if (OpLog == nullptr)
+		{
+			return;
+		}
+		if (bResponse)
+		{
+			OpLog->LogResponse(Message);
+		}
+		else
+		{
+			OpLog->LogState(Message);
+		}
+	}
+
 	// Anonymous-namespace state; every symbol carries the M2_006 prefix so the
 	// per-file translation unit can never collide with another module TU.
 
@@ -188,6 +209,11 @@ bool URoomSessionSubsystem::StartRoom(const URoomDefinition* Definition)
 	ResetWaveOrchestration();
 
 	State = ERoomSessionState::Running;
+	// M3-023: the accepted run start (the subscription rows follow from the
+	// broadcast below).
+	M3_023_LogRoom(*this, /*bResponse*/ false, FString::Printf(
+		TEXT("Room RunStarted: run=%llu room=%s seed=%d settlement=%llu"),
+		CurrentRunId, *CurrentRoomId.ToString(), CurrentSeed, CurrentSettlementId));
 	RunStartedDelegate.Broadcast();
 	return true;
 }
@@ -222,6 +248,12 @@ bool URoomSessionSubsystem::EndRun(bool bInCleared, const TCHAR* RequestName)
 	FinishedRunResults.Add(CurrentRunId, LastResult);
 
 	State = bInCleared ? ERoomSessionState::Cleared : ERoomSessionState::Failed;
+	// M3-023: the run outcome (the terminal transition result; the
+	// subscription rows follow from the broadcast below).
+	M3_023_LogRoom(*this, /*bResponse*/ true, FString::Printf(
+		TEXT("Room RunEnded: run=%llu cleared=%d killed=%d elapsed=%.2f settlement=%llu"),
+		LastResult.RunId, LastResult.bCleared ? 1 : 0, LastResult.KilledCount,
+		LastResult.ElapsedSeconds, LastResult.SettlementId));
 	RunEndedDelegate.Broadcast(LastResult);
 	return true;
 }
@@ -248,6 +280,9 @@ bool URoomSessionSubsystem::BeginExit()
 	// that the state exists and that an unfinished run's bookkeeping stays
 	// untouched (its notifications stop being accepted while Exiting).
 	State = ERoomSessionState::Exiting;
+	// M3-023: the exit-flow transition row (unfinished runs keep their ids).
+	M3_023_LogRoom(*this, /*bResponse*/ false, FString::Printf(
+		TEXT("Room BeginExit: run=%llu"), CurrentRunId));
 	return true;
 }
 
@@ -260,6 +295,8 @@ bool URoomSessionSubsystem::ResetToIdle()
 			static_cast<int32>(State));
 		return false;
 	}
+	// M3-023: capture the finished run id before the per-run bookkeeping clears.
+	const uint64 M3_023_FinishedRunId = CurrentRunId;
 	State = ERoomSessionState::Idle;
 	CurrentRunId = 0;
 	CurrentSettlementId = 0;
@@ -270,6 +307,9 @@ bool URoomSessionSubsystem::ResetToIdle()
 	CurrentWaveIndex = -1;
 	SpawnedEnemyCount = 0;
 	ResetWaveOrchestration();
+	// M3-023: the back-to-Idle transition row.
+	M3_023_LogRoom(*this, /*bResponse*/ false, FString::Printf(
+		TEXT("Room ResetToIdle: last run=%llu"), M3_023_FinishedRunId));
 	return true;
 }
 
@@ -324,6 +364,10 @@ bool URoomSessionSubsystem::LeaveRoom()
 	UE_LOG(LogTemp, Verbose,
 		TEXT("UEMMO RoomSession: RunId %llu left the room (state -> Exiting, %d spawning wave(s) cancelled; exit is not a settlement)."),
 		CurrentRunId, CancelledSpawners);
+	// M3-023: the real exit procedure row (CurrentRunId survives the exit;
+	// only ResetToIdle clears it).
+	M3_023_LogRoom(*this, /*bResponse*/ false, FString::Printf(
+		TEXT("Room LeaveRoom: run=%llu cancelledSpawners=%d"), CurrentRunId, CancelledSpawners));
 	return true;
 }
 
@@ -353,6 +397,10 @@ bool URoomSessionSubsystem::NotifyEnemyKilled(FName EnemyId)
 	UE_LOG(LogTemp, Verbose,
 		TEXT("UEMMO RoomSession: RunId %llu counted a kill of %s (total %d)."),
 		CurrentRunId, *EnemyId.ToString(), KilledCount);
+	// M3-023: the accepted kill row (state with the running kill count).
+	M3_023_LogRoom(*this, /*bResponse*/ false, FString::Printf(
+		TEXT("Room EnemyKilled: run=%llu enemy=%s killed=%d"),
+		CurrentRunId, *EnemyId.ToString(), KilledCount));
 	if (bWaveOrchestrationActive && bRunSpawnedThisId)
 	{
 		CheckWaveProgressionAfterKill();
@@ -406,6 +454,10 @@ bool URoomSessionSubsystem::NotifyEnemySpawned(FName EnemyId)
 	UE_LOG(LogTemp, Verbose,
 		TEXT("UEMMO RoomSession: RunId %llu registered spawn %s (total %d)."),
 		CurrentRunId, *EnemyId.ToString(), SpawnedEnemyCount);
+	// M3-023: the accepted spawn row (state with the running spawn count).
+	M3_023_LogRoom(*this, /*bResponse*/ false, FString::Printf(
+		TEXT("Room EnemySpawned: run=%llu enemy=%s spawned=%d"),
+		CurrentRunId, *EnemyId.ToString(), SpawnedEnemyCount));
 	return true;
 }
 
@@ -461,6 +513,10 @@ bool URoomSessionSubsystem::BeginWaves(const URoomDefinition* Definition, UEnemy
 		// request fails with the run.
 		return false;
 	}
+	// M3-023: the wave-orchestration row (wave 0 started immediately, the
+	// rest follow through StartNextWave's rows below).
+	M3_023_LogRoom(*this, /*bResponse*/ false, FString::Printf(
+		TEXT("Room BeginWaves: run=%llu waves=%d"), CurrentRunId, Definition->Waves.Num()));
 	return true;
 }
 
@@ -513,6 +569,10 @@ bool URoomSessionSubsystem::StartNextWave()
 	UE_LOG(LogTemp, Verbose,
 		TEXT("UEMMO RoomSession: RunId %llu started wave %d of %d."),
 		CurrentRunId, StartedWaveCount - 1, Room->Waves.Num());
+	// M3-023: the accepted wave-start row (M2-008 progression).
+	M3_023_LogRoom(*this, /*bResponse*/ false, FString::Printf(
+		TEXT("Room WaveStarted: run=%llu wave=%d of %d"),
+		CurrentRunId, StartedWaveCount - 1, Room->Waves.Num()));
 	return true;
 }
 
