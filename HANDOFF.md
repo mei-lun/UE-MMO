@@ -1,8 +1,8 @@
 # 最近一轮交接
 
-- Owner：ZCode-20260925-A（协调者）。本文件为最新摘要；56+ 份历史批次副本见 `Docs/Tasks/Handoffs/`。
-- 任务板：`Scripts/CheckTaskBoard.ps1` → **valid=True，total=92，DONE=87，TODO=2（M2-H01/M3-H01 用户验收），IN_PROGRESS=0**。
-- 最终提交：`git log -1`（验收摘要文档提交后为最新）；分支 main；工作区干净。
+- Owner：ZCode-20260925-A（协调者）。本文件为最新摘要；57 份历史批次副本见 `Docs/Tasks/Handoffs/`。
+- 任务板：`Scripts/CheckTaskBoard.ps1` → **valid=True，total=93，DONE=88，TODO=2（M2-H01/M3-H01 用户验收），IN_PROGRESS=0**。
+- 最新批次：**批次57（2026-10-02）操作日志系统 M3-023**——所有角色操作/功能状态/键盘输入/程序响应自动记录到 `UEMMO/Saved/OperationLogs/OperationLog.log`，跨日自动清空；包已重建并验证。明细见 `Docs/Tasks/Handoffs/2026-10-02-ZCode-20260925-A-batch57.md`。
 
 ## 项目当前状态（单机原型三阶段技术全完成）
 
