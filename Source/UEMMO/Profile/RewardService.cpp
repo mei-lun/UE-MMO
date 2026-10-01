@@ -17,6 +17,7 @@
 #include "RewardService.h"
 
 #include "ProfileSubsystem.h"
+#include "../Logging/OperationLogSubsystem.h"
 #include "../Persistence/ProfileSaveService.h"
 
 #include "../Items/DropGenerator.h"
@@ -24,6 +25,77 @@
 
 namespace
 {
+	// M3-023: result-enum text forms (one switch per outcome family; every
+	// anonymous-namespace symbol carries the M3_023 prefix so the per-file
+	// translation unit can never collide with another module TU).
+	const TCHAR* M3_023_BeginResultText(ERewardBeginResult Result)
+	{
+		switch (Result)
+		{
+		case ERewardBeginResult::Applied: return TEXT("Applied");
+		case ERewardBeginResult::AlreadyApplied: return TEXT("AlreadyApplied");
+		case ERewardBeginResult::RejectedFailedResult: return TEXT("RejectedFailedResult");
+		case ERewardBeginResult::RejectedNoProfile: return TEXT("RejectedNoProfile");
+		default: return TEXT("RejectedGeneration");
+		}
+	}
+
+	const TCHAR* M3_023_ClaimAtomicResultText(ERewardClaimAtomicResult Result)
+	{
+		switch (Result)
+		{
+		case ERewardClaimAtomicResult::Claimed: return TEXT("Claimed");
+		case ERewardClaimAtomicResult::PartiallyClaimed: return TEXT("PartiallyClaimed");
+		case ERewardClaimAtomicResult::InventoryFull: return TEXT("InventoryFull");
+		case ERewardClaimAtomicResult::AlreadyClaimed: return TEXT("AlreadyClaimed");
+		case ERewardClaimAtomicResult::UnknownSettlement: return TEXT("UnknownSettlement");
+		case ERewardClaimAtomicResult::SaveFailed: return TEXT("SaveFailed");
+		case ERewardClaimAtomicResult::RejectedNoProfile: return TEXT("RejectedNoProfile");
+		case ERewardClaimAtomicResult::RejectedNoSaveService: return TEXT("RejectedNoSaveService");
+		default: return TEXT("RejectedUnreadableSave");
+		}
+	}
+
+	// M3-023: resolves the log through the bound profile (its outer is the
+	// game instance); null (unbound, bare test service) skips silently.
+	UOperationLogSubsystem* M3_023_OpLogFromProfile(const UProfileSubsystem* Profile)
+	{
+		return Profile != nullptr ? UOperationLogSubsystem::FindForContext(Profile) : nullptr;
+	}
+
+	// M3-023: one Response row per BeginReward request (draft shape or the
+	// named rejection).
+	void M3_023_LogBeginReward(const UProfileSubsystem* Profile, uint64 SettlementId, const FRewardBeginOutcome& Outcome)
+	{
+		UOperationLogSubsystem* OpLog = M3_023_OpLogFromProfile(Profile);
+		if (OpLog == nullptr)
+		{
+			return;
+		}
+		OpLog->LogResponse(FString::Printf(
+			TEXT("Reward BeginReward: settlement=%llu result=%s xp=%d items=%d%s"),
+			SettlementId, M3_023_BeginResultText(Outcome.Result),
+			Outcome.Draft.XP, Outcome.Draft.Items.Num(),
+			Outcome.Error.IsEmpty() ? TEXT("") : *FString::Printf(TEXT(" error=%s"), *Outcome.Error)));
+	}
+
+	// M3-023: one Response row per ClaimPendingAtomic request (the commit
+	// shape with the XP/item/save flags, or the named rejection).
+	void M3_023_LogClaimAtomic(const UProfileSubsystem* Profile, uint64 SettlementId, const FRewardClaimAtomicOutcome& Outcome)
+	{
+		UOperationLogSubsystem* OpLog = M3_023_OpLogFromProfile(Profile);
+		if (OpLog == nullptr)
+		{
+			return;
+		}
+		OpLog->LogResponse(FString::Printf(
+			TEXT("Reward ClaimAtomic: settlement=%llu result=%s items=%d retained=%d xp=%d save=%d%s"),
+			SettlementId, M3_023_ClaimAtomicResultText(Outcome.Result),
+			Outcome.ClaimedItemCount, Outcome.RetainedItemCount,
+			Outcome.bGrantedXP ? 1 : 0, Outcome.bSaveCommitted ? 1 : 0,
+			Outcome.Error.IsEmpty() ? TEXT("") : *FString::Printf(TEXT(" error=%s"), *Outcome.Error)));
+	}
+
 	// 64-bit finalizer (murmur3 fmix): deterministic, platform-independent,
 	// and spreads single-bit input differences across all output bits. Same
 	// construction as the drop generator's internal mixer, with a distinct
@@ -108,6 +180,16 @@ int64 URewardService::DeriveRewardSeed(int32 RoomSeed)
 }
 
 FRewardBeginOutcome URewardService::BeginReward(const FRoomResult& Result, const FItemDefinitionCatalog& Catalog)
+{
+	// M3-023: the verbatim body moved into M3_023_BeginRewardBody below; the
+	// public entry logs the outcome exactly once (success and rejection
+	// shapes alike) through the bound profile's game instance log.
+	FRewardBeginOutcome Outcome = M3_023_BeginRewardBody(Result, Catalog);
+	M3_023_LogBeginReward(ProfilePtr.Get(), Result.SettlementId, Outcome);
+	return Outcome;
+}
+
+FRewardBeginOutcome URewardService::M3_023_BeginRewardBody(const FRoomResult& Result, const FItemDefinitionCatalog& Catalog)
 {
 	FRewardBeginOutcome Outcome;
 
@@ -343,6 +425,16 @@ FRewardClaimOutcome URewardService::M3_016_ApplyClaimInMemory(uint64 SettlementI
 // the XP exactly once and stores exactly the original instances.
 
 FRewardClaimAtomicOutcome URewardService::ClaimPendingAtomic(uint64 SettlementId, UProfileSubsystem* Profile, UProfileSaveService* SaveService)
+{
+	// M3-023: the verbatim body moved into M3_023_ClaimAtomicBody below; the
+	// public entry logs the outcome exactly once through the requested
+	// profile's game instance log.
+	FRewardClaimAtomicOutcome Outcome = M3_023_ClaimAtomicBody(SettlementId, Profile, SaveService);
+	M3_023_LogClaimAtomic(Profile, SettlementId, Outcome);
+	return Outcome;
+}
+
+FRewardClaimAtomicOutcome URewardService::M3_023_ClaimAtomicBody(uint64 SettlementId, UProfileSubsystem* Profile, UProfileSaveService* SaveService)
 {
 	FRewardClaimAtomicOutcome Outcome;
 

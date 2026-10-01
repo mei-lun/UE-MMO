@@ -19,6 +19,7 @@
 #include "InputActionValue.h"
 #include "InputMappingContext.h"
 #include "InputModifiers.h"
+#include "Logging/OperationLogSubsystem.h"
 #include "PrototypeHUD.h"
 #include "Profile/ProfileSubsystem.h"
 #include "Room/RoomSessionSubsystem.h"
@@ -29,6 +30,43 @@ using namespace UE::UEMMO::Tasks::M1_029;
 
 namespace
 {
+    /**
+     * M3-023: logs one input row per DIRECTION change of a planar move axis
+     * (any release, press or sign flip). The continuous axis value is never
+     * logged per frame (the card's volume rule); the direction is the only
+     * discrete fact a keyboard axis produces. LastDirection keeps the last
+     * LOGGED direction (0 = released); same-direction magnitude changes are
+     * silently absorbed.
+     */
+    void M3_023_LogMoveAxisChange(APrototypeCharacter& Character, float& LastDirection, float NewValue,
+        const TCHAR* AxisLetter, const TCHAR* PositiveKey, const TCHAR* NegativeKey)
+    {
+        const bool bWasActive = LastDirection != 0.0f;
+        const bool bIsActive = NewValue != 0.0f;
+        const bool bFlipped = bWasActive && bIsActive && ((LastDirection > 0.0f) != (NewValue > 0.0f));
+        if (bWasActive == bIsActive && !bFlipped)
+        {
+            return;
+        }
+        UOperationLogSubsystem* OpLog = UOperationLogSubsystem::FindForContext(&Character);
+        if (OpLog == nullptr)
+        {
+            LastDirection = NewValue;
+            return;
+        }
+        if (!bIsActive)
+        {
+            OpLog->LogInput(FString::Printf(TEXT("Move %s released"), AxisLetter));
+        }
+        else
+        {
+            OpLog->LogInput(FString::Printf(TEXT("Move %s %s (%s)"),
+                AxisLetter, NewValue > 0.0f ? TEXT("+") : TEXT("-"),
+                NewValue > 0.0f ? PositiveKey : NegativeKey));
+        }
+        LastDirection = NewValue;
+    }
+
     /**
      * Single choke point for all planar movement: every frame the accumulated
      * axis state is converted into movement input and facing here. M1-013: the
@@ -231,6 +269,18 @@ void APrototypeCharacter::BeginPlay()
             });
         }
     }
+    // M3-023: register this pawn with the operation log subsystem (the
+    // GameInstance-level log auto-subscribes the combat Started/Finished/
+    // HitConfirmed events and this world's room run events). Without a game
+    // instance (bare test worlds) there is no log subsystem and the pawn runs
+    // unlogged, the same graceful degradation as the profile wiring above.
+    if (UGameInstance* GameInstance = GetGameInstance())
+    {
+        if (UOperationLogSubsystem* OpLog = GameInstance->GetSubsystem<UOperationLogSubsystem>())
+        {
+            OpLog->RegisterPlayer(this);
+        }
+    }
     UE_LOG(LogTemp, Display, TEXT("UEMMO: prototype character ready; X/Y movement enabled."));
 }
 
@@ -376,7 +426,9 @@ void APrototypeCharacter::EnsureCombatInputActions()
     Mapping->MapKey(JumpAction, EKeys::C);
     Mapping->MapKey(JumpAction, EKeys::SpaceBar);
     // M1-040: F2 resets; R left the reset binding for skill slot 4 (the WASD
-    // skill-slot move removes the old R collision for free).
+    // skill-slot move removes the old R collision for free). M3-023: the
+    // binding routes through the key-logging wrapper OnResetPressed, so only
+    // real key presses log (fall-out-of-world recoveries stay unlogged).
     Mapping->MapKey(ResetAction, EKeys::F2);
     // M1-040: combat intents (X = Light, Z = Launcher; J/K removed without
     // alias). Runtime-created actions keep the M0 pattern: no uasset IMC/IA,
@@ -425,7 +477,7 @@ void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
     Input->BindAction(DepthAction, ETriggerEvent::Completed, this, &APrototypeCharacter::MoveDepth);
     Input->BindAction(JumpAction, ETriggerEvent::Started, this, &APrototypeCharacter::StartJump);
     Input->BindAction(JumpAction, ETriggerEvent::Completed, this, &APrototypeCharacter::EndJump);
-    Input->BindAction(ResetAction, ETriggerEvent::Started, this, &APrototypeCharacter::ResetPosition);
+    Input->BindAction(ResetAction, ETriggerEvent::Started, this, &APrototypeCharacter::OnResetPressed);
     Input->BindAction(CombatLightAction, ETriggerEvent::Started, this, &APrototypeCharacter::OnCombatLightPressed);
     Input->BindAction(CombatLauncherAction, ETriggerEvent::Started, this, &APrototypeCharacter::OnCombatLauncherPressed);
     // M1-028: F1 routes to the HUD debug overlay toggle (Started only: one
@@ -463,8 +515,19 @@ void APrototypeCharacter::MoveHorizontal(const FInputActionValue& Value)
     // axis; Triggered carries it while held and Completed carries 0 on release.
     // The value is only recorded here; movement is applied centrally in Tick.
     PlanarAxes.SetAxisX(Value.Get<float>());
+    // M3-023: one input row per direction change (press/release/flip) of the
+    // horizontal arrow keys (Right/Left); the continuous magnitude never logs.
+    M3_023_LogMoveAxisChange(*this, LastLoggedMoveX, PlanarAxes.AxisX,
+        TEXT("X"), TEXT("Right"), TEXT("Left"));
 }
-void APrototypeCharacter::MoveDepth(const FInputActionValue& Value) { PlanarAxes.SetAxisY(Value.Get<float>()); }
+void APrototypeCharacter::MoveDepth(const FInputActionValue& Value)
+{
+    PlanarAxes.SetAxisY(Value.Get<float>());
+    // M3-023: one input row per direction change of the depth arrow keys
+    // (Down/Up); the continuous magnitude never logs.
+    M3_023_LogMoveAxisChange(*this, LastLoggedMoveY, PlanarAxes.AxisY,
+        TEXT("Y"), TEXT("Down"), TEXT("Up"));
+}
 void APrototypeCharacter::StartJump()
 {
     // M1-023: a jump key (M1-040: C primary, Space alias) is a combat intent,
@@ -482,7 +545,16 @@ void APrototypeCharacter::StartJump()
     }
     Jump();
 }
-void APrototypeCharacter::EndJump() { StopJumping(); }
+void APrototypeCharacter::EndJump()
+{
+    // M3-023: the Completed event is the release half of the jump key
+    // (C primary, Space alias); one input row per release.
+    if (UOperationLogSubsystem* OpLog = UOperationLogSubsystem::FindForContext(this))
+    {
+        OpLog->LogInput(TEXT("Released C/Space (Jump)"));
+    }
+    StopJumping();
+}
 void APrototypeCharacter::OnCombatLightPressed() { SubmitCombatInput(ECombatInput::Light); }
 void APrototypeCharacter::OnCombatLauncherPressed() { SubmitCombatInput(ECombatInput::Launcher); }
 // M1-040: one trivial forwarder per slot keeps the member-pointer binding
@@ -505,6 +577,15 @@ void APrototypeCharacter::SubmitSkillSlot(int32 SlotIndex)
     {
         return;
     }
+    // M3-023: one discrete input row per skill-slot press (the card's
+    // QWERASDF keys; slots have no combat effect yet, M2+ placeholder).
+    if (UOperationLogSubsystem* OpLog = UOperationLogSubsystem::FindForContext(this))
+    {
+        static const TCHAR* M3_023_SkillSlotKeyNames[8] =
+            { TEXT("Q"), TEXT("W"), TEXT("E"), TEXT("R"), TEXT("A"), TEXT("S"), TEXT("D"), TEXT("F") };
+        OpLog->LogInput(FString::Printf(TEXT("Pressed %s (SkillSlot%d)"),
+            M3_023_SkillSlotKeyNames[SlotIndex - 1], SlotIndex));
+    }
     ++SkillSlotPressCounts[SlotIndex - 1];
     UE_LOG(LogTemp, Verbose, TEXT("UEMMO: skill slot %d pressed (no effect; M2+ placeholder)."), SlotIndex);
 }
@@ -517,6 +598,11 @@ void APrototypeCharacter::OnDebugTogglePressed()
     // M1-028: F1 is not a combat intent. The press only flips the local HUD's
     // debug overlay flag (pure display); combat state, queries and damage are
     // untouched. Without a player controller / prototype HUD it is a no-op.
+    // M3-023: the discrete F1 press is logged before the HUD toggle.
+    if (UOperationLogSubsystem* OpLog = UOperationLogSubsystem::FindForContext(this))
+    {
+        OpLog->LogInput(TEXT("Pressed F1 (DebugToggle)"));
+    }
     if (APlayerController* PC = Cast<APlayerController>(Controller))
     {
         if (APrototypeHUD* HUD = Cast<APrototypeHUD>(PC->GetHUD()))
@@ -525,6 +611,18 @@ void APrototypeCharacter::OnDebugTogglePressed()
         }
     }
 }
+void APrototypeCharacter::OnResetPressed()
+{
+    // M3-023: the F2 Started binding logs the key press here; ResetPosition
+    // stays the single unified-reset entry (its fall-out-of-world callers
+    // from Tick are not key presses and stay unlogged).
+    if (UOperationLogSubsystem* OpLog = UOperationLogSubsystem::FindForContext(this))
+    {
+        OpLog->LogInput(TEXT("Pressed F2 (Reset)"));
+    }
+    ResetPosition();
+}
+
 void APrototypeCharacter::SubmitCombatInput(ECombatInput Action)
 {
     const UWorld* World = GetWorld();
@@ -535,6 +633,19 @@ void APrototypeCharacter::SubmitCombatInput(ECombatInput Action)
 }
 void APrototypeCharacter::SubmitCombatInput(ECombatInput Action, double PressedAt)
 {
+    // M3-023: one discrete input row per submitted combat intent (the bound
+    // key and the intent it carries). This is the single choke point shared by
+    // the X/Z/C input bindings and the automation entries, so a press can
+    // never be logged twice.
+    if (UOperationLogSubsystem* OpLog = UOperationLogSubsystem::FindForContext(this))
+    {
+        const TCHAR* IntentText = (Action == ECombatInput::Light)
+            ? TEXT("Pressed X (Light)")
+            : (Action == ECombatInput::Launcher)
+                ? TEXT("Pressed Z (Launcher)")
+                : TEXT("Pressed C/Space (Jump)");
+        OpLog->LogInput(IntentText);
+    }
     if (Combat == nullptr)
     {
         return;

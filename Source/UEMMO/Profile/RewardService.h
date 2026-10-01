@@ -408,6 +408,19 @@ public:
 	FRewardClaimAtomicOutcome ClaimPendingAtomic(uint64 SettlementId, UProfileSubsystem* Profile, UProfileSaveService* SaveService);
 
 private:
+	/**
+	 * M3-023: the verbatim M3-008 BeginReward body (moved unchanged so the
+	 * public entry can log the outcome exactly once, success and rejection
+	 * shapes alike, without touching the business logic).
+	 */
+	FRewardBeginOutcome M3_023_BeginRewardBody(const FRoomResult& Result, const FItemDefinitionCatalog& Catalog);
+
+	/**
+	 * M3-023: the verbatim M3-016 ClaimPendingAtomic body (same wrapper
+	 * reason as above: the public entry logs the outcome once).
+	 */
+	FRewardClaimAtomicOutcome M3_023_ClaimAtomicBody(uint64 SettlementId, UProfileSubsystem* Profile, UProfileSaveService* SaveService);
+
 	/** GameInstance-level profile holding PendingRewards; weak on purpose. */
 	TWeakObjectPtr<UProfileSubsystem> ProfilePtr;
 

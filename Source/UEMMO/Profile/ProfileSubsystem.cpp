@@ -6,9 +6,20 @@
 
 #include "ProfileSubsystem.h"
 #include "ExperienceCurve.h"
+#include "../Logging/OperationLogSubsystem.h"
 
 namespace
 {
+	/**
+	 * M3-023: the profile logs its discrete state changes through the log
+	 * subsystem of its own game instance (the profile subsystem's outer IS the
+	 * game instance). Null (an exotic unwired outer) skips the row silently.
+	 */
+	UOperationLogSubsystem* M3_023_OpLog(const UProfileSubsystem& Profile)
+	{
+		return UOperationLogSubsystem::FindForContext(&Profile);
+	}
+
 	/**
 	 * M3-005: float final stat -> int32 snapshot stat (the M3-003 snapshot
 	 * contract stays integral). Rounds half away from zero, never negative,
@@ -47,6 +58,12 @@ void UProfileSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 void UProfileSubsystem::NewProfile()
 {
 	ApplyFreshProfileState(/*bGenerateNewCharacterId*/ true);
+	// M3-023: the new-profile state row (identity + design initial values).
+	if (UOperationLogSubsystem* OpLog = M3_023_OpLog(*this))
+	{
+		OpLog->LogState(FString::Printf(TEXT("Profile NewProfile: character=%s level=1 xp=0"),
+			*CharacterId.ToString()));
+	}
 }
 
 void UProfileSubsystem::ResetNewGame()
@@ -55,6 +72,12 @@ void UProfileSubsystem::ResetNewGame()
 	// Nothing here calls it automatically: when loading exists (M3-013), a
 	// failed load must surface the failure - never fall back to a reset.
 	ApplyFreshProfileState(/*bGenerateNewCharacterId*/ true);
+	// M3-023: the reset state row (a fresh unique identity, level 1 restart).
+	if (UOperationLogSubsystem* OpLog = M3_023_OpLog(*this))
+	{
+		OpLog->LogState(FString::Printf(TEXT("Profile ResetNewGame: character=%s level=1 xp=0"),
+			*CharacterId.ToString()));
+	}
 }
 
 bool UProfileSubsystem::HasProfile() const
@@ -121,6 +144,12 @@ bool UProfileSubsystem::AddXP(int32 Amount)
 		++Level;
 		bLeveledUp = true;
 	}
+	// M3-023: the XP/level state row (the levelUp flag IS the UI hook result).
+	if (UOperationLogSubsystem* OpLog = M3_023_OpLog(*this))
+	{
+		OpLog->LogState(FString::Printf(TEXT("Profile AddXP: amount=%d level=%d xp=%d levelUp=%d"),
+			Amount, Level, XP, bLeveledUp ? 1 : 0));
+	}
 	return bLeveledUp;
 }
 
@@ -171,6 +200,11 @@ void UProfileSubsystem::MarkSettlementApplied(uint64 SettlementId)
 	// (or a replayed BeginReward) sees the applied guard; the record stays
 	// even after the draft is fully consumed and removed.
 	AppliedSettlementIds.Add(SettlementId);
+	// M3-023: the applied-id state row (the XP-once guard committed).
+	if (UOperationLogSubsystem* OpLog = M3_023_OpLog(*this))
+	{
+		OpLog->LogState(FString::Printf(TEXT("Profile SettlementApplied: settlement=%llu"), SettlementId));
+	}
 }
 
 bool UProfileSubsystem::RestoreFromSave(const FProfileSnapshot& Snapshot, const FInventoryModel& InInventory,

@@ -30,9 +30,57 @@
 
 #include "ProfileSerializer.h"
 
+#include "../Logging/OperationLogSubsystem.h"
+
 #include "Kismet/GameplayStatics.h"
 #include "Misc/Crc.h"
 #include "UObject/UObjectGlobals.h"
+
+namespace
+{
+	// M3-023: result-enum text forms for the two save-service entry points the
+	// card wires (every anonymous-namespace symbol carries the M3_023 prefix so
+	// the per-file translation unit can never collide with another module TU).
+	const TCHAR* M3_023_SaveResultText(EProfileSaveResult Result)
+	{
+		switch (Result)
+		{
+		case EProfileSaveResult::Queued: return TEXT("Queued");
+		case EProfileSaveResult::Merged: return TEXT("Merged");
+		case EProfileSaveResult::Success: return TEXT("Success");
+		case EProfileSaveResult::FailedCapture: return TEXT("FailedCapture");
+		case EProfileSaveResult::FailedWriteSlot: return TEXT("FailedWriteSlot");
+		case EProfileSaveResult::FailedReadBack: return TEXT("FailedReadBack");
+		case EProfileSaveResult::FailedWriteIndex: return TEXT("FailedWriteIndex");
+		case EProfileSaveResult::FailedIndexState: return TEXT("FailedIndexState");
+		case EProfileSaveResult::FailedGuardedSlot: return TEXT("FailedGuardedSlot");
+		default: return TEXT("FailedNoPendingSave");
+		}
+	}
+
+	const TCHAR* M3_023_StartupResultText(EStartupLoadResult Result)
+	{
+		switch (Result)
+		{
+		case EStartupLoadResult::Recovered: return TEXT("Recovered");
+		case EStartupLoadResult::RecoveredFallback: return TEXT("RecoveredFallback");
+		case EStartupLoadResult::NoSaveFound: return TEXT("NoSaveFound");
+		default: return TEXT("RecoveryError");
+		}
+	}
+
+	// M3-023: one Response row per save-service outcome (the log resolves
+	// through this service's owner chain - the game flow subsystem or the HUD
+	// reaches the game instance; a bare transient-package test service skips
+	// the row silently).
+	void M3_023_LogSave(const UProfileSaveService& Service, const TCHAR* Entry, const FString& Detail)
+	{
+		if (UOperationLogSubsystem* OpLog = UOperationLogSubsystem::FindForContext(&Service))
+		{
+			OpLog->LogResponse(FString::Printf(TEXT("Save %s: %s"), Entry, *Detail));
+		}
+	}
+}
 
 // -- Storage implementations ---------------------------------------------------
 
@@ -470,9 +518,21 @@ FProfileSaveOutcome UProfileSaveService::SaveProfile(const FProfileSaveRequest& 
 	FProfileSaveOutcome BeginOutcome = BeginSave(Request);
 	if (BeginOutcome.Result == EProfileSaveResult::FailedCapture)
 	{
+		// M3-023: the refused capture row (no disk effect happened).
+		M3_023_LogSave(*this, TEXT("SaveProfile"), FString::Printf(
+			TEXT("result=%s generation=%d slot=%d error=%s"),
+			M3_023_SaveResultText(BeginOutcome.Result), BeginOutcome.Generation,
+			BeginOutcome.WrittenSlotIndex, *BeginOutcome.Message));
 		return BeginOutcome;
 	}
-	return ProcessPendingSave();
+	FProfileSaveOutcome SaveOutcome = ProcessPendingSave();
+	// M3_023: the committed-generation success row or the named failure row.
+	M3_023_LogSave(*this, TEXT("SaveProfile"), FString::Printf(
+		TEXT("result=%s generation=%d slot=%d%s"),
+		M3_023_SaveResultText(SaveOutcome.Result), SaveOutcome.Generation,
+		SaveOutcome.WrittenSlotIndex,
+		SaveOutcome.Message.IsEmpty() ? TEXT("") : *FString::Printf(TEXT(" error=%s"), *SaveOutcome.Message)));
+	return SaveOutcome;
 }
 
 // -- Load path --------------------------------------------------------------------
@@ -604,6 +664,20 @@ FProfileLoadOutcome UProfileSaveService::LoadActiveProfile()
 }
 
 FStartupLoadOutcome UProfileSaveService::StartupLoad()
+{
+	// M3-023: the verbatim body moved into M3_023_StartupLoadBody below; the
+	// public entry logs the recovery report exactly once (which slot was used,
+	// the fallback reason, or the failure summary) through this service's
+	// owner-chain log; a bare test service without an owner skips the row.
+	FStartupLoadOutcome Outcome = M3_023_StartupLoadBody();
+	M3_023_LogSave(*this, TEXT("StartupLoad"), FString::Printf(
+		TEXT("result=%s slot=%d generation=%d summary=%s"),
+		M3_023_StartupResultText(Outcome.Result), Outcome.SlotIndex,
+		Outcome.Generation, *Outcome.Summary));
+	return Outcome;
+}
+
+FStartupLoadOutcome UProfileSaveService::M3_023_StartupLoadBody()
 {
 	FStartupLoadOutcome Outcome;
 	Outcome.SlotIndex = -1;

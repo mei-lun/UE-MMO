@@ -16,11 +16,36 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Logging/LogMacros.h"
+#include "../Logging/OperationLogSubsystem.h"
 
 #include <atomic>
 
 namespace
 {
+	// M3-023: resolves the operation log through the owner (owner -> world ->
+	// game instance). Null (bare component, no owner, no world, no game
+	// instance) skips the log silently - the component keeps its pure-logic
+	// behavior verbatim in every unwired context.
+	UOperationLogSubsystem* M3_023_OpLog(const UCombatComponent& Component)
+	{
+		return UOperationLogSubsystem::FindForContext(Component.GetOwner());
+	}
+
+	// M3-023: one State row per explicit ActionState/dead-flag write point.
+	// Only the discrete transitions log (start/cancel/stun/knockdown/
+	// recovering/recovery end/finish/dead); the per-frame timeline never logs.
+	void M3_023_LogActionState(const UCombatComponent& Component, const FString& Detail)
+	{
+		UOperationLogSubsystem* OpLog = M3_023_OpLog(Component);
+		if (OpLog == nullptr)
+		{
+			return;
+		}
+		const AActor* OwnerActor = Component.GetOwner();
+		OpLog->LogState(FString::Printf(TEXT("AttackState: %s owner=%s"),
+			*Detail, OwnerActor != nullptr ? *OwnerActor->GetName() : TEXT("none")));
+	}
+
 	// Session-wide monotonic source of stable attacker ids (interface contract
 	// sections 4 and 5): minted once per component, never a raw pointer value,
 	// never reused within the session. Starts at 1 so 0 stays "no id".
@@ -215,6 +240,10 @@ bool UCombatComponent::TryStartAttack(FName AttackId, int32 NewFacing)
 	CurrentFrame = -1;
 	Clock.Reset();
 	ActionState = ECombatActionState::Attacking;
+	// M3-023: the discrete state transition row (the Started event rows follow
+	// from the broadcast below).
+	M3_023_LogActionState(*this, FString::Printf(TEXT("Attacking (%s #%llu)"),
+		*AttackId.ToString(), ActiveInstanceId));
 	OnStarted.Broadcast(ActiveAttackId, ActiveInstanceId);
 	return true;
 }
@@ -251,6 +280,8 @@ void UCombatComponent::TickCombat(float DeltaSeconds)
 		if (InputClockSeconds >= LandingKnockdownEndTimeSeconds)
 		{
 			ActionState = ECombatActionState::Recovering;
+			// M3-023: the knockdown -> recovering transition row.
+			M3_023_LogActionState(*this, FString(TEXT("Recovering")));
 		}
 		return;
 	}
@@ -365,6 +396,14 @@ void UCombatComponent::SetDead(bool bNewDead)
 		EndHitStun();
 		LandingKnockdownEndTimeSeconds = 0.0;
 		LandingRecoveringEndTimeSeconds = 0.0;
+		// M3-023: the dead-flag transition row (EndHitStun above may already
+		// have logged a stun-end Free row; the Dead row records the death).
+		M3_023_LogActionState(*this, FString(TEXT("Dead")));
+	}
+	else if (!bNewDead && bDead)
+	{
+		// M3-023: the revive half (the unified reset drops the dead flag).
+		M3_023_LogActionState(*this, FString(TEXT("Free (revived)")));
 	}
 	bDead = bNewDead;
 }
@@ -429,6 +468,8 @@ void UCombatComponent::NotifyHitReceived(const FCombatHit& Hit)
 	{
 		ActionState = ECombatActionState::HitStun;
 		HitStunEndTimeSeconds = InputClockSeconds + StunSeconds;
+		// M3-023: the accepted hit's stun transition row.
+		M3_023_LogActionState(*this, FString::Printf(TEXT("HitStun (%.2fs)"), StunSeconds));
 	}
 }
 
@@ -444,7 +485,13 @@ void UCombatComponent::CancelCurrentAttack(FName Reason)
 	// no OnFinished (that delegate's contract is the natural timeline end).
 	// ClearInstance drops the timeline, the facing and the instance hit set,
 	// so the interrupted instance can never land its pending damage.
+	const FName CancelledAttackId = ActiveAttackId;
+	const uint64 CancelledInstanceId = ActiveInstanceId;
 	ClearInstance();
+	// M3-023: the interruption row (reason names the caller: HitStun,
+	// JumpCancel, LandingRecovery, Death, PlayerDied, RoomRunFailed).
+	M3_023_LogActionState(*this, FString::Printf(TEXT("Free (cancelled %s #%llu reason=%s)"),
+		*CancelledAttackId.ToString(), CancelledInstanceId, *Reason.ToString()));
 	UE_LOG(LogTemp, Verbose, TEXT("UEMMO UCombatComponent: attack cancelled (reason: %s)"), *Reason.ToString());
 }
 
@@ -477,6 +524,8 @@ bool UCombatComponent::BeginLandingRecovery(double NowSeconds)
 	ActionState = ECombatActionState::Knockdown;
 	LandingKnockdownEndTimeSeconds = NowSeconds + M1_026_KnockdownSeconds;
 	LandingRecoveringEndTimeSeconds = LandingKnockdownEndTimeSeconds + M1_026_RecoveringSeconds;
+	// M3-023: the landing transition row (the 0.45 s knockdown opens here).
+	M3_023_LogActionState(*this, FString(TEXT("Knockdown")));
 	return true;
 }
 
@@ -494,6 +543,8 @@ void UCombatComponent::EndLandingRecovery()
 	ActionState = ECombatActionState::Free;
 	LandingKnockdownEndTimeSeconds = 0.0;
 	LandingRecoveringEndTimeSeconds = 0.0;
+	// M3-023: the recovery completion row (Recovering -> Free).
+	M3_023_LogActionState(*this, FString(TEXT("Free (recovery end)")));
 	// M1-026: the fourth float-cycle clear point (interface contract section
 	// 6): the air-combo policy cycle reopens only when the recovery completed,
 	// so the next launcher after the recovery rises at the full definition
@@ -513,6 +564,8 @@ void UCombatComponent::EndHitStun()
 	}
 	ActionState = ECombatActionState::Free;
 	HitStunEndTimeSeconds = 0.0;
+	// M3-023: the stun completion row (HitStun -> Free).
+	M3_023_LogActionState(*this, FString(TEXT("Free (stun end)")));
 }
 
 FCombatSnapshot UCombatComponent::GetSnapshot() const
@@ -1443,5 +1496,9 @@ void UCombatComponent::FinishCurrentAttack()
 	// chain the next attack from inside the callback (combo wiring belongs to
 	// a later task). Exactly one broadcast per completed instance.
 	ClearInstance();
+	// M3-023: the natural-end state row (the Finished event rows follow from
+	// the broadcast below).
+	M3_023_LogActionState(*this, FString::Printf(TEXT("Free (finished %s #%llu)"),
+		*FinishedAttackId.ToString(), FinishedInstanceId));
 	OnFinished.Broadcast(FinishedAttackId, FinishedInstanceId);
 }

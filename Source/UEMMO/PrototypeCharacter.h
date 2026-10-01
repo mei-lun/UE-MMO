@@ -167,6 +167,13 @@ private:
     void MoveDepth(const FInputActionValue& Value);
     void EndJump();
     /**
+     * M3-023: the F2 Started binding logs the key press into the operation
+     * log and then routes into ResetPosition. The split exists so the
+     * fall-out-of-world recoveries (which call ResetPosition directly from
+     * Tick) stay unlogged as the non-key events they are.
+     */
+    void OnResetPressed();
+    /**
      * M2-004: the death half of the health wiring (bound to Health->OnDied in
      * BeginPlay): marks the combat component dead (refuses attacks and
      * movement, cancels the running attack), takes the mesh out of the
@@ -253,6 +260,11 @@ private:
     TWeakObjectPtr<UProfileSubsystem> ProfilePtr;
     // M1-029: accumulated planar axis input; applied centrally in Tick.
     UE::UEMMO::Tasks::M1_029::FPlanarAxisState PlanarAxes;
+    // M3-023: the move-axis DIRECTION last logged (0 = released). The
+    // continuous axis values are never logged per frame - only the
+    // transitions (release, press, sign flip) produce one input row each.
+    float LastLoggedMoveX = 0.0f;
+    float LastLoggedMoveY = 0.0f;
     // M1-012: next combat input sequence; strictly increases per submitted intent.
     uint64 NextCombatInputSequence = 1;
     // M1-040: per-slot press counters (slot 1..8 at index 0..7); the skill
