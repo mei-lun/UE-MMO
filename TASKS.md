@@ -91,6 +91,8 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M2-017 | [HUD标题M2阶段文案](Docs/Tasks/M2-017.md) | DONE | M1-040 | ZCode-20260925-A | 2026-09-27T21:47:36+08:00 | [report](Docs/Tasks/Reports/M2-017.md) |
 | M3-023 | [操作日志系统](Docs/Tasks/M3-023.md) | DONE | M3-016 | ZCode-20260925-A | 2026-10-02T02:27:01+08:00 | [report](Docs/Tasks/Reports/M3-023.md) |
 | M3-024 | [攻击可见性修复](Docs/Tasks/M3-024.md) | DONE | M3-023 | ZCode-20260925-A | 2026-10-02T12:54:17+08:00 | [report](Docs/Tasks/Reports/M3-024.md) |
+| M3-025 | [刷怪敌人生产接线](Docs/Tasks/M3-025.md) | TODO | M3-014 | — | — | — |
+| M3-026 | [敌人血条与战斗房清理](Docs/Tasks/M3-026.md) | TODO | M3-018 | — | — | — |
 | M2-H01 | [M2 用户阶段验收](Docs/Tasks/M2-H01.md) | TODO | M2-015 | 用户 | — | — |
 | M3-001 | [装备定义和稳定实例ID](Docs/Tasks/M3-001.md) | DONE | M2-015 | ZCode-20260925-A | 2026-09-27T22:23:39+08:00 | [report](Docs/Tasks/Reports/M3-001.md) |
 | M3-002 | [30格背包增删与容量](Docs/Tasks/M3-002.md) | DONE | M3-001 | ZCode-20260925-A | 2026-09-27T22:54:12+08:00 | [report](Docs/Tasks/Reports/M3-002.md) |
