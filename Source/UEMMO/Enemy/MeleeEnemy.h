@@ -56,6 +56,13 @@ public:
 	const UEnemyDefinition* GetEnemyDefinition() const { return EnemyDefinition.Get(); }
 
 	/**
+	 * M3-025: launcher launches accepted since the last ground contact (the
+	 * M1-022 recording pattern copied from ATrainingEnemy; minimal form, see
+	 * the LaunchCharacter override below).
+	 */
+	int32 GetAirComboCount() const { return AirComboCount; }
+
+	/**
 	 * M2-002 facing rule: the approach intent is a world-space direction.
 	 * Only an X component turns the enemy (yaw 0 for +X, yaw 180 for -X); a
 	 * pure Y (depth) or zero intent keeps the current yaw. The pure rule
@@ -73,6 +80,21 @@ public:
 	 */
 	void ApplyTelegraphVisual(bool bActive);
 
+	/**
+	 * M3-025 production wiring arming entry. UWaveSpawner calls this right
+	 * after it attached the AMeleeEnemyController and the chase target to a
+	 * born enemy: from then on the first death of this enemy runs the corpse
+	 * cleanup - the AI is stopped, the movement is frozen, every collision is
+	 * dropped and the actor (plus its controller) is removed after the 2 s
+	 * death-presentation prototype delay.
+	 *
+	 * Deliberately NOT armed by BeginPlay: the M2-014-style room bookkeeping
+	 * scenarios spawn enemies into playerless temp worlds whose corpse and
+	 * actor counts are pinned by their suites, so only a production-wired
+	 * enemy (controller + target) gets the new death presentation.
+	 */
+	void ArmDeathCleanup();
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -85,6 +107,23 @@ protected:
 	 * the pre-M1-043 semantics: no injection, no clock-driven progress.
 	 */
 	virtual void Tick(float DeltaSeconds) override;
+
+	/**
+	 * M3-025: launches are recorded for the launcher combo count before the
+	 * base implementation defers the velocity application - the M1-022
+	 * ATrainingEnemy override pattern, so the combat launch path
+	 * (UCombatComponent::ApplyHitImpulse) lifts a wave enemy exactly like it
+	 * lifts the training dummy.
+	 */
+	virtual void LaunchCharacter(FVector LaunchVelocity, bool bXYOverride, bool bZOverride) override;
+
+	/**
+	 * M3-025: minimal ground-contact recording - a landing re-opens the
+	 * ground phase so the next vertical launch counts 1 again. The training
+	 * enemy records the same flag (plus its audio/knockdown machinery) in
+	 * RecordGroundContact; this enemy deliberately carries none of that.
+	 */
+	virtual void Landed(const FHitResult& Hit) override;
 
 private:
 	UPROPERTY(VisibleAnywhere, Category = "Combat")
@@ -99,4 +138,16 @@ private:
 	 * assets are owned by the content/spawner side, never by the enemy).
 	 */
 	TWeakObjectPtr<const UEnemyDefinition> EnemyDefinition;
+
+	/** M3-025: launcher launches accepted since the last ground contact. */
+	int32 AirComboCount = 0;
+
+	/** M3-025: true while no launcher launch happened since the last ground contact. */
+	bool bGroundedSinceLastLaunch = true;
+
+	/**
+	 * M3-025: true once the spawner wiring armed the death cleanup (one-shot
+	 * arming guard; the death handler is then bound exactly once).
+	 */
+	bool bDeathCleanupArmed = false;
 };

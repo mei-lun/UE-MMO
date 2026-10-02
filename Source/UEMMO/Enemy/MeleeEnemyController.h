@@ -146,6 +146,13 @@ public:
 	EMeleeEnemyState GetState() const { return State; }
 
 	/**
+	 * Diagnostics/tests: the injected chase target, resolved out of the weak
+	 * reference (null when none was injected or the target is stale). Never
+	 * keeps the target alive.
+	 */
+	AActor* GetTargetActor() const { return TargetWeak.Get(); }
+
+	/**
 	 * M2-003 diagnostics/tests: the injected telegraph-clock value at which
 	 * the current state was entered (the same clock the Telegraph/Recover
 	 * deadlines are measured on). 0.0 before the first injection.

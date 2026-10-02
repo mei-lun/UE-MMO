@@ -12,10 +12,13 @@
 #include "../Combat/HealthComponent.h"
 #include "../Enemy/EnemyDefinition.h"
 #include "../Enemy/MeleeEnemy.h"
+#include "../Enemy/MeleeEnemyController.h"
 #include "../Room/RoomDefinition.h"
 #include "../Room/RoomSessionSubsystem.h"
 
 #include "Engine/World.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
 
 namespace
 {
@@ -280,6 +283,60 @@ bool UWaveSpawner::SpawnNextEnemy()
 			Self->HandleEnemyDied(EnemyId);
 		}
 	});
+
+	// -- M3-025 production wiring ------------------------------------------
+	// Give the born enemy its M2-002 brain and chase target when the world
+	// actually has a player pawn (the in-game room flow). The player pawn is
+	// resolved from the world's first player controller - the same production
+	// read ARoomTrigger uses, and the same pawn the room flow registered via
+	// Session->SetPlayer (the session stores that reference privately; the
+	// first-player-controller path is the available in-game equivalent).
+	//
+	// The wiring is deliberately gated on the player pawn: worlds without a
+	// player controller (the M2-014-style room bookkeeping scenarios and the
+	// pure spawner suites) keep the exact pre-M3-025 spawn semantics - no
+	// controller actor, no target, no corpse cleanup - so those suites'
+	// spawn/kill/corpse/actor counts stay exactly as pinned.
+	AActor* PlayerTarget = nullptr;
+	if (APlayerController* PlayerController = World->GetFirstPlayerController())
+	{
+		PlayerTarget = PlayerController->GetPawn();
+	}
+	if (PlayerTarget != nullptr)
+	{
+		// SpawnDefaultController spawns the pawn's AIControllerClass (the M2-002
+		// AMeleeEnemyController) and possesses the pawn; the Tick-driven state
+		// machine starts on the controller's next tick. SpawnDefaultController
+		// is a no-op if a controller already exists.
+		Enemy->SpawnDefaultController();
+		if (AMeleeEnemyController* EnemyController = Cast<AMeleeEnemyController>(Enemy->GetController()))
+		{
+			// Weak reference: a destroyed or dead target drops the brain back
+			// to Idle on its own (the M2-002 rule) - no stale dereference.
+			EnemyController->SetTarget(PlayerTarget);
+			// Wired enemies get the death presentation: the corpse cleanup
+			// (stop AI, freeze, drop collision, remove after 2 s) arms here.
+			Enemy->ArmDeathCleanup();
+			UE_LOG(LogTemp, Verbose,
+				TEXT("UEMMO WaveSpawner: enemy %s wired with its AI controller and chase target %s."),
+				*EnemyId.ToString(), *PlayerTarget->GetName());
+		}
+		else
+		{
+			// Best effort only: the birth and its bookkeeping already
+			// succeeded, so a failed controller attach never aborts the wave -
+			// the enemy would just stay a standing target for the player.
+			UE_LOG(LogTemp, Warning,
+				TEXT("UEMMO WaveSpawner: enemy %s spawned without the expected AMeleeEnemyController (its AI stays disabled)."),
+				*EnemyId.ToString());
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Verbose,
+			TEXT("UEMMO WaveSpawner: no player pawn in the world - enemy %s stays unwired (bookkeeping-only birth)."),
+			*EnemyId.ToString());
+	}
 
 	AliveEnemyIds.Add(EnemyId);
 	++SpawnedCount;
