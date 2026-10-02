@@ -37,6 +37,7 @@
 #include "Misc/Paths.h"
 #include "Tests/AutomationCommon.h"
 #include "UnrealClient.h"
+#include "Engine/EngineSettings.h"
 #include "UObject/UObjectIterator.h"
 #include "UObject/UnrealType.h"
 
@@ -646,9 +647,12 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FUEMMOTasksM3_024GameDefaultMapBootsIntoCombatRoom::RunTest(const FString& Parameters)
 {
-	FString GameDefaultMap;
-	GConfig->GetString(TEXT("/Script/EngineSettings.GameMapsSettings"), TEXT("GameDefaultMap"),
-		GameDefaultMap, GEngineIni);
+	// M3-024 fix: read the LOADED maps-settings CDO instead of GConfig-on-
+	// GEngineIni - in packaged builds the loose Config/DefaultEngine.ini does
+	// not exist and GConfig only sees the user Game.ini layer (empty), while
+	// the CDO reflects the baked defaults the game actually boots with.
+	const UEngineMapsSettings* MapsSettings = GetDefault<UEngineMapsSettings>();
+	const FString GameDefaultMap = MapsSettings->GameDefaultMap.ToString();
 	TestEqual(TEXT("the engine config boots the game into the combat room"),
 		GameDefaultMap, FString(M3_024_DefaultMapPath));
 
