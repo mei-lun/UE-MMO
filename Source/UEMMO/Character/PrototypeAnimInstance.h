@@ -50,12 +50,17 @@ public:
     /**
      * Editor-only gap filler: builds the locomotion AnimGraph inside the given
      * AnimBP (locomotion BlendSpace player plus jump/fall/land sequence
-     * players feeding one pose blend list) and configures the BlendSpace axis
-     * ranges. UE Python cannot author animation graphs because graph pins are
+     * players feeding one pose blend list, routed through the DefaultSlot
+     * montage slot before the root so M1-032 montages render - M3-024) and
+     * configures the BlendSpace axis ranges. UE Python cannot author
+     * animation graphs because graph pins are
      * not UObjects and pin allocation exposes no Python-callable UFunction, so
      * the asset script calls this editor helper, which uses the same engine
      * editor APIs (FGraphNodeCreator, UAnimGraphNode_*) the AnimGraph editor
-     * itself uses. Returns true when the graph is present after the call.
+     * itself uses. Idempotent: graphs built before the slot existed get the
+     * slot inserted between the blend list and the root; graphs that already
+     * route through a slot are left unchanged. Returns true when the graph is
+     * present after the call.
      */
     UFUNCTION(BlueprintCallable, Category = "Editor Scripting")
     static bool EditorBuildLocomotionGraph(UBlueprint* Blueprint, UBlendSpace* LocomotionBlendSpace, UAnimSequenceBase* JumpSequence, UAnimSequenceBase* FallSequence, UAnimSequenceBase* LandSequence);

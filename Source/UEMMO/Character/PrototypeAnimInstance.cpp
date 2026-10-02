@@ -11,6 +11,7 @@
 #include "AnimGraphNode_BlendSpacePlayer.h"
 #include "AnimGraphNode_Root.h"
 #include "AnimGraphNode_SequencePlayer.h"
+#include "AnimGraphNode_Slot.h"
 #include "AnimNodes/AnimNode_BlendListBase.h"
 #include "AnimNodes/AnimNode_BlendListByInt.h"
 #include "AnimNodes/AnimNode_BlendSpacePlayer.h"
@@ -203,6 +204,87 @@ namespace
         }
         return true;
     }
+
+    // M3-024: montages (M1-032) play into this slot and render ONLY through
+    // an AnimGraph slot node; without one a playing montage is invisible.
+    const TCHAR* const DefaultMontageSlotName = TEXT("DefaultSlot");
+
+    UAnimGraphNode_Slot* FindSlotNode(UEdGraph& Graph)
+    {
+        for (UEdGraphNode* Node : Graph.Nodes)
+        {
+            if (Node && Node->IsA<UAnimGraphNode_Slot>())
+            {
+                return Cast<UAnimGraphNode_Slot>(Node);
+            }
+        }
+        return nullptr;
+    }
+
+    // Pose pins of the slot node (engine output pin "Pose"; the FAnimNode_Slot
+    // input pose link is "Source"), with a struct-typed fallback so the link
+    // helper reports a precise error instead of guessing.
+    UEdGraphPin* FindSlotPoseInput(UEdGraphNode& Node)
+    {
+        if (UEdGraphPin* Pin = Node.FindPin(TEXT("Source"), EGPD_Input))
+        {
+            return Pin;
+        }
+        for (UEdGraphPin* Pin : Node.Pins)
+        {
+            if (Pin && Pin->Direction == EGPD_Input && Pin->PinType.PinCategory == UAnimationGraphSchema::PC_Struct)
+            {
+                return Pin;
+            }
+        }
+        return nullptr;
+    }
+
+    UEdGraphPin* FindSlotPoseOutput(UEdGraphNode& Node)
+    {
+        if (UEdGraphPin* Pin = Node.FindPin(TEXT("Pose"), EGPD_Output))
+        {
+            return Pin;
+        }
+        for (UEdGraphPin* Pin : Node.Pins)
+        {
+            if (Pin && Pin->Direction == EGPD_Output && Pin->PinType.PinCategory == UAnimationGraphSchema::PC_Struct)
+            {
+                return Pin;
+            }
+        }
+        return nullptr;
+    }
+
+    // Creates the DefaultSlot node between the locomotion output and the
+    // root. Idempotency is the caller's job (FindSlotNode first).
+    UAnimGraphNode_Slot* CreateSlotNode(UEdGraph& Graph)
+    {
+        UAnimGraphNode_Slot* SlotNode = CreatePlacedNode<UAnimGraphNode_Slot>(Graph, 700, 0);
+        // FAnimNode_Slot::SlotName is a public UPROPERTY (engine default is
+        // already DefaultSlot); pinned explicitly so the montage routing
+        // cannot drift from the M1-032 montage slot tracks.
+        SlotNode->Node.SlotName = DefaultMontageSlotName;
+        return SlotNode;
+    }
+
+    void LogGraphCensus(UEdGraph& Graph, const TCHAR* Headline)
+    {
+        TMap<FName, int32> Census;
+        for (UEdGraphNode* Node : Graph.Nodes)
+        {
+            if (Node)
+            {
+                int32& Count = Census.FindOrAdd(Node->GetClass()->GetFName());
+                ++Count;
+            }
+        }
+        for (const TPair<FName, int32>& Entry : Census)
+        {
+            UE_LOG(LogTemp, Display, TEXT("UEMMO locomotion graph census: %s = %d"), *Entry.Key.ToString(), Entry.Value);
+        }
+        UE_LOG(LogTemp, Display, TEXT("UEMMO locomotion graph: %s"), Headline);
+    }
 }
 
 bool UPrototypeAnimInstance::EditorBuildLocomotionGraph(UBlueprint* Blueprint, UBlendSpace* LocomotionBlendSpace, UAnimSequenceBase* JumpSequence, UAnimSequenceBase* FallSequence, UAnimSequenceBase* LandSequence)
@@ -257,29 +339,23 @@ bool UPrototypeAnimInstance::EditorBuildLocomotionGraph(UBlueprint* Blueprint, U
         AnimGraph = NewGraph;
     }
 
-    // Idempotency: an existing BlendSpacePlayer means the graph is already built.
-    for (UEdGraphNode* Node : AnimGraph->Nodes)
+    // Idempotency (1): an existing montage slot means the graph already
+    // routes through it - a repeat build must never add a second slot.
+    if (UAnimGraphNode_Slot* ExistingSlot = FindSlotNode(*AnimGraph))
     {
-        if (Node && Node->IsA<UAnimGraphNode_BlendSpacePlayer>())
+        // Keep the slot pinned to the montage slot name even if a manual edit
+        // renamed it (the M1-032 montages route by this exact name).
+        if (ExistingSlot->Node.SlotName != DefaultMontageSlotName)
         {
-            TMap<FName, int32> Census;
-            for (UEdGraphNode* Existing : AnimGraph->Nodes)
-            {
-                if (Existing)
-                {
-                    int32& Count = Census.FindOrAdd(Existing->GetClass()->GetFName());
-                    ++Count;
-                }
-            }
-            for (const TPair<FName, int32>& Entry : Census)
-            {
-                UE_LOG(LogTemp, Display, TEXT("UEMMO locomotion graph census: %s = %d"), *Entry.Key.ToString(), Entry.Value);
-            }
-            UE_LOG(LogTemp, Display, TEXT("UEMMO locomotion graph: AnimGraph already contains a BlendSpacePlayer; nothing to do."));
-            return true;
+            ExistingSlot->Node.SlotName = DefaultMontageSlotName;
+            AnimBP->Status = BS_Dirty;
         }
+        LogGraphCensus(*AnimGraph, TEXT("AnimGraph already routes through the montage slot; nothing to do."));
+        return true;
     }
 
+    // Root (Result input): located before the remaining branches because the
+    // fix-up below re-routes whatever currently feeds it.
     UAnimGraphNode_Root* RootNode = nullptr;
     for (UEdGraphNode* Node : AnimGraph->Nodes)
     {
@@ -309,6 +385,56 @@ bool UPrototypeAnimInstance::EditorBuildLocomotionGraph(UBlueprint* Blueprint, U
     {
         UE_LOG(LogTemp, Error, TEXT("UEMMO locomotion graph builder: AnimGraph root has no input pin."));
         return false;
+    }
+
+    // Idempotency (2) + M3-024 fix-up: a graph built before the montage slot
+    // existed (BlendSpacePlayer present, no slot node) gets the slot inserted
+    // between its current root source and the root. Montages play into the
+    // slot, so the insertion is what makes played montages visible.
+    for (UEdGraphNode* Node : AnimGraph->Nodes)
+    {
+        if (!Node || !Node->IsA<UAnimGraphNode_BlendSpacePlayer>())
+        {
+            continue;
+        }
+        UAnimGraphNode_Slot* SlotNode = CreateSlotNode(*AnimGraph);
+        UEdGraphPin* SlotInput = FindSlotPoseInput(*SlotNode);
+        UEdGraphPin* SlotOutput = FindSlotPoseOutput(*SlotNode);
+        if (!SlotInput || !SlotOutput)
+        {
+            UE_LOG(LogTemp, Error, TEXT("UEMMO locomotion graph builder: montage slot pins not found."));
+            return false;
+        }
+        bool bOk = true;
+        // Re-route: a pose input carries at most one link; the previous root
+        // source (the pose blend list output) now feeds the slot instead.
+        UEdGraphPin* PreviousSource = RootInput->LinkedTo.Num() > 0 ? RootInput->LinkedTo[0] : nullptr;
+        while (RootInput->LinkedTo.Num() > 0)
+        {
+            if (UEdGraphPin* Linked = RootInput->LinkedTo[0])
+            {
+                Linked->BreakLinkTo(RootInput);
+            }
+            else
+            {
+                RootInput->LinkedTo.RemoveAt(0);
+            }
+        }
+        if (PreviousSource)
+        {
+            bOk &= LinkPins(PreviousSource, SlotInput, TEXT("previous root source -> Slot"));
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("UEMMO locomotion graph builder: the root had no incoming pose; the slot input stays unwired."));
+            bOk = false;
+        }
+        bOk &= LinkPins(SlotOutput, RootInput, TEXT("Slot -> Result"));
+        // Structural change on a loaded blueprint: mark it so the caller's
+        // compile + save persist the inserted node.
+        AnimBP->Status = BS_Dirty;
+        LogGraphCensus(*AnimGraph, TEXT("montage slot inserted into the existing graph."));
+        return bOk;
     }
 
     // Locomotion BlendSpace player with Speed/Direction wired to the native
@@ -378,7 +504,19 @@ bool UPrototypeAnimInstance::EditorBuildLocomotionGraph(UBlueprint* Blueprint, U
         IndexPin = FindInputPin(*BlendNode, TEXT("BlendIndex"));
     }
     bOk &= LinkPins(FindOutputPin(*PoseIndexNode, TEXT("PoseIndex")), IndexPin, TEXT("PoseIndex -> BlendList index"));
-    bOk &= LinkPins(FindOutputPin(*BlendNode, TEXT("Pose")), RootInput, TEXT("BlendList -> Result"));
+
+    // M3-024: route the locomotion result through the montage slot before the
+    // root, so M1-032 montages replace the locomotion pose while they play.
+    UAnimGraphNode_Slot* SlotNode = CreateSlotNode(*AnimGraph);
+    UEdGraphPin* SlotInput = FindSlotPoseInput(*SlotNode);
+    UEdGraphPin* SlotOutput = FindSlotPoseOutput(*SlotNode);
+    if (!SlotInput || !SlotOutput)
+    {
+        UE_LOG(LogTemp, Error, TEXT("UEMMO locomotion graph builder: montage slot pins not found."));
+        return false;
+    }
+    bOk &= LinkPins(FindOutputPin(*BlendNode, TEXT("Pose")), SlotInput, TEXT("BlendList -> Slot"));
+    bOk &= LinkPins(SlotOutput, RootInput, TEXT("Slot -> Result"));
 
     UE_LOG(LogTemp, Display, TEXT("UEMMO locomotion graph builder: %s (%d nodes)."), bOk ? TEXT("graph built") : TEXT("graph built with pin errors"), AnimGraph->Nodes.Num());
     return bOk;
