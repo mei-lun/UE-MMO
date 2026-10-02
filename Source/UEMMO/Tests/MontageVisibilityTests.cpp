@@ -37,6 +37,7 @@
 #include "Misc/Paths.h"
 #include "Tests/AutomationCommon.h"
 #include "UnrealClient.h"
+#include "Misc/PackageName.h"
 #include "EngineSettings.h"
 #include "UObject/UObjectIterator.h"
 #include "UObject/UnrealType.h"
@@ -662,10 +663,10 @@ bool FUEMMOTasksM3_024GameDefaultMapBootsIntoCombatRoom::RunTest(const FString& 
 		MapName.Contains(TEXT("L_CombatRoom01")));
 
 	// The combat room map package exists in the cooked mount (a config
-	// pointing at a missing map would break every -game boot).
-	const FString MapFile = FPaths::Combine(FPaths::ProjectContentDir(), TEXT("UEMMO/Maps/L_CombatRoom01.umap"));
-	TestTrue(TEXT("the combat room map package exists in project content"),
-		IFileManager::Get().FileExists(*MapFile));
+	// pointing at a missing map would break every -game boot). In packaged
+	// builds content lives in paks, so existence goes through FPackageName.
+	TestTrue(TEXT("the combat room map package exists"),
+		FPackageName::DoesPackageExist(TEXT("/Game/UEMMO/Maps/L_CombatRoom01")));
 	return true;
 }
 
