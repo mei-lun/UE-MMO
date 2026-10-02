@@ -63,6 +63,7 @@ namespace UE::UEMMO::Tasks::M3_024
 	// activation zone and damagable enemies (the M3-024 GameDefaultMap change).
 	const TCHAR* const M3_024_DefaultMapPath = TEXT("/Game/UEMMO/Maps/L_CombatRoom01");
 
+#if WITH_EDITOR
 	// ---- graph census helpers (game-target compilable: node classes are
 	// identified by class name; the editor-only AnimGraph module headers are
 	// not includable from this module's game build) --------------------------
@@ -430,6 +431,7 @@ namespace UE::UEMMO::Tasks::M3_024
 		}
 	};
 }
+#endif // WITH_EDITOR (census uses editor-only graph APIs)
 
 using namespace UE::UEMMO::Tasks::M3_024;
 
@@ -438,6 +440,7 @@ using namespace UE::UEMMO::Tasks::M3_024;
 //    pose feeding the AnimGraph root (no bypass: the locomotion output goes
 //    through the slot, so played montages replace the locomotion pose).
 //    Red on the pre-M3-024 asset (zero slot nodes = montages invisible).
+#if WITH_EDITOR
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FUEMMOTasksM3_024AnimGraphRoutesMontageSlotToRoot,
 	"UEMMO.Tasks.M3_024.AnimGraphRoutesMontageSlotToRoot",
@@ -512,6 +515,7 @@ bool FUEMMOTasksM3_024AnimGraphRoutesMontageSlotToRoot::RunTest(const FString& P
 	}
 	return true;
 }
+#endif // WITH_EDITOR (graph census test)
 
 // 2. The playback layer (expected green before and after the M3-024 fix): a
 //    real character pressing X through the production entry has the light_01
