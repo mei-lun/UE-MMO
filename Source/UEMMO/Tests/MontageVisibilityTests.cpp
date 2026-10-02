@@ -157,6 +157,8 @@ namespace UE::UEMMO::Tasks::M3_024
 		return *reinterpret_cast<const FName*>(SlotNameProperty->ContainerPtrToValuePtr<void>(NodePtr));
 	}
 
+#endif // WITH_EDITOR (the census helpers above use editor-only graph APIs)
+
 	// ---- in-loop scene (the M1-041 real-character pattern, player only) ----
 
 	// Fixed simulated frame step (60 fps like the design frame clock).
@@ -431,7 +433,6 @@ namespace UE::UEMMO::Tasks::M3_024
 		}
 	};
 }
-#endif // WITH_EDITOR (census uses editor-only graph APIs)
 
 using namespace UE::UEMMO::Tasks::M3_024;
 
