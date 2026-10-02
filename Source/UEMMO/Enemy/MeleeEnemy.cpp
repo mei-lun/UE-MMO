@@ -16,6 +16,10 @@ namespace
 	// M2-003: telegraph mesh swell factor while the wind-up runs (minimal
 	// presentation, the card allows color tint or simple scale).
 	constexpr float M2_003_TelegraphVisualScale = 1.15f;
+
+	// M3-025: the death presentation prototype standard - a dead wired enemy
+	// is removed this many seconds after its death (the corpse window).
+	constexpr float M3_025_CorpseCleanupDelaySeconds = 2.0f;
 }
 
 AMeleeEnemy::AMeleeEnemy()
@@ -64,6 +68,17 @@ AMeleeEnemy::AMeleeEnemy()
 	// (controller-driven physics takes over), so it only covers the settle
 	// window between spawn and possession.
 	GetCharacterMovement()->bRunPhysicsWithNoController = true;
+
+	// M3-025: the pawn's default brain is the M2-002 controller, so the
+	// production wiring's SpawnDefaultController call attaches exactly the
+	// AMeleeEnemyController state machine. Auto possession stays Disabled on
+	// purpose: the engine's PostInitializeComponents auto-possess path would
+	// otherwise wire controllers behind the spawner's back (spawned pawns on
+	// a still-startup world count as "placed in world"), which the M2-014
+	// bookkeeping scenarios' actor counts must never see. The wiring - and
+	// only the wiring - attaches controllers.
+	AIControllerClass = AMeleeEnemyController::StaticClass();
+	AutoPossessAI = EAutoPossessAI::Disabled;
 
 	Health = CreateDefaultSubobject<UHealthComponent>(TEXT("MeleeEnemyHealth"));
 
@@ -161,4 +176,75 @@ void AMeleeEnemy::ApplyTelegraphVisual(bool bActive)
 	MeshComponent->SetRelativeScale3D(bActive
 		? FVector(M2_003_TelegraphVisualScale)
 		: FVector::OneVector);
+}
+
+void AMeleeEnemy::LaunchCharacter(FVector LaunchVelocity, bool bXYOverride, bool bZOverride)
+{
+	// M3-025: the combat launch path (UCombatComponent::ApplyHitImpulse) sends
+	// every hit that carries a launch component through here - the M1-022
+	// ATrainingEnemy override pattern copied for the wave enemies, so a Z
+	// launcher hit lifts them through the normal falling physics. A vertical
+	// launch opens or continues the pre-landing launcher combo: the first
+	// launch from ground contact counts 1, every further launcher hit before
+	// the next ground contact increments. The flag is the hit-time ground
+	// state (not the movement mode, which the deferred launch only flips on
+	// the next applied movement update), so the classification never races
+	// the launch itself.
+	Super::LaunchCharacter(LaunchVelocity, bXYOverride, bZOverride);
+	if (LaunchVelocity.Z > 0.0f)
+	{
+		AirComboCount = bGroundedSinceLastLaunch ? 1 : AirComboCount + 1;
+		bGroundedSinceLastLaunch = false;
+	}
+}
+
+void AMeleeEnemy::Landed(const FHitResult& Hit)
+{
+	Super::Landed(Hit);
+
+	// M3-025: minimal ground-contact recording - the landing re-opens the
+	// ground phase so the next vertical launch counts 1 again (the M1-022
+	// semantics; this enemy deliberately carries no landing audio or
+	// knockdown machinery to replay).
+	bGroundedSinceLastLaunch = true;
+}
+
+void AMeleeEnemy::ArmDeathCleanup()
+{
+	// One-shot arming: the handler binds exactly once, and only on an enemy
+	// with a health pool (the death event source).
+	if (bDeathCleanupArmed || Health == nullptr)
+	{
+		return;
+	}
+	bDeathCleanupArmed = true;
+
+	// The handler lives on the health component, which is a subobject of this
+	// actor - the raw this capture cannot outlive the delegate's owner.
+	Health->OnDied.AddLambda([this]()
+	{
+		// M3-025 death presentation, the prototype standard: stop the AI,
+		// freeze the movement, drop every collision and remove the corpse
+		// after the 2 s delay. The delay rides the world timer manager, so
+		// it expires regardless of the frozen movement. The bookkeeping side
+		// (AliveIds removal, the session kill count) stays with the spawner's
+		// own death binding - this handler only stages the corpse.
+		if (AController* EnemyController = GetController())
+		{
+			EnemyController->StopMovement();
+			// The controller expires with the corpse: an emptied AI controller
+			// must not linger in the world after its pawn is gone.
+			EnemyController->SetLifeSpan(M3_025_CorpseCleanupDelaySeconds);
+		}
+		if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+		{
+			// With the collision disabled the walking/falling physics would
+			// otherwise sink the corpse through the floor during the corpse
+			// window - freezing the mode keeps it where it died.
+			Movement->StopMovementImmediately();
+			Movement->DisableMovement();
+		}
+		SetActorEnableCollision(false);
+		SetLifeSpan(M3_025_CorpseCleanupDelaySeconds);
+	});
 }
