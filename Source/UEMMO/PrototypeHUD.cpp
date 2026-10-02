@@ -72,6 +72,15 @@ namespace
     constexpr double M1_035_NumberRiseSpeed = 60.0;   // screen px per second
     constexpr float M1_035_ComboMargin = 24.0f;
     constexpr float M1_035_ComboBottomOffset = 64.0f;
+
+    // M3-026: world-anchored enemy health bars (production HUD, independent of
+    // the debug overlay). The palette reuses the M1-035 bar colors (dark frame
+    // + red fill, the M2-012 enemy HP bar style); the bar anchors above the
+    // enemy's head (the training/melee capsule half height is 88).
+    constexpr int32 M3_026_EnemyBarCap = 3;    // a room never spawns more than 3 enemies
+    constexpr float M3_026_BarWidth = 90.0f;
+    constexpr float M3_026_BarHeight = 8.0f;
+    constexpr float M3_026_BarLiftZ = 120.0f;
 }
 
 void APrototypeHUD::DrawHUD()
@@ -120,11 +129,18 @@ void APrototypeHUD::DrawHUD()
         // lives on the same debug HUD behind the same flag, so the default
         // view and the input hints above stay untouched. The feed binds only
         // here (event-driven; no per-frame world scan).
-        RefreshDamageFeedBinding();
         DrawHealthBars();
         DrawDamageNumbers();
         DrawComboCounter();
     }
+
+    // M3-026: the enemy health bars are production HUD. They share the M1-035
+    // OnHitConfirmed feed (one subscription feeds numbers, combo and the bar
+    // tracking), so the binding refresh runs every drawn frame independent of
+    // the debug flag; with the overlay off it resolves the pawn through the
+    // owning controller (O(1), no world scan).
+    RefreshDamageFeedBinding();
+    DrawEnemyHealthBars();
 }
 
 void APrototypeHUD::DrawCombatDebugOverlay()
@@ -386,11 +402,19 @@ void APrototypeHUD::BindDamageFeed(UCombatComponent* Source)
 void APrototypeHUD::RefreshDamageFeedBinding()
 {
     // The feed binds to the local player's combat component (the attacker
-    // whose OnHitConfirmed the debug HUD visualizes). Resolution goes through
-    // the cached weak reference M1-028 maintains (no scan in the steady
-    // state); a destroyed pawn reads null and simply unbinds the feed.
+    // whose OnHitConfirmed the debug HUD visualizes and the M3-026 enemy
+    // health bars track). Resolution goes through the cached weak reference
+    // M1-028 maintains (no scan in the steady state); M3-026: with the debug
+    // overlay off (production) the cached reference is never refreshed, so the
+    // owning controller's pawn resolves instead - O(1), no world scan. A
+    // destroyed pawn reads null and simply unbinds the feed.
     UCombatComponent* Desired = nullptr;
-    if (APrototypeCharacter* Player = DebugPlayer.Get())
+    APrototypeCharacter* Player = DebugPlayer.Get();
+    if (Player == nullptr && PlayerOwner != nullptr)
+    {
+        Player = Cast<APrototypeCharacter>(PlayerOwner->GetCharacter());
+    }
+    if (Player != nullptr)
     {
         Desired = Player->GetCombat();
     }
@@ -425,6 +449,9 @@ void APrototypeHUD::HandleHitConfirmed(const FCombatHit& Hit)
     // the reported world hit location and is projected at draw time.
     DamageNumbers.Add(Hit.Damage, Hit.WorldHitLocation, Hit.AttackId);
     ComboCounter.NotifyHit(Now);
+    // M3-026: the same accepted hit upserts the target as a tracked enemy
+    // health bar entry (the production HUD's hit feedback).
+    TrackEnemyBarTarget(Hit);
 }
 
 void APrototypeHUD::DrawHealthBars()
@@ -540,6 +567,131 @@ void APrototypeHUD::DrawComboCounter()
 double APrototypeHUD::ResolveDisplayClockSeconds() const
 {
     return (GetWorld() != nullptr) ? GetWorld()->GetTimeSeconds() : 0.0;
+}
+
+// ----- M3-026: enemy health bar tracking (production HUD) ----------------------
+
+void APrototypeHUD::TrackEnemyBarTarget(const FCombatHit& Hit)
+{
+    // The tracked entry is the hit VICTIM: the event's weak target reads null
+    // when it was destroyed in the meantime (no crash, no entry) and a victim
+    // without a health pool has no bar to draw (the M1-016 grant covers the
+    // combatants only).
+    AActor* Target = Hit.Target.Get();
+    if (Target == nullptr)
+    {
+        return;
+    }
+    UHealthComponent* Health = Target->FindComponentByClass<UHealthComponent>();
+    if (Health == nullptr)
+    {
+        return;
+    }
+    // Upsert first: a repeat hit on an already tracked enemy only refreshes
+    // its (possibly re-resolved) pool - never a duplicate bar.
+    for (FEnemyBarEntry& Entry : EnemyBars)
+    {
+        if (Entry.Enemy.Get() == Target)
+        {
+            Entry.Health = Health;
+            return;
+        }
+    }
+    // The room never spawns more than 3 enemies at once; the cap refuses
+    // further entries instead of silently evicting an already tracked one.
+    if (EnemyBars.Num() >= M3_026_EnemyBarCap)
+    {
+        return;
+    }
+    FEnemyBarEntry Entry;
+    Entry.Enemy = Target;
+    Entry.Health = Health;
+    EnemyBars.Add(Entry);
+}
+
+void APrototypeHUD::PruneEnemyBarEntries()
+{
+    // Weak-reference contract: a destroyed enemy/component reads null here
+    // (never a stale dereference). A dead pool (HP<=0 or not alive) drops its
+    // entry - the card's death rule; no OnDied binding is needed because every
+    // read path (count seam and draw) runs this prune first.
+    for (int32 Index = EnemyBars.Num() - 1; Index >= 0; --Index)
+    {
+        const AActor* Enemy = EnemyBars[Index].Enemy.Get();
+        const UHealthComponent* Health = EnemyBars[Index].Health.Get();
+        if (Enemy == nullptr || Health == nullptr || !Health->IsAlive()
+            || Health->GetHealth() <= 0.0f)
+        {
+            EnemyBars.RemoveAt(Index);
+        }
+    }
+}
+
+void APrototypeHUD::DrawEnemyHealthBars()
+{
+    if (Canvas == nullptr)
+    {
+        return;
+    }
+    PruneEnemyBarEntries();
+    if (EnemyBars.Num() == 0)
+    {
+        return;
+    }
+    // Behind-camera guard shared with the M1-035 numbers: Project mirrors
+    // points behind the view, so their screen position is meaningless.
+    FVector ViewLocation = FVector::ZeroVector;
+    FRotator ViewRotation = FRotator::ZeroRotator;
+    const bool bHasView = (PlayerOwner != nullptr);
+    if (bHasView)
+    {
+        PlayerOwner->GetPlayerViewPoint(ViewLocation, ViewRotation);
+    }
+    for (const FEnemyBarEntry& Entry : EnemyBars)
+    {
+        const AActor* Enemy = Entry.Enemy.Get();
+        const UHealthComponent* Health = Entry.Health.Get();
+        if (Enemy == nullptr || Health == nullptr)
+        {
+            continue; // defensive: the prune pass above already dropped these
+        }
+        const FVector Anchor = Enemy->GetActorLocation() + FVector(0.0, 0.0, M3_026_BarLiftZ);
+        if (bHasView
+            && FVector::DotProduct(Anchor - ViewLocation, ViewRotation.Vector()) <= 0.0)
+        {
+            continue;
+        }
+        const FVector Screen = Canvas->Project(Anchor);
+        const float BarX = Screen.X - M3_026_BarWidth * 0.5f;
+        // The M2-012/M1-035 enemy HP bar style: dark frame + red fill, the
+        // fill ratio read from the enemy's real HealthComponent per frame.
+        DrawRect(M1_035_BarFrameColor, BarX, Screen.Y, M3_026_BarWidth, M3_026_BarHeight);
+        FHealthBarData Data;
+        Data.Set(Health->GetHealth(), Health->GetMaxHealth(), Health->IsAlive());
+        const float FillWidth = (M3_026_BarWidth - 2.0f) * Data.GetRatio();
+        if (FillWidth > 0.0f)
+        {
+            DrawRect(M1_035_BarFillColor, BarX + 1.0f, Screen.Y + 1.0f, FillWidth, M3_026_BarHeight - 2.0f);
+        }
+        DrawText(FString::Printf(TEXT("%.0f / %.0f"), Data.CurrentHP, Data.MaxHP),
+            M1_028_TextColor, BarX, Screen.Y + M3_026_BarHeight + 2.0f, nullptr, 0.9f);
+    }
+}
+
+int32 APrototypeHUD::GetTrackedEnemyCount()
+{
+    PruneEnemyBarEntries();
+    return EnemyBars.Num();
+}
+
+const AActor* APrototypeHUD::PeekTrackedEnemy(int32 Index)
+{
+    return EnemyBars.IsValidIndex(Index) ? EnemyBars[Index].Enemy.Get() : nullptr;
+}
+
+const UHealthComponent* APrototypeHUD::PeekTrackedHealth(int32 Index)
+{
+    return EnemyBars.IsValidIndex(Index) ? EnemyBars[Index].Health.Get() : nullptr;
 }
 
 void APrototypeHUD::StartDebugRepeatStrike()
