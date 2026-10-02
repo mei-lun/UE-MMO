@@ -14,6 +14,7 @@
 #include "Items/ItemDefinition.h"
 #include "PrototypeHUD.generated.h"
 
+class AActor;
 class APrototypeCharacter;
 class ATrainingEnemy;
 class UAttackDefinition;
@@ -28,6 +29,21 @@ class URoomSessionSubsystem;
 class URewardService;
 struct FCombatHit;
 struct FRoomResult;
+
+/**
+ * M3-026: one tracked enemy health bar entry. Weak references only: a
+ * destroyed enemy or component reads null and the entry is dropped by the
+ * prune pass before every read (never a stale dereference, the M1-035
+ * weak-reference contract).
+ */
+struct FEnemyBarEntry
+{
+	/** The enemy actor the bar anchors to (weak). */
+	TWeakObjectPtr<AActor> Enemy;
+
+	/** The enemy's health pool the bar reads per drawn frame (weak). */
+	TWeakObjectPtr<UHealthComponent> Health;
+};
 
 UCLASS()
 class UEMMO_API APrototypeHUD : public AHUD
@@ -82,6 +98,14 @@ public:
      * refresh uses.
      */
     void BindDamageFeed(UCombatComponent* Source);
+
+    /**
+     * M1-035: per-drawn-frame feed wiring. M3-026: the enemy health bars are
+     * production HUD and share this feed, so the refresh is now public - the
+     * exact entry DrawHUD calls every drawn frame (tests drive the same
+     * subscription).
+     */
+    void RefreshDamageFeedBinding();
 
     /** M1-035 test seam: live damage-number count of the HUD pool. */
     int32 PeekDamageNumberCount() { return DamageNumbers.Num(); }
@@ -228,6 +252,21 @@ public:
 
     /** M3-018 test seam: the one-shot guard behind the Claim request path. */
     const FRoomResultActionGuard& PeekRewardClaimGuard() const { return RewardClaimGuard; }
+
+    // ----- M3-026: enemy health bar tracking ------------------------------------
+
+    /**
+     * M3-026 test seam and the draw path's read entry: the tracked enemy bar
+     * count AFTER the prune pass dropped destroyed enemies and dead (HP<=0)
+     * pools, so every read reports the live set.
+     */
+    int32 GetTrackedEnemyCount();
+
+    /** M3-026 test seam: the tracked enemy actor at Index (null when out of range or stale). */
+    const AActor* PeekTrackedEnemy(int32 Index);
+
+    /** M3-026 test seam: the tracked health pool at Index (null when out of range or stale). */
+    const UHealthComponent* PeekTrackedHealth(int32 Index);
 
 protected:
     virtual void BeginPlay() override;
@@ -416,13 +455,8 @@ private:
     void DrawCombatDebugOverlay();
 
     /**
-     * M1-035: per-drawn-frame feed wiring while the debug HUD is on. Resolves
-     * the player's combat component through the cached weak reference (no scan
-     * in the steady state) and binds/unbinds only when the source changed.
+     * M1-035: removes the current feed binding; stale-source safe.
      */
-    void RefreshDamageFeedBinding();
-
-    /** M1-035: removes the current feed binding; stale-source safe. */
     void UnbindDamageFeed();
 
     /**
@@ -451,6 +485,27 @@ private:
 
     /** M1-035: world-clock value the HUD feeds into the model (0.0 world-less). */
     double ResolveDisplayClockSeconds() const;
+
+    // ----- M3-026: enemy health bar internals -------------------------------------
+
+    /**
+     * M3-026: OnHitConfirmed companion of the M1-035 feed (the bar data source
+     * is the same subscription the damage numbers use): upserts Hit.Target as
+     * a tracked bar entry (weak enemy + weak HealthComponent). A target
+     * without a health pool is ignored, the 3-entry room cap refuses further
+     * entries and a repeat hit on a tracked enemy only refreshes its pool.
+     */
+    void TrackEnemyBarTarget(const FCombatHit& Hit);
+
+    /** M3-026: drops destroyed enemies and dead (HP<=0) pools; idempotent. */
+    void PruneEnemyBarEntries();
+
+    /**
+     * M3-026: projects each tracked enemy's bar above its head (world anchor,
+     * behind-camera guarded like the M1-035 numbers) and draws the shared
+     * M1-035 palette frame + red fill with an optional HP readout.
+     */
+    void DrawEnemyHealthBars();
 
     /**
      * M1-028: computes the box through the shared ComputeHitBox path
@@ -507,4 +562,7 @@ private:
 
     /** M1-035: health pool the last observation came from (reset on switch). */
     TWeakObjectPtr<UHealthComponent> LastObservedHealth;
+
+    /** M3-026: tracked enemy bar entries (weak; capped at the 3-enemy room max). */
+    TArray<FEnemyBarEntry> EnemyBars;
 };

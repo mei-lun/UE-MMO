@@ -3,18 +3,23 @@ M2-009 room actors. Run inside the UE editor (commandlet) only.
 
 Two modes, selected by a token on the UE command line:
   create (default)  - duplicate the training arena into L_CombatRoom01, place
-                      exactly one ARoomTrigger and one ARoomExit, save.
-                      Idempotent: a repeated run reuses the existing actors
-                      and normalizes their locations.
+                      exactly one ARoomTrigger and one ARoomExit, remove the
+                      inherited training dummies (M3-026: the user playtest
+                      showed double hits - the player strike landed on the
+                      dummy AND the wave enemies), save. Idempotent: a repeated
+                      run reuses the existing actors, normalizes their
+                      locations and removes any training dummies again.
   verify            - after a fresh process start, reload both maps and assert
                       the actor inventory; writes
                       Artifacts/room-assets-verify-report.json.
 
 The training map L_TrainingArena is never modified: it is only duplicated.
-The duplicate inherits the training enemy (reported as-is; it is inert
-scaffolding in the combat copy). The activation trigger exists ONLY on the
-combat map - the training arena must keep its render-only, never-auto-fighting
-semantics (M2-009 explicit render vs wave-spawn mode separation).
+The combat copy must NOT carry any training dummy after the M3-026 cleanup
+(the M2-009 report documented the inherited dummy as inert scaffolding; the
+M3-026 playtest feedback revokes that: it breaks the combat feedback). The
+activation trigger exists ONLY on the combat map - the training arena must
+keep its render-only, never-auto-fighting semantics (M2-009 explicit render
+vs wave-spawn mode separation).
 ASCII only: this file must not contain non-ASCII characters.
 """
 import json
@@ -108,8 +113,26 @@ def ensure_actor(class_name, python_name, class_path, label, location):
         spawned.set_actor_label(label)
         return spawned, True
     # Idempotent update: normalize the stored location on repeated runs.
-    existing[0].set_actor_location(location)
+    # UE 5.8 Python requires the sweep/teleport arguments explicitly.
+    existing[0].set_actor_location(location, sweep=False, teleport=False)
     return existing[0], False
+
+
+def remove_training_dummies():
+    """M3-026: destroys every TrainingEnemy actor on the loaded combat map.
+
+    The combat map is a duplicate of the training arena and inherited its
+    render dummy; the user playtest showed the player strike then hit BOTH
+    the dummy and the wave enemies (double-hit confusion). Idempotent: on a
+    repeated run the map holds no dummies and this removes none.
+    """
+    dummies = find_by_class('TrainingEnemy')
+    removed = 0
+    for dummy in dummies:
+        if not actors.destroy_actor(dummy):
+            raise RuntimeError('Could not remove the training dummy labeled ' + dummy.get_actor_label() + '.')
+        removed += 1
+    return removed
 
 
 def create_room_assets():
@@ -128,12 +151,14 @@ def create_room_assets():
     exit_actor, created_exit = ensure_actor(
         'RoomExit', 'RoomExit', EXIT_CLASS_PATH, EXIT_LABEL, EXIT_LOCATION)
 
+    removed_dummies = remove_training_dummies()
+
     rows = inventory()
     labels = [row['label'] for row in rows]
     if 'PlayerStart' not in labels:
         raise RuntimeError('PlayerStart is missing from the combat room.')
-    if count_class(rows, 'TrainingEnemy') != 1:
-        raise RuntimeError('The duplicated combat room should carry exactly the inherited training enemy.')
+    if count_class(rows, 'TrainingEnemy') != 0:
+        raise RuntimeError('The combat room still carries training dummies after the M3-026 cleanup.')
     if not levels.save_current_level():
         raise RuntimeError('Could not save ' + COMBAT_MAP)
 
@@ -148,6 +173,7 @@ def create_room_assets():
             'room_trigger_count': count_class(rows, 'RoomTrigger'),
             'room_exit_count': count_class(rows, 'RoomExit'),
             'training_enemy_count': count_class(rows, 'TrainingEnemy'),
+            'training_dummies_removed': removed_dummies,
             'trigger_box_extent': box_extent_of(trigger),
             'exit_box_extent': box_extent_of(exit_actor),
         },
@@ -158,7 +184,8 @@ def create_room_assets():
     unreal.log('UEMMO_ROOM_ASSETS_CREATED map=' + COMBAT_MAP
                + ' new_map=' + str(created_map)
                + ' new_trigger=' + str(created_trigger)
-               + ' new_exit=' + str(created_exit))
+               + ' new_exit=' + str(created_exit)
+               + ' removed_dummies=' + str(removed_dummies))
 
 
 def verify_maps():
@@ -178,8 +205,8 @@ def verify_maps():
            'count=' + str(len(triggers)))
     record('combat_map_exactly_one_room_exit', len(exits) == 1,
            'count=' + str(len(exits)))
-    record('combat_map_inherited_training_enemy',
-           count_class(combat_rows, 'TrainingEnemy') == 1,
+    record('combat_map_has_no_training_dummy',
+           count_class(combat_rows, 'TrainingEnemy') == 0,
            'count=' + str(count_class(combat_rows, 'TrainingEnemy')))
     record('combat_map_player_start_present',
            any(row['class'] == 'PlayerStart' or row['label'] == 'PlayerStart' for row in combat_rows))
