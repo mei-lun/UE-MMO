@@ -37,7 +37,7 @@
 #include "Misc/Paths.h"
 #include "Tests/AutomationCommon.h"
 #include "UnrealClient.h"
-#include "Engine/EngineSettings.h"
+#include "EngineSettings.h"
 #include "UObject/UObjectIterator.h"
 #include "UObject/UnrealType.h"
 
