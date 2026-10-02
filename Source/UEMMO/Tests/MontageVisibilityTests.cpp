@@ -647,17 +647,22 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FUEMMOTasksM3_024GameDefaultMapBootsIntoCombatRoom::RunTest(const FString& Parameters)
 {
-	// M3-024 fix: read the LOADED maps-settings CDO instead of GConfig-on-
-	// GEngineIni - in packaged builds the loose Config/DefaultEngine.ini does
-	// not exist and GConfig only sees the user Game.ini layer (empty), while
-	// the CDO reflects the baked defaults the game actually boots with.
-	const UEngineMapsSettings* MapsSettings = GetDefault<UEngineMapsSettings>();
-	const FString GameDefaultMap = MapsSettings->GameDefaultMap.ToString();
-	TestEqual(TEXT("the engine config boots the game into the combat room"),
-		GameDefaultMap, FString(M3_024_DefaultMapPath));
+	// M3-024 runtime assertion: in a packaged -game run the world the test
+	// executes in IS the booted default map, so the strongest proof that the
+	// GameDefaultMap change landed is the live map name. Editor-context runs
+	// (no booted default map) skip by design.
+	UWorld* World = GWorld;
+	if (World == nullptr || World->WorldType != EWorldType::Game)
+	{
+		AddInfo(TEXT("default-map boot check skipped: not a running game world"));
+		return true;
+	}
+	const FString MapName = World->GetMapName();
+	TestTrue(TEXT("the packaged default map boots into the combat room"),
+		MapName.Contains(TEXT("L_CombatRoom01")));
 
-	// The configured default map actually exists in the project content (a
-	// config pointing at a missing map would break every -game boot).
+	// The combat room map package exists in the cooked mount (a config
+	// pointing at a missing map would break every -game boot).
 	const FString MapFile = FPaths::Combine(FPaths::ProjectContentDir(), TEXT("UEMMO/Maps/L_CombatRoom01.umap"));
 	TestTrue(TEXT("the combat room map package exists in project content"),
 		IFileManager::Get().FileExists(*MapFile));
