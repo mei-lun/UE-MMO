@@ -1,8 +1,8 @@
 # 最近一轮交接
 
-- Owner：ZCode-20260925-A（协调者）。本文件为最新摘要；58 份历史批次副本见 `Docs/Tasks/Handoffs/`。
-- 任务板：`Scripts/CheckTaskBoard.ps1` → **valid=True，total=93，DONE=90，TODO=1（M3-H01 用户验收），IN_PROGRESS=0**。
-- 最新批次：**批次58（2026-09-30/10-02）攻击可见性三层根因修复 M3-024**——①Montage 资源路径错（没进播放器）②AnimBP 无 Slot 节点（播了不可见）③默认地图非刷怪房——三层全部修复，攻击姿态截图两态对比目击；包待重建。明细见 `Docs/Tasks/Handoffs/2026-09-30-ZCode-20260925-A-batch58.md`。
+- Owner：ZCode-20260925-A（协调者）。本文件为最新摘要；59 份历史批次副本见 `Docs/Tasks/Handoffs/`。
+- 任务板：`Scripts/CheckTaskBoard.ps1` → **valid=True，total=93，DONE=91，TODO=1（M3-H01 用户验收），IN_PROGRESS=0**。
+- 最新批次：**批次59（2026-10-03）敌人体验修复 M3-025/026**——刷怪敌人 AI 驱动（会追击）、Z 上挑浮空生效、死亡 2s 销毁、敌人血条绑定、战斗房清理继承假人；包已重建（937MB）。明细见 `Docs/Tasks/Handoffs/2026-10-03-ZCode-20260925-A-batch59.md`。
 
 ## 项目当前状态（单机原型三阶段技术全完成）
 
