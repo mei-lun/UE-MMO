@@ -276,7 +276,14 @@ UAnimMontage* UCombatPresentationComponent::FindMontageForAttack(FName AttackId)
 	{
 		return Cached->LoadSynchronous();
 	}
-	const FString ObjectPath = FString(MontageFolder) + AttackId.ToString() + TEXT(".") + AttackId.ToString();
+	// M3-024: the montage package AND its inner object both carry the MNT_
+	// prefix (the M1-032 factory output; the MNT_<AttackId>.MNT_<AttackId>
+	// object paths are pinned in CombatPresentationTests). The pre-fix path
+	// built <MNT_<AttackId> package>.<AttackId object>, which never resolved:
+	// the M3-024 red in-loop test logged "montage '...MNT_light_01.light_01'
+	// not found" on every attack, so attacks ran without animation playback.
+	const FString MontageObjectName = FString(TEXT("MNT_")) + AttackId.ToString();
+	const FString ObjectPath = FString(MontageFolder) + AttackId.ToString() + TEXT(".") + MontageObjectName;
 	const TSoftObjectPtr<UAnimMontage> Reference{FSoftObjectPath(ObjectPath)};
 	UAnimMontage* Montage = Reference.LoadSynchronous();
 	if (Montage == nullptr)
