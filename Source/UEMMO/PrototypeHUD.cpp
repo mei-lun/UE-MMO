@@ -76,10 +76,12 @@ namespace
     // M3-026: world-anchored enemy health bars (production HUD, independent of
     // the debug overlay). The palette reuses the M1-035 bar colors (dark frame
     // + red fill, the M2-012 enemy HP bar style); the bar anchors above the
-    // enemy's head (the training/melee capsule half height is 88).
+    // enemy's head (the training/melee capsule half height is 88). M3-027: the
+    // bar grew from 90x8 to 120x10 - the fourth playtest round read the small
+    // bar as absent at full-screen viewing distance.
     constexpr int32 M3_026_EnemyBarCap = 3;    // a room never spawns more than 3 enemies
-    constexpr float M3_026_BarWidth = 90.0f;
-    constexpr float M3_026_BarHeight = 8.0f;
+    constexpr float M3_026_BarWidth = 120.0f;
+    constexpr float M3_026_BarHeight = 10.0f;
     constexpr float M3_026_BarLiftZ = 120.0f;
 }
 
@@ -119,19 +121,13 @@ void APrototypeHUD::DrawHUD()
 
     // M1-028: the debug overlay is a pure display layer gated by the F1 flag.
     // With it off nothing below runs: no references resolved, no text, no box,
-    // and combat queries/damage are untouched by any of this code.
+    // and combat queries/damage are untouched by any of this code. The M1-035
+    // debug HP bar rows stay behind the flag with the panel.
     if (bCombatDebugOverlayEnabled)
     {
         RefreshDebugReferences();
         DrawCombatDebugOverlay();
-
-        // M1-035: the hit feedback (HP bars, damage numbers, combo counter)
-        // lives on the same debug HUD behind the same flag, so the default
-        // view and the input hints above stay untouched. The feed binds only
-        // here (event-driven; no per-frame world scan).
         DrawHealthBars();
-        DrawDamageNumbers();
-        DrawComboCounter();
     }
 
     // M3-026: the enemy health bars are production HUD. They share the M1-035
@@ -141,6 +137,13 @@ void APrototypeHUD::DrawHUD()
     // owning controller (O(1), no world scan).
     RefreshDamageFeedBinding();
     DrawEnemyHealthBars();
+    // M3-027: the damage numbers and the combo counter are production hit
+    // feedback too (the fourth playtest round read their absence as
+    // "attacking a monster gives no feedback"): they draw every frame like
+    // the enemy bars, fed by the same OnHitConfirmed subscription. The pool
+    // is event-driven, so the per-frame cost is the draw itself.
+    DrawDamageNumbers();
+    DrawComboCounter();
 }
 
 void APrototypeHUD::DrawCombatDebugOverlay()
@@ -574,10 +577,17 @@ double APrototypeHUD::ResolveDisplayClockSeconds() const
 void APrototypeHUD::TrackEnemyBarTarget(const FCombatHit& Hit)
 {
     // The tracked entry is the hit VICTIM: the event's weak target reads null
-    // when it was destroyed in the meantime (no crash, no entry) and a victim
-    // without a health pool has no bar to draw (the M1-016 grant covers the
-    // combatants only).
-    AActor* Target = Hit.Target.Get();
+    // when it was destroyed in the meantime (no crash, no entry). M3-027: the
+    // body moved to TrackEnemyBarActor so the spawn-time registration shares
+    // the exact upsert/cap rules.
+    TrackEnemyBarActor(Hit.Target.Get());
+}
+
+void APrototypeHUD::TrackEnemyBarActor(AActor* Target)
+{
+    // A victim without a health pool has no bar to draw (the M1-016 grant
+    // covers the combatants only); a null actor reads as a stale weak
+    // reference from the hit path and is ignored.
     if (Target == nullptr)
     {
         return;

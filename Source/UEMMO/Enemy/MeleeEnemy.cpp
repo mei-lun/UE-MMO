@@ -3,12 +3,16 @@
 #include "../Combat/AttackCatalog.h"
 #include "../Combat/CombatComponent.h"
 #include "../Combat/HealthComponent.h"
+#include "../PrototypeHUD.h"
 #include "MeleeEnemyController.h"
 
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "EnemyDefinition.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/PlayerController.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "Materials/MaterialParameters.h"
 #include "UObject/ConstructorHelpers.h"
 
 namespace
@@ -20,6 +24,17 @@ namespace
 	// M3-025: the death presentation prototype standard - a dead wired enemy
 	// is removed this many seconds after its death (the corpse window).
 	constexpr float M3_025_CorpseCleanupDelaySeconds = 2.0f;
+
+	// M3-027: the vector parameters of the mannequin material drive the hit
+	// flash - every inherited vector parameter of the mesh's slot-0 material
+	// carries the tint while the overlay renders (the render probe proved
+	// BasicShapeMaterial overlays never reach the skeletal mesh, while the
+	// slot-0-based one renders the whole body red).
+	const FLinearColor M3_027_HitFlashTint(1.0f, 0.12f, 0.10f, 1.0f);
+
+	// M3-027: horizontal speed (cm/s) above which the single-node mesh runs
+	// the jog clip instead of the idle loop.
+	constexpr float M3_027_RunAnimationSpeedThreshold = 20.0f;
 }
 
 AMeleeEnemy::AMeleeEnemy()
@@ -56,6 +71,19 @@ AMeleeEnemy::AMeleeEnemy()
 		GetMesh()->AnimationData.AnimToPlay = IdleAsset.Object;
 		GetMesh()->AnimationData.bSavedLooping = true;
 		GetMesh()->AnimationData.bSavedPlaying = true;
+		IdleLocomotionAsset = IdleAsset.Object;
+		CurrentLocomotionAsset = IdleAsset.Object;
+	}
+	// M3-027: the in-place jog clip the enemy runs with while chasing (same
+	// template mannequin family as the idle above; no new art). A moving
+	// enemy that glides in the idle loop reads as "not moving" - the user's
+	// fourth-round feedback. MF_Unarmed_Jog_Fwd is an AnimSequence (asset
+	// verified), so the single-node mode can play it directly.
+	static ConstructorHelpers::FObjectFinder<UAnimationAsset> RunAsset(
+		TEXT("/Game/Characters/Mannequins/Anims/Unarmed/Jog/MF_Unarmed_Jog_Fwd.MF_Unarmed_Jog_Fwd"));
+	if (RunAsset.Succeeded())
+	{
+		RunLocomotionAsset = RunAsset.Object;
 	}
 
 	// Contract default approach speed (UEnemyDefinition::MoveSpeed default);
@@ -105,6 +133,58 @@ void AMeleeEnemy::BeginPlay()
 		});
 	}
 
+	// M3-027: the enemy health bar is production HUD and tracks this enemy
+	// from spawn (the M3-026 hit-driven upsert stays as the data refresher;
+	// the user read the hit-only appearance as "no health bar at all"). A
+	// world without the prototype HUD (headless/temp automation worlds)
+	// skips silently - registration is a presentation nicety, never a
+	// combat dependency.
+	if (UWorld* WorldPtr = GetWorld())
+	{
+		if (APlayerController* PlayerController = WorldPtr->GetFirstPlayerController())
+		{
+			if (APrototypeHUD* Hud = Cast<APrototypeHUD>(PlayerController->GetHUD()))
+			{
+				Hud->TrackEnemyBarActor(this);
+			}
+		}
+	}
+
+	// M3-027: build the flash overlay once (a dynamic instance of this mesh's
+	// own slot-0 material; applied through the mesh's SetOverlayMaterial while
+	// the hit stun holds and removed when it ends). The render probe settled
+	// WHY the first overlay attempt stayed invisible: the engine
+	// BasicShapeMaterial (the M2-009 exit-cube tint precedent) renders red on
+	// static meshes but silently renders NOTHING as a skeletal-mesh overlay
+	// (its probe screenshot is pixel-identical to the unmodified mesh - the
+	// material lacks the skeletal usage), while the same mesh slot-0 material
+	// as the overlay base with every inherited vector parameter written red
+	// renders the whole body red (the probe's params-red screenshot). The
+	// mannequin material exposes no body-tint parameter by design contract -
+	// its vector parameter set (Paint Tint / LogoTint / Blend Offset, probed
+	// at runtime) drives the render, so all of them carry the flash tint.
+	if (UMaterialInterface* Slot0 = GetMesh()->GetMaterial(0))
+	{
+		FlashOverlayMaterial = UMaterialInstanceDynamic::Create(Slot0, this);
+		if (FlashOverlayMaterial != nullptr)
+		{
+			TArray<FMaterialParameterInfo> VectorInfos;
+			TArray<FGuid> VectorIds;
+			FlashOverlayMaterial->GetAllParameterInfoOfType(
+				EMaterialParameterType::Vector, VectorInfos, VectorIds);
+			for (const FMaterialParameterInfo& Info : VectorInfos)
+			{
+				FlashOverlayMaterial->SetVectorParameterValue(Info.Name, M3_027_HitFlashTint);
+			}
+			if (VectorInfos.Num() > 0)
+			{
+				// Test seam anchor: the first inherited vector parameter the
+				// flash wrote (PeekHitFlashTint reads this back).
+				FlashTintParameterName = VectorInfos[0].Name;
+			}
+		}
+	}
+
 	// M2-003: this enemy's own attacks fire through its combat component's
 	// TryStartAttack (the shared M1 pipeline; the controller never touches a
 	// victim's health directly), which needs the same read-only M1 attack
@@ -143,6 +223,19 @@ void AMeleeEnemy::Tick(float DeltaSeconds)
 			Combat->SetInputClockSeconds(World->GetTimeSeconds());
 		}
 		Combat->TickCombat(DeltaSeconds);
+
+		// M3-027 presentation (follows the shared snapshot, the M1-032
+		// "presentation follows combat state" direction): the hit flash is
+		// active exactly while the accepted hit holds this enemy in HitStun
+		// (no reaction animation asset exists, so the material tint is the
+		// card's minimal victim-side feedback), and the single-node
+		// locomotion switches idle/jog with the horizontal speed.
+		const bool bStunned = Combat->GetSnapshot().ActionState == ECombatActionState::HitStun;
+		if (bStunned != bHitFlashActive)
+		{
+			ApplyHitFlash(bStunned);
+		}
+		RefreshLocomotionAnimation();
 	}
 }
 
@@ -195,6 +288,9 @@ void AMeleeEnemy::LaunchCharacter(FVector LaunchVelocity, bool bXYOverride, bool
 	{
 		AirComboCount = bGroundedSinceLastLaunch ? 1 : AirComboCount + 1;
 		bGroundedSinceLastLaunch = false;
+		// M3-027: the M1-022 ATrainingEnemy launched-airborne marker - the
+		// only difference between a knocked-down landing and a plain one.
+		bLaunchedAirborne = true;
 	}
 }
 
@@ -204,9 +300,24 @@ void AMeleeEnemy::Landed(const FHitResult& Hit)
 
 	// M3-025: minimal ground-contact recording - the landing re-opens the
 	// ground phase so the next vertical launch counts 1 again (the M1-022
-	// semantics; this enemy deliberately carries no landing audio or
-	// knockdown machinery to replay).
+	// semantics; this enemy deliberately carries no landing audio).
 	bGroundedSinceLastLaunch = true;
+
+	// M3-027: the M1-026 landing-recovery semantics reach the wave enemy - a
+	// LAUNCHED landing runs the Knockdown 0.45 s -> Recovering 0.25 s ->
+	// Free process, so the launcher arc visibly ends on a downed enemy that
+	// stays down (and holds its chase) before resuming. The component
+	// refuses an already-running process and a dead combatant (death has
+	// priority); a refused request leaves the marker set only for a dead
+	// victim, where it is irrelevant (the corpse cleanup removes the actor).
+	if (bLaunchedAirborne && Combat != nullptr)
+	{
+		const UWorld* WorldPtr = GetWorld();
+		if (Combat->BeginLandingRecovery(WorldPtr ? WorldPtr->GetTimeSeconds() : 0.0))
+		{
+			bLaunchedAirborne = false;
+		}
+	}
 }
 
 void AMeleeEnemy::ArmDeathCleanup()
@@ -247,4 +358,52 @@ void AMeleeEnemy::ArmDeathCleanup()
 		SetActorEnableCollision(false);
 		SetLifeSpan(M3_025_CorpseCleanupDelaySeconds);
 	});
+}
+
+FLinearColor AMeleeEnemy::PeekHitFlashTint() const
+{
+	// Reads back the first inherited vector parameter the flash wrote (the
+	// real MID value, not the constant) while the flash overlay renders.
+	if (bHitFlashActive && FlashOverlayMaterial != nullptr && !FlashTintParameterName.IsNone())
+	{
+		return FlashOverlayMaterial->K2_GetVectorParameterValue(FlashTintParameterName);
+	}
+	return FLinearColor::White;
+}
+
+void AMeleeEnemy::ApplyHitFlash(bool bActive)
+{
+	bHitFlashActive = bActive;
+	if (USkeletalMeshComponent* MeshComponent = GetMesh())
+	{
+		// The overlay pass renders the tint material across the whole mesh
+		// while the accepted hit holds the victim and is removed on the stun
+		// end - no per-slot material bookkeeping, nothing left behind.
+		MeshComponent->SetOverlayMaterial(bActive ? FlashOverlayMaterial.Get() : nullptr);
+	}
+}
+
+void AMeleeEnemy::RefreshLocomotionAnimation()
+{
+	USkeletalMeshComponent* MeshComponent = GetMesh();
+	UAnimationAsset* RunAsset = RunLocomotionAsset.Get();
+	UAnimationAsset* IdleAsset = IdleLocomotionAsset.Get();
+	if (MeshComponent == nullptr || RunAsset == nullptr || IdleAsset == nullptr)
+	{
+		return;
+	}
+	const UCharacterMovementComponent* Movement = GetCharacterMovement();
+	const bool bRunning = Movement != nullptr
+		&& Movement->Velocity.Size2D() > M3_027_RunAnimationSpeedThreshold;
+	UAnimationAsset* Desired = bRunning ? RunAsset : IdleAsset;
+	if (Desired == CurrentLocomotionAsset.Get())
+	{
+		return;
+	}
+	CurrentLocomotionAsset = Desired;
+	// Single-node switch: SetAnimation swaps the asset, Play restarts it as a
+	// loop (the constructor's AnimationData looping flags cover the boot, the
+	// switches cover the rest of the enemy's life).
+	MeshComponent->SetAnimation(Desired);
+	MeshComponent->Play(true);
 }
