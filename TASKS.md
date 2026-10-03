@@ -27,7 +27,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M0-003 | 横版移动与测试房间 | DONE | — | 既有基线 | 2026-09-25T06:05:19+08:00 | [M0-003](Docs/Tasks/Reports/M0-003.md) |
 | M0-004 | 构建、运行与独立包验证 | DONE | — | 既有基线 | 2026-09-25T06:05:19+08:00 | [M0-004](Docs/Tasks/Reports/M0-004.md) |
 | M0-005 | 设计文档与 Agent 准备 | DONE | — | 既有基线 | 2026-09-25T06:05:19+08:00 | [M0-005](Docs/Tasks/Reports/M0-005.md) |
-| M0-H01 | [真实键盘与镜头验收](Docs/Tasks/M0-H01.md) | REVIEW | M0-003,M0-004 | 用户 | 2026-09-25T06:05:19+08:00 | [待试玩记录](Docs/Tasks/Reports/M0-H01.md) |
+| M0-H01 | [真实键盘与镜头验收](Docs/Tasks/M0-H01.md) | DONE | M0-003,M0-004 | 用户 | 2026-10-03T22:56:38+08:00 | [report](Docs/Tasks/Reports/M0-H01.md) |
 | M1-001 | [接手并复核现有基线](Docs/Tasks/M1-001.md) | DONE | M0-004 | ZCode-20260925-A | 2026-09-25T10:11:53+08:00 | [report](Docs/Tasks/Reports/M1-001.md) |
 | M1-002 | [建立按任务筛选的自动化测试入口](Docs/Tasks/M1-002.md) | DONE | M1-001 | ZCode-20260925-A | 2026-09-25T23:14:22+08:00 | [report](Docs/Tasks/Reports/M1-002.md) |
 | M1-003 | [输入缓存的容量与一次性消费](Docs/Tasks/M1-003.md) | DONE | M1-002 | ZCode-20260925-A | 2026-09-25T23:20:30+08:00 | [report](Docs/Tasks/Reports/M1-003.md) |
@@ -93,7 +93,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M3-024 | [攻击可见性修复](Docs/Tasks/M3-024.md) | DONE | M3-023 | ZCode-20260925-A | 2026-10-02T12:54:17+08:00 | [report](Docs/Tasks/Reports/M3-024.md) |
 | M3-025 | [刷怪敌人生产接线](Docs/Tasks/M3-025.md) | DONE | M3-014 | ZCode-20260925-A | 2026-10-03T02:27:39+08:00 | [report](Docs/Tasks/Reports/M3-025.md) |
 | M3-026 | [敌人血条与战斗房清理](Docs/Tasks/M3-026.md) | DONE | M3-018 | ZCode-20260925-A | 2026-10-03T02:27:43+08:00 | [report](Docs/Tasks/Reports/M3-026.md) |
-| M2-H01 | [M2 用户阶段验收](Docs/Tasks/M2-H01.md) | TODO | M2-015 | 用户 | — | — |
+| M2-H01 | [M2 用户阶段验收](Docs/Tasks/M2-H01.md) | DONE | M2-015 | 用户 | 2026-10-03T22:57:37+08:00 | [report](Docs/Tasks/Reports/M2-H01.md) |
 | M3-001 | [装备定义和稳定实例ID](Docs/Tasks/M3-001.md) | DONE | M2-015 | ZCode-20260925-A | 2026-09-27T22:23:39+08:00 | [report](Docs/Tasks/Reports/M3-001.md) |
 | M3-002 | [30格背包增删与容量](Docs/Tasks/M3-002.md) | DONE | M3-001 | ZCode-20260925-A | 2026-09-27T22:54:12+08:00 | [report](Docs/Tasks/Reports/M3-002.md) |
 | M3-003 | [本地角色Profile与新游戏初值](Docs/Tasks/M3-003.md) | DONE | M3-002 | ZCode-20260925-A | 2026-09-27T23:31:21+08:00 | [report](Docs/Tasks/Reports/M3-003.md) |
@@ -116,5 +116,5 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M3-020 | [单机成长循环集成测试](Docs/Tasks/M3-020.md) | DONE | M3-019,M3-010 | ZCode-20260925-A | 2026-09-30T12:08:24+08:00 | [report](Docs/Tasks/Reports/M3-020.md) |
 | M3-021 | [保存恢复和重复领取故障回归](Docs/Tasks/M3-021.md) | DONE | M3-020 | ZCode-20260925-A | 2026-09-30T12:52:09+08:00 | [report](Docs/Tasks/Reports/M3-021.md) |
 | M3-022 | [单机原型发布包与完整交接](Docs/Tasks/M3-022.md) | DONE | M3-021 | ZCode-20260925-A | 2026-09-30T13:33:53+08:00 | [report](Docs/Tasks/Reports/M3-022.md) |
-| M3-H01 | [M3 用户阶段验收](Docs/Tasks/M3-H01.md) | TODO | M3-022 | 用户 | — | — |
+| M3-H01 | [M3 用户阶段验收](Docs/Tasks/M3-H01.md) | DONE | M3-022 | 用户 | 2026-10-03T22:57:41+08:00 | [report](Docs/Tasks/Reports/M3-H01.md) |
 | M4-000 | [后续服务端接入范围](Docs/Tasks/M4-000.md) | DEFERRED | M3-H01 | — | — | — |
