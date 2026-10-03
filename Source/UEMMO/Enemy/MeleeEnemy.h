@@ -5,10 +5,11 @@
 
 #include "MeleeEnemy.generated.h"
 
+class UAnimationAsset;
 class UCombatComponent;
 class UEnemyDefinition;
 class UHealthComponent;
-
+class UMaterialInstanceDynamic;
 /**
  * M2-002: ground melee enemy for the M2 rooms. It reuses the M1 Health/Combat
  * component pair as subobjects exactly like ATrainingEnemy (interface
@@ -95,6 +96,26 @@ public:
 	 */
 	void ArmDeathCleanup();
 
+	/**
+	 * M3-027 test seam: true while the hit flash tints the mesh materials
+	 * (the victim-side visible reaction; active exactly while the shared
+	 * snapshot holds this enemy in HitStun).
+	 */
+	bool IsHitFlashActive() const { return bHitFlashActive; }
+
+	/**
+	 * M3-027 test seam: the single-node animation asset currently presented
+	 * on the mesh (the idle or the jog clip; null before the first switch).
+	 */
+	UAnimationAsset* PeekLocomotionAsset() const { return CurrentLocomotionAsset.Get(); }
+
+	/**
+	 * M3-027 test seam: the flash tint the overlay material carries while the
+	 * flash is active (read back from the first inherited vector parameter
+	 * the flash wrote; white when no flash overlay is applied).
+	 */
+	FLinearColor PeekHitFlashTint() const;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -126,6 +147,20 @@ protected:
 	virtual void Landed(const FHitResult& Hit) override;
 
 private:
+	/**
+	 * M3-027: applies/clears the hit flash on the mesh (presentation only:
+	 * the mesh's own slot-0 material as the overlay, with every inherited
+	 * vector parameter carrying the flash red while the hit stun holds).
+	 */
+	void ApplyHitFlash(bool bActive);
+
+	/**
+	 * M3-027: switches the single-node animation between the idle and the jog
+	 * clip from the horizontal speed (a moving enemy that glides in the idle
+	 * loop reads as "not moving" - the user's fourth-round feedback).
+	 */
+	void RefreshLocomotionAnimation();
+
 	UPROPERTY(VisibleAnywhere, Category = "Combat")
 	TObjectPtr<UHealthComponent> Health;
 
@@ -150,4 +185,48 @@ private:
 	 * arming guard; the death handler is then bound exactly once).
 	 */
 	bool bDeathCleanupArmed = false;
+
+	// ---------------- M3-027 hit feedback / locomotion presentation ----------------
+
+	/**
+	 * M3-027: the flash overlay material (a dynamic instance of the mesh's
+	 * own slot-0 material with every inherited vector parameter carrying the
+	 * flash red, written once at BeginPlay; rendered through the mesh's
+	 * SetOverlayMaterial while the hit stun holds). The engine
+	 * BasicShapeMaterial proved unusable here: as a skeletal-mesh overlay it
+	 * silently renders nothing (static-mesh usage only - the render probe
+	 * screenshot is pixel-identical to the unmodified mesh), while the
+	 * slot-0-based overlay renders the whole body red.
+	 */
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> FlashOverlayMaterial;
+
+	/**
+	 * M3-027: the first inherited vector parameter of the overlay material
+	 * (the test-seam read-back anchor; none when the material exposes no
+	 * vector parameters).
+	 */
+	FName FlashTintParameterName;
+
+	/** M3-027: flash state (follows the snapshot's HitStun transitions). */
+	bool bHitFlashActive = false;
+
+	/**
+	 * M3-027: set by the vertical launch path (LaunchCharacter Z > 0, the
+	 * M1-022 ATrainingEnemy marker pattern); a launched landing runs the
+	 * M1-026 knockdown/recovery process so the launcher visibly ends its
+	 * arc on a downed enemy. Consumed only by an accepted process.
+	 */
+	bool bLaunchedAirborne = false;
+
+	/** M3-027: single-node locomotion assets (class-referenced, cook-covered). */
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimationAsset> IdleLocomotionAsset;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimationAsset> RunLocomotionAsset;
+
+	/** M3-027: the asset currently presented on the mesh. */
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimationAsset> CurrentLocomotionAsset;
 };

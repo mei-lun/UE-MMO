@@ -268,6 +268,18 @@ public:
     /** M3-026 test seam: the tracked health pool at Index (null when out of range or stale). */
     const UHealthComponent* PeekTrackedHealth(int32 Index);
 
+    /**
+     * M3-027: registers/upserts one enemy as a tracked bar entry outside the
+     * hit path - AMeleeEnemy::BeginPlay registers every spawned room enemy,
+     * so a bar exists from spawn instead of from the first accepted hit (the
+     * fourth playtest round read the hit-only appearance as "no health bar").
+     * Same upsert/cap rules as the hit-driven path: an already tracked enemy
+     * only refreshes its pool, the 3-entry room cap refuses further entries,
+     * a target without a health pool is ignored, and every read prunes
+     * destroyed/dead entries first.
+     */
+    void TrackEnemyBarActor(AActor* Enemy);
+
 protected:
     virtual void BeginPlay() override;
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
