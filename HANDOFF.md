@@ -1,8 +1,8 @@
 # 最近一轮交接
 
-- Owner：ZCode-20260925-A（协调者）。本文件为最新摘要；60 份历史批次副本见 `Docs/Tasks/Handoffs/`。
-- 任务板：`Scripts/CheckTaskBoard.ps1` → **valid=True，total=96，DONE=94，IN_PROGRESS=0，TODO=0**——**单机原型三阶段（M0+M1+M2+M3）技术任务与用户验收全部完成**，仅剩 M4-000（DEFERRED，等服务端接口信息）。
-- 最新批次：**批次60（2026-10-03）用户验收收官**——M0-H01/M2-H01/M3-H01 三关全部通过签字（原话"我已经验证了，基本能够使用"入档）。明细见 `Docs/Tasks/Handoffs/2026-10-03-ZCode-20260925-A-batch60.md`；综合验收入口 `Docs/07-综合验收摘要.md`。
+- Owner：ZCode-20260925-A（协调者）。本文件为最新摘要；63 份历史批次副本见 `Docs/Tasks/Handoffs/`。
+- 任务板：`Scripts/CheckTaskBoard.ps1` → **valid=True，total=99，DONE=97，IN_PROGRESS=0**——**单机原型全链闭合**（M3-029 补上最后一环：新游戏首启建档）。
+- 最新批次：**批次63（2026-10-05）M3-029 新游戏首启建档**——完整循环在环验证（首启建档→进房→被攻击→击杀→清关→领奖→穿戴→存档→重启恢复→死亡重试，513/513）。明细见 `Docs/Tasks/Handoffs/2026-10-05-ZCode-20260925-A-batch63.md`；综合验收入口 `Docs/07-综合验收摘要.md`。
 
 ## 项目当前状态（单机原型三阶段技术全完成）
 
