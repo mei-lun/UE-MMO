@@ -81,10 +81,13 @@ using FGameFlowMapOpener = TFunction<bool(const FString& MapPath)>;
  * Startup (the M3-015 chain): Initialize makes the profile subsystem an
  * explicit collection dependency, then runs UProfileSaveService::StartupLoad
  * and restores the profile through UProfileSubsystem::RestoreFromSave on a
- * recovered outcome. RecoveryError/NoSaveFound keep the "no profile" state
- * with the reason readable (GetStartupLoadOutcome). Automation skips the
- * real "Profile_" pass (machine state must never leak into tests) unless a
- * test injected its own service via SetStartupSaveServiceForTests.
+ * recovered outcome. RecoveryError keeps the "no profile" state with the
+ * reason readable (GetStartupLoadOutcome); NoSaveFound - the legal FIRST BOOT
+ * answer of a fresh install - bootstraps the new-game profile through
+ * NewProfile (M3-029). Automation skips the real "Profile_" pass (machine
+ * state must never leak into tests) unless a test injected its own service
+ * via SetStartupSaveServiceForTests; the synthesized skip outcome creates no
+ * profile, so the M3-003 fresh-instance guarantee holds there.
  */
 UCLASS()
 class UEMMO_API UGameFlowSubsystem : public UGameInstanceSubsystem
@@ -193,8 +196,10 @@ public:
 	/**
 	 * The structured result of the Initialize-time startup pass: Recovered /
 	 * RecoveredFallback restored the profile, NoSaveFound is the legal fresh
-	 * state (also reported when automation skipped the real "Profile_" pass),
-	 * RecoveryError keeps "no profile" with the corruption evidence readable.
+	 * state whose profile the flow bootstrapped through NewProfile (M3-029;
+	 * the synthesized automation-skip outcome below ALSO reports NoSaveFound
+	 * but creates no profile), RecoveryError keeps "no profile" with the
+	 * corruption evidence readable.
 	 */
 	const FStartupLoadOutcome& GetStartupLoadOutcome() const { return StartupOutcome; }
 

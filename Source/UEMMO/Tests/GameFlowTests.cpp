@@ -13,9 +13,11 @@
 //   4. A failed map open returns to the menu with a recorded error, never
 //      clears the profile, and the menu stays immediately retryable.
 //   5. The Initialize-time startup pass restores the profile through the
-//      M3-015 chain (StartupLoad -> RestoreFromSave) when a save exists, and
-//      a fresh game instance (automation without an injected service) starts
-//      without a profile.
+//      M3-015 chain (StartupLoad -> RestoreFromSave) when a save exists. A
+//      fresh save state (NoSaveFound) is the legal FIRST BOOT and the flow
+//      bootstraps the new-game profile there (M3-029 supersedes the M3-017
+//      "never automatic" note); the automation-skip path (no injected
+//      service) still mints no profile.
 //   6. The native map select widget: exactly one TrainingArena entry, the
 //      settings/volume text placeholder, and the click path's loading guard
 //      plus the failure error line with button recovery.
@@ -744,8 +746,8 @@ bool FUEMMOTasksM3_017FailedLoadReturnsToMenuWithProfileIntact::RunTest(const FS
 
 // 6. The Initialize-time startup pass (the M3-015 chain): a committed save on
 //    the isolated prefix is restored through StartupLoad + RestoreFromSave at
-//    GameInstance::Init; a fresh instance without an injected service starts
-//    without a profile (automation never reads the player's real saves).
+//    GameInstance::Init; a fresh save state (NoSaveFound) bootstraps the
+//    new-game profile (M3-029).
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FUEMMOTasksM3_017StartupLoadRestoresProfileAtInit,
 	"UEMMO.Tasks.M3_017.StartupLoadRestoresProfileAtInit",
@@ -809,13 +811,33 @@ bool FUEMMOTasksM3_017StartupLoadRestoresProfileAtInit::RunTest(const FString& P
 
 	Session.TearDown();
 
-	// The fresh case: an instance without an injected service starts empty
-	// (the production "Profile_" pass is skipped under automation by design).
+	// The FIRST-BOOT case (M3-029 supersedes the M3-017 "never automatic"
+	// note, the M1-021/M1-014 reversal precedent): a genuine NoSaveFound
+	// startup pass - the isolated prefix holds no save at all - is the legal
+	// first boot of a fresh install, and the flow bootstraps the new-game
+	// profile right there. The failure boundary is unchanged: RecoveryError
+	// (corrupt data) keeps the no-profile state (locked by the M3-029
+	// RecoveryErrorKeepsNoProfile suite).
+	FM3_017_MemoryStorage FreshStorage;
+	UProfileSaveService* FreshService = M3_017_NewService(*this, FreshStorage);
+	if (FreshService == nullptr)
+	{
+		Session.TearDown();
+		return true;
+	}
+	UGameFlowSubsystem::SetStartupSaveServiceForTests(FreshService);
+
 	FM3_017_FlowSession Fresh = FM3_017_FlowSession::Create(*this, TEXT("StartupFresh"));
 	if (Fresh.Flow != nullptr && Fresh.Profile != nullptr)
 	{
-		TestFalse(TEXT("a fresh game instance starts without a profile"), Fresh.Profile->HasProfile());
-		TestFalse(TEXT("the fresh flow restored nothing"), Fresh.Flow->WasStartupProfileRestored());
+		TestTrue(TEXT("a first boot (NoSaveFound) bootstraps the new-game profile (M3-029)"),
+			Fresh.Profile->HasProfile());
+		TestTrue(TEXT("the bootstrapped CharacterId is a valid fresh identity"),
+			Fresh.Profile->GetCharacterId().IsValid());
+		TestEqual(TEXT("the bootstrapped profile starts at level 1"), Fresh.Profile->GetLevel(), 1);
+		TestEqual(TEXT("the bootstrapped profile starts at 0 XP"), Fresh.Profile->GetXP(), 0);
+		TestFalse(TEXT("the first boot is a bootstrap, not a restore"),
+			Fresh.Flow->WasStartupProfileRestored());
 		TestEqual(TEXT("the fresh startup outcome is NoSaveFound"),
 			static_cast<int32>(Fresh.Flow->GetStartupLoadOutcome().Result),
 			static_cast<int32>(EStartupLoadResult::NoSaveFound));
