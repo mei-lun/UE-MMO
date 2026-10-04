@@ -53,7 +53,9 @@ void UGameFlowSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	// A parked automation service wins; production builds its own service on
 	// the real prefix. Automation WITHOUT an injected service skips the real
 	// pass entirely: machine save state must never leak into tests (and the
-	// M3-003 "fresh instance has no profile" guarantee must hold there).
+	// M3-003 "fresh instance has no profile" guarantee must hold there - the
+	// synthesized NoSaveFound below therefore creates NO profile; only a REAL
+	// NoSaveFound startup pass bootstraps the new-game profile, M3-029).
 	UProfileSaveService* Service = ConsumeStartupSaveServiceOverride();
 	bool bRanStartupPass = false;
 	if (Service == nullptr && !GIsAutomationTesting && Profile != nullptr)
@@ -99,12 +101,29 @@ void UGameFlowSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 			// the report stays readable through GetStartupLoadOutcome.
 			UE_LOG(LogTemp, Error, TEXT("UEMMO M3-017: the startup recovery failed: %s"), *StartupOutcome.Summary);
 		}
-		// NoSaveFound: the legal fresh state; creating a profile stays the
-		// caller's explicit decision (never automatic).
+		else if (StartupOutcome.Result == EStartupLoadResult::NoSaveFound)
+		{
+			// M3-029: the fresh-install answer of the M3-015 pass is the legal
+			// FIRST BOOT, and the flow bootstraps the new-game profile right
+			// here (explicit NewProfile: fresh unique CharacterId, Level 1,
+			// XP 0, empty containers). This is deliberately NOT the M3-003
+			// "no automatic reset on failure" violation: NoSaveFound is not a
+			// failure but the interface contract's "nothing stored yet - the
+			// caller decides" answer, and the game flow IS that caller. The
+			// RecoveryError branch above keeps the no-profile rule unchanged
+			// (a corrupt save never silently starts over, M3-015).
+			Profile->NewProfile();
+			UE_LOG(LogTemp, Log, TEXT("UEMMO M3-029: first boot (no save found) - the game flow bootstrapped the new-game profile (character %s)."),
+				*Profile->GetCharacterId().ToString());
+		}
 	}
 
 	if (!bRanStartupPass)
 	{
+		// The automation skip path: the synthesized NoSaveFound outcome is a
+		// test-isolation marker, NOT a real first boot - no profile is
+		// created here (the M3-003 fresh-instance guarantee; only the real
+		// pass's NoSaveFound branch above bootstraps, M3-029).
 		StartupOutcome = FStartupLoadOutcome();
 		StartupOutcome.Result = EStartupLoadResult::NoSaveFound;
 		StartupOutcome.Summary = TEXT("M3-017: the startup restore pass did not run (automation without an injected save service; the real boot runs the Profile_ pass).");
