@@ -311,6 +311,17 @@ bool UPrototypeAnimInstance::EditorBuildLocomotionGraph(UBlueprint* Blueprint, U
         Params[1].Max = 180.0f;
         Params[1].GridNum = 8;
         LocomotionBlendSpace->ValidateSampleData();
+        // M3-028: the engine samples a BlendSpace through its BUILT runtime
+        // data (GridSamples / BlendSpaceData), which only ResampleData
+        // produces - the same rebuild the BlendSpace editor panel triggers on
+        // every manual edit. ValidateSampleData alone never builds it and
+        // empties GridSamples whenever the sample list changed, so a
+        // programmatically written sample set saved without this call ships an
+        // asset that samples NOTHING at runtime: every BlendSpacePlayer stays
+        // frozen on its first pose (the M3-028 playtest report "the character
+        // has no walking animation while moving" - the idle pose rendered
+        // because the frozen first frame of the sampled clip is a stance).
+        LocomotionBlendSpace->ResampleData();
     }
     else
     {
