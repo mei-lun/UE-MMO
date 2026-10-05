@@ -188,6 +188,18 @@ public:
 	 */
 	URoomDefinition* GetSelectableRoomDefinition();
 
+	/**
+	 * M3-030: the production mount's enter target - the wave-combat room the
+	 * boot world's ARoomTrigger chain owns (RoomId room_combat_01, the
+	 * L_CombatRoom01 map, the starter reward table; the wave content stays
+	 * with the trigger's existing fallback chain). The M3-017 single-map menu
+	 * LIST rule is untouched (the menu still offers exactly one entry); this
+	 * is the room the mounted menu's enter button opens, and the absolute
+	 * travel re-arms a fresh room world per entry. Created on first use and
+	 * cached like the selectable entry.
+	 */
+	URoomDefinition* GetCombatRoomDefinition();
+
 	// -- Startup restore (the M3-015 chain) --------------------------------------
 
 	/** True when Initialize restored the profile through RestoreFromSave. */
@@ -247,6 +259,10 @@ private:
 	/** The cached single selectable map entry (created on first use). */
 	UPROPERTY(Transient)
 	TObjectPtr<URoomDefinition> CachedSelectableRoom;
+
+	/** M3-030: the cached combat-room enter target (created on first use). */
+	UPROPERTY(Transient)
+	TObjectPtr<URoomDefinition> CachedCombatRoom;
 
 	/** Map-open seam (unset in production: the real OpenLevel path runs). */
 	FGameFlowMapOpener MapOpener;

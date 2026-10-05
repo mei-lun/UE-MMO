@@ -22,6 +22,7 @@ class UCombatComponent;
 class UEnemyDefinition;
 class UGameFlowSubsystem;
 class UHealthComponent;
+class UMapSelectWidget;
 class UProfileSaveService;
 class UProfileSubsystem;
 class URoomDefinition;
@@ -280,6 +281,24 @@ public:
      */
     void TrackEnemyBarActor(AActor* Enemy);
 
+    // ----- M3-030: boot menu mount (the full game-flow loop) -------------------
+
+    /**
+     * M3-030: re-presents the game-flow surface for the CURRENT flow state:
+     * the map select overlay is presented exactly while the flow is in the
+     * menu state (the boot surface, and the surface after a result-screen
+     * return) and dismissed otherwise. Idempotent; the presentation follows
+     * the M2-012 result-screen pattern (headless-safe prepared-without-
+     * presentation when no viewport/player controller exists).
+     */
+    void RefreshMenuPresentation();
+
+    /** M3-030 test seam: the menu overlay is presented (created and armed). */
+    bool HasMenuScreen() const { return MenuWidgetPtr.IsValid(); }
+
+    /** M3-030 test seam: the presented menu widget itself (null when dismissed). */
+    UMapSelectWidget* PeekMenuWidget() const { return MenuWidgetPtr.Get(); }
+
 protected:
     virtual void BeginPlay() override;
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -376,6 +395,26 @@ private:
 
     /** M3-018: the game-flow subsystem of the world's game instance (null-safe). */
     const UGameFlowSubsystem* ResolveGameFlowSubsystem() const;
+
+    /** M3-030: the mutable game-flow resolution for the mount's request paths. */
+    UGameFlowSubsystem* ResolveGameFlowSubsystem();
+
+    // ----- M3-030: boot menu mount internals -----------------------------------
+
+    /** M3-030: creates the native menu widget once and wires the enter path. */
+    bool EnsureMenuWidget();
+
+    /** M3-030: presents the menu overlay (viewport + one-time input capture). */
+    void ShowMenuOverlay();
+
+    /** M3-030: dismisses the overlay and restores the game input focus. */
+    void HideMenuOverlay();
+
+    /** M3-030: the capture half of the one-time input switch (tracker-gated). */
+    void ApplyMenuInputCapture();
+
+    /** M3-030: the restore half of the one-time input switch (tracker-gated). */
+    void ApplyMenuInputRestore();
 
     /** M3-012: OnRunStarted handler - disables the equip actions live. */
     void HandleRoomRunStartedForInventory();
@@ -577,4 +616,12 @@ private:
 
     /** M3-026: tracked enemy bar entries (weak; capped at the 3-enemy room max). */
     TArray<FEnemyBarEntry> EnemyBars;
+
+    // ----- M3-030: boot menu mount state ----------------------------------------
+
+    /** M3-030: the presented menu overlay (weak; recreated per presentation). */
+    TWeakObjectPtr<UMapSelectWidget> MenuWidgetPtr;
+
+    /** M3-030: pure record of the one-time input focus switch contract. */
+    FRoomResultInputFocusTracker MenuInputFocus;
 };
