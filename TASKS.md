@@ -97,9 +97,9 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M3-027 | [房间战斗视觉诊断与呈现修复](Docs/Tasks/M3-027.md) | DONE | M3-018 | ZCode-20260925-A | 2026-10-04T00:59:47+08:00 | [report](Docs/Tasks/Reports/M3-027.md) |
 | M3-028 | [玩家移动动画修复](Docs/Tasks/M3-028.md) | DONE | M3-027 | ZCode-20260925-A | 2026-10-04T12:46:34+08:00 | [report](Docs/Tasks/Reports/M3-028.md) |
 | M3-029 | [新游戏首启建档与完整战斗循环生产验证](Docs/Tasks/M3-029.md) | DONE | M3-015 | ZCode-20260925-A | 2026-10-05T01:02:06+08:00 | [report](Docs/Tasks/Reports/M3-029.md) |
-| M3-030 | [启动菜单与完整游戏流程挂载](Docs/Tasks/M3-030.md) | TODO | M3-029 | — | — | — |
-| M3-031 | [连招输入体验修复](Docs/Tasks/M3-031.md) | TODO | M3-029 | — | — | — |
-| M3-032 | [占位动画升级尝试](Docs/Tasks/M3-032.md) | TODO | M3-029 | — | — | — |
+| M3-030 | [启动菜单与完整游戏流程挂载](Docs/Tasks/M3-030.md) | IN_PROGRESS | M3-029 | ZCode-20260925-A | 2026-10-05T15:55:05+08:00 | [report](Docs/Tasks/Reports/M3-030.md) |
+| M3-031 | [连招输入体验修复](Docs/Tasks/M3-031.md) | IN_PROGRESS | M3-029 | ZCode-20260925-A | 2026-10-05T15:55:10+08:00 | [report](Docs/Tasks/Reports/M3-031.md) |
+| M3-032 | [占位动画升级尝试](Docs/Tasks/M3-032.md) | IN_PROGRESS | M3-029 | ZCode-20260925-A | 2026-10-05T15:55:14+08:00 | [report](Docs/Tasks/Reports/M3-032.md) |
 | M3-001 | [装备定义和稳定实例ID](Docs/Tasks/M3-001.md) | DONE | M2-015 | ZCode-20260925-A | 2026-09-27T22:23:39+08:00 | [report](Docs/Tasks/Reports/M3-001.md) |
 | M3-002 | [30格背包增删与容量](Docs/Tasks/M3-002.md) | DONE | M3-001 | ZCode-20260925-A | 2026-09-27T22:54:12+08:00 | [report](Docs/Tasks/Reports/M3-002.md) |
 | M3-003 | [本地角色Profile与新游戏初值](Docs/Tasks/M3-003.md) | DONE | M3-002 | ZCode-20260925-A | 2026-09-27T23:31:21+08:00 | [report](Docs/Tasks/Reports/M3-003.md) |
