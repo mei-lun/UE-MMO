@@ -11,3 +11,5 @@
 *.md text eol=lf
 # Preserve upstream license bytes without applying source-code whitespace rules.
 SourceAssets/Licenses/KenneyImpact-CC0.txt -text -whitespace
+SourceAssets/Licenses/Quaternius-itch-page-universal-animation-library.html -text -whitespace
+SourceAssets/Licenses/Quaternius-itch-page-universal-animation-library-2.html -text -whitespace
