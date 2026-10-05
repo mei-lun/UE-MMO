@@ -250,6 +250,9 @@ bool UCombatComponent::TryStartAttack(FName AttackId, int32 NewFacing)
 
 void UCombatComponent::TickCombat(float DeltaSeconds)
 {
+	// M3-031: keep the carried-anchor map in step with the buffer (entries
+	// consumed or pruned since the last tick lose their anchors).
+	CompactCarriedAnchors();
 	// M1-033: a local hit stop counts down on real game advancement. Owners
 	// that inject the input clock per frame (the contract's per-frame order)
 	// drive the remainder through those injections; this tick's delta only
@@ -263,6 +266,9 @@ void UCombatComponent::TickCombat(float DeltaSeconds)
 		if (!bHitStopConsumedInjectedAdvance && FMath::IsFinite(DeltaSeconds) && static_cast<double>(DeltaSeconds) > 0.0)
 		{
 			HitStopRemainingSeconds -= static_cast<double>(DeltaSeconds);
+			// M3-031: the delta path measures the same frozen span the
+			// injection path does; accumulate it for the resume compensation.
+			HitStopClockJumpSeconds += static_cast<double>(DeltaSeconds);
 			if (HitStopRemainingSeconds <= 0.0)
 			{
 				EndHitStop();
@@ -373,6 +379,8 @@ void UCombatComponent::ResetCombat()
 	// records (landing or reset clear the aerial follow-up counts), so a
 	// fresh life starts with every target's cycle unspent.
 	AerialFollowUpTargetIds.Reset();
+	// M3-031: the carried anchors die with the buffer they tracked.
+	CarriedInputAnchors.Reset();
 }
 
 void UCombatComponent::SetDead(bool bNewDead)
@@ -653,6 +661,8 @@ void UCombatComponent::RequestHitStop(float DurationSeconds)
 	bClockFrozen = true;
 	if (!bWasActive)
 	{
+		// M3-031: a fresh stop measures its own frozen span from zero.
+		HitStopClockJumpSeconds = 0.0;
 		// A fresh stop freezes the victim-side movement once (the first save
 		// wins; a reentry keeps the pre-freeze state) and pauses a
 		// presenter-less owner's mesh animation.
@@ -676,6 +686,17 @@ void UCombatComponent::EndHitStop()
 	bHitStopActive = false;
 	HitStopRemainingSeconds = 0.0;
 	bHitStopConsumedInjectedAdvance = false;
+	// M3-031: the resume applies the accumulated frozen span to the input
+	// clock in one jump (the M1-033 fall-through). Buffered presses would pay
+	// that span out of their 150 ms lifetimes (the M3-031 red evidence: an
+	// X pressed 83 ms into light_01 aged 183 ms by the window step across one
+	// 40 ms stop), so every buffered press time and carried anchor shifts by
+	// exactly the frozen span: lifetimes stay measured on unfrozen
+	// input-clock time only. This runs before the resume, so the first
+	// post-stop prune judges the shifted values.
+	InputBuffer.ShiftPressedTimes(HitStopClockJumpSeconds);
+	ShiftCarriedAnchors(HitStopClockJumpSeconds);
+	HitStopClockJumpSeconds = 0.0;
 	// The action clock passthrough unfreezes here. A debug freeze set through
 	// SetClockFrozen(true) is lifted by a hit stop ending too (a documented
 	// debug-tool interaction: both share one freeze flag).
@@ -763,11 +784,80 @@ void UCombatComponent::ApplyOwnerHitStopAnimationPause(bool bPause)
 	UCombatPresentationComponent::SetAnimInstancePausedForHitStop(AnimInstance, bPause);
 }
 
+void UCombatComponent::PruneBufferedInputs()
+{
+	// M3-031: the shared lifetime prune. Judged per entry from its effective
+	// press time: a carried anchor (when present and after the raw stamp)
+	// replaces the press time in the age computation; an empty anchor map
+	// reduces to the plain PruneExpired semantics verbatim.
+	InputBuffer.PruneExpiredAnchored(InputClockSeconds, M1_021_InputLifetimeSeconds, CarriedInputAnchors);
+}
+
+void UCombatComponent::RaiseCarriedAnchors(double NowSeconds)
+{
+	for (TPair<uint64, double>& Anchor : CarriedInputAnchors)
+	{
+		// Raise, never lower: an anchor at or after Now (a press stamped
+		// during a freeze) keeps its future-safe value.
+		Anchor.Value = FMath::Max(Anchor.Value, NowSeconds);
+	}
+}
+
+void UCombatComponent::ShiftCarriedAnchors(double OffsetSeconds)
+{
+	if (OffsetSeconds == 0.0)
+	{
+		return;
+	}
+	for (TPair<uint64, double>& Anchor : CarriedInputAnchors)
+	{
+		if (FMath::IsFinite(Anchor.Value))
+		{
+			Anchor.Value += OffsetSeconds;
+		}
+	}
+}
+
+void UCombatComponent::CompactCarriedAnchors()
+{
+	if (CarriedInputAnchors.Num() == 0)
+	{
+		return;
+	}
+	TSet<uint64> BufferedSequences;
+	FBufferedCombatInput Entry;
+	for (int32 Index = 0; InputBuffer.PeekAt(Index, Entry); ++Index)
+	{
+		BufferedSequences.Add(Entry.Sequence);
+	}
+	TArray<uint64> StaleSequences;
+	for (TPair<uint64, double>& Anchor : CarriedInputAnchors)
+	{
+		if (!BufferedSequences.Contains(Anchor.Key))
+		{
+			StaleSequences.Add(Anchor.Key);
+		}
+	}
+	for (uint64 StaleSequence : StaleSequences)
+	{
+		CarriedInputAnchors.Remove(StaleSequence);
+	}
+}
+
 void UCombatComponent::QueueInput(FBufferedCombatInput Input)
 {
-	// Push rejections (duplicate/regressing sequence, non-finite time) are
-	// intentionally silent: QueueInput reports nothing (M1-012 contract).
-	InputBuffer.Push(Input);
+	// M3-031: a push that lands behind an earlier buffered intent is a
+	// CARRIED press (the player queued it while a chain was still pending);
+	// its lifetime is judged from the carried anchor instead of the raw press
+	// time so it can survive into the follow-up attack's cancel window.
+	// Rejected pushes (duplicate/regressing sequence, non-finite time) anchor
+	// nothing.
+	const bool bBufferWasNonEmpty = InputBuffer.Size() > 0;
+	const bool bAccepted = InputBuffer.Push(Input);
+	if (bAccepted && bBufferWasNonEmpty)
+	{
+		CarriedInputAnchors.Add(Input.Sequence, Input.PressedAt);
+	}
 }
 
 bool UCombatComponent::PeekInputBuffer(FBufferedCombatInput& Out, int32 Index) const
@@ -793,6 +883,10 @@ void UCombatComponent::SetInputClockSeconds(double NowSeconds)
 			if (Advanced > 0.0)
 			{
 				HitStopRemainingSeconds -= Advanced;
+				// M3-031: the frozen span the resume will jump the clock over
+				// accumulates here; EndHitStop compensates buffered lifetimes
+				// by exactly this span.
+				HitStopClockJumpSeconds += Advanced;
 				bHitStopConsumedInjectedAdvance = true;
 				if (HitStopRemainingSeconds <= 0.0)
 				{
@@ -869,13 +963,21 @@ bool UCombatComponent::TryChainFromBuffer()
 	{
 		// Outside the cancel window the buffer is deliberately untouched:
 		// presses wait there until the window opens (or expire there).
+		// M3-031: carried presses re-anchor their lifetime here - a step that
+		// offers no consumption opportunity does not age a press that was
+		// queued behind an earlier intent, so the queued Z of a rapid X X Z
+		// survives light_02's pre-window frames and is judged fresh at the
+		// first light_02 window step. Non-carried presses keep the plain
+		// press-time lifetime (the M1-014/M1-021 expiry semantics unchanged).
+		RaiseCarriedAnchors(InputClockSeconds);
 		return false;
 	}
 
 	// Lifetime rule first (interface contract section 2): expired entries are
 	// dropped before any consumption attempt, and an age of exactly 150 ms is
-	// still valid (only a strictly greater age expires).
-	InputBuffer.PruneExpired(InputClockSeconds, M1_021_InputLifetimeSeconds);
+	// still valid (only a strictly greater age expires). M3-031: judged per
+	// entry from its effective press time (carried anchors included).
+	PruneBufferedInputs();
 
 	// M1-021: walk the buffer from the earliest entry and take the first one
 	// whose action maps to a follow-up the running attack allows (earliest
@@ -990,9 +1092,10 @@ bool UCombatComponent::TryStartFromBuffer()
 
 	// Lifetime rule first (only with a valid clock): expired entries are
 	// dropped before any consumption attempt (exactly 150 ms is still valid).
+	// M3-031: judged per entry from its effective press time.
 	if (bInputClockInjected)
 	{
-		InputBuffer.PruneExpired(InputClockSeconds, M1_021_InputLifetimeSeconds);
+		PruneBufferedInputs();
 	}
 
 	// Walk the buffer from the earliest entry and act on the first actionable
@@ -1104,8 +1207,9 @@ bool UCombatComponent::TryJumpCancelFromBuffer()
 
 	// Lifetime rule first (interface contract section 2): expired entries are
 	// dropped before any consumption attempt, and an age of exactly 150 ms is
-	// still valid (only a strictly greater age expires).
-	InputBuffer.PruneExpired(InputClockSeconds, M1_021_InputLifetimeSeconds);
+	// still valid (only a strictly greater age expires). M3-031: judged per
+	// entry from its effective press time (carried anchors included).
+	PruneBufferedInputs();
 
 	// Consume the earliest buffered Jump; consumption removes the entry, so
 	// the same Sequence can never cancel twice.
