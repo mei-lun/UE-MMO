@@ -30,6 +30,17 @@ namespace
 	const TCHAR* GM3_017_SettingsPlaceholderText = TEXT("Settings / Volume: text placeholder (not in the M3-017 scope)");
 }
 
+// ----- UMapSelectWidget --------------------------------------------------------
+
+UMapSelectWidget::UMapSelectWidget(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	// The M3-030 mount captures the game input to the menu (the M2-012 result
+	// screen precedent: FInputModeUIOnly::SetWidgetToFocus requires a
+	// focusable widget).
+	bIsFocusable = true;
+}
+
 void UMapSelectWidget::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
@@ -146,19 +157,28 @@ void UMapSelectWidget::HandleEnterClicked()
 	// enter attempt (the flow's bLoading guard is the machine half).
 	SetEnterButtonEnabled(false);
 
-	URoomDefinition* RoomDef = Flow->GetSelectableRoomDefinition();
-	if (RoomDef == nullptr)
+	// The enter target: the presentation-level override wins when the mount
+	// set one (the combat room the boot world's trigger chain owns); without
+	// it the card's single selectable entry is requested (the M3-017 form).
+	const URoomDefinition* TargetDefinition = EnterRoomDefinitionOverride.Get();
+	if (TargetDefinition == nullptr)
+	{
+		TargetDefinition = Flow->GetSelectableRoomDefinition();
+	}
+	if (TargetDefinition == nullptr)
 	{
 		SetErrorText(TEXT("M3-017: the selectable map entry is unavailable."));
 		SetEnterButtonEnabled(true);
 		return;
 	}
 
-	if (Flow->EnterRoom(RoomDef))
+	if (Flow->EnterRoom(TargetDefinition))
 	{
 		// Accepted: the room world takes over; the button stays disabled for
-		// this presentation and a stale error line clears.
+		// this presentation and a stale error line clears. The M3-030 mount
+		// listens on EnterAccepted to dismiss the overlay.
 		SetErrorText(FString());
+		EnterAccepted.Broadcast();
 		return;
 	}
 
@@ -167,6 +187,13 @@ void UMapSelectWidget::HandleEnterClicked()
 	// failure must stay retryable).
 	SetErrorText(Flow->GetLastError());
 	SetEnterButtonEnabled(true);
+}
+
+void UMapSelectWidget::SetEnterRoomDefinition(const URoomDefinition* Definition)
+{
+	// The presentation-level enter target (the M3-030 HUD mount hands the
+	// combat-room definition); a null restores the M3-017 selectable entry.
+	EnterRoomDefinitionOverride = Definition;
 }
 
 void UMapSelectWidget::SetErrorText(const FString& Message)

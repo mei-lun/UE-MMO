@@ -27,6 +27,15 @@ namespace
 	// reference inside Data/rooms.json).
 	const TCHAR* GM3_017_TrainingArenaMapPath = TEXT("/Game/UEMMO/Maps/L_TrainingArena");
 
+	// M3-030: the production mount's enter target - the boot world's
+	// wave-combat room. RoomId matches the M2-009/M2-016 trigger default the
+	// L_CombatRoom01 placement starts runs with (room_combat_01 + the 2+3
+	// melee_grunt fallback waves), so the flow's enter identity and the
+	// in-world run identity agree.
+	const TCHAR* GM3_030_CombatRoomMapPath = TEXT("/Game/UEMMO/Maps/L_CombatRoom01");
+	const TCHAR* GM3_030_CombatRoomId = TEXT("room_combat_01");
+	const TCHAR* GM3_030_CombatRoomRewardTableId = TEXT("starter");
+
 	// The production save prefix of the M3-014/M3-015 chain (only ever used
 	// outside automation; automation runs the isolated injected service).
 	const TCHAR* GM3_017_ProductionSlotPrefix = TEXT("Profile_");
@@ -43,6 +52,7 @@ void UGameFlowSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	LastError.Reset();
 	CurrentRoomDef = nullptr;
 	CachedSelectableRoom = nullptr;
+	CachedCombatRoom = nullptr;
 	StartupOutcome = FStartupLoadOutcome();
 	bStartupProfileRestored = false;
 
@@ -285,6 +295,24 @@ URoomDefinition* UGameFlowSubsystem::GetSelectableRoomDefinition()
 		CachedSelectableRoom = Room;
 	}
 	return CachedSelectableRoom;
+}
+
+URoomDefinition* UGameFlowSubsystem::GetCombatRoomDefinition()
+{
+	if (CachedCombatRoom == nullptr)
+	{
+		// The M3-030 mount's enter target: the wave-combat room the boot
+		// world's trigger chain runs (see the header comment). Only the
+		// identity fields matter for the map open; the wave content stays
+		// with the ARoomTrigger's existing fallback chain (documented in the
+		// task report).
+		URoomDefinition* Room = NewObject<URoomDefinition>(this, NAME_None, RF_Transient);
+		Room->RoomId = FName(GM3_030_CombatRoomId);
+		Room->MapPath = TSoftObjectPtr<UWorld>(FSoftObjectPath(GM3_030_CombatRoomMapPath));
+		Room->RewardTableId = FName(GM3_030_CombatRoomRewardTableId);
+		CachedCombatRoom = Room;
+	}
+	return CachedCombatRoom;
 }
 
 bool UGameFlowSubsystem::OpenRoomMapProduction(const FString& MapPath)

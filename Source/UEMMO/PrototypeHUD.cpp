@@ -17,6 +17,7 @@
 #include "Room/RoomSessionSubsystem.h"
 #include "UI/DamageNumberModel.h"
 #include "UI/InventoryWidget.h"
+#include "UI/MapSelectWidget.h"
 #include "UI/PendingRewardsWidget.h"
 #include "Items/ItemDefinition.h"
 #include "Items/ItemInstance.h"
@@ -732,6 +733,12 @@ void APrototypeHUD::BeginPlay()
 {
     Super::BeginPlay();
     BindRoomSessionEvents();
+    // M3-030: the game-flow surface presentation. The flow starts in the menu
+    // state (the GameInstance-level machine initializes before any world
+    // exists), so the BOOT world presents the map select overlay; room worlds
+    // (flow Room/Result) present nothing. The presentation is headless-safe
+    // (prepared without a viewport in automation worlds).
+    RefreshMenuPresentation();
 }
 
 void APrototypeHUD::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -865,6 +872,21 @@ void APrototypeHUD::HandleRunEnded(const FRoomResult& Result)
     // M3-012: a finished run lifts the equip block; if the inventory screen is
     // also open, its action buttons must come back immediately.
     UpdateInventoryEquipContext();
+
+    // M3-030: the terminal-run notification on the game flow (Room -> Result,
+    // the result-surface state). Refused outside the room state - the debug
+    // staging worlds keep their menu-state flow and never fake a result.
+    if (UGameFlowSubsystem* Flow = ResolveGameFlowSubsystem())
+    {
+        if (Flow->NotifyRunEnded())
+        {
+            UE_LOG(LogTemp, Display, TEXT("UEMMO M3-030: the flow moved to the result state (%s)."),
+                *RoomResultViewModel.HeadlineText);
+        }
+    }
+    // The menu overlay stays hidden in the result state (idempotent no-op).
+    RefreshMenuPresentation();
+
     UE_LOG(LogTemp, Display, TEXT("UEMMO M2-012: result screen prepared (%s, %.1f s, %d kills)"),
         *RoomResultViewModel.HeadlineText, RoomResultViewModel.ElapsedSeconds, RoomResultViewModel.KilledCount);
 }
@@ -999,14 +1021,30 @@ void APrototypeHUD::HandleReturnRequested()
         return;
     }
     HideRoomResultScreen();
-    if (URoomSessionSubsystem* Session = RoomSessionPtr.Get())
+    // M3-030: the return goes through the game flow (Result/Room -> Menu; the
+    // M2-011 LeaveRoom semantics run inside and the GameInstance-level profile
+    // survives untouched). When the flow cannot accept the return (e.g. the
+    // debug staging never entered a room), the direct M2-012 leave keeps the
+    // original contract.
+    bool bReturnedThroughFlow = false;
+    if (UGameFlowSubsystem* Flow = ResolveGameFlowSubsystem())
     {
-        Session->LeaveRoom();
+        bReturnedThroughFlow = Flow->ReturnToMenu();
     }
-    else
+    if (!bReturnedThroughFlow)
     {
-        UE_LOG(LogTemp, Warning, TEXT("UEMMO M2-012: return could not find the room session."));
+        if (URoomSessionSubsystem* Session = RoomSessionPtr.Get())
+        {
+            Session->LeaveRoom();
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("UEMMO M2-012: return could not find the room session."));
+        }
     }
+    // M3-030: back in the menu state the overlay re-presents (the loop
+    // closes; the next enter reloads the room world fresh).
+    RefreshMenuPresentation();
 }
 
 // ----- M3-018: settlement reward claim ----------------------------------------
@@ -1175,6 +1213,154 @@ const UGameFlowSubsystem* APrototypeHUD::ResolveGameFlowSubsystem() const
 {
     const UGameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
     return GameInstance ? GameInstance->GetSubsystem<UGameFlowSubsystem>() : nullptr;
+}
+
+UGameFlowSubsystem* APrototypeHUD::ResolveGameFlowSubsystem()
+{
+    UGameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+    return GameInstance ? GameInstance->GetSubsystem<UGameFlowSubsystem>() : nullptr;
+}
+
+// ----- M3-030: boot menu mount (the full game-flow loop) -----------------------
+
+bool APrototypeHUD::EnsureMenuWidget()
+{
+    if (MenuWidgetPtr.IsValid())
+    {
+        return true;
+    }
+    if (GetWorld() == nullptr)
+    {
+        return false;
+    }
+    // Native C++ widget: no UMG asset is involved anywhere on this path. The
+    // enter-accepted delegate binds weakly, so a torn-down HUD can never be
+    // touched by a leftover widget.
+    UMapSelectWidget* Widget = CreateWidget<UMapSelectWidget>(GetWorld(), UMapSelectWidget::StaticClass());
+    if (Widget == nullptr)
+    {
+        UE_LOG(LogTemp, Error, TEXT("UEMMO M3-030: the menu widget could not be created."));
+        return false;
+    }
+    TWeakObjectPtr<APrototypeHUD> WeakHUD(this);
+    Widget->EnterAccepted.AddLambda([WeakHUD]()
+    {
+        if (APrototypeHUD* HUD = WeakHUD.Get())
+        {
+            // The flow accepted the enter: the room world owns the screen now
+            // (in production the travel reloads the boot map and this HUD
+            // dies; the dismissal restores the game input for the travel).
+            HUD->HideMenuOverlay();
+        }
+    });
+    MenuWidgetPtr = Widget;
+    return true;
+}
+
+void APrototypeHUD::ShowMenuOverlay()
+{
+    if (!EnsureMenuWidget() || GetWorld() == nullptr)
+    {
+        return;
+    }
+    UMapSelectWidget* Widget = MenuWidgetPtr.Get();
+
+    // The mount's enter target: the wave-combat room of the boot world (its
+    // trigger chain starts the run there), NOT the M3-017 selectable entry's
+    // training-map identity. Without a flow the widget keeps the selectable
+    // default (the M3-017 form).
+    if (UGameFlowSubsystem* Flow = ResolveGameFlowSubsystem())
+    {
+        Widget->SetEnterRoomDefinition(Flow->GetCombatRoomDefinition());
+    }
+    // A fresh presentation re-arms the enter button and clears a stale error
+    // line (the M3-017 BindMenu re-presentation contract).
+    Widget->BindMenu();
+
+    APlayerController* PC = GetWorld()->GetFirstPlayerController();
+    const bool bCanPresent = GEngine != nullptr && GEngine->GameViewport != nullptr && PC != nullptr;
+    if (bCanPresent && !Widget->IsInViewport())
+    {
+        Widget->AddToViewport();
+    }
+    ApplyMenuInputCapture();
+    if (!bCanPresent)
+    {
+        // Headless context (world-less automation): the overlay stays prepared
+        // (widget created and armed) without a viewport or an input switch.
+        UE_LOG(LogTemp, Verbose, TEXT("UEMMO M3-030: menu overlay prepared without presentation (no game viewport/player controller)."));
+    }
+    UE_LOG(LogTemp, Display, TEXT("UEMMO M3-030: menu overlay presented (the flow menu state owns the screen)."));
+}
+
+void APrototypeHUD::HideMenuOverlay()
+{
+    if (UMapSelectWidget* Widget = MenuWidgetPtr.Get())
+    {
+        if (Widget->IsInViewport())
+        {
+            Widget->RemoveFromParent();
+        }
+    }
+    MenuWidgetPtr = nullptr;
+    ApplyMenuInputRestore();
+}
+
+void APrototypeHUD::ApplyMenuInputCapture()
+{
+    // The tracker records the decision first; the real engine input switch
+    // happens only on an actual phase transition (once per presentation).
+    if (!MenuInputFocus.CaptureToUI())
+    {
+        return;
+    }
+    APlayerController* PC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
+    UMapSelectWidget* Widget = MenuWidgetPtr.Get();
+    if (PC != nullptr && Widget != nullptr)
+    {
+        // The menu owns the input: keyboard/mouse leave the character and the
+        // cursor appears for the enter button (the M2-012 capture pattern).
+        FInputModeUIOnly Mode;
+        Mode.SetWidgetToFocus(Widget->TakeWidget());
+        PC->SetInputMode(Mode);
+        PC->bShowMouseCursor = true;
+        UE_LOG(LogTemp, Display, TEXT("UEMMO M3-030: input captured to the menu overlay (UI focus, cursor shown)."));
+    }
+}
+
+void APrototypeHUD::ApplyMenuInputRestore()
+{
+    if (!MenuInputFocus.RestoreToGame())
+    {
+        return;
+    }
+    APlayerController* PC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
+    if (PC != nullptr)
+    {
+        // Back to the game: keyboard and mouse return to the character once.
+        PC->SetInputMode(FInputModeGameOnly());
+        PC->bShowMouseCursor = false;
+        UE_LOG(LogTemp, Display, TEXT("UEMMO M3-030: game input focus restored after the menu overlay."));
+    }
+}
+
+void APrototypeHUD::RefreshMenuPresentation()
+{
+    // The menu overlay is exactly the flow's menu-state surface: presented
+    // while the flow is in Menu (the boot world, and the world after a
+    // result-screen return) and dismissed in every other state (Loading /
+    // Room / Result). Idempotent: the show/hide halves are tracker- and
+    // weak-pointer-gated, so calling this at any change point is safe.
+    const UGameFlowSubsystem* Flow = ResolveGameFlowSubsystem();
+    const bool bMenuState = Flow != nullptr && Flow->GetState() == EGameFlowState::Menu;
+    if (bMenuState)
+    {
+        ShowMenuOverlay();
+    }
+    else
+    {
+        HideMenuOverlay();
+    }
 }
 
 // ----- M3-011: read-only inventory list screen --------------------------------

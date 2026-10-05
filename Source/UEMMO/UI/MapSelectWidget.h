@@ -8,8 +8,13 @@ class UBorder;
 class UButton;
 class UCanvasPanel;
 class UGameFlowSubsystem;
+class URoomDefinition;
 class UTextBlock;
 class UVerticalBox;
+
+/** Fired after the flow ACCEPTED the enter request (the M3-030 HUD mount
+ * dismisses the overlay; nothing is broadcast for a refused request). */
+DECLARE_MULTICAST_DELEGATE(FMapMenuEnterAccepted);
 
 /**
  * M3-017: the map select menu (native-only UUserWidget, same code-built
@@ -36,6 +41,8 @@ public:
 	/** The card's list rule as code: exactly one selectable map row. */
 	static constexpr int32 MapEntryCount = 1;
 
+	UMapSelectWidget(const FObjectInitializer& ObjectInitializer);
+
 	virtual void NativeOnInitialized() override;
 
 	/**
@@ -58,12 +65,25 @@ public:
 	void HandleEnterClicked();
 
 	/**
+	 * M3-030: the presentation-level enter target override. The production HUD
+	 * mount presents this widget over the boot/wave-combat world and sets the
+	 * flow's combat-room definition here, so the enter button opens the room
+	 * the world's trigger chain owns (NOT the raw selectable entry's
+	 * training-map identity). A null definition (the default) restores the
+	 * M3-017 selectable-entry behavior unchanged.
+	 */
+	void SetEnterRoomDefinition(const URoomDefinition* Definition);
+
+	/**
 	 * Shows Message on the error line; an empty Message collapses the line.
 	 */
 	void SetErrorText(const FString& Message);
 
 	/** Enables/disables the enter button (the visible guard half). */
 	void SetEnterButtonEnabled(bool bNewEnabled);
+
+	/** M3-030: broadcast exactly once per ACCEPTED enter request. */
+	FMapMenuEnterAccepted EnterAccepted;
 
 	// -- Read seams (tests and the future menu HUD wiring) -----------------------
 
@@ -113,6 +133,9 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UTextBlock> SettingsPlaceholderBlock;
+
+	/** M3-030: the presentation-level enter target (weak; null = selectable). */
+	TWeakObjectPtr<const URoomDefinition> EnterRoomDefinitionOverride;
 
 	bool bControlsBuilt = false;
 };
