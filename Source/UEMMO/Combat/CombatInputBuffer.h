@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Containers/Map.h"
 
 enum class ECombatInput : uint8
 {
@@ -40,6 +41,31 @@ public:
 	 * earliest surviving entry matching Action, if any.
 	 */
 	bool Consume(ECombatInput Action, double Now, double Lifetime, FBufferedCombatInput& Out);
+
+	/**
+	 * M3-031: PruneExpired with a per-entry lifetime anchor override. Each
+	 * entry's age is judged from its EFFECTIVE press time:
+	 * max(PressedAt, Anchors.FindRef(Sequence)) when an anchor exists for the
+	 * entry's sequence, PressedAt otherwise. Without anchors the judgment is
+	 * exactly PruneExpired(Now, Lifetime). The component raises anchors for
+	 * CARRIED presses (entries queued behind an earlier intent) while no
+	 * consumption opportunity exists, so a queued press survives into the
+	 * follow-up attack's cancel window instead of expiring mid-wait; the
+	 * 150 ms lifetime itself never changes.
+	 */
+	void PruneExpiredAnchored(double Now, double Lifetime, const TMap<uint64, double>& Anchors);
+
+	/**
+	 * M3-031: shifts every buffered entry's PressedAt by OffsetSeconds. The
+	 * hit stop compensation: a local stop pins the injected input clock and
+	 * the resume applies the accumulated world jump in one step, so presses
+	 * buffered across the stop would otherwise pay the frozen span out of
+	 * their 150 ms lifetime. Shifting the press times by exactly the frozen
+	 * span keeps every lifetime measured on unfrozen input-clock time only.
+	 * No-op for a zero offset; non-finite stamps are left alone (they are
+	 * dropped by the next prune anyway).
+	 */
+	void ShiftPressedTimes(double OffsetSeconds);
 
 	int32 Size() const;
 

@@ -519,6 +519,33 @@ private:
 	FVector ResolveFeetLocation() const;
 
 	/**
+	 * M3-031: the buffered-input lifetime prune shared by every consumer
+	 * (interface contract section 2: expired entries drop before any
+	 * consumption attempt; exactly 150 ms is still valid). Judged per entry
+	 * from its effective press time (carried anchors may move the judgment
+	 * forward); an empty anchor map reduces to the plain PruneExpired.
+	 */
+	void PruneBufferedInputs();
+
+	/**
+	 * M3-031: raises every carried press's lifetime anchor to NowSeconds
+	 * (never lowers one). Called from the attack-step branches that offer no
+	 * consumption opportunity, so a queued press does not age while it
+	 * physically cannot be consumed.
+	 */
+	void RaiseCarriedAnchors(double NowSeconds);
+
+	/** M3-031: shifts every carried anchor by OffsetSeconds (hit stop compensation). */
+	void ShiftCarriedAnchors(double OffsetSeconds);
+
+	/**
+	 * M3-031: drops carried anchors whose sequence is no longer buffered
+	 * (consumed, pruned or reset). Runs once per TickCombat so the map stays
+	 * bounded without coupling the consumers to the bookkeeping.
+	 */
+	void CompactCarriedAnchors();
+
+	/**
 	 * M1-019: applies the hit impulse to a surviving target, skipping bodies
 	 * that cannot move. M1-022: a hit that carries a launch component
 	 * (Impulse.Z > 0) launches a character target through
@@ -599,6 +626,34 @@ private:
 	 * BeginLandingRecovery so the process always totals 0.70 s.
 	 */
 	double LandingRecoveringEndTimeSeconds = 0.0;
+
+	/**
+	 * M3-031: lifetime anchors for CARRIED buffered inputs - entries pushed
+	 * while the buffer already held an earlier intent (the player queued a
+	 * press behind one that is still pending). A carried press's 150 ms
+	 * lifetime is judged from its anchor instead of its raw press time
+	 * (PruneExpiredAnchored), and the anchor is raised on every attack step
+	 * that offers the entry no consumption opportunity (RaiseCarriedAnchors,
+	 * reached from the closed-window branch of the cancel-window consumers),
+	 * so a queued press survives the follow-up attack's pre-window frames and
+	 * is judged fresh at the first window step that can actually consume it.
+	 * Keyed by the buffered sequence; entries removed from the buffer have
+	 * their anchors compacted away; ResetCombat clears the map. The 150 ms
+	 * lifetime value itself never changes.
+	 */
+	TMap<uint64, double> CarriedInputAnchors;
+
+	/**
+	 * M3-031: the total injected-clock advancement the running local hit stop
+	 * has consumed (each frozen injection's measured advancement plus the
+	 * delta path's contribution). The stop's resume applies that span to the
+	 * input clock in one jump (the M1-033 fall-through), so presses buffered
+	 * across the stop would pay the frozen span out of their lifetimes;
+	 * EndHitStop shifts buffered press times and carried anchors by exactly
+	 * this span, keeping every lifetime on unfrozen input-clock time only.
+	 * Reset to zero when a fresh stop starts and when the stop ends.
+	 */
+	double HitStopClockJumpSeconds = 0.0;
 
 	FCombatClock Clock;
 	FCombatInputBuffer InputBuffer;

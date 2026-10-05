@@ -74,6 +74,41 @@ bool FCombatInputBuffer::Consume(ECombatInput Action, double Now, double Lifetim
 	return ConsumeFirst(Action, Out);
 }
 
+void FCombatInputBuffer::PruneExpiredAnchored(double Now, double Lifetime, const TMap<uint64, double>& Anchors)
+{
+	// Walk backwards so removal keeps the relative order of surviving entries,
+	// exactly like PruneExpired; only the judged press time differs (the
+	// anchor overrides when it sits after the raw stamp).
+	for (int32 Index = Entries.Num() - 1; Index >= 0; --Index)
+	{
+		const FBufferedCombatInput& Entry = Entries[Index];
+		const double* Anchor = Anchors.Find(Entry.Sequence);
+		const double EffectivePressedAt = (Anchor != nullptr && *Anchor > Entry.PressedAt) ? *Anchor : Entry.PressedAt;
+		const bool bNonFiniteTime = !FMath::IsFinite(Entry.PressedAt) || !FMath::IsFinite(EffectivePressedAt);
+		const bool bInFuture = EffectivePressedAt > Now;
+		const bool bExpired = (Now - EffectivePressedAt) > Lifetime;
+		if (bNonFiniteTime || bInFuture || bExpired)
+		{
+			Entries.RemoveAt(Index);
+		}
+	}
+}
+
+void FCombatInputBuffer::ShiftPressedTimes(double OffsetSeconds)
+{
+	if (OffsetSeconds == 0.0)
+	{
+		return;
+	}
+	for (FBufferedCombatInput& Entry : Entries)
+	{
+		if (FMath::IsFinite(Entry.PressedAt))
+		{
+			Entry.PressedAt += OffsetSeconds;
+		}
+	}
+}
+
 void FCombatInputBuffer::Reset()
 {
 	Entries.Reset();

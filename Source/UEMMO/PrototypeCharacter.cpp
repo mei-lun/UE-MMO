@@ -625,11 +625,31 @@ void APrototypeCharacter::OnResetPressed()
 
 void APrototypeCharacter::SubmitCombatInput(ECombatInput Action)
 {
-    const UWorld* World = GetWorld();
-    // Input game clock (interface contract section 2): World GetTimeSeconds
-    // advances with normal game time only, so pause and hit stop do not
-    // advance it. World-less callers (early tests) read 0.0.
-    SubmitCombatInput(Action, World ? World->GetTimeSeconds() : 0.0);
+	// M3-031: the press stamp must live in the SAME clock the consumer judges
+	// buffered lifetimes with - the combat component's injected input game
+	// clock (interface contract section 2). Reading the raw world clock here
+	// desynchronized the two domains while a local hit stop pins the
+	// component's clock: the press stamped AHEAD of the component's "now"
+	// (a future-dated entry) and every press buffered across the stop paid
+	// the frozen span out of its 150 ms lifetime - the M3-031 red evidence.
+	// The component clock reads 0.0 only before its first injection (bare
+	// test worlds), where the world clock stays the best available stamp.
+	double PressedAt = 0.0;
+	const UWorld* World = GetWorld();
+	const double WorldSeconds = World ? World->GetTimeSeconds() : 0.0;
+	if (Combat != nullptr)
+	{
+		const double ComponentClock = Combat->GetInputClockSeconds();
+		PressedAt = (ComponentClock > 0.0) ? ComponentClock : WorldSeconds;
+	}
+	else
+	{
+		PressedAt = WorldSeconds;
+	}
+	// Input game clock (interface contract section 2): World GetTimeSeconds
+	// advances with normal game time only, so pause and hit stop do not
+	// advance it. World-less callers (early tests) read 0.0.
+	SubmitCombatInput(Action, PressedAt);
 }
 void APrototypeCharacter::SubmitCombatInput(ECombatInput Action, double PressedAt)
 {
