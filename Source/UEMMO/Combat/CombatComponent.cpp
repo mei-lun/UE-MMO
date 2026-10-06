@@ -107,10 +107,11 @@ namespace
 	}
 
 	// M1-026: the landing recovery durations (interface contract section 6):
-	// a launched landing knocks the victim down for 0.45 s and then keeps it
-	// in Recovering for 0.25 s before it is Free again - both deadlines are
-	// fixed at the landing moment, so the process always totals 0.70 s
-	// regardless of tick spacing. Pre-tuning-playtest initial values.
+	// the pre-tuning-playtest initial values. M5-016 parameterized the
+	// landing executor - these constants remain as the defensive fallback
+	// for an illegal policy grant (non-finite or negative) only; a legal
+	// grant (the legacy default policy carries exactly these values) is
+	// read from the component's own target policy.
 	constexpr double M1_026_KnockdownSeconds = 0.45;
 	constexpr double M1_026_RecoveringSeconds = 0.25;
 
@@ -608,9 +609,23 @@ bool UCombatComponent::BeginLandingRecovery(double NowSeconds)
 	bAirControlWindowOpen = false;
 	bAirControlExpiredUntilLanding = false;
 	ActionState = ECombatActionState::Knockdown;
-	LandingKnockdownEndTimeSeconds = NowSeconds + M1_026_KnockdownSeconds;
-	LandingRecoveringEndTimeSeconds = LandingKnockdownEndTimeSeconds + M1_026_RecoveringSeconds;
-	// M3-023: the landing transition row (the 0.45 s knockdown opens here).
+	// M5-016: the down-state durations are configuration - the component's
+	// own target policy grants them (the M5-003 fields; the legacy default
+	// policy carries the exact M1-026 constants 0.45/0.25). An illegal grant
+	// (non-finite or negative - parsed rows are validated, hand-set policies
+	// are not) falls back to the legacy constants instead of poisoning the
+	// deadlines; a zero grant is legal and means an instant phase.
+	const float KnockdownGrant = HitTargetReactionPolicy.KnockdownSeconds;
+	const float RecoveringGrant = HitTargetReactionPolicy.RecoveringSeconds;
+	const double KnockdownDuration = (FMath::IsFinite(KnockdownGrant) && KnockdownGrant >= 0.0f)
+		? static_cast<double>(KnockdownGrant)
+		: M1_026_KnockdownSeconds;
+	const double RecoveringDuration = (FMath::IsFinite(RecoveringGrant) && RecoveringGrant >= 0.0f)
+		? static_cast<double>(RecoveringGrant)
+		: M1_026_RecoveringSeconds;
+	LandingKnockdownEndTimeSeconds = NowSeconds + KnockdownDuration;
+	LandingRecoveringEndTimeSeconds = LandingKnockdownEndTimeSeconds + RecoveringDuration;
+	// M3-023: the landing transition row (the policy's knockdown opens here).
 	M3_023_LogActionState(*this, FString(TEXT("Knockdown")));
 	return true;
 }
