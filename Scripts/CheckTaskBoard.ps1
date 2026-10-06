@@ -7,7 +7,7 @@ $Problems = New-Object 'System.Collections.Generic.List[string]'
 $Rows = New-Object 'System.Collections.Generic.List[object]'
 $ById = @{}
 $Allowed = @('TODO','IN_PROGRESS','PAUSED','BLOCKED','REVIEW','DONE','DEFERRED','SUPERSEDED')
-$IdPattern = '^M[0-4]-(?:[0-9]{3}[A-Z]?|H[0-9]{2})$'
+$IdPattern = '^M[0-5]-(?:[0-9]{3}[A-Z]?|H[0-9]{2})$'
 $EmptyCell = [string][char]0x2014
 
 function Get-LinkPath([string]$Cell) {
@@ -114,7 +114,7 @@ $Ready=@($Rows | Where-Object {
     $Row.Status -eq 'TODO' -and @($Row.Dependencies | Where-Object { -not $ById.ContainsKey($_) -or $ById[$_].Status -ne 'DONE' }).Count -eq 0
 } | ForEach-Object { $_.Id })
 $ByStage=@{}
-foreach($Stage in @('M0','M1','M2','M3','M4')) {
+foreach($Stage in @('M0','M1','M2','M3','M4','M5')) {
     $StageRows=@($Rows | Where-Object Stage -eq $Stage)
     $ByStage[$Stage]=@{Total=$StageRows.Count;Done=@($StageRows|Where-Object Status -eq 'DONE').Count}
 }

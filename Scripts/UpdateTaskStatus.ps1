@@ -11,7 +11,7 @@ if(-not $ProjectRoot) { $ProjectRoot = [IO.Path]::GetFullPath((Join-Path $PSScri
 $ProjectRoot = [IO.Path]::GetFullPath($ProjectRoot)
 $BoardPath = Join-Path $ProjectRoot 'TASKS.md'
 if(-not (Test-Path -LiteralPath $BoardPath)) { throw "TASKS.md not found: $BoardPath" }
-if($Id -notmatch '^M[0-4]-(?:[0-9]{3}[A-Z]?|H[0-9]{2})$') { throw "Invalid task ID: $Id" }
+if($Id -notmatch '^M[0-5]-(?:[0-9]{3}[A-Z]?|H[0-9]{2})$') { throw "Invalid task ID: $Id" }
 if(-not $UpdatedAt) { $UpdatedAt = (Get-Date).ToString('yyyy-MM-ddTHH:mm:sszzz') }
 $ParsedTime = [DateTimeOffset]::MinValue
 if(-not [DateTimeOffset]::TryParse($UpdatedAt,[ref]$ParsedTime) -or $UpdatedAt -notmatch '(Z|[+-][0-9]{2}:[0-9]{2})$') { throw 'UpdatedAt must be an ISO-8601 timestamp with timezone.' }
