@@ -11,6 +11,9 @@
 #include "CombatHitTypes.h"
 #include "CombatInputBuffer.h"
 
+#include "System/CombatEntityRegistry.h"
+#include "System/HitLedger.h"
+
 #include "CombatComponent.generated.h"
 
 class UAttackCatalog;
@@ -336,6 +339,20 @@ public:
 	float GetDefense() const;
 
 	/**
+	 * M5-013: diagnostic count of the hit events this component's unified hit
+	 * ledger (M5-010) currently records as live keys. Every melee hit this
+	 * component applies flows through the M5-012 unified entry, which commits
+	 * exactly one event key per (epoch, attacker, shot, pellet, target); a
+	 * shot that ended (attack finished/cancelled/reset) releases its keys back
+	 * to the pool, so a torn-down instance reads 0 while a running one carries
+	 * its accepted hits.
+	 */
+	int32 GetUnifiedLedgerRecordedEventCount() const;
+
+	/** M5-013: diagnostic count of the shot controls the unified ledger accepted (live keys only). */
+	int32 GetUnifiedLedgerAcceptedControlCount() const;
+
+	/**
 	 * M1-033: requests a local hit stop of DurationSeconds on this component
 	 * (the card's 40 ms rides in on FCombatHit::HitStopSeconds from the
 	 * definition). While the stop runs: the action clock freezes (the
@@ -512,8 +529,32 @@ private:
 	 * per target (dedup key = InstigatorId/AttackInstanceId/HitGroupId/
 	 * TargetId, recorded only on an accepted ApplyDamage). Safe no-op without
 	 * a catalog, definition, owner or world; stale and dead targets skip.
+	 * M5-013: the per-target application goes through the M5-012 unified hit
+	 * entry (ApplyUnifiedHit) - the M5-010 ledger is the dedup face and the
+	 * M5-011 resolver the damage face, so there is no second direct-to-health
+	 * path left in this component.
 	 */
 	void TryApplyActiveWindowHits();
+
+	/**
+	 * M5-013: resolves (and lazily mints) the unified world entity id of one
+	 * actor in this component's M5-010 registry. The first registration wins
+	 * and is cached per actor; a cached id is reused only while the registry
+	 * record still resolves to the same live actor. Faction stays empty (no
+	 * production faction source exists yet), the category is an informational
+	 * label ("attacker" for the owner, "target" for hit targets). Returns
+	 * InvalidCombatEntityId when the registry refused.
+	 */
+	FEntityId ResolveUnifiedEntityId(AActor& Entity, FName Category);
+
+	/**
+	 * M5-013: tombstones the running instance's shot in the unified ledger
+	 * (its keys release back to the pool while late re-sends stay refused) and
+	 * drops the instance's public ActionSequence slot. Runs from the instance
+	 * teardown (finish, cancel, reset), so attack instances never leak active
+	 * ledger capacity.
+	 */
+	void EndUnifiedShot();
 
 	/** M1-019: resolves the current feet origin (provider first, owner second). */
 	FVector ResolveFeetLocation() const;
@@ -698,11 +739,39 @@ private:
 	TSet<FName> LoggedMissingAttackIds;
 
 	/**
-	 * M1-019: hit keys already accepted by the running attack instance. The
-	 * set is cleared together with the instance (finish, chain switch, reset),
-	 * so the next instance can hit the same target again.
+	 * M5-013: the unified hit identity space of this component (M5-010
+	 * ownership, M5-013 adaptation): the registry mints the owner's world
+	 * entity id, every hit target's id and the per-instance public
+	 * ActionSequence (FShotId); the bound ledger is the dedup face of the
+	 * unified entry. Per-attacker instances are a deliberate M5-013 placement
+	 * (the World-level home of the registry/ledger pair belongs to the later
+	 * integration task): dedup keys never cross ledgers, so the per-instance
+	 * once-per-target semantics of the retired M1-019 instance hit set are
+	 * preserved exactly.
 	 */
-	TSet<FCombatHitDedupKey> InstanceHitKeys;
+	FCombatEntityRegistry UnifiedEntityRegistry;
+
+	/** M5-013: the M5-010 hit ledger bound to UnifiedEntityRegistry (the unified entry's dedup face). */
+	FHitLedger UnifiedHitLedger;
+
+	/**
+	 * M5-013: the running instance's public ActionSequence slot and the source
+	 * entity it was allocated for. Allocated lazily on the first active window
+	 * frame that reaches the unified entry (the attack start can happen on a
+	 * bare component without a world, where no registry source exists yet);
+	 * cleared by EndUnifiedShot with the instance teardown.
+	 */
+	FShotId ActiveShotId = InvalidCombatShotId;
+	FEntityId ActiveShotSourceEntityId = InvalidCombatEntityId;
+
+	/**
+	 * M5-013: unified entity id cache per registered actor (the owner on its
+	 * first unified hit attempt, every hit target on its first hit attempt).
+	 * Entries are verified against the registry record before reuse; entries
+	 * of destroyed actors stay until their address is reused (a bounded,
+	 * session-lifetime bookkeeping map).
+	 */
+	TMap<AActor*, FEntityId> UnifiedEntityIdCache;
 
 	/**
 	 * M1-024: targets that already took an aerial follow-up in their current

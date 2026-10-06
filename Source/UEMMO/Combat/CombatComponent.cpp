@@ -17,6 +17,9 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Logging/LogMacros.h"
 #include "../Logging/OperationLogSubsystem.h"
+#include "System/DamageTypes.h"
+#include "System/ReactionTypes.h"
+#include "System/UnifiedHitApplier.h"
 
 #include <atomic>
 
@@ -168,18 +171,46 @@ namespace
 	// The design damage formula (Docs/01 section 8.2):
 	// damage = max(1, round((baseDamage + AttackPower * coefficient)
 	//                        * 100 / (100 + max(0, Defense))))
-	// M3-010: the two attribute entry points are the wired growth attributes -
-	// AttackPower is the ATTACKER's CombatAttackPower (this component) and
-	// Defense is the VICTIM's CombatDefense (the call site reads it from the
-	// target's combat component). An unwired combatant keeps the 0/0 defaults,
-	// so the pre-M3-010 results stay verbatim (light_01 deducts exactly 10).
-	// Rounding is FMath::RoundToFloat (Floor(x + 0.5): half away from zero for
-	// the positive raw results this formula produces).
-	float M1_019_ComputeHitDamage(const UAttackDefinition& Definition, float AttackPower, float Defense)
+	// M3-010: AttackPower is the ATTACKER's CombatAttackPower (this component)
+	// and Defense is the VICTIM's CombatDefense (read from the target's combat
+	// component). An unwired combatant keeps the 0/0 defaults, so the
+	// pre-M3-010 results stay verbatim (light_01 deducts exactly 10).
+	// M5-013: the formula now lives only in the M5-011 pure resolver (the
+	// unified entry's default calculator; byte-for-byte compatible and pinned
+	// by M5DamageResolverTests/M5UnifiedHitTests) - the M1-019 helper and the
+	// direct-to-health path it served are removed with the rewiring.
+
+	// M5-013: derives the unified request's per-hit numeric definition from
+	// the live attack definition the old pipeline already used (the catalog's
+	// DA_* assets loaded through Config/DefaultGame.ini). The four legacy
+	// attacks resolve to the exact old numbers (10/14/18/12 at the 0/0
+	// attribute defaults). When the M5-008/009 data assets reach their runtime
+	// wiring (M5-020A), the same fields can be read from
+	// FCombatCatalog::FindDamageProfile without touching this call site.
+	FDamageProfile M5_013_MakeDamageProfile(const UAttackDefinition& Definition)
 	{
-		const float RawDamage = (Definition.BaseDamage + AttackPower * Definition.AttackCoefficient)
-			* 100.0f / (100.0f + FMath::Max(0.0f, Defense));
-		return FMath::Max(1.0f, FMath::RoundToFloat(RawDamage));
+		FDamageProfile Profile;
+		Profile.DamageProfileId = Definition.AttackId;
+		Profile.BaseDamage = Definition.BaseDamage;
+		Profile.AttackCoefficient = Definition.AttackCoefficient;
+		Profile.HitStunSeconds = Definition.HitStunSeconds;
+		Profile.KnockbackCmPerSecond = Definition.KnockbackSpeed;
+		Profile.LaunchCmPerSecond = Definition.LaunchSpeed;
+		Profile.HitStopSeconds = Definition.HitStopSeconds;
+		return Profile;
+	}
+
+	// M5-013: the target side of the unified request. The struct defaults of
+	// FTargetReaction ARE the legacy normal target (ReactionTypes.h: every
+	// gate open, no poise, no immunity, 2 launches per cycle at 1.0/0.7), so
+	// the default-constructed policy reproduces the M1-019 control semantics
+	// verbatim; the launcher's per-cycle Z scaling stays with the M1-025
+	// attacker-side policy below until M5-015 parameterizes the source.
+	FTargetReaction M5_013_MakeLegacyTargetReaction()
+	{
+		FTargetReaction Policy;
+		Policy.PolicyId = FName(TEXT("normal"));
+		return Policy;
 	}
 }
 
@@ -187,6 +218,10 @@ UCombatComponent::UCombatComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 	CachedInstigatorId = M1_019_NextInstigatorId.fetch_add(1) + 1;
+	// M5-013: the unified entry's dedup face verifies epochs and entities
+	// against this component's own registry (the member address is stable for
+	// the component's lifetime).
+	UnifiedHitLedger.BindRegistry(&UnifiedEntityRegistry);
 }
 
 bool UCombatComponent::InitializeFromCatalog(UAttackCatalog* InCatalog)
@@ -627,6 +662,16 @@ float UCombatComponent::GetAttackPower() const
 float UCombatComponent::GetDefense() const
 {
 	return CombatDefense;
+}
+
+int32 UCombatComponent::GetUnifiedLedgerRecordedEventCount() const
+{
+	return UnifiedHitLedger.GetNumRecordedEvents();
+}
+
+int32 UCombatComponent::GetUnifiedLedgerAcceptedControlCount() const
+{
+	return UnifiedHitLedger.GetNumAcceptedControls();
 }
 
 void UCombatComponent::RequestHitStop(float DurationSeconds)
@@ -1254,10 +1299,56 @@ void UCombatComponent::ClearInstance()
 	// (the unified reset semantics belong to M1-027).
 	LandingKnockdownEndTimeSeconds = 0.0;
 	LandingRecoveringEndTimeSeconds = 0.0;
-	// M1-019: the instance's hit set dies with the instance (finish, chain
+	// M1-019: the instance's hit set died with the instance (finish, chain
 	// switch and reset all funnel through here), so the next instance can hit
-	// the same target again.
-	InstanceHitKeys.Reset();
+	// the same target again. M5-013: the dedup face itself moved into the
+	// unified ledger - EndUnifiedShot tombstones the instance's shot, which
+	// releases its keys (a fresh instance hits again) while keeping late
+	// re-sends of the old shot refused.
+	EndUnifiedShot();
+}
+
+FEntityId UCombatComponent::ResolveUnifiedEntityId(AActor& Entity, FName Category)
+{
+	// A cached id is reused only while its registry record still resolves to
+	// the same live actor (a destroyed actor's record carries a dead weak
+	// reference; address reuse then re-mints instead of inheriting the stale
+	// identity).
+	if (const FEntityId* Existing = UnifiedEntityIdCache.Find(&Entity))
+	{
+		const FCombatEntityRecord* Record = UnifiedEntityRegistry.FindEntity(*Existing);
+		if (Record != nullptr && Record->Actor.Get() == &Entity)
+		{
+			return *Existing;
+		}
+	}
+
+	FCombatEntityMetadata Metadata;
+	// The faction stays empty: no production faction source exists yet (the
+	// M1-018 team placeholder), and an unaligned entity can never trip the
+	// unified entry's friendly-fire filter - the M2-004 same-kind exclusion
+	// stays the explicit attacker-side rule below.
+	Metadata.Category = Category;
+	const FEntityId EntityId = UnifiedEntityRegistry.RegisterEntity(&Entity, Metadata, UnifiedEntityRegistry.GetCurrentEpoch());
+	if (IsValidCombatEntityId(EntityId))
+	{
+		UnifiedEntityIdCache.Add(&Entity, EntityId);
+	}
+	return EntityId;
+}
+
+void UCombatComponent::EndUnifiedShot()
+{
+	if (!IsValidCombatShotId(ActiveShotId))
+	{
+		return;
+	}
+	if (IsValidCombatEntityId(ActiveShotSourceEntityId))
+	{
+		UnifiedHitLedger.EndShot(UnifiedEntityRegistry.GetCurrentEpoch(), ActiveShotSourceEntityId, ActiveShotId);
+	}
+	ActiveShotId = InvalidCombatShotId;
+	ActiveShotSourceEntityId = InvalidCombatEntityId;
 }
 
 uint64 UCombatComponent::GetInstigatorId() const
@@ -1302,9 +1393,35 @@ void UCombatComponent::TryApplyActiveWindowHits()
 	const FCombatHitBox Box = ComputeHitBox(FeetLocation, Facing, *Definition);
 	const TArray<TWeakObjectPtr<AActor>> Targets = QueryTargets(OwnerActor->GetWorld(), Box, OwnerActor, /*AttackerTeam*/ 0);
 
+	// M5-013: the unified identity of this application. The owner's world
+	// entity id and the instance's public ActionSequence (the M5-010 registry
+	// allocation, never the module-local InstanceId) are minted lazily on the
+	// first active frame that reaches here - an attack start on a bare
+	// component without an owner has no registry source yet, and such a
+	// component never lands hits either.
+	const FCombatEpoch Epoch = UnifiedEntityRegistry.GetCurrentEpoch();
+	const FEntityId AttackerEntityId = ResolveUnifiedEntityId(*OwnerActor, FName(TEXT("attacker")));
+	if (!IsValidCombatEntityId(AttackerEntityId))
+	{
+		UE_LOG(LogTemp, Verbose,
+			TEXT("UEMMO UCombatComponent: active-window hits skipped (the owner entity id could not be minted)."));
+		return;
+	}
+	if (!IsValidCombatShotId(ActiveShotId))
+	{
+		ActiveShotId = UnifiedEntityRegistry.AllocateActionSequence(AttackerEntityId, Epoch);
+		ActiveShotSourceEntityId = AttackerEntityId;
+	}
+	if (!IsValidCombatShotId(ActiveShotId))
+	{
+		UE_LOG(LogTemp, Verbose,
+			TEXT("UEMMO UCombatComponent: active-window hits skipped (the public action sequence could not be allocated)."));
+		return;
+	}
+
 	// Single hit group per attack instance this card: every current attack is
-	// one hit, so all keys share HitGroupId 0. Multi-hit skills later define
-	// one group per sub-hit (interface contract section 5).
+	// one hit, so all confirmed hits share HitGroupId 0. Multi-hit skills
+	// later define one group per sub-hit (interface contract section 5).
 	constexpr int32 HitGroupId = 0;
 
 	for (const TWeakObjectPtr<AActor>& WeakTarget : Targets)
@@ -1318,9 +1435,9 @@ void UCombatComponent::TryApplyActiveWindowHits()
 			continue;
 		}
 
-		// M1-024: one aerial follow-up per target float cycle. A refused
-		// follow-up is a miss in the fullest sense: no damage, no impulse,
-		// no dedup key (nothing poisons a later instance) and no event.
+		// The attacker-side float-cycle bookkeeping id (M1-024). It stays the
+		// session object id: this set is per-attacker state, not the unified
+		// dedup surface (the ledger key carries the registry entity ids).
 		const uint64 TargetId = static_cast<uint64>(Target->GetUniqueID());
 		// M2-004: same faction never hurts itself (interface contract sections
 		// 4 and 5). The query's AttackerTeam parameter is still a placeholder
@@ -1341,24 +1458,9 @@ void UCombatComponent::TryApplyActiveWindowHits()
 				continue;
 			}
 		}
-		// M3-010: the victim's combat component is looked up exactly once here -
-		// it gates the hit (the M1-026 landing recovery below) and feeds the
-		// Defense half of the damage formula (this component is the attacker and
-		// contributes its own AttackPower); the M1-020 victim-side notify further
-		// below reuses the same lookup.
-		UCombatComponent* VictimCombat = Target->FindComponentByClass<UCombatComponent>();
-		// M1-026: a target inside its landing recovery (Knockdown or
-		// Recovering) refuses every hit in the fullest sense: no damage, no
-		// impulse, no dedup key and no event - the recovery period is
-		// unhittable by contract. The state lives on the victim's own combat
-		// component (the same lookup the victim-side notify uses below).
-		if (VictimCombat != nullptr && VictimCombat->IsInLandingRecovery())
-		{
-			UE_LOG(LogTemp, Verbose,
-				TEXT("UEMMO UCombatComponent: hit on target %llu refused (target is inside its landing recovery)."),
-				TargetId);
-			continue;
-		}
+		// M1-024: one aerial follow-up per target float cycle. A refused
+		// follow-up is a miss in the fullest sense: no damage, no impulse,
+		// no dedup key (nothing poisons a later instance) and no event.
 		if (ActiveAttackId == M1_024_AerialLightAttackId
 			&& ShouldRefuseAerialFollowUp(TargetId, *Target))
 		{
@@ -1368,37 +1470,93 @@ void UCombatComponent::TryApplyActiveWindowHits()
 			continue;
 		}
 
-		// Dedup key of the contract shape. Only an accepted damage adds the
-		// key, so a refused hit (dead target, zero result) never blocks a
-		// later instance.
-		FCombatHitDedupKey Key;
-		Key.InstigatorId = CachedInstigatorId;
-		Key.AttackInstanceId = ActiveInstanceId;
-		Key.HitGroupId = HitGroupId;
-		Key.TargetId = TargetId;
-		if (InstanceHitKeys.Contains(Key))
+		// M5-013: the target's world entity id in this attacker's registry
+		// (the unified ledger refuses an unregistered target, so the hit
+		// cannot bypass the identity check).
+		const FEntityId TargetEntityId = ResolveUnifiedEntityId(*Target, FName(TEXT("target")));
+		if (!IsValidCombatEntityId(TargetEntityId))
+		{
+			UE_LOG(LogTemp, Verbose,
+				TEXT("UEMMO UCombatComponent: hit on target %llu refused (the target entity id could not be minted)."),
+				TargetId);
+			continue;
+		}
+
+		// M5-013: the attack side of the unified request - the per-hit numeric
+		// definition read from the live attack definition (the exact values
+		// the old direct-to-health path consumed).
+		FDamageProfile Profile = M5_013_MakeDamageProfile(*Definition);
+
+		// M1-025: launcher hits run the per-float-cycle air-combo policy
+		// before the request leaves the hit site (interface contract section
+		// 6: at most two launcher launches per cycle, Z scale 1.0 then 0.7,
+		// the third refuses the launch reaction while damage and dedup still
+		// apply). The policy only shapes the request's launch magnitude: the
+		// unified entry decides the launch control from it, and the impulse
+		// below applies exactly what the outcome accepted. Non-launcher
+		// attacks keep their definition impulse verbatim.
+		bool bLauncherLaunchAllowed = false;
+		if (ActiveAttackId == M1_025_LauncherAttackId)
+		{
+			const int32 LauncherCycleCount = M1_025_ResolveLauncherCycleCount(Target);
+			const FAirComboDecision AirComboDecision = EvaluateAirCombo(LauncherCycleCount);
+			if (AirComboDecision.bAllowed)
+			{
+				Profile.LaunchCmPerSecond = Definition->LaunchSpeed * AirComboDecision.ZScale;
+				bLauncherLaunchAllowed = true;
+			}
+			else
+			{
+				Profile.LaunchCmPerSecond = 0.0f;
+			}
+			UE_LOG(LogTemp, Verbose,
+				TEXT("UEMMO UCombatComponent: launcher air-combo decision on target %llu (cycle count %d, allowed %d, z scale %.2f)"),
+				TargetId, LauncherCycleCount,
+				AirComboDecision.bAllowed ? 1 : 0, AirComboDecision.ZScale);
+		}
+
+		// M5-013: the one submission per (attacker, shot, pellet, target). The
+		// unified entry validates identity and context first, resolves the
+		// damage through the M5-011 resolver (the M1-019 formula), commits the
+		// M5-010 ledger dedup key, applies the health through the one health
+		// owner and routes the accepted hit through the victim's
+		// NotifyHitReceived - there is no second direct-to-health path here.
+		FUnifiedHitRequest Request;
+		Request.Epoch = Epoch;
+		Request.AttackerEntityId = AttackerEntityId;
+		Request.ShotId = ActiveShotId;
+		Request.PelletIndex = 0;
+		Request.TargetEntityId = TargetEntityId;
+		Request.TargetActor = Target;
+		Request.Attack = Profile;
+		Request.TargetReaction = M5_013_MakeLegacyTargetReaction();
+		Request.AttackPower = CombatAttackPower;
+		Request.HitLocation = Box.Center;
+
+		const FUnifiedHitOutcome Outcome = ApplyUnifiedHit(Request, UnifiedHitLedger);
+
+		if (Outcome.bWasBlocked)
+		{
+			// A refused submission is a miss in the fullest sense (dead
+			// target, get-up protection, same event key, full ledger): nothing
+			// applied, nothing recorded - a refused hit never poisons a later
+			// instance (the M1-019 semantics, carried by the ledger face).
+			UE_LOG(LogTemp, Verbose,
+				TEXT("UEMMO UCombatComponent: unified hit on target %llu refused (reason %d, ledger %d, damage %d)."),
+				TargetId, static_cast<int32>(Outcome.RefuseReason),
+				static_cast<int32>(Outcome.LedgerReason), static_cast<int32>(Outcome.DamageBlockReason));
+			continue;
+		}
+		// The M5 pure-control shape (zero damage with accepted control)
+		// applies no impulse and no broadcast: the M1-019 path never paid
+		// either for a zero-damage result, and no legacy target policy
+		// produces one (the victim-side control already went through the
+		// unified entry's NotifyHitReceived bridge).
+		if (Outcome.DamageApplied <= 0.0f)
 		{
 			continue;
 		}
 
-		UHealthComponent* TargetHealth = Target->FindComponentByClass<UHealthComponent>();
-		if (TargetHealth == nullptr)
-		{
-			continue;
-		}
-
-		// The design damage formula (Docs/01 section 8.2) with the wired growth
-		// attributes (M3-010): the attacker's AttackPower comes from this
-		// component, the defender's Defense from the victim's combat component
-		// (0 when the target carries none, the pre-M3-010 result verbatim).
-		const float Damage = M1_019_ComputeHitDamage(*Definition, CombatAttackPower,
-			VictimCombat != nullptr ? VictimCombat->GetDefense() : 0.0f);
-		const float Applied = TargetHealth->ApplyDamage(Damage);
-		if (Applied <= 0.0f)
-		{
-			continue;
-		}
-		InstanceHitKeys.Add(Key);
 		// M1-024: the accepted aerial hit spends the target's float cycle -
 		// further aerial hits on it are refused until it lands (or the
 		// component resets).
@@ -1413,51 +1571,18 @@ void UCombatComponent::TryApplyActiveWindowHits()
 		Hit.AttackInstanceId = ActiveInstanceId;
 		Hit.HitGroupId = HitGroupId;
 		Hit.Target = Target;
-		Hit.Damage = Applied;
+		Hit.Damage = Outcome.DamageApplied;
 		Hit.WorldHitLocation = Box.Center;
 		Hit.AttackId = ActiveAttackId;
 		Hit.HitStopSeconds = Definition->HitStopSeconds;
 		Hit.StunSeconds = Definition->HitStunSeconds;
-		Hit.Impulse = FVector(Facing * Definition->KnockbackSpeed, 0.0f, Definition->LaunchSpeed);
-
-		// M1-025: launcher hits run the per-float-cycle air-combo policy
-		// before the impulse leaves the hit site (interface contract section
-		// 6: at most two launcher launches per cycle, Z scale 1.0 then 0.7,
-		// the third refuses the launch reaction while damage and dedup already
-		// happened above). Allowed: the launch Z is the definition launch
-		// speed times the policy scale (700 -> 490 on the second launch);
-		// refused: the Z component is removed entirely so ApplyHitImpulse
-		// takes the additive no-Z path - the X knockback stays on the hit,
-		// the target's current vertical state is untouched. The scaled Z
-		// flows through the unchanged M1-024 max(currentZ, Impulse.Z)
-		// application, so the decay manifests once the target's rise has
-		// fallen below the scaled launch - the only regime the real combo
-		// timing (the second launcher cannot land before frame 18 + the
-		// follow-up's active frame) can produce. Non-launcher attacks keep
-		// their definition impulse verbatim.
-		bool bLauncherLaunchAllowed = false;
-		if (ActiveAttackId == M1_025_LauncherAttackId)
-		{
-			const int32 LauncherCycleCount = M1_025_ResolveLauncherCycleCount(Target);
-			const FAirComboDecision AirComboDecision = EvaluateAirCombo(LauncherCycleCount);
-			if (AirComboDecision.bAllowed)
-			{
-				Hit.Impulse.Z = Definition->LaunchSpeed * AirComboDecision.ZScale;
-				bLauncherLaunchAllowed = true;
-			}
-			else
-			{
-				Hit.Impulse.Z = 0.0f;
-			}
-			UE_LOG(LogTemp, Verbose,
-				TEXT("UEMMO UCombatComponent: launcher air-combo decision on target %llu (cycle count %d, allowed %d, z scale %.2f)"),
-				TargetId, LauncherCycleCount,
-				AirComboDecision.bAllowed ? 1 : 0, AirComboDecision.ZScale);
-		}
+		Hit.Impulse = FVector(Facing * Definition->KnockbackSpeed, 0.0f,
+			Outcome.Control.bLaunch ? Profile.LaunchCmPerSecond : 0.0f);
 
 		// A target that died from this hit receives no impulse: death has
 		// priority (interface contract section 4).
-		if (TargetHealth->IsAlive())
+		UHealthComponent* TargetHealth = Target->FindComponentByClass<UHealthComponent>();
+		if (TargetHealth != nullptr && TargetHealth->IsAlive())
 		{
 			ApplyHitImpulse(*Target, Hit.Impulse);
 			// M1-025: only a launch that was actually applied counts into the
@@ -1473,17 +1598,10 @@ void UCombatComponent::TryApplyActiveWindowHits()
 			}
 		}
 
-		// M1-020: the accepted hit reaches the victim's combat component (when
-		// it has one) before the attacker-side broadcast, so any observer of
-		// OnHitConfirmed already sees the victim stunned or dead. The victim
-		// entry owns the stun/death decision (death has priority there). The
-		// lookup is the one hoisted above (M3-010).
-		if (VictimCombat != nullptr)
-		{
-			VictimCombat->NotifyHitReceived(Hit);
-		}
-
-		// Only now the hit exists for presentations and state tasks.
+		// Only now the hit exists for presentations and state tasks (only a
+		// health-removing hit reaches this broadcast; the victim-side stun
+		// already ran through the unified entry's NotifyHitReceived bridge,
+		// so every OnHitConfirmed observer sees the victim stunned or dead).
 		OnHitConfirmed.Broadcast(Hit);
 	}
 }
