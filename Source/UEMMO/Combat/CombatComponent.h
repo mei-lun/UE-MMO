@@ -233,9 +233,11 @@ public:
 	/**
 	 * M1-026: victim-side entry of one landed-after-launch recovery process
 	 * (interface contract section 6: a launched landing builds exactly one
-	 * Knockdown 0.45 s -> Recovering 0.25 s -> Free sequence). The two
-	 * deadlines are fixed at the landing moment on the injected input clock,
-	 * so the whole process always totals 0.70 s regardless of tick spacing.
+	 * Knockdown -> Recovering -> Free sequence). M5-016: the two durations
+	 * are the component's own target policy grant (the legacy default
+	 * policy carries 0.45 s + 0.25 s = 0.70 s), and both deadlines are
+	 * fixed at the landing moment on the injected input clock, so the
+	 * process never depends on tick spacing.
 	 * Returns false without any state change when the combatant is dead
 	 * (death has priority; the dead never recover) or when a recovery process
 	 * is already running (one landing event builds exactly one process;
@@ -825,7 +827,8 @@ private:
 
 	/**
 	 * M1-026: input-clock time at which the current Knockdown flips to
-	 * Recovering (the landing moment plus 0.45 s). Only meaningful while the
+	 * Recovering (the landing moment plus the policy's knockdown duration).
+	 * Only meaningful while the
 	 * action state is Knockdown; measured on the same explicitly injected
 	 * input clock as the HitStun deadline.
 	 */
@@ -833,9 +836,9 @@ private:
 
 	/**
 	 * M1-026: input-clock time at which the current Recovering returns to
-	 * Free (the landing moment plus 0.45 s + 0.25 s = 0.70 s). Only
+	 * Free (the landing moment plus the policy's full down-state grant). Only
 	 * meaningful while the action state is Knockdown or Recovering; fixed at
-	 * BeginLandingRecovery so the process always totals 0.70 s.
+	 * BeginLandingRecovery so the process never depends on tick spacing.
 	 */
 	double LandingRecoveringEndTimeSeconds = 0.0;
 
