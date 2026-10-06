@@ -125,11 +125,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M3-H01 | [M3 用户阶段验收](Docs/Tasks/M3-H01.md) | DONE | M3-022 | 用户 | 2026-10-03T22:57:41+08:00 | [report](Docs/Tasks/Reports/M3-H01.md) |
 | M4-000 | [后续服务端接入范围](Docs/Tasks/M4-000.md) | DEFERRED | M3-H01 | — | — | — |
 | M5-000 | [M5-000](Docs/Tasks/M5-000.md) | DONE | M3-H01,M3-030,M3-031,M3-032 | ZCode-20260925-A | 2026-10-06T14:46:03+08:00 | [report](Docs/Tasks/Reports/M5-000.md) |
-<<<<<<< HEAD
-| M5-001 | [M5-001](Docs/Tasks/M5-001.md) | IN_PROGRESS | M5-000 | ZCode-20260925-A | 2026-10-06T14:47:19+08:00 | [report](Docs/Tasks/Reports/M5-001.md) |
-=======
-| M5-001 | [M5-001](Docs/Tasks/M5-001.md) | DONE | M5-000 | ZCode-M5-001-walkthrough | 2026-10-06T15:13:28+08:00 | [report](Docs/Tasks/Reports/M5-001.md) |
->>>>>>> feat/m5-001
+| M5-001 | [当前战斗基线与迁移清单](Docs/Tasks/M5-001.md) | DONE | M5-000 | ZCode-20260925-A | 2026-10-06T15:13:28+08:00 | [report](Docs/Tasks/Reports/M5-001.md) |
 | M5-002 | [M5-002](Docs/Tasks/M5-002.md) | TODO | M5-001 | — | — | — |
 | M5-003 | [M5-003](Docs/Tasks/M5-003.md) | TODO | M5-002 | — | — | — |
 | M5-004 | [M5-004](Docs/Tasks/M5-004.md) | TODO | M5-002 | — | — | — |
