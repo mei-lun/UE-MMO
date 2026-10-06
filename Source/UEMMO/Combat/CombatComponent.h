@@ -13,6 +13,7 @@
 
 #include "System/CombatEntityRegistry.h"
 #include "System/HitLedger.h"
+#include "System/ReactionResolver.h"
 
 #include "CombatComponent.generated.h"
 
@@ -339,6 +340,31 @@ public:
 	float GetDefense() const;
 
 	/**
+	 * M5-014: overrides the target-side reaction policy (M5-003) this
+	 * component's hits resolve against. The policy is configuration, not
+	 * action state: it feeds the M5-014 ReactionResolver, which computes the
+	 * hit-received request (stun gate, launch scaling, impulse, immunities)
+	 * for every hit this component applies. The default is the legacy normal
+	 * target minted by ReactionResolver::MakeLegacyNormalTargetReaction - the
+	 * exact value the M5-013 adaptation hardcoded - so every pre-M5-014
+	 * result stays verbatim until a caller overrides it.
+	 */
+	void SetTargetReactionPolicy(FTargetReaction InPolicy);
+
+	/** M5-014: the target-side reaction policy this component's hits resolve against (see SetTargetReactionPolicy). */
+	FTargetReaction GetTargetReactionPolicy() const;
+
+	/**
+	 * M5-014: overrides the attack-side reaction (M5-003) this component's
+	 * hits carry into the resolver. The default is default-constructed:
+	 * EControlPenetration::None, the legacy behavior of every melee attack
+	 * (control faces the target's poise threshold normally; a poise-free
+	 * target never notices, and BypassPoise never bypasses the explicit
+	 * allow gates or a blanket control immunity either way).
+	 */
+	void SetAttackReaction(FAttackReaction InReaction);
+
+	/**
 	 * M5-013: diagnostic count of the hit events this component's unified hit
 	 * ledger (M5-010) currently records as live keys. Every melee hit this
 	 * component applies flows through the M5-012 unified entry, which commits
@@ -629,6 +655,23 @@ private:
 	 */
 	float CombatAttackPower = 0.0f;
 	float CombatDefense = 0.0f;
+
+	/**
+	 * M5-014: the attack-side reaction (M5-003) this component's hits carry
+	 * into the M5-014 resolver. Configuration, not action state. The
+	 * default-constructed value is EControlPenetration::None - the legacy
+	 * behavior of every melee attack.
+	 */
+	FAttackReaction HitAttackReaction;
+
+	/**
+	 * M5-014: the target-side reaction policy (M5-003) this component's hits
+	 * resolve against. Configuration, not action state. The default is the
+	 * legacy normal target (ReactionResolver::MakeLegacyNormalTargetReaction,
+	 * the value the M5-013 adaptation hardcoded), so the pre-M5-014 results
+	 * stay verbatim.
+	 */
+	FTargetReaction HitTargetReactionPolicy = MakeLegacyNormalTargetReaction();
 
 	ECombatActionState ActionState = ECombatActionState::Free;
 
