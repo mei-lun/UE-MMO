@@ -1,6 +1,5 @@
 #include "CombatComponent.h"
 
-#include "AirComboPolicy.h"
 #include "AttackCatalog.h"
 #include "AttackDefinition.h"
 #include "CombatGeometry.h"
@@ -78,9 +77,10 @@ namespace
 	// grounded mapping stays M1_021_FreeLightAttackId (light_01).
 	const FName M1_024_AerialLightAttackId(TEXT("aerial_01"));
 
-	// M1-025: the attack whose hits run the per-float-cycle air-combo policy
-	// (EvaluateAirCombo). Only the launcher is capped and decayed; aerial_01's
-	// small compensation stays under the separate M1-024 one-per-cycle gate.
+	// M1-025/M5-014: the attack whose hits run the per-float-cycle launch
+	// policy (the M5-014 ReactionResolver reads the scale from the target
+	// policy). Only the launcher is capped and decayed; aerial_01's small
+	// compensation stays under the separate M1-024 one-per-cycle gate.
 	const FName M1_025_LauncherAttackId(TEXT("launcher"));
 
 	// M1-025: reads the target's current float-cycle launcher count. The count
@@ -200,18 +200,11 @@ namespace
 		return Profile;
 	}
 
-	// M5-013: the target side of the unified request. The struct defaults of
-	// FTargetReaction ARE the legacy normal target (ReactionTypes.h: every
-	// gate open, no poise, no immunity, 2 launches per cycle at 1.0/0.7), so
-	// the default-constructed policy reproduces the M1-019 control semantics
-	// verbatim; the launcher's per-cycle Z scaling stays with the M1-025
-	// attacker-side policy below until M5-015 parameterizes the source.
-	FTargetReaction M5_013_MakeLegacyTargetReaction()
-	{
-		FTargetReaction Policy;
-		Policy.PolicyId = FName(TEXT("normal"));
-		return Policy;
-	}
+	// M5-014: the M5-013 target-side adaptation (M5_013_MakeLegacyTargetReaction,
+	// the hardcoded legacy normal target) moved to the resolver as
+	// ReactionResolver::MakeLegacyNormalTargetReaction - the component's hit
+	// policy member is initialized from it and every hit's request is now
+	// resolved through the M5-014 ReactionResolver.
 }
 
 UCombatComponent::UCombatComponent()
@@ -662,6 +655,26 @@ float UCombatComponent::GetAttackPower() const
 float UCombatComponent::GetDefense() const
 {
 	return CombatDefense;
+}
+
+void UCombatComponent::SetTargetReactionPolicy(FTargetReaction InPolicy)
+{
+	// M5-014: stored verbatim - the policy is configuration the resolver
+	// reads (the gate flags, the float-cycle launch policy, the immunity
+	// axes); the resolver defends the request against illegal magnitudes.
+	HitTargetReactionPolicy = InPolicy;
+}
+
+FTargetReaction UCombatComponent::GetTargetReactionPolicy() const
+{
+	return HitTargetReactionPolicy;
+}
+
+void UCombatComponent::SetAttackReaction(FAttackReaction InReaction)
+{
+	// M5-014: stored verbatim (see SetTargetReactionPolicy for the
+	// configuration-not-state rationale).
+	HitAttackReaction = InReaction;
 }
 
 int32 UCombatComponent::GetUnifiedLedgerRecordedEventCount() const
@@ -1487,32 +1500,51 @@ void UCombatComponent::TryApplyActiveWindowHits()
 		// the old direct-to-health path consumed).
 		FDamageProfile Profile = M5_013_MakeDamageProfile(*Definition);
 
-		// M1-025: launcher hits run the per-float-cycle air-combo policy
-		// before the request leaves the hit site (interface contract section
-		// 6: at most two launcher launches per cycle, Z scale 1.0 then 0.7,
-		// the third refuses the launch reaction while damage and dedup still
-		// apply). The policy only shapes the request's launch magnitude: the
-		// unified entry decides the launch control from it, and the impulse
-		// below applies exactly what the outcome accepted. Non-launcher
-		// attacks keep their definition impulse verbatim.
-		bool bLauncherLaunchAllowed = false;
+		// M5-014: the hit-received request comes from the pure ReactionResolver
+		// (the attack reaction + the target policy + the target's state
+		// facts). The facts are read here from the only state owners (the
+		// victim's health/combat components) - this component's pipeline stays
+		// the only HitStun/Knockdown timing and action-state source, and the
+		// resolver owns no state, no World and no timer.
+		UHealthComponent* TargetHealth = Target->FindComponentByClass<UHealthComponent>();
+		UCombatComponent* VictimCombat = Target->FindComponentByClass<UCombatComponent>();
+		FReactionHitContext ReactionContext;
+		ReactionContext.Attack = Profile;
+		ReactionContext.AttackReaction = HitAttackReaction;
+		ReactionContext.TargetPolicy = HitTargetReactionPolicy;
+		ReactionContext.bTargetDead = TargetHealth != nullptr && !TargetHealth->IsAlive();
+		ReactionContext.bTargetInLandingRecovery = VictimCombat != nullptr && VictimCombat->IsInLandingRecovery();
+		ReactionContext.Facing = Facing;
+		ReactionContext.LaunchesUsedThisCycle = M1_025_ResolveLauncherCycleCount(Target);
+		// M1-025/M5-014: only the launcher participates in the target's
+		// float-cycle launch policy (the per-cycle Z scaling now reads the
+		// target policy - 1.0 then 0.7, the third launch refused - whose
+		// legacy default carries the exact M1-025 numbers). aerial_01's small
+		// compensation stays under the separate M1-024 one-per-cycle gate and
+		// every other attack keeps its definition launch verbatim.
+		ReactionContext.bPerCycleLaunchScaling = ActiveAttackId == M1_025_LauncherAttackId;
+		ReactionContext.AttackPower = CombatAttackPower;
+		ReactionContext.Defense = VictimCombat != nullptr ? VictimCombat->GetDefense() : 0.0f;
+		const FHitReactionRequest Reaction = ResolveHitReaction(ReactionContext);
+
+		if (Reaction.bRefuseHit)
+		{
+			// The resolver's state gate refused the whole hit (death has
+			// priority, then the get-up protection): nothing applies, nothing
+			// records - a refused hit never poisons a later instance (the
+			// M1-019 semantics; the unified entry enforces the same gate
+			// again for every request that does reach it).
+			UE_LOG(LogTemp, Verbose,
+				TEXT("UEMMO UCombatComponent: hit on target %llu refused by the reaction policy (reason %d)."),
+				TargetId, static_cast<int32>(Reaction.RefuseReason));
+			continue;
+		}
 		if (ActiveAttackId == M1_025_LauncherAttackId)
 		{
-			const int32 LauncherCycleCount = M1_025_ResolveLauncherCycleCount(Target);
-			const FAirComboDecision AirComboDecision = EvaluateAirCombo(LauncherCycleCount);
-			if (AirComboDecision.bAllowed)
-			{
-				Profile.LaunchCmPerSecond = Definition->LaunchSpeed * AirComboDecision.ZScale;
-				bLauncherLaunchAllowed = true;
-			}
-			else
-			{
-				Profile.LaunchCmPerSecond = 0.0f;
-			}
 			UE_LOG(LogTemp, Verbose,
-				TEXT("UEMMO UCombatComponent: launcher air-combo decision on target %llu (cycle count %d, allowed %d, z scale %.2f)"),
-				TargetId, LauncherCycleCount,
-				AirComboDecision.bAllowed ? 1 : 0, AirComboDecision.ZScale);
+				TEXT("UEMMO UCombatComponent: launcher air-combo decision on target %llu (cycle count %d, allowed %d, admitted launch %.1f)"),
+				TargetId, ReactionContext.LaunchesUsedThisCycle,
+				Reaction.bLaunchAdmitted ? 1 : 0, Reaction.LaunchCmPerSecond);
 		}
 
 		// M5-013: the one submission per (attacker, shot, pellet, target). The
@@ -1528,8 +1560,14 @@ void UCombatComponent::TryApplyActiveWindowHits()
 		Request.PelletIndex = 0;
 		Request.TargetEntityId = TargetEntityId;
 		Request.TargetActor = Target;
+		// M5-014: the launch magnitude the resolver admitted (the policy-scaled
+		// value; 0 when the float-cycle policy refused the launch) and the
+		// target policy the request was resolved against - the M5-013
+		// hardcoded adaptation value became the resolver's legacy default
+		// factory feeding the injectable policy member above.
 		Request.Attack = Profile;
-		Request.TargetReaction = M5_013_MakeLegacyTargetReaction();
+		Request.Attack.LaunchCmPerSecond = Reaction.LaunchCmPerSecond;
+		Request.TargetReaction = HitTargetReactionPolicy;
 		Request.AttackPower = CombatAttackPower;
 		Request.HitLocation = Box.Center;
 
@@ -1576,20 +1614,23 @@ void UCombatComponent::TryApplyActiveWindowHits()
 		Hit.AttackId = ActiveAttackId;
 		Hit.HitStopSeconds = Definition->HitStopSeconds;
 		Hit.StunSeconds = Definition->HitStunSeconds;
-		Hit.Impulse = FVector(Facing * Definition->KnockbackSpeed, 0.0f,
-			Outcome.Control.bLaunch ? Profile.LaunchCmPerSecond : 0.0f);
+		// M5-014: the impulse is the resolver's facing-mirrored request (the X
+		// axis only; Y stays 0 - the depth axis is never locked) with the
+		// admitted launch magnitude, gated by the unified entry's control fact.
+		Hit.Impulse = FVector(Reaction.ImpulseVelocity.X, 0.0f,
+			Outcome.Control.bLaunch ? Reaction.LaunchCmPerSecond : 0.0f);
 
 		// A target that died from this hit receives no impulse: death has
 		// priority (interface contract section 4).
-		UHealthComponent* TargetHealth = Target->FindComponentByClass<UHealthComponent>();
 		if (TargetHealth != nullptr && TargetHealth->IsAlive())
 		{
 			ApplyHitImpulse(*Target, Hit.Impulse);
-			// M1-025: only a launch that was actually applied counts into the
-			// target's float cycle - a refused launcher (no launch impulse)
-			// and a lethal hit (no impulse at all) leave the count untouched,
-			// so a still-further launcher keeps being refused in this cycle.
-			if (bLauncherLaunchAllowed && Hit.Impulse.Z > 0.0f)
+			// M1-025/M5-014: only a launch that was actually applied counts
+			// into the target's float cycle - a refused launcher (no launch
+			// impulse) and a lethal hit (no impulse at all) leave the count
+			// untouched, so a still-further launcher keeps being refused in
+			// this cycle.
+			if (Reaction.bLaunchAdmitted && Hit.Impulse.Z > 0.0f)
 			{
 				if (ATrainingEnemy* EnemyTarget = Cast<ATrainingEnemy>(Target))
 				{
