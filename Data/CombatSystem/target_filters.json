@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "table": "target_filters",
+  "rows": [
+    {
+      "filter_id": "filter_combat_hostiles",
+      "allowed_team_relations": ["hostile"],
+      "required_tags": [],
+      "excluded_tags": [],
+      "block_world": true
+    },
+    {
+      "filter_id": "filter_explosion_hostiles",
+      "allowed_team_relations": ["hostile"],
+      "required_tags": [],
+      "excluded_tags": [],
+      "block_world": true
+    }
+  ],
+  "test_room": {
+    "menu_entry": "TestRoom",
+    "map_path": "/Game/UEMMO/Maps/L_CombatRoom01",
+    "waves": [
+      {
+        "wave_index": 1,
+        "layout_id": "layout_test_room_melee_pair",
+        "target_filter_id": "filter_combat_hostiles",
+        "reward_pool_id": "pool_test_room_basic"
+      },
+      {
+        "wave_index": 2,
+        "layout_id": "layout_test_room_ranged_line",
+        "target_filter_id": "filter_explosion_hostiles",
+        "reward_pool_id": "pool_test_room_basic"
+      }
+    ],
+    "vehicle_spawns": []
+  }
+}
