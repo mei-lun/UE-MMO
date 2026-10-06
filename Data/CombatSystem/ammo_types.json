@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "table": "ammo_types",
+  "rows": [
+    {
+      "ammo_id": "ammo_cell",
+      "max_reserve": 120,
+      "magazine_size": 12
+    },
+    {
+      "ammo_id": "ammo_light",
+      "max_reserve": 96,
+      "magazine_size": 12
+    },
+    {
+      "ammo_id": "ammo_shell",
+      "max_reserve": 24,
+      "magazine_size": 4
+    },
+    {
+      "ammo_id": "ammo_missile",
+      "max_reserve": 12,
+      "magazine_size": 3
+    },
+    {
+      "ammo_id": "ammo_rocket",
+      "max_reserve": 12,
+      "magazine_size": 3
+    }
+  ]
+}

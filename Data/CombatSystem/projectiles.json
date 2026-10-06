@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "table": "projectiles",
+  "rows": [
+    {
+      "projectile_id": "bullet_linear",
+      "motion": "straight",
+      "speed_cm_s": 6000,
+      "lifetime_s": 2.0,
+      "damage_profile_id": "physical_10",
+      "pierce_count": 0,
+      "explosion_radius_cm": 0,
+      "explosion_damage_profile_id": "",
+      "homing_turn_rate_deg_s": 0
+    },
+    {
+      "projectile_id": "bullet_piercing",
+      "motion": "straight",
+      "speed_cm_s": 8000,
+      "lifetime_s": 2.0,
+      "damage_profile_id": "physical_10",
+      "pierce_count": 2,
+      "explosion_radius_cm": 0,
+      "explosion_damage_profile_id": "",
+      "homing_turn_rate_deg_s": 0
+    },
+    {
+      "projectile_id": "shell_parabolic",
+      "motion": "parabolic",
+      "speed_cm_s": 3500,
+      "lifetime_s": 3.0,
+      "damage_profile_id": "physical_10",
+      "pierce_count": 0,
+      "explosion_radius_cm": 0,
+      "explosion_damage_profile_id": "",
+      "homing_turn_rate_deg_s": 0
+    },
+    {
+      "projectile_id": "missile_homing",
+      "motion": "homing",
+      "speed_cm_s": 2500,
+      "lifetime_s": 5.0,
+      "damage_profile_id": "physical_10",
+      "pierce_count": 0,
+      "explosion_radius_cm": 0,
+      "explosion_damage_profile_id": "",
+      "homing_turn_rate_deg_s": 180
+    },
+    {
+      "projectile_id": "rocket_explosive",
+      "motion": "straight",
+      "speed_cm_s": 4000,
+      "lifetime_s": 4.0,
+      "damage_profile_id": "physical_10",
+      "pierce_count": 0,
+      "explosion_radius_cm": 300,
+      "explosion_damage_profile_id": "explosive_40",
+      "homing_turn_rate_deg_s": 0
+    }
+  ]
+}
