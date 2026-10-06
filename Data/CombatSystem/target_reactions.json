@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "table": "target_reactions",
+  "comment": "M5-003 sample rows. normal is the legacy default target: every control accepted, max_launches_per_air_cycle 2 with launch_z_scales 1.0/0.7 (the third launch is refused), knockdown_s 0.45 plus recovering_s 0.25, no poise pool, no immunity. heavy is launch-immune via the explicit allow_launch gate (bypass_poise never bypasses it) with a high poise pool. boss refuses all control through immune_control plus its gates and is death_resistant, but is NOT damage immune - the axes stay separate. max_air_time_s is a bounded positive bound (seconds) so no sample can hang a target in the air forever.",
+  "rows": [
+    {
+      "policy_id": "normal",
+      "allow_stagger": true,
+      "allow_launch": true,
+      "allow_knockdown": true,
+      "max_launches_per_air_cycle": 2,
+      "launch_z_scales": [1.0, 0.7],
+      "max_air_time_s": 2.5,
+      "poise_max": 0,
+      "poise_regen_s": 0,
+      "knockdown_s": 0.45,
+      "recovering_s": 0.25,
+      "immune_damage": false,
+      "immune_control": false,
+      "death_resistant": false
+    },
+    {
+      "policy_id": "heavy",
+      "allow_stagger": true,
+      "allow_launch": false,
+      "allow_knockdown": true,
+      "max_launches_per_air_cycle": 2,
+      "launch_z_scales": [1.0, 0.7],
+      "max_air_time_s": 2.5,
+      "poise_max": 120,
+      "poise_regen_s": 2.0,
+      "knockdown_s": 0.45,
+      "recovering_s": 0.25,
+      "immune_damage": false,
+      "immune_control": false,
+      "death_resistant": false
+    },
+    {
+      "policy_id": "boss",
+      "allow_stagger": false,
+      "allow_launch": false,
+      "allow_knockdown": false,
+      "max_launches_per_air_cycle": 0,
+      "launch_z_scales": [1.0],
+      "max_air_time_s": 2.5,
+      "poise_max": 999,
+      "poise_regen_s": 1.0,
+      "knockdown_s": 0.45,
+      "recovering_s": 0.25,
+      "immune_damage": false,
+      "immune_control": true,
+      "death_resistant": true
+    }
+  ]
+}
