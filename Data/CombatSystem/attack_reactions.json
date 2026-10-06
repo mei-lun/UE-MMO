@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "table": "attack_reactions",
+  "comment": "M5-003 sample rows: one attack reaction per legacy melee attack. control_penetration is none for all four - the legacy game has no poise bypass, and bypass_poise (the only other supported value) would skip a target's poise threshold but never its explicit allow gates, blanket control immunity or get-up protection. The hit magnitudes (stun, knockback, launch, hit stop) live in damage_profiles.json; this table carries only the control-strength policy.",
+  "rows": [
+    {
+      "reaction_id": "light_01",
+      "control_penetration": "none"
+    },
+    {
+      "reaction_id": "light_02",
+      "control_penetration": "none"
+    },
+    {
+      "reaction_id": "launcher",
+      "control_penetration": "none"
+    },
+    {
+      "reaction_id": "aerial_01",
+      "control_penetration": "none"
+    }
+  ]
+}

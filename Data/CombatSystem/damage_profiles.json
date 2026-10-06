@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "table": "damage_profiles",
+  "comment": "M5-003 sample rows. The four legacy melee attacks keep their exact M1 values (Data/combat-attacks.json): base_damage 10/14/18/12, hit_stun_s 0.22/0.28/1.0/0.18, knockback_cm_s 90/120/70/80, launch_cm_s 0/0/700/60 and the shared 0.04 s hit stop. attack_coefficient stays 1.0 so the legacy formula result is unchanged. Units: damage in health points, times in seconds, speeds in cm/s.",
+  "rows": [
+    {
+      "damage_profile_id": "light_01",
+      "base_damage": 10,
+      "attack_coefficient": 1.0,
+      "hit_stun_s": 0.22,
+      "knockback_cm_s": 90,
+      "launch_cm_s": 0,
+      "hit_stop_s": 0.04
+    },
+    {
+      "damage_profile_id": "light_02",
+      "base_damage": 14,
+      "attack_coefficient": 1.0,
+      "hit_stun_s": 0.28,
+      "knockback_cm_s": 120,
+      "launch_cm_s": 0,
+      "hit_stop_s": 0.04
+    },
+    {
+      "damage_profile_id": "launcher",
+      "base_damage": 18,
+      "attack_coefficient": 1.0,
+      "hit_stun_s": 1.0,
+      "knockback_cm_s": 70,
+      "launch_cm_s": 700,
+      "hit_stop_s": 0.04
+    },
+    {
+      "damage_profile_id": "aerial_01",
+      "base_damage": 12,
+      "attack_coefficient": 1.0,
+      "hit_stun_s": 0.18,
+      "knockback_cm_s": 80,
+      "launch_cm_s": 60,
+      "hit_stop_s": 0.04
+    }
+  ]
+}
