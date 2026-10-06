@@ -365,6 +365,90 @@ public:
 	void SetAttackReaction(FAttackReaction InReaction);
 
 	/**
+	 * M5-015: true once this component's target policy was explicitly
+	 * overridden through SetTargetReactionPolicy. The hit pipeline resolves
+	 * against the VICTIM's overridden policy when the victim carries one
+	 * (per-target heavy/boss configuration) and against the attacker's
+	 * injected member otherwise (the M5-014 surface, unchanged).
+	 */
+	bool HasOverriddenTargetReactionPolicy() const;
+
+	/**
+	 * M5-015: the current value of this component's poise pool (the victim
+	 * component is the stateful pool owner; the resolver stays pure). A pool
+	 * held by the policy regenerates lazily: a read after the configured
+	 * regen period since the last pressure reports the full pool. A
+	 * pool-free policy (PoiseMax 0, the legacy default) always reads 0.
+	 */
+	float GetEffectivePoiseCurrent();
+
+	/**
+	 * M5-015: records one hit's poise pressure against this component's
+	 * pool: the pool drops by the amount and a depleted pool resets to full
+	 * (the break grants the hit's control). No-op without a pool. Values
+	 * that are non-finite or not greater than 0 are ignored.
+	 */
+	void RecordPoisePressure(float Amount);
+
+	/**
+	 * M5-015: the unified target-side float-cycle launch count (the M1-025
+	 * bookkeeping surface, now component-owned). For a TrainingEnemy owner
+	 * the value reads through to the enemy's legacy field, so the pre-M5-015
+	 * actor-level results stay verbatim; every other component-bearing
+	 * victim (wave enemies included) keeps the count here.
+	 */
+	int32 GetLaunchCycleCount() const;
+
+	/**
+	 * M5-015: records one admitted launch into the target-side float cycle
+	 * (the attacker pipeline calls this exactly when the launch impulse was
+	 * actually applied). TrainingEnemy owners count through the legacy field.
+	 */
+	void RecordLaunchAdmitted();
+
+	/**
+	 * M5-015: reopens the target-side float cycle (count back to 0). The
+	 * clear points are the legacy ones: ground contact, landing recovery
+	 * completion, death and reset.
+	 */
+	void ResetLaunchCycle();
+
+	/**
+	 * M5-015: one victim-side ground contact - reopens the float cycle and
+	 * closes the air-control window. TrainingEnemy owners reuse the legacy
+	 * cycle field; the window state is component-owned either way.
+	 */
+	void OnGroundContact();
+
+	/**
+	 * M5-015: opens the bounded air-control window with the effective
+	 * policy's max air time (measured on the injected input clock, set once
+	 * until the next ground contact/landing). A non-finite or non-positive
+	 * duration is ignored; an open or already-expired window is kept.
+	 */
+	void OpenAirControlWindow(float MaxAirTimeSeconds);
+
+	/**
+	 * M5-015: true when the air-control window expired (the configured max
+	 * air time passed while airborne) or already forced its descent and has
+	 * not seen a ground contact/landing since. The attacker pipeline feeds
+	 * this fact to the resolver, which revokes the launch requests.
+	 */
+	bool IsAirControlExpired() const;
+
+	/**
+	 * M5-015: overrides the airborne damage scale this component's victims
+	 * take while airborne (the design's air_damage_scale hook; the frozen
+	 * FTargetReaction carries no such field yet, so the value lives on the
+	 * component until the contract grows it). The default 1.0 keeps every
+	 * legacy number byte for byte.
+	 */
+	void SetAirborneDamageScale(float InScale);
+
+	/** M5-015: the airborne damage scale applied to hits against this component's airborne owner (see SetAirborneDamageScale). */
+	float GetAirborneDamageScale() const;
+
+	/**
 	 * M5-013: diagnostic count of the hit events this component's unified hit
 	 * ledger (M5-010) currently records as live keys. Every melee hit this
 	 * component applies flows through the M5-012 unified entry, which commits
@@ -672,6 +756,50 @@ private:
 	 * stay verbatim.
 	 */
 	FTargetReaction HitTargetReactionPolicy = MakeLegacyNormalTargetReaction();
+
+	/**
+	 * M5-015: true once SetTargetReactionPolicy explicitly overrode the
+	 * policy above (see HasOverriddenTargetReactionPolicy).
+	 */
+	bool bTargetReactionPolicyOverridden = false;
+
+	/**
+	 * M5-015: the stateful face of this component's poise pool (the victim
+	 * side; the resolver stays pure). Valid while the policy carries a pool;
+	 * reset to the policy's full value on death/reset, reset on a break and
+	 * lazily regenerated after the policy's regen period.
+	 */
+	float PoiseCurrent = 0.0f;
+
+	/**
+	 * M5-015: input-clock time of the last poise pressure; -1 when never
+	 * pressured (the lazy regen and the pool initialization guard read it).
+	 */
+	double LastPoisePressureInputClockSeconds = -1.0;
+
+	/**
+	 * M5-015: the target-side float-cycle launch count for non-TrainingEnemy
+	 * owners (TrainingEnemy keeps its legacy actor field and the component
+	 * API reads through to it; see GetLaunchCycleCount).
+	 */
+	int32 LaunchCycleCount = 0;
+
+	/**
+	 * M5-015: the bounded air-control window (component-owned for every
+	 * owner). Opened by an applied launch, measured on the injected input
+	 * clock, closed by a ground contact/landing/death/reset; an expired
+	 * window forces the descent once and stays expired until it closes.
+	 */
+	bool bAirControlWindowOpen = false;
+	double AirControlExpiryInputClockSeconds = 0.0;
+	bool bAirControlExpiredUntilLanding = false;
+
+	/**
+	 * M5-015: the airborne damage scale applied to hits against this
+	 * component's airborne owner (the design's air_damage_scale hook on the
+	 * component until the frozen contract grows the field). Default 1.0.
+	 */
+	float AirborneDamageScale = 1.0f;
 
 	ECombatActionState ActionState = ECombatActionState::Free;
 

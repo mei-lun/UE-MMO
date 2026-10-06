@@ -83,16 +83,25 @@ namespace
 	// compensation stays under the separate M1-024 one-per-cycle gate.
 	const FName M1_025_LauncherAttackId(TEXT("launcher"));
 
-	// M1-025: reads the target's current float-cycle launcher count. The count
-	// lives target-side on ATrainingEnemy (cleared by ground contact, death
-	// and ResetEnemy, see there); any other actor type carries no float cycle
-	// yet and reads 0, which keeps every launcher hit allowed at full scale
-	// for it (documented limitation until M2 enemies adopt the same surface).
+	// M1-025: reads the target's current float-cycle launcher count. M5-015:
+	// the unified surface is the victim's combat component (its API reads
+	// through to the TrainingEnemy legacy field, so those results stay
+	// verbatim, and it owns the count for every other component-bearing
+	// victim - wave enemies included). A componentless target falls back to
+	// the legacy TrainingEnemy read; anything else carries no float cycle
+	// and reads 0.
 	int32 M1_025_ResolveLauncherCycleCount(const AActor* Target)
 	{
-		if (const ATrainingEnemy* EnemyTarget = Cast<const ATrainingEnemy>(Target))
+		if (Target != nullptr)
 		{
-			return EnemyTarget->GetLauncherCycleCount();
+			if (const UCombatComponent* VictimCombat = Target->FindComponentByClass<UCombatComponent>())
+			{
+				return VictimCombat->GetLaunchCycleCount();
+			}
+			if (const ATrainingEnemy* EnemyTarget = Cast<const ATrainingEnemy>(Target))
+			{
+				return EnemyTarget->GetLauncherCycleCount();
+			}
 		}
 		return 0;
 	}
@@ -305,6 +314,27 @@ void UCombatComponent::TickCombat(float DeltaSeconds)
 		bHitStopConsumedInjectedAdvance = false;
 	}
 
+	// M5-015: the bounded air-control window enforcement. An open window
+	// whose max air time passed on the injected input clock forces the
+	// descent: the extra air control is revoked (the window stays expired
+	// until the next ground contact/landing, so the resolver refuses every
+	// further launch) and the owner's upward velocity is clamped once - a
+	// fall, never a teleport. The check runs before the state branches so a
+	// stunned or knocked-down owner still settles its expired window.
+	if (bAirControlWindowOpen && FMath::IsFinite(InputClockSeconds)
+		&& InputClockSeconds >= AirControlExpiryInputClockSeconds)
+	{
+		bAirControlWindowOpen = false;
+		bAirControlExpiredUntilLanding = true;
+		if (ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner()))
+		{
+			if (UCharacterMovementComponent* OwnerMovement = OwnerCharacter->GetCharacterMovement())
+			{
+				OwnerMovement->Velocity.Z = FMath::Min(OwnerMovement->Velocity.Z, 0.0f);
+			}
+		}
+	}
+
 	// M1-026: the landing recovery runs on the injected input clock (the
 	// M1-020 stun pattern). The owner keeps calling TickCombat; each branch
 	// flips at most one state per tick, exactly like the per-frame game loop,
@@ -409,6 +439,14 @@ void UCombatComponent::ResetCombat()
 	AerialFollowUpTargetIds.Reset();
 	// M3-031: the carried anchors die with the buffer they tracked.
 	CarriedInputAnchors.Reset();
+	// M5-015: the reset clear point - the execution state (poise pool, air
+	// control window, float cycle) is cleared with the rest of the combat
+	// bookkeeping, so a fresh life starts from the policy defaults.
+	PoiseCurrent = HitTargetReactionPolicy.PoiseMax;
+	LastPoisePressureInputClockSeconds = -1.0;
+	bAirControlWindowOpen = false;
+	bAirControlExpiredUntilLanding = false;
+	ResetLaunchCycle();
 }
 
 void UCombatComponent::SetDead(bool bNewDead)
@@ -435,6 +473,14 @@ void UCombatComponent::SetDead(bool bNewDead)
 		// M3-023: the dead-flag transition row (EndHitStun above may already
 		// have logged a stun-end Free row; the Dead row records the death).
 		M3_023_LogActionState(*this, FString(TEXT("Dead")));
+		// M5-015: the death clear point - the execution state (poise pool,
+		// air-control window, float cycle) never survives into a corpse; a
+		// revived combatant starts from the policy defaults.
+		PoiseCurrent = HitTargetReactionPolicy.PoiseMax;
+		LastPoisePressureInputClockSeconds = -1.0;
+		bAirControlWindowOpen = false;
+		bAirControlExpiredUntilLanding = false;
+		ResetLaunchCycle();
 	}
 	else if (!bNewDead && bDead)
 	{
@@ -557,6 +603,10 @@ bool UCombatComponent::BeginLandingRecovery(double NowSeconds)
 	// takes over both (death > landing recovery > hit stun priority).
 	CancelCurrentAttack(FName(TEXT("LandingRecovery")));
 	HitStunEndTimeSeconds = 0.0;
+	// M5-015: the landing closes the air-control window (the airborne period
+	// is over regardless of the down-state that follows).
+	bAirControlWindowOpen = false;
+	bAirControlExpiredUntilLanding = false;
 	ActionState = ECombatActionState::Knockdown;
 	LandingKnockdownEndTimeSeconds = NowSeconds + M1_026_KnockdownSeconds;
 	LandingRecoveringEndTimeSeconds = LandingKnockdownEndTimeSeconds + M1_026_RecoveringSeconds;
@@ -584,12 +634,12 @@ void UCombatComponent::EndLandingRecovery()
 	// M1-026: the fourth float-cycle clear point (interface contract section
 	// 6): the air-combo policy cycle reopens only when the recovery completed,
 	// so the next launcher after the recovery rises at the full definition
-	// launch speed again. The count lives target-side on ATrainingEnemy (the
-	// M1-025 read pattern); other owner types carry no float cycle.
-	if (ATrainingEnemy* EnemyOwner = Cast<ATrainingEnemy>(GetOwner()))
-	{
-		EnemyOwner->ClearLauncherCycle();
-	}
+	// launch speed again. M5-015: the unified victim-component surface (the
+	// TrainingEnemy legacy field through the write-through; every other
+	// owner's component count) plus the air-control window close.
+	ResetLaunchCycle();
+	bAirControlWindowOpen = false;
+	bAirControlExpiredUntilLanding = false;
 }
 
 void UCombatComponent::EndHitStun()
@@ -663,11 +713,162 @@ void UCombatComponent::SetTargetReactionPolicy(FTargetReaction InPolicy)
 	// reads (the gate flags, the float-cycle launch policy, the immunity
 	// axes); the resolver defends the request against illegal magnitudes.
 	HitTargetReactionPolicy = InPolicy;
+	// M5-015: an explicit override marks this component as a policy-bearing
+	// VICTIM (the hit pipeline resolves against its policy before the
+	// attacker's injected member) and initializes its pool state fresh.
+	bTargetReactionPolicyOverridden = true;
+	PoiseCurrent = InPolicy.PoiseMax;
+	LastPoisePressureInputClockSeconds = -1.0;
 }
 
 FTargetReaction UCombatComponent::GetTargetReactionPolicy() const
 {
 	return HitTargetReactionPolicy;
+}
+
+bool UCombatComponent::HasOverriddenTargetReactionPolicy() const
+{
+	return bTargetReactionPolicyOverridden;
+}
+
+float UCombatComponent::GetEffectivePoiseCurrent()
+{
+	const float PoolMax = HitTargetReactionPolicy.PoiseMax;
+	if (!(PoolMax > 0.0f) || !FMath::IsFinite(PoolMax))
+	{
+		return 0.0f;
+	}
+	// A configured pool that was never pressured reads full (the
+	// initialization guard; SetTargetReactionPolicy normally pre-fills it).
+	if (PoiseCurrent <= 0.0f && LastPoisePressureInputClockSeconds < 0.0)
+	{
+		PoiseCurrent = PoolMax;
+		return PoiseCurrent;
+	}
+	// The lazy regeneration: a read after the configured period since the
+	// last pressure reports (and settles) the full pool. No tick dependency;
+	// the injected input clock is the same one the stun deadlines run on.
+	if (PoiseCurrent < PoolMax
+		&& HitTargetReactionPolicy.PoiseRegenSeconds > 0.0f
+		&& FMath::IsFinite(HitTargetReactionPolicy.PoiseRegenSeconds)
+		&& LastPoisePressureInputClockSeconds >= 0.0
+		&& FMath::IsFinite(InputClockSeconds)
+		&& InputClockSeconds - LastPoisePressureInputClockSeconds >= static_cast<double>(HitTargetReactionPolicy.PoiseRegenSeconds))
+	{
+		PoiseCurrent = PoolMax;
+	}
+	return PoiseCurrent;
+}
+
+void UCombatComponent::RecordPoisePressure(float Amount)
+{
+	if (!FMath::IsFinite(Amount) || !(Amount > 0.0f))
+	{
+		return;
+	}
+	const float PoolMax = HitTargetReactionPolicy.PoiseMax;
+	if (!(PoolMax > 0.0f) || !FMath::IsFinite(PoolMax))
+	{
+		return;
+	}
+	// The initialization guard (see GetEffectivePoiseCurrent).
+	if (PoiseCurrent <= 0.0f && LastPoisePressureInputClockSeconds < 0.0)
+	{
+		PoiseCurrent = PoolMax;
+	}
+	PoiseCurrent = FMath::Max(0.0f, PoiseCurrent - Amount);
+	LastPoisePressureInputClockSeconds = InputClockSeconds;
+	// The break: a depleted pool resets to full - the granted control is the
+	// break's breathing room, so the next hit faces the pool from the top.
+	if (PoiseCurrent <= 0.0f)
+	{
+		PoiseCurrent = PoolMax;
+	}
+}
+
+int32 UCombatComponent::GetLaunchCycleCount() const
+{
+	// M5-015: the TrainingEnemy owner keeps its legacy actor field as the
+	// storage (the M1-025/M1-026 deferred-restore dance lives there); the
+	// component API reads through to it so both surfaces stay one number.
+	if (const ATrainingEnemy* EnemyOwner = Cast<const ATrainingEnemy>(GetOwner()))
+	{
+		return EnemyOwner->GetLauncherCycleCount();
+	}
+	return LaunchCycleCount;
+}
+
+void UCombatComponent::RecordLaunchAdmitted()
+{
+	if (ATrainingEnemy* EnemyOwner = Cast<ATrainingEnemy>(GetOwner()))
+	{
+		EnemyOwner->RecordLauncherLaunch();
+		return;
+	}
+	++LaunchCycleCount;
+}
+
+void UCombatComponent::ResetLaunchCycle()
+{
+	if (ATrainingEnemy* EnemyOwner = Cast<ATrainingEnemy>(GetOwner()))
+	{
+		EnemyOwner->ClearLauncherCycle();
+		return;
+	}
+	LaunchCycleCount = 0;
+}
+
+void UCombatComponent::OnGroundContact()
+{
+	// M5-015: the ground contact reopens the float cycle (the M1-025 clear
+	// point; TrainingEnemy keeps its legacy field through the write-through)
+	// and closes the air-control window (the airborne period is over).
+	ResetLaunchCycle();
+	bAirControlWindowOpen = false;
+	bAirControlExpiredUntilLanding = false;
+}
+
+void UCombatComponent::OpenAirControlWindow(float MaxAirTimeSeconds)
+{
+	// M5-015: the window is set once per airborne period - a second launch
+	// inside it never extends the bound, so the total air time stays bounded.
+	if (!FMath::IsFinite(MaxAirTimeSeconds) || !(MaxAirTimeSeconds > 0.0f))
+	{
+		return;
+	}
+	if (bAirControlWindowOpen || bAirControlExpiredUntilLanding)
+	{
+		return;
+	}
+	bAirControlWindowOpen = true;
+	AirControlExpiryInputClockSeconds = InputClockSeconds + static_cast<double>(MaxAirTimeSeconds);
+}
+
+bool UCombatComponent::IsAirControlExpired() const
+{
+	if (bAirControlExpiredUntilLanding)
+	{
+		return true;
+	}
+	return bAirControlWindowOpen
+		&& FMath::IsFinite(InputClockSeconds)
+		&& InputClockSeconds >= AirControlExpiryInputClockSeconds;
+}
+
+void UCombatComponent::SetAirborneDamageScale(float InScale)
+{
+	// M5-015: configuration, not state; non-finite and non-positive scales
+	// are refused (a zero scale would silently zero every airborne hit).
+	if (!FMath::IsFinite(InScale) || !(InScale > 0.0f))
+	{
+		return;
+	}
+	AirborneDamageScale = InScale;
+}
+
+float UCombatComponent::GetAirborneDamageScale() const
+{
+	return AirborneDamageScale;
 }
 
 void UCombatComponent::SetAttackReaction(FAttackReaction InReaction)
@@ -1498,7 +1699,34 @@ void UCombatComponent::TryApplyActiveWindowHits()
 		// M5-013: the attack side of the unified request - the per-hit numeric
 		// definition read from the live attack definition (the exact values
 		// the old direct-to-health path consumed).
+		UHealthComponent* TargetHealth = Target->FindComponentByClass<UHealthComponent>();
+		UCombatComponent* VictimCombat = Target->FindComponentByClass<UCombatComponent>();
 		FDamageProfile Profile = M5_013_MakeDamageProfile(*Definition);
+
+		// M5-015: the effective target policy - the victim's explicitly
+		// overridden policy wins (per-target heavy/boss configuration through
+		// its own combat component); without one the attacker's injected
+		// member applies (the M5-014 surface, the default normal target).
+		const FTargetReaction EffectiveTargetPolicy =
+			(VictimCombat != nullptr && VictimCombat->HasOverriddenTargetReactionPolicy())
+				? VictimCombat->GetTargetReactionPolicy()
+				: HitTargetReactionPolicy;
+
+		// M5-015: the airborne damage scale hook - an airborne victim takes
+		// its configured multiplier (the design's air_damage_scale; the
+		// frozen contract carries no such field, so the value lives on the
+		// victim component). The default 1.0 keeps every legacy number byte
+		// for byte; the scaling happens before both the reaction resolver
+		// and the unified entry, so the request and the application agree.
+		if (VictimCombat != nullptr)
+		{
+			const float AirScale = VictimCombat->GetAirborneDamageScale();
+			if (AirScale != 1.0f && FMath::IsFinite(AirScale) && AirScale > 0.0f
+				&& !M1_024_IsTargetGrounded(*Target))
+			{
+				Profile.BaseDamage *= AirScale;
+			}
+		}
 
 		// M5-014: the hit-received request comes from the pure ReactionResolver
 		// (the attack reaction + the target policy + the target's state
@@ -1506,12 +1734,10 @@ void UCombatComponent::TryApplyActiveWindowHits()
 		// victim's health/combat components) - this component's pipeline stays
 		// the only HitStun/Knockdown timing and action-state source, and the
 		// resolver owns no state, no World and no timer.
-		UHealthComponent* TargetHealth = Target->FindComponentByClass<UHealthComponent>();
-		UCombatComponent* VictimCombat = Target->FindComponentByClass<UCombatComponent>();
 		FReactionHitContext ReactionContext;
 		ReactionContext.Attack = Profile;
 		ReactionContext.AttackReaction = HitAttackReaction;
-		ReactionContext.TargetPolicy = HitTargetReactionPolicy;
+		ReactionContext.TargetPolicy = EffectiveTargetPolicy;
 		ReactionContext.bTargetDead = TargetHealth != nullptr && !TargetHealth->IsAlive();
 		ReactionContext.bTargetInLandingRecovery = VictimCombat != nullptr && VictimCombat->IsInLandingRecovery();
 		ReactionContext.Facing = Facing;
@@ -1525,6 +1751,11 @@ void UCombatComponent::TryApplyActiveWindowHits()
 		ReactionContext.bPerCycleLaunchScaling = ActiveAttackId == M1_025_LauncherAttackId;
 		ReactionContext.AttackPower = CombatAttackPower;
 		ReactionContext.Defense = VictimCombat != nullptr ? VictimCombat->GetDefense() : 0.0f;
+		// M5-015: the victim's stateful facts for the resolver's poise gate
+		// and air-control expiry (the pool owner is the victim component;
+		// the resolver itself stays pure).
+		ReactionContext.TargetPoiseCurrent = VictimCombat != nullptr ? VictimCombat->GetEffectivePoiseCurrent() : 0.0f;
+		ReactionContext.bTargetAirControlExpired = VictimCombat != nullptr && VictimCombat->IsAirControlExpired();
 		const FHitReactionRequest Reaction = ResolveHitReaction(ReactionContext);
 
 		if (Reaction.bRefuseHit)
@@ -1567,7 +1798,12 @@ void UCombatComponent::TryApplyActiveWindowHits()
 		// factory feeding the injectable policy member above.
 		Request.Attack = Profile;
 		Request.Attack.LaunchCmPerSecond = Reaction.LaunchCmPerSecond;
-		Request.TargetReaction = HitTargetReactionPolicy;
+		// M5-015: the stun magnitude the resolver admitted (0 when a gate or
+		// the poise pool refused it), so the unified entry's own control
+		// summary can never disagree with the request's decision - the
+		// victim-side bridge forwards exactly the admitted control.
+		Request.Attack.HitStunSeconds = Reaction.StunSeconds;
+		Request.TargetReaction = EffectiveTargetPolicy;
 		Request.AttackPower = CombatAttackPower;
 		Request.HitLocation = Box.Center;
 
@@ -1613,7 +1849,10 @@ void UCombatComponent::TryApplyActiveWindowHits()
 		Hit.WorldHitLocation = Box.Center;
 		Hit.AttackId = ActiveAttackId;
 		Hit.HitStopSeconds = Definition->HitStopSeconds;
-		Hit.StunSeconds = Definition->HitStunSeconds;
+		// M5-015: the payload's stun request is the admitted one (the value
+		// the victim actually received through the bridge), not the raw
+		// definition magnitude a gate or the poise pool may have refused.
+		Hit.StunSeconds = Outcome.Control.bStagger ? Definition->HitStunSeconds : 0.0f;
 		// M5-014: the impulse is the resolver's facing-mirrored request (the X
 		// axis only; Y stays 0 - the depth axis is never locked) with the
 		// admitted launch magnitude, gated by the unified entry's control fact.
@@ -1629,14 +1868,31 @@ void UCombatComponent::TryApplyActiveWindowHits()
 			// into the target's float cycle - a refused launcher (no launch
 			// impulse) and a lethal hit (no impulse at all) leave the count
 			// untouched, so a still-further launcher keeps being refused in
-			// this cycle.
+			// this cycle. M5-015: the unified victim-component surface also
+			// opens the bounded air-control window with the effective
+			// policy's max air time (set once per airborne period).
 			if (Reaction.bLaunchAdmitted && Hit.Impulse.Z > 0.0f)
 			{
-				if (ATrainingEnemy* EnemyTarget = Cast<ATrainingEnemy>(Target))
+				if (VictimCombat != nullptr)
+				{
+					VictimCombat->RecordLaunchAdmitted();
+					VictimCombat->OpenAirControlWindow(EffectiveTargetPolicy.MaxAirTimeSeconds);
+				}
+				else if (ATrainingEnemy* EnemyTarget = Cast<ATrainingEnemy>(Target))
 				{
 					EnemyTarget->RecordLauncherLaunch();
 				}
 			}
+		}
+
+		// M5-015: the poise pressure rides the resolver's request and is
+		// recorded exactly once per accepted submission (a refused submission
+		// never reaches this line - the M5-010 ledger face), so a duplicate
+		// shot can never deplete the pool twice. The pool owner is the
+		// victim component; the break reset and the regen live there too.
+		if (VictimCombat != nullptr && Reaction.PoiseDepletion > 0.0f)
+		{
+			VictimCombat->RecordPoisePressure(Reaction.PoiseDepletion);
 		}
 
 		// Only now the hit exists for presentations and state tasks (only a
