@@ -1,18 +1,18 @@
 # 最近一轮交接
 
-## 本轮：批次68——M5 统一命中管线贯通 + 受击策略接入
+## 本轮：批次69——M5-015 受害者执行面完成，M5-016 进行中
 
-- Owner：ZCode-20260925-A（协调者 + worktree 子代理）。时间：2026-10-06T21:00:00+08:00 起至本文件提交；分支 main。
-- 本批完成：**3**（M5-013、M5-052、M5-014）。任务板 valid=True，total=165，**DONE=116**，TODO=46，IN_PROGRESS=1。M5 计划 **16/63**。明细见 [批次68交接](Docs/Tasks/Handoffs/2026-10-06-ZCode-20260925-A-batch68.md)；更早 M5 规划轮见 [M5 规划交接](Docs/Tasks/Handoffs/2026-10-06-Codex-M5-plan.md)。
-- M5-013（feat 87eceb9）：近战命中改走 M5-012 `ApplyUnifiedHit` 单管线（M5-011 伤害解算 + M5-010 事件去重），旧 `InstanceHitKeys`/`M1_019_ComputeHitDamage` 删除；四招伤害/冲量/去重/免伤/中断语义与旧路径逐项对照一致。定向 3/3；全量 608/608。
-- M5-052（docs cd4aca9）：MMO 事件映射边界文档（统一命中事件 → 未来服务端协议的边界，不含网络实现）。
-- M5-014（feat f4ac2da）：新建 `ReactionResolver` 纯函数产出"受击请求"（状态门控死亡优先、免控与扣血独立返回、硬直 max 覆盖、中断、Facing 只镜像 X）；CombatComponent 仍是唯一计时/状态来源；launcher 浮空 Z 缩放改读 `FTargetReaction.LaunchZScales`（默认 2/{1.0,0.7} 与 M1-025 逐值一致）。定向 7/7；main 集成复跑 Build + 全量 **615/615**。
+- Owner：ZCode-20260925-A（协调者）。时间：2026-10-07T00:00:00+08:00 起至本文件提交；分支 main。
+- 本轮完成：**1**（M5-015）。任务板 valid=True，total=165，**DONE=117**，TODO=46，IN_PROGRESS=1。M5 计划 **17/63**。批次68（M5-013/052/014）明细见 [批次68交接](Docs/Tasks/Handoffs/2026-10-06-ZCode-20260925-A-batch68.md)。
+- **M5-015**（feat 80507f1，报告 Docs/Tasks/Reports/M5-015.md）：目标免疫/韧性/浮空衰减——受害者显式覆写策略优先（per-target 重型/Boss 配置）；Poise 池门控控制（削减=解析伤害、破坏重置、按策略周期懒恢复、BypassPoise 穿透不磨池）；目标侧浮空计数统一到组件表面（波次敌人纳入 2 次上限，TrainingEnemy 透传旧字段零回归）；有界空中控制窗口（默认 2.5s，到期撤销额外控制+夹速度强制下落，不瞬移）；空中伤害系数组件钩子（默认 1.0 逐字节不变）。定向 8/8；集成全量 **623/623**（main 复跑 Build+全量绿）。
+- 执行方式备注：M5-015 原派发的子代理因配额耗尽无任何产出，改由协调者会话直接实现（红→绿纪律不变，红灯 2 过 6 败有据）。
 
 ## 进行中（接手者从这里继续）
 
-- **M5-015 目标免疫/韧性/浮空衰减**：IN_PROGRESS，worktree `.worktrees/015`（分支 feat/m5-015，基线 2c51d47），子代理后台执行中。剩余步骤：等代理交付 → 合并 main（报告 add/add 冲突取 worktree 版）→ main 复跑 Build + 全量（预期 615+新增全绿，默认路径行为不变）→ UpdateTaskStatus DONE。
-- M5-016（倒地/起身/复位配置化）依赖 015 完成后**串行**派发（两卡共享 CombatComponent/Resolver，卡片明确"实施串行"）。A 段剩余链：016 → 017 → 018A → 018 → 018B → **M5-H01（用户人工验收，AI 不得代签）**。
+- **M5-016 倒地/起身/复位配置化**：IN_PROGRESS，worktree `.worktrees/016`（分支 feat/m5-016，基线 38f80f6），子代理后台执行中。剩余步骤：等代理交付 → 合并 main（报告 add/add 冲突取 worktree 版）→ main 复跑 Build + 全量（预期 623+新增全绿，默认 0.45/0.25 行为不变）→ UpdateTaskStatus DONE。若子代理再因配额失败，按 M5-015 先例由协调者直接实现。
+- A 段剩余链：016 → 017（受击表现映射+图片验证）→ 018A（通用配置试验房+菜单入口）→ 018（A 段生产回归）→ 018B（A 段独立包）→ **M5-H01（用户人工验收，AI 不得代签）**。
 - 报告格式红线：DONE 报告必须有独立成行的 `- Implementation-Revision: <sha>` 与 `- Verification: PASS`（半角冒号+空格）；SHA 必须已集成进 HEAD。
+- Git Bash 工作目录可能滞留 worktree——合并/总表操作前先 `cd /d/Github-Poj/UE-MMO` 并用 `git branch --show-current` 确认在 main。
 
 ## 项目当前状态
 
@@ -23,7 +23,7 @@
 | M2 | 刷怪房：敌人 AI/波次/会话/失败重试/退出/L_CombatRoom01 | M2-001..017 全 DONE |
 | M3 | 成长：装备/背包/穿脱/等级/掉落/领奖/存档 A/B 槽/地图菜单/操作日志 | M3-001..032 全 DONE |
 | M4 | 服务端接入 | M4-000 DEFERRED（待用户提供协议信息） |
-| M5 | 数据驱动战斗扩展（A 配置受击 → B 武器投射物 → C 载具 → D 成长发布） | **16/63 DONE**（000..014、052）；A 段 015 进行中；H01 前不新增武器行为 |
+| M5 | 数据驱动战斗扩展（A 配置受击 → B 武器投射物 → C 载具 → D 成长发布） | **17/63 DONE**（000..015、052）；A 段 016 进行中；H01 前不新增武器行为 |
 | 人工关卡 | M0-H01 REVIEW；M2-H01/M3-H01/M5-H01..H04 待用户 | AI 不得代签 |
 
 ## 交付物
@@ -31,10 +31,10 @@
 - **M3 完整包（最新全内容旧包）**：`Artifacts\Package\Windows\UEMMO.exe`（929MB，2026-09-30；离屏冒烟 success/rendering=true 实测可启动）。进刷怪房：exe 加参数 `/Game/UEMMO/Maps/L_CombatRoom01`。
 - **综合验收入口（用户从这里开始）**：`Docs/07-综合验收摘要.md`。M5 新内容不在旧包内；A 段完成时按 M5-018B 另出独立段包。
 
-## 最新集成验证（批次68，2026-10-06）
+## 最新集成验证（批次69，2026-10-07）
 
-- Build exit 0（232s 完整构建）；编辑器全量自动化 **615/615**（M5-000..014+052 全链，Artifacts/Tasks/M5-014/2026-10-06T22-51-35+0800）。
-- CheckTaskBoard valid=True，DONE=116，IN_PROGRESS=1（M5-015）。
+- Build exit 0（247s 完整构建）；编辑器全量自动化 **623/623**（M5-000..015+052 全链，Artifacts/Tasks/M5-015/2026-10-07T01-13-49+0800）。
+- CheckTaskBoard valid=True，DONE=117，IN_PROGRESS=1（M5-016）。
 - M1/M2/M3 三套场景回归随全量自动化保持绿（TestCombatScenario/TestRoomScenario/TestProgressionScenario 语义在自动化套件内持续覆盖）。
 
 ## 流程要点（给下一个 AI）
