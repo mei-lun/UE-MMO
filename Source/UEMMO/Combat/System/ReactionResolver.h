@@ -56,6 +56,22 @@
  *   (the same computation the unified entry applies), so the request and the
  *   application can never disagree. A knockdown rides an accepted launch
  *   exactly when the knockdown gate allows it (the M5-012 rule).
+ * - M5-015: the poise gate. A control-requesting hit against a target with a
+ *   poise pool (TargetPolicy.PoiseMax > 0 and a pool value on the context)
+ *   is gated by the pool: while TargetPoiseCurrent minus the hit's resolved
+ *   damage stays above zero the pool holds and every control kind of the
+ *   hit is refused (the damage face and the knockback stand), and a hit
+ *   that would deplete the pool to zero or below breaks it - its control is
+ *   accepted and the request reports the pressure (PoiseDepletion) for the
+ *   caller to record on the victim component (the stateful owner; the pool
+ *   reset/regeneration live there too). The attack side's BypassPoise
+ *   penetration skips the gate entirely and grinds nothing. A policy with a
+ *   pool but no pool value on the context (no component home) never gates.
+ * - M5-015: the air-control expiry. When the context reports the target's
+ *   bounded air-control window expired, the launch request is revoked (the
+ *   admitted launch drops to 0) while the damage, the dedup and the
+ *   remaining controls stand; the extra air control returns only when the
+ *   victim's component reopens the window (ground contact / landing).
  * - An illegal damage context (non-finite, negative, non-positive base
  *   damage) is not a state refusal: the request carries no faces and no
  *   magnitudes and the unified entry owns that refusal with its explicit
@@ -144,6 +160,24 @@ struct FReactionHitContext
 	 * keep their definition launch verbatim.
 	 */
 	bool bPerCycleLaunchScaling = false;
+
+	/**
+	 * M5-015: the target's current poise pool value (read from the victim's
+	 * combat component, the stateful pool owner). Only read when the target
+	 * policy carries a pool (PoiseMax > 0); a component-less target reads 0,
+	 * which keeps every policy-without-state home ungated (see the poise
+	 * gate below).
+	 */
+	float TargetPoiseCurrent = 0.0f;
+
+	/**
+	 * M5-015: state fact - the target's bounded air-control window expired
+	 * (the configured max air time passed while airborne). When set, the
+	 * launch request is revoked (the extra air control drops) while damage,
+	 * dedup and the remaining controls stand; the victim's component owns
+	 * the window state and the forced descent.
+	 */
+	bool bTargetAirControlExpired = false;
 
 	/** The attacker's attack power (the M5-011 damage context; 0 keeps the legacy numbers). */
 	float AttackPower = 0.0f;
@@ -253,6 +287,17 @@ struct FHitReactionRequest
 
 	/** Recovering duration the policy grants after the knockdown ends. */
 	float RecoveringSeconds = 0.0f;
+
+	/**
+	 * M5-015: the poise pressure this hit applies to the target's pool (the
+	 * resolved damage of a control-requesting hit against a pool target,
+	 * outside a BypassPoise penetration; 0 otherwise). The caller records it
+	 * on the victim component (the stateful pool owner) once the unified
+	 * entry accepted the hit - never for a refused submission, so a duplicate
+	 * shot can never deplete twice. The gate itself is pure: the request was
+	 * decided against the pre-hit TargetPoiseCurrent.
+	 */
+	float PoiseDepletion = 0.0f;
 };
 
 /**

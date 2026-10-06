@@ -59,8 +59,14 @@ FHitReactionRequest ResolveHitReaction(const FReactionHitContext& Context)
 	//    participate (M5-014: the launcher only); the target policy grants
 	//    the per-launch scale. The admitted magnitude feeds both the unified
 	//    request and the impulse; a refused launch admits 0 while the rest
-	//    of the hit (damage, stun, dedup) still stands.
+	//    of the hit (damage, stun, dedup) still stands. M5-015: an expired
+	//    air-control window revokes the launch request up front (the extra
+	//    air control drops; damage, dedup and the remaining controls stand).
 	FDamageProfile Attack = Context.Attack;
+	if (Context.bTargetAirControlExpired)
+	{
+		Attack.LaunchCmPerSecond = 0.0f;
+	}
 	if (Context.bPerCycleLaunchScaling && Attack.LaunchCmPerSecond > 0.0f)
 	{
 		const float Scale = ResolveLaunchZScale(Context.TargetPolicy, Context.LaunchesUsedThisCycle);
@@ -82,36 +88,68 @@ FHitReactionRequest ResolveHitReaction(const FReactionHitContext& Context)
 		return Request;
 	}
 
-	// 4. The two independent faces (never merged into one bool): damage
+	// 4. The M5-015 poise gate (pure decision over the caller-read pool
+	//    value): a control-requesting hit against a pool target either holds
+	//    (every control kind of the hit is refused; the damage face and the
+	//    knockback stand), breaks (the control is accepted and the pressure
+	//    is reported for the caller to record), or is skipped entirely by a
+	//    BypassPoise penetration (which also grinds nothing). The depletion
+	//    measure is the hit's resolved damage; a damage-immune hit carries
+	//    no pressure (its resolved damage is exactly 0). A policy with a
+	//    pool but no pool value on the context (no component home) never
+	//    gates - the pool is stateful and lives on the victim component.
+	float PoiseDepletion = 0.0f;
+	bool bPoiseHoldsControl = false;
+	const bool bControlRequested = Resolution.bStaggerAccepted || Resolution.bLaunchAccepted;
+	const float PoolMax = Context.TargetPolicy.PoiseMax;
+	if (bControlRequested
+		&& FMath::IsFinite(PoolMax) && PoolMax > 0.0f
+		&& Context.AttackReaction.ControlPenetration != EControlPenetration::BypassPoise)
+	{
+		PoiseDepletion = Resolution.bWasImmune ? 0.0f : Resolution.FinalDamage;
+		// The break condition: the hit depletes the pool to zero or below.
+		// A pool value of 0 with an active policy means an uninitialized or
+		// just-broken pool - the caller-side guards settle both to full, so
+		// the gate reads it as a break (the control goes through).
+		bPoiseHoldsControl = Context.TargetPoiseCurrent - PoiseDepletion > 0.0f;
+	}
+	Request.PoiseDepletion = PoiseDepletion;
+
+	// 5. The two independent faces (never merged into one bool): damage
 	//    immunity and control acceptance are separate axes, so a
 	//    super-armored target keeps its damage with every control refused
 	//    and a damage-immune target keeps its control at exactly 0 damage.
+	//    The poise gate refines the control face without touching the
+	//    damage face.
 	Request.bDamageApplies = !Resolution.bWasImmune;
-	Request.bControlAccepted = Resolution.bControlAccepted;
-	Request.bStagger = Resolution.bStaggerAccepted;
-	Request.bLaunch = Resolution.bLaunchAccepted;
+	Request.bControlAccepted = (Resolution.bStaggerAccepted && !bPoiseHoldsControl)
+		|| (Resolution.bLaunchAccepted && !bPoiseHoldsControl);
+	Request.bStagger = Resolution.bStaggerAccepted && !bPoiseHoldsControl;
+	Request.bLaunch = Resolution.bLaunchAccepted && !bPoiseHoldsControl;
 	Request.bKnockdown = Request.bLaunch
 		&& Context.TargetPolicy.bAllowKnockdown
 		&& !Context.TargetPolicy.bImmuneControl;
 
-	// 5. The stun request with the legacy max override: the victim's
+	// 6. The stun request with the legacy max override: the victim's
 	//    component executes max(remaining, requested), never additive.
 	Request.StunOverride = EHitStunOverride::Max;
 	Request.StunSeconds = Request.bStagger ? Context.Attack.HitStunSeconds : 0.0f;
 
-	// 6. The interrupt request: exactly the hits that reach the victim's
+	// 7. The interrupt request: exactly the hits that reach the victim's
 	//    NotifyHitReceived bridge (damage applied or accepted control)
 	//    interrupt the running attack; a refused hit interrupts nothing.
 	Request.bInterruptAttack = Request.bDamageApplies || Request.bControlAccepted;
 
-	// 7. The impulse request: X is the knockback mirrored by the facing (the
+	// 8. The impulse request: X is the knockback mirrored by the facing (the
 	//    X axis only), Y is always 0 (the depth axis is never locked - the
 	//    execution keeps the target's current horizontal velocity) and Z is
-	//    the admitted launch when the launch control applies.
+	//    the admitted launch when the launch control applies. A poise-held
+	//    launch reports no admitted magnitude.
+	Request.LaunchCmPerSecond = bPoiseHoldsControl ? 0.0f : Request.LaunchCmPerSecond;
 	Request.ImpulseVelocity = FVector(Context.Facing * Context.Attack.KnockbackCmPerSecond, 0.0f,
 		Request.bLaunch ? Request.LaunchCmPerSecond : 0.0f);
 
-	// 8. The down-state durations ride the request from the policy (the
+	// 9. The down-state durations ride the request from the policy (the
 	//    landing executor keeps the M1-026 constants until M5-016
 	//    parameterizes the trigger and the durations).
 	Request.KnockdownSeconds = Context.TargetPolicy.KnockdownSeconds;
