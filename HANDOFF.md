@@ -1,19 +1,19 @@
 # 最近一轮交接
 
-## 本轮：批次69——M5 受害者执行面 + 倒地配置化完成
+## 本轮：批次70——M5 A 段表现+试验房+场景回归完成
 
-- Owner：ZCode-20260925-A（协调者，子代理两连败后改主会话实现）。时间：2026-10-07T00:00:00+08:00 起至本文件提交；分支 main。
-- 本轮完成：**2**（M5-015、M5-016）。任务板 valid=True，total=165，**DONE=118**，TODO=45，IN_PROGRESS=0。M5 计划 **18/63**。明细见 [批次69交接](Docs/Tasks/Handoffs/2026-10-07-ZCode-20260925-A-batch69.md)。
-- **M5-015**（feat 80507f1）：受害者覆写策略优先（重型=拒浮空+120 韧性池、Boss=免控+免死，per-target 配置）；Poise 池门控（削减=解析伤害、破坏重置满池、按策略周期懒恢复、BypassPoise 穿透不磨池）；浮空计数统一组件表面（波次敌人纳入 2 次上限）；空中控制窗口（默认 2.5s，到期撤销额外控制+强制下落不瞬移）；空中伤害系数钩子（默认 1.0 逐字节不变）。定向 8/8；集成全量 623/623。
-- **M5-016**（feat 296ab7c）：落地恢复时长参数化到受害者目标策略（非法授予回退 M1-026 常量 0.45/0.25）；普通跳跃/受击落地区分、起身保护拒命中、死亡不恢复、重复落地不重开全部保持；复位链无残留以服务级测试钉住（TrainingResetService 零改动）。定向 5/5；集成全量 628/628。
-- 执行方式：M5-015 代理配额耗尽、M5-016 代理验证超时，均零产出；两卡由协调者直接实现，红灯证据齐备（见各报告）。
+- Owner：ZCode-20260925-A（协调者主检出实现，子代理派发不可用）。时间：2026-10-07T02:10:00+08:00 起至本文件提交；分支 main。
+- 本批完成：**3**（M5-017、M5-018A、M5-018）。任务板 valid=True，total=165，**DONE=121**，TODO=42，IN_PROGRESS=0。M5 计划 **21/63**。明细见 [批次70交接](Docs/Tasks/Handoffs/2026-10-07-ZCode-20260925-A-batch70.md)。
+- **M5-017**（e6b4220）：受害者受击表现层（五类反应状态边沿驱动、一事件一表现、纯控制不伪造扣血音）；RCT_Hit/RCT_Dead 蒙太奇资产 + verify 新进程重载；launch/down/recover 诚实占位；四张渲染采集目击。定向 6/6；全量 635/635。
+- **M5-018A**（d9b1438）：ACombatTestRoomDriver（test_room 源表驱动目标生成，HP/策略/位置来自配置，缺 ID 显式失败，vehicle 冻结缝）；L_SystemTestRoom 地图（verify 新进程重载）；菜单双入口。定向 4/4；全量 639/639。
+- **M5-018**（6153675）：A 段生产场景回归（真链条三场景 + TestCombatSystemScenario.ps1 的 Section/-Render/-TaskId 接口 + 场景 JSON 导出）；渲染目击（双入口菜单、配置血条 200/120、目标浮空、Combo x1）。定向 3/3；全量 643/643。
 
 ## 下一步（接手者从这里继续）
 
-- **M5-017 受击表现映射和图片验证**（deps 015+016 ✓）：受击反应→表现映射 + `Scripts/Test.ps1 -Render` 实际查看本次图片；随后 018A（通用配置试验房+菜单入口）→ 018（A 段生产回归）→ 018B（A 段独立包）→ **M5-H01（用户人工验收，AI 不得代签）**。
-- 子代理派发连续两次基础设施失败（配额/验证超时）；再派发失败时按本轮先例由协调者直接实现。
-- Git Bash 工作目录可能滞留 worktree——合并/总表操作前先 `cd /d/Github-Poj/UE-MMO` 并确认分支；add/add 冲突状态码是 **AA**。
-- 报告格式红线：DONE 报告必须有独立成行的 `- Implementation-Revision: <sha>` 与 `- Verification: PASS`；SHA 必须已集成进 HEAD。
+- **M5-020A**（Item/Drop/HUD 生产目录适配）与 **M5-018B**（A 段独立包+人工清单）均已就绪；018B 涉及打包需串行（唯一资源写者）。
+- 018B 完成 → **M5-H01 用户人工验收**（受击/浮空/倒地试玩，AI 不得代签）→ B 段 019+ 解锁；M5-020A 可在 H01 前完成。
+- 技术要点：子代理派发持续失败时直接主检出实现；共享 GWorld 测试需差集追踪+Destroy 清理；离屏渲染采集用"状态触发即拍"；UE_LOG(Error) 计测试失败。
+- 报告格式红线：DONE 报告必须独立成行 `- Implementation-Revision: <sha>` 与 `- Verification: PASS`；SHA 须已集成进 HEAD。
 
 ## 项目当前状态
 
@@ -24,7 +24,7 @@
 | M2 | 刷怪房：敌人 AI/波次/会话/失败重试/退出/L_CombatRoom01 | M2-001..017 全 DONE |
 | M3 | 成长：装备/背包/穿脱/等级/掉落/领奖/存档 A/B 槽/地图菜单/操作日志 | M3-001..032 全 DONE |
 | M4 | 服务端接入 | M4-000 DEFERRED（待用户提供协议信息） |
-| M5 | 数据驱动战斗扩展（A 配置受击 → B 武器投射物 → C 载具 → D 成长发布） | **18/63 DONE**（000..016、052）；A 段剩 017/018A/018/018B；H01 前不新增武器行为 |
+| M5 | 数据驱动战斗扩展（A 配置受击 → B 武器投射物 → C 载具 → D 成长发布） | **21/63 DONE**（000..018A、052）；A 段剩 018B+H01；020A 可先行 |
 | 人工关卡 | M0-H01 REVIEW；M2-H01/M3-H01/M5-H01..H04 待用户 | AI 不得代签 |
 
 ## 交付物
@@ -32,10 +32,10 @@
 - **M3 完整包（最新全内容旧包）**：`Artifacts\Package\Windows\UEMMO.exe`（929MB，2026-09-30；离屏冒烟 success/rendering=true 实测可启动）。进刷怪房：exe 加参数 `/Game/UEMMO/Maps/L_CombatRoom01`。
 - **综合验收入口（用户从这里开始）**：`Docs/07-综合验收摘要.md`。M5 新内容不在旧包内；A 段完成时按 M5-018B 另出独立段包。
 
-## 最新集成验证（批次69，2026-10-07）
+## 最新集成验证（批次70，2026-10-07）
 
-- Build exit 0（220s 完整构建）；编辑器全量自动化 **628/628**（M5-000..016+052 全链，Artifacts/Tasks/M5-016/2026-10-07T01-48-03+0800，main 集成复跑同数）。
-- CheckTaskBoard valid=True，DONE=118，IN_PROGRESS=0。
+- Build exit 0；编辑器全量自动化 **643/643**（M5-000..018A+052 全链，Artifacts/Tasks/M5-018/ 最新 run）；TestCombatSystemScenario -Section Reaction -Render 全通（场景 JSON 四份 + 渲染截图两份目击）。
+- CheckTaskBoard valid=True，DONE=121，IN_PROGRESS=0。
 - M1/M2/M3 三套场景回归随全量自动化保持绿（TestCombatScenario/TestRoomScenario/TestProgressionScenario 语义在自动化套件内持续覆盖）。
 
 ## 流程要点（给下一个 AI）
