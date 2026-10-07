@@ -269,6 +269,7 @@ using FM5_017_ReactionSpy = URecordingReactionPresentation;
 void URecordingReactionPresentation::PlayVictimReactionMontage(FName PresentationId, UAnimMontage* Montage)
 {
 	PlayedReactions.Add(PresentationId);
+	PlayedReactionMontageNames.Add(IsValid(Montage) ? Montage->GetName() : FString());
 }
 
 void URecordingReactionPresentation::DiagnosePlaceholderReaction(FName PresentationId)

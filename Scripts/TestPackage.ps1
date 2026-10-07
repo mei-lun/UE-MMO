@@ -88,13 +88,19 @@ param(
     [switch]$IncludeCombat,
     [switch]$IncludeRoomScenario,
     [switch]$IncludeProgressionScenario,
+    # M5-018B: the Segment-A packaged reaction pass (the in-package
+    # reaction chain + the fallback + the rendered capture) and the
+    # explicit package root (must match the Package.ps1 -PackageRoot used
+    # for this package).
+    [switch]$IncludeReactionScenario,
+    [string]$PackageRoot = '',
     [string]$CombatFilter = 'UEMMO.Tasks',
-    [string[]]$DevOnlySourceJsonFilter = @('UEMMO.Tasks.M1_008.', 'UEMMO.Tasks.M2_001.', 'UEMMO.Tasks.M2_005.', 'UEMMO.Tasks.M2_008.', 'UEMMO.Tasks.M3_001.', 'UEMMO.Tasks.M3_007.'),
+    [string[]]$DevOnlySourceJsonFilter = @('UEMMO.Tasks.M1_008.', 'UEMMO.Tasks.M2_001.', 'UEMMO.Tasks.M2_005.', 'UEMMO.Tasks.M2_008.', 'UEMMO.Tasks.M3_001.', 'UEMMO.Tasks.M3_007.', 'UEMMO.Tasks.M5_018A.', 'UEMMO.Tasks.M5_020A.'),
     [string[]]$ExpectedInPackageFailures = @('UEMMO.Tasks.M3_005.', 'UEMMO.Tasks.M3_019.'),
     [string]$CombatMap = '/Game/UEMMO/Maps/L_TrainingArena'
 )
 . "$PSScriptRoot\Common.ps1"
-$PackageProject = Join-Path $ArtifactRoot 'Package\Windows\UEMMO'
+$PackageProject = if ([string]::IsNullOrWhiteSpace($PackageRoot)) { Join-Path $ArtifactRoot 'Package\Windows\UEMMO' } else { Join-Path $PackageRoot 'Windows\UEMMO' }
 $Executable = Join-Path $PackageProject 'Binaries\Win64\UEMMO.exe'
 if(-not (Test-Path -LiteralPath $Executable)) { throw 'Package not found. Run Package.ps1 first.' }
 $PackageArtifacts = Join-Path $PackageProject 'Artifacts'
@@ -486,5 +492,72 @@ if($IncludeProgressionScenario) {
         failed = $CaptureParsed.Failed
         incomplete = $CaptureParsed.Incomplete
         screenshots = @($UiCaptures.Values)
+    } | ConvertTo-Json
+}
+
+# M5-018B: -IncludeReactionScenario adds the Segment-A packaged passes after
+# the M0 smoke (the same in-package automation pattern the M2-015/M3-022
+# passes use):
+#   1. in-package reaction automation: UEMMO.Tasks.M5_018B.* (the packaged
+#      reaction chain, the reward-source fallback and the cooked presentation
+#      assets; the suite is packaged-environment-conditional and passes with
+#      or without the dev Data/ directory).
+#   2. rendered staged reaction capture: the packaged exe with
+#      -RenderOffscreen runs the M5-018 reaction capture companion (the
+#      config-driven targets and the mid-launch phase through the real HUD),
+#      the PNGs are verified and copied out.
+if($IncludeReactionScenario) {
+    # Pass 1: in-package reaction automation.
+    $ReactionStamp = [DateTimeOffset]::Now.ToString('yyyy-MM-ddTHH-mm-sszzz').Replace(':', '')
+    $ReactionReportDir = Join-Path $PackageProject "Artifacts\Tasks\M5-018B\$ReactionStamp"
+    New-Item -ItemType Directory -Path $ReactionReportDir -Force | Out-Null
+    Invoke-UEProcess $Executable @(
+        '-game', '-unattended', '-nosplash', '-nosound', '-nullrhi',
+        "-ExecCmds=Automation RunTests UEMMO.Tasks.M5_018B",
+        '-TestExit=Automation Test Queue Empty',
+        "-ReportExportPath=$ReactionReportDir",
+        "-abslog=$ArtifactRoot\Logs\package-reaction-automation.log"
+    ) 'package-reaction-automation' 900
+    $ReactionIndex = Join-Path $ReactionReportDir 'index.json'
+    if(-not (Test-Path -LiteralPath $ReactionIndex)) { throw 'Packaged reaction automation did not produce a report.' }
+    $ReactionParsed = ConvertFrom-AutomationReportJson -ReportJson (Get-Content -LiteralPath $ReactionIndex -Raw) -Filter 'UEMMO.Tasks.M5_018B'
+    if(-not $ReactionParsed.Ok) { throw 'Packaged reaction automation gate failed: ' + $ReactionParsed.Error }
+
+    # Pass 2: the rendered staged reaction capture in the package.
+    $ReactionCaptureDir = Join-Path $PackageProject "Artifacts\Tasks\M5-018\scenario-json\render"
+    Invoke-UEProcess $Executable @(
+        '-game', '-unattended', '-nosplash', '-nosound', '-RenderOffscreen',
+        '-ResX=1280', '-ResY=720',
+        "-ExecCmds=Automation RunTests UEMMO.Tasks.M5_018.Reaction.ReactionCapture",
+        '-TestExit=Automation Test Queue Empty',
+        "-abslog=$ArtifactRoot\Logs\package-reaction-capture.log"
+    ) 'package-reaction-capture' 900
+    $ReactionCaptures = @{}
+    foreach($SourceName in @('scenario-targets.png','scenario-float.png')) {
+        $SourceFile = Join-Path $ReactionCaptureDir $SourceName
+        if(-not (Test-Path -LiteralPath $SourceFile)) {
+            # The engine flushes the screenshot during shutdown; poll briefly.
+            $Waited = 0
+            while(-not (Test-Path -LiteralPath $SourceFile) -and $Waited -lt 15) {
+                Start-Sleep -Milliseconds 500
+                $Waited += 1
+            }
+        }
+        if(-not (Test-Path -LiteralPath $SourceFile)) { throw "Packaged reaction capture screenshot missing: $SourceName" }
+        $CaptureBytes = [IO.File]::ReadAllBytes($SourceFile)
+        if($CaptureBytes.Length -lt 1024 -or [BitConverter]::ToString($CaptureBytes,0,8) -ne '89-50-4E-47-0D-0A-1A-0A') { throw "Packaged reaction capture screenshot $SourceName is not a valid PNG." }
+        $OutName = 'package-' + $SourceName
+        Copy-Item -LiteralPath $SourceFile -Destination (Join-Path $ArtifactRoot $OutName) -Force
+        $ReactionCaptures[$SourceName] = $OutName
+    }
+    [ordered]@{
+        success = $true
+        pass = 'package-reaction-scenario'
+        test = 'UEMMO.Tasks.M5_018B'
+        matched = $ReactionParsed.Matched
+        passed = $ReactionParsed.Passed
+        failed = $ReactionParsed.Failed
+        incomplete = $ReactionParsed.Incomplete
+        screenshots = @($ReactionCaptures.Values)
     } | ConvertTo-Json
 }

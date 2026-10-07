@@ -58,6 +58,9 @@ public:
 	/** Dispatch records: presentation ids handed to the play seam. */
 	TArray<FName> PlayedReactions;
 
+	/** Dispatch records: the resolved montage names (empty for a null montage). */
+	TArray<FString> PlayedReactionMontageNames;
+
 	/** Dispatch records: presentation ids handed to the placeholder seam. */
 	TArray<FName> PlaceholderDiagnoses;
 
