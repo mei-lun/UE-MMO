@@ -42,3 +42,25 @@ public:
 	virtual UAnimMontage* FindMontageForAttack(FName AttackId) override;
 	virtual const UAttackDefinition* FindDefinitionForAttack(FName AttackId) override;
 };
+
+/**
+ * M5-017 test double: records victim-reaction dispatches instead of really
+ * playing. The play/placeholder split is the observable placeholder-vs-real
+ * contract; the base class's dispatch history records every dispatch before
+ * the seams run.
+ */
+UCLASS()
+class URecordingReactionPresentation : public UCombatPresentationComponent
+{
+	GENERATED_BODY()
+
+public:
+	/** Dispatch records: presentation ids handed to the play seam. */
+	TArray<FName> PlayedReactions;
+
+	/** Dispatch records: presentation ids handed to the placeholder seam. */
+	TArray<FName> PlaceholderDiagnoses;
+
+	virtual void PlayVictimReactionMontage(FName PresentationId, UAnimMontage* Montage) override;
+	virtual void DiagnosePlaceholderReaction(FName PresentationId) override;
+};

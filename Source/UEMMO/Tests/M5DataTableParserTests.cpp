@@ -733,7 +733,10 @@ bool FUEMMOTasksM5_005DirectoryLoadPositive::RunTest(const FString& Parameters)
 	if (TestNotNull(TEXT("hit_light_01 is loaded"), HitLight01))
 	{
 		TestEqual(TEXT("hit_light_01 targets light_01"), HitLight01->ReactionId, FName(TEXT("light_01")));
-		TestTrue(TEXT("hit_light_01 is a placeholder"), HitLight01->bPlaceholder);
+		// M5-017 owned the presentation resources the M5-003 sample deferred:
+		// the row is no longer a placeholder and its montage reference is real.
+		TestFalse(TEXT("hit_light_01 is no longer a placeholder (owned since M5-017)"), HitLight01->bPlaceholder);
+		TestTrue(TEXT("hit_light_01 carries a real montage reference"), HitLight01->MontagePath.Contains(TEXT("RCT_Hit")));
 	}
 	return true;
 }

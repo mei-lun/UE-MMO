@@ -1057,7 +1057,11 @@ bool FUEMMOTasksM5_003PresentationsJsonMapsEveryReaction::RunTest(const FString&
 			ReactionIds.Contains(ReactionKey));
 		TestFalse(FString::Printf(TEXT("presentation '%s' is not a duplicate reaction mapping"), *PresentationId),
 			PresentationByReaction.Contains(ReactionKey));
-		TestTrue(FString::Printf(TEXT("presentation '%s' is a placeholder row"), *PresentationId), bPlaceholder);
+		// M5-003 sampled every row as a deferred placeholder; M5-017 owns the
+		// resources now. The durable invariant: a row is either an honest
+		// placeholder (all paths empty) or carries at least one real path.
+		TestTrue(FString::Printf(TEXT("presentation '%s' is a placeholder row or carries at least one owned resource path"), *PresentationId),
+			bPlaceholder || !(MontagePath.IsEmpty() && SoundPath.IsEmpty() && EffectPath.IsEmpty()));
 		PresentationByReaction.Add(ReactionKey, FName(*PresentationId));
 	}
 

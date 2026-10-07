@@ -5,6 +5,7 @@
 #include "UObject/SoftObjectPtr.h"
 
 #include "CombatComponent.h"
+#include "HealthComponent.h"
 
 #include "CombatPresentationComponent.generated.h"
 
@@ -13,6 +14,50 @@ class UAnimInstance;
 class UAnimMontage;
 class USkeletalMeshComponent;
 class USoundWave;
+
+/**
+ * M5-017: kind of one victim-side hit-reaction presentation (the design's
+ * Hit/Launch/Down/Recover/Dead mapping). Append only - never renumber.
+ */
+enum class EHitReactionPresentationKind : uint8
+{
+	/** A hit received into HitStun without a rising launch. */
+	Hit = 0,
+
+	/** A hit received into HitStun while the victim rises (launch admitted). */
+	Launch = 1,
+
+	/** The landing recovery opens (the victim is knocked down). */
+	Down = 2,
+
+	/** The knockdown flips to Recovering (the victim gets up). */
+	Recover = 3,
+
+	/** The owner died (the health component's single death event). */
+	Dead = 4
+};
+
+/**
+ * M5-017: one row of the victim-side reaction presentation table (the
+ * runtime mirror of Data/CombatSystem/presentations.json schema 2). A row
+ * maps one reaction kind to its montage resource; a row with bPlaceholder
+ * and an empty montage is an honest placeholder - the dispatcher logs it
+ * once per presentation id and never counts it as finished art.
+ */
+struct FHitReactionPresentationRow
+{
+	/** Unique presentation id (the JSON row's presentation_id). */
+	FName PresentationId;
+
+	/** The reaction kind this row presents. */
+	EHitReactionPresentationKind Kind = EHitReactionPresentationKind::Hit;
+
+	/** The reaction montage (empty for a placeholder row). */
+	TSoftObjectPtr<UAnimMontage> Montage;
+
+	/** True when the row is an honest placeholder (no real asset yet). */
+	bool bPlaceholder = false;
+};
 
 /**
  * M1-034: kind of one combat audio request routed through the dispatcher.
@@ -221,6 +266,41 @@ public:
 	const FCombatAudioDispatcher& GetAudioDispatcher() const { return AudioDispatcher; }
 
 	/**
+	 * M5-017: the default victim-side reaction presentation table (the
+	 * runtime mirror of Data/CombatSystem/presentations.json schema 2):
+	 * hit and dead carry the real engine-template montages, launch/down/
+	 * recover are honest placeholders until real assets exist (the free
+	 * Quaternius tier and the engine template carry no such mannequin clips).
+	 */
+	static TArray<FHitReactionPresentationRow> MakeDefaultReactionPresentationTable();
+
+	/**
+	 * M5-017: overrides the reaction presentation table (config/tests). The
+	 * table maps reaction kinds to montage resources; rows the poller cannot
+	 * resolve play nothing but their placeholder diagnostic.
+	 */
+	void SetReactionPresentationTable(const TArray<FHitReactionPresentationRow>& InTable);
+
+	/** M5-017: the active reaction presentation table (read-only observation). */
+	const TArray<FHitReactionPresentationRow>& GetReactionPresentationTable() const { return ReactionTable; }
+
+	/** M5-017: dispatched victim reactions, oldest first (presentation ids; tests observe this). */
+	const TArray<FName>& GetReactionDispatchHistory() const { return ReactionDispatchHistory; }
+
+	/**
+	 * M5-017: the one victim-side reaction entry point - detects the owner's
+	 * combat-state transitions (Free/Attacking -> HitStun with or without a
+	 * rising launch, -> Knockdown, -> Recovering) and dispatches exactly one
+	 * mapped presentation per edge; repeated hits inside the same state never
+	 * re-fire (one event, one presentation), and refused hits (immunity,
+	 * filters) never enter a state and never fake a reaction.
+	 */
+	void PollVictimReactions();
+
+	/** M5-017: dispatches the Dead reaction once per death lifecycle (the owner health component's single event). */
+	void HandleOwnerDied();
+
+	/**
 	 * M1-033: shared UE 5.8 pause surface for one anim instance: pauses or
 	 * resumes every active montage (Montage_Pause/Montage_Resume with a null
 	 * montage reference) plus a single-node animation
@@ -313,6 +393,31 @@ protected:
 	 */
 	virtual void PlayCombatSound(USoundWave* Sound, const FVector& Location);
 
+	/**
+	 * M5-017: montage lookup seam behind the reaction table (LoadSynchronous
+	 * behind the same cache pattern as FindMontageForAttack). Returns nullptr
+	 * for a missing asset; the caller then skips playback with the row's
+	 * placeholder diagnostic. Tests override this to inject token montages.
+	 */
+	virtual UAnimMontage* FindMontageForReaction(FName PresentationId);
+
+	/**
+	 * M5-017: victim-reaction playback seam: stops the attack montage that is
+	 * presenting (a reaction owns the mesh while it lasts) and plays the
+	 * reaction montage on the mesh's AnimInstance at rate 1.0 (visible only
+	 * through an AnimGraph slot node; the single-node enemy idle cannot play
+	 * montages - a documented limitation, the dispatch is still recorded).
+	 * Tests override this to record dispatch calls instead of real playback.
+	 */
+	virtual void PlayVictimReactionMontage(FName PresentationId, UAnimMontage* Montage);
+
+	/**
+	 * M5-017: the honest placeholder diagnostic (once per presentation id):
+	 * a mapped reaction whose asset is missing or whose row is an explicit
+	 * placeholder logs exactly once and never counts as finished art.
+	 */
+	virtual void DiagnosePlaceholderReaction(FName PresentationId);
+
 private:
 	/**
 	 * Single snapshot-driven sync shared by the Started/Finished delegates and
@@ -333,6 +438,19 @@ private:
 	void HandleHitStopChanged(bool bFrozen);
 
 	void UnbindDelegates();
+
+	/**
+	 * M5-017: binds the owner health component's single death event to the
+	 * Dead reaction (once per component; the player carries no health
+	 * component and simply never dispatches Dead through this path).
+	 */
+	void TryBindOwnerDeath();
+
+	/**
+	 * M5-017: dispatches one mapped reaction: resolves the montage, plays it
+	 * or diagnoses the placeholder, and records the dispatch history entry.
+	 */
+	void DispatchVictimReaction(FName PresentationId);
 
 	/** Injected sources; weak so neither side keeps the other alive. */
 	TWeakObjectPtr<UCombatComponent> CombatSource;
@@ -399,4 +517,27 @@ private:
 
 	/** M1-033: SetHitStopPaused dispatch history (true = pause, false = resume). */
 	TArray<bool> HitStopPauseDispatchHistory;
+
+	/**
+	 * M5-017: the active victim-side reaction presentation table (the default
+	 * mirrors Data/CombatSystem/presentations.json schema 2; SetReaction-
+	 * PresentationTable overrides it for config/tests).
+	 */
+	TArray<FHitReactionPresentationRow> ReactionTable;
+
+	/** M5-017: presentation id -> resolved reaction montage cache (LoadSynchronous filled, no expiry). */
+	UPROPERTY(Transient)
+	TMap<FName, TSoftObjectPtr<UAnimMontage>> ReactionMontageCache;
+
+	/** M5-017: the owner's combat state at the previous observation (edge source for the reaction poller). */
+	ECombatActionState ObservedVictimState = ECombatActionState::Free;
+
+	/** M5-017: true once the owner health component's death event was bound. */
+	bool bOwnerDeathBound = false;
+
+	/** M5-017: dispatched victim reactions, oldest first (presentation ids). */
+	TArray<FName> ReactionDispatchHistory;
+
+	/** M5-017: presentation ids already diagnosed as placeholders (one log each). */
+	TSet<FName> LoggedPlaceholderReactionIds;
 };

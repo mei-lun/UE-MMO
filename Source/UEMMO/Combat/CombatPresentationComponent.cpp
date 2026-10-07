@@ -6,6 +6,8 @@
 #include "Animation/AnimMontage.h"
 #include "Animation/AnimSingleNodeInstance.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundWave.h"
 
@@ -149,6 +151,10 @@ UCombatPresentationComponent::UCombatPresentationComponent()
 	// instance so later tasks can re-route them without code changes.
 	HitSound = TSoftObjectPtr<USoundWave>(FSoftObjectPath(DefaultHitSoundPath));
 	LandSound = TSoftObjectPtr<USoundWave>(FSoftObjectPath(DefaultLandSoundPath));
+
+	// M5-017: the default victim-side reaction table (the runtime mirror of
+	// Data/CombatSystem/presentations.json schema 2).
+	ReactionTable = MakeDefaultReactionPresentationTable();
 }
 
 float UCombatPresentationComponent::ComputeMontagePlayRate(const UAttackDefinition& Definition, float MontageLengthSeconds)
@@ -224,6 +230,11 @@ void UCombatPresentationComponent::TickComponent(float DeltaTime, ELevelTick Tic
 	// interrupts) one component tick later at worst.
 	if (CombatSource.IsValid())
 	{
+		// M5-017: the victim-reaction poller observes the state edge BEFORE
+		// the attack sync (a hit lands between two ticks; the reaction
+		// dispatch is edge-triggered on the same snapshot the attack sync
+		// consumes, so both layers see the same state).
+		PollVictimReactions();
 		ApplySnapshot(CombatSource->GetSnapshot());
 	}
 	// The sync itself is registration-independent (tests drive this component
@@ -565,5 +576,222 @@ void UCombatPresentationComponent::UnbindDelegates()
 			Combat->OnHitStopChanged.RemoveAll(this);
 		}
 		bDelegatesBound = false;
+	}
+}
+
+// ---------------------------------------------------------------------------
+// M5-017: victim-side hit-reaction presentations. The poller derives the
+// reaction kind from the owner's own combat-state edges (one event, one
+// presentation; refused hits never enter a state and never fake a reaction),
+// the table maps kinds to montage resources (the runtime mirror of
+// Data/CombatSystem/presentations.json schema 2), and the audio half of the
+// face distinction stays with the existing damage-gated OnHitConfirmed path
+// (a pure-control hit presents its montage but never fakes the hit sound).
+// ---------------------------------------------------------------------------
+
+TArray<FHitReactionPresentationRow> UCombatPresentationComponent::MakeDefaultReactionPresentationTable()
+{
+	// The rows mirror Data/CombatSystem/presentations.json schema 2. Hit and
+	// Dead carry real engine-template montage assets (created and saved by
+	// Scripts/Editor/create_reaction_montages.py from the mannequin hit-react
+	// and death clips); Launch/Down/Recover are honest placeholders - the
+	// engine template and the free Quaternius tier carry no such mannequin
+	// clips, and the placeholders log exactly once per id instead of
+	// pretending to be finished art.
+	TArray<FHitReactionPresentationRow> Table;
+
+	FHitReactionPresentationRow Hit;
+	Hit.PresentationId = FName(TEXT("react_hit"));
+	Hit.Kind = EHitReactionPresentationKind::Hit;
+	Hit.Montage = TSoftObjectPtr<UAnimMontage>(FSoftObjectPath(TEXT("/Game/UEMMO/Animation/Reactions/RCT_Hit.RCT_Hit")));
+	Table.Add(Hit);
+
+	FHitReactionPresentationRow Launch;
+	Launch.PresentationId = FName(TEXT("react_launch"));
+	Launch.Kind = EHitReactionPresentationKind::Launch;
+	Launch.bPlaceholder = true;
+	Table.Add(Launch);
+
+	FHitReactionPresentationRow Down;
+	Down.PresentationId = FName(TEXT("react_down"));
+	Down.Kind = EHitReactionPresentationKind::Down;
+	Down.bPlaceholder = true;
+	Table.Add(Down);
+
+	FHitReactionPresentationRow Recover;
+	Recover.PresentationId = FName(TEXT("react_recover"));
+	Recover.Kind = EHitReactionPresentationKind::Recover;
+	Recover.bPlaceholder = true;
+	Table.Add(Recover);
+
+	FHitReactionPresentationRow Dead;
+	Dead.PresentationId = FName(TEXT("react_dead"));
+	Dead.Kind = EHitReactionPresentationKind::Dead;
+	Dead.Montage = TSoftObjectPtr<UAnimMontage>(FSoftObjectPath(TEXT("/Game/UEMMO/Animation/Reactions/RCT_Dead.RCT_Dead")));
+	Table.Add(Dead);
+
+	return Table;
+}
+
+void UCombatPresentationComponent::SetReactionPresentationTable(const TArray<FHitReactionPresentationRow>& InTable)
+{
+	ReactionTable = InTable;
+}
+
+void UCombatPresentationComponent::PollVictimReactions()
+{
+	const UCombatComponent* Source = CombatSource.Get();
+	if (Source == nullptr)
+	{
+		return;
+	}
+	TryBindOwnerDeath();
+
+	// Edge-triggered: only a state CHANGE can dispatch (one event, one
+	// presentation; repeated hits inside the same HitStun never re-fire).
+	const FCombatSnapshot Snapshot = Source->GetSnapshot();
+	const ECombatActionState Previous = ObservedVictimState;
+	ObservedVictimState = Snapshot.ActionState;
+	if (Previous == ObservedVictimState)
+	{
+		return;
+	}
+
+	FName PresentationId = NAME_None;
+	if (ObservedVictimState == ECombatActionState::HitStun)
+	{
+		// Launch vs Hit: a launched victim rises (the pending launch the
+		// movement update has not applied yet counts, the same read the
+		// M1-024 launch path uses).
+		float RisingZ = 0.0f;
+		if (const ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner()))
+		{
+			if (const UCharacterMovementComponent* Movement = OwnerCharacter->GetCharacterMovement())
+			{
+				RisingZ = FMath::Max(Movement->Velocity.Z, Movement->PendingLaunchVelocity.Z);
+			}
+		}
+		PresentationId = (RisingZ > 0.0f) ? FName(TEXT("react_launch")) : FName(TEXT("react_hit"));
+	}
+	else if (ObservedVictimState == ECombatActionState::Knockdown)
+	{
+		PresentationId = FName(TEXT("react_down"));
+	}
+	else if (ObservedVictimState == ECombatActionState::Recovering)
+	{
+		PresentationId = FName(TEXT("react_recover"));
+	}
+	else
+	{
+		// -> Free / -> Attacking edges present nothing.
+		return;
+	}
+	DispatchVictimReaction(PresentationId);
+}
+
+void UCombatPresentationComponent::HandleOwnerDied()
+{
+	DispatchVictimReaction(FName(TEXT("react_dead")));
+}
+
+void UCombatPresentationComponent::TryBindOwnerDeath()
+{
+	if (bOwnerDeathBound)
+	{
+		return;
+	}
+	const AActor* OwnerActor = GetOwner();
+	if (OwnerActor == nullptr)
+	{
+		return;
+	}
+	if (UHealthComponent* Health = OwnerActor->FindComponentByClass<UHealthComponent>())
+	{
+		// The health component's single death event (M1-016): at most one
+		// broadcast per death lifecycle, so the Dead reaction fires once.
+		Health->OnDied.AddUObject(this, &UCombatPresentationComponent::HandleOwnerDied);
+		bOwnerDeathBound = true;
+	}
+	else
+	{
+		// A health-less owner (the player) never dispatches Dead through this
+		// path; retrying the lookup is pointless - the component set is fixed.
+		bOwnerDeathBound = true;
+	}
+}
+
+void UCombatPresentationComponent::DispatchVictimReaction(FName PresentationId)
+{
+	// Every dispatch is recorded exactly once here (the observable contract
+	// for tests and diagnostics): the seams below only realize the playback
+	// or the placeholder diagnostic.
+	ReactionDispatchHistory.Add(PresentationId);
+
+	const FHitReactionPresentationRow* Row = nullptr;
+	for (const FHitReactionPresentationRow& Candidate : ReactionTable)
+	{
+		if (Candidate.PresentationId == PresentationId)
+		{
+			Row = &Candidate;
+			break;
+		}
+	}
+	if (Row == nullptr)
+	{
+		DiagnosePlaceholderReaction(PresentationId);
+		return;
+	}
+	UAnimMontage* Montage = Row->bPlaceholder ? nullptr : FindMontageForReaction(PresentationId);
+	if (Montage == nullptr)
+	{
+		DiagnosePlaceholderReaction(PresentationId);
+		return;
+	}
+	PlayVictimReactionMontage(PresentationId, Montage);
+}
+
+UAnimMontage* UCombatPresentationComponent::FindMontageForReaction(FName PresentationId)
+{
+	if (TSoftObjectPtr<UAnimMontage>* Cached = ReactionMontageCache.Find(PresentationId))
+	{
+		return Cached->LoadSynchronous();
+	}
+	for (const FHitReactionPresentationRow& Row : ReactionTable)
+	{
+		if (Row.PresentationId == PresentationId)
+		{
+			ReactionMontageCache.Add(PresentationId, Row.Montage);
+			return Row.Montage.LoadSynchronous();
+		}
+	}
+	return nullptr;
+}
+
+void UCombatPresentationComponent::PlayVictimReactionMontage(FName PresentationId, UAnimMontage* Montage)
+{
+	// A reaction owns the mesh while it lasts: the attack presentation stops
+	// (the victim cannot attack through a stun/knockdown anyway) and the
+	// reaction montage plays at real time. The playback needs an AnimGraph
+	// slot node; a single-node AnimInstance (the enemy idle) accepts the play
+	// call but has no slot to render it - the documented limitation, the
+	// dispatch history entry already recorded by the dispatcher.
+	StopPresentedMontage();
+	USkeletalMeshComponent* Mesh = MeshTarget.Get();
+	UAnimInstance* AnimInstance = Mesh ? Mesh->GetAnimInstance() : nullptr;
+	if (AnimInstance != nullptr && Montage != nullptr)
+	{
+		AnimInstance->Montage_Play(Montage, 1.0f);
+	}
+}
+
+void UCombatPresentationComponent::DiagnosePlaceholderReaction(FName PresentationId)
+{
+	bool bAlreadyLogged = false;
+	LoggedPlaceholderReactionIds.Add(PresentationId, &bAlreadyLogged);
+	if (!bAlreadyLogged)
+	{
+		UE_LOG(LogTemp, Log,
+			TEXT("UEMMO UCombatPresentationComponent: victim reaction %s has no real asset (placeholder row or missing montage); playback skipped - presentation resources are owned by later content tasks."),
+			*PresentationId.ToString());
 	}
 }

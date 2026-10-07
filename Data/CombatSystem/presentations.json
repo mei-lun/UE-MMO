@@ -1,39 +1,39 @@
 {
   "schema_version": 1,
   "table": "presentations",
-  "comment": "M5-003 sample rows: every attack reaction maps to exactly one hit presentation. All rows are placeholders (placeholder=true with empty soft paths) - presentation resources are owned by later tasks (M5-017); a missing optional resource falls back to a text log and never counts as finished art.",
+  "comment": "M5-003 row shape (one hit presentation per attack reaction), filled by M5-017 with real resources. react montages: RCT_Hit (the mannequin heavy hit react MM_HitReact_Front_Hvy_01) presents the victim's HitStun entry for every non-launching hit; the launcher's reaction montage stays an honest placeholder (no mannequin launch clip exists in the engine template or the free Quaternius tier) while its confirmed-hit sound is real. The sounds are the M1-034 Kenney Impact CC0 hit sound (damage face only - a pure-control hit presents its montage but never fakes the damage audio; down/recover/dead presentations carry no confirmed damage event and no audio). The presentation-layer reaction kinds (hit/launch/down/recover/dead) live in UCombatPresentationComponent::MakeDefaultReactionPresentationTable; the down/recover rows of that table stay placeholder for the same missing-clip reason. Refused hits (immunity, faction filter, get-up protection) enter no state and never present anything.",
   "rows": [
     {
       "presentation_id": "hit_light_01",
       "reaction_id": "light_01",
-      "montage_path": "",
-      "sound_path": "",
+      "montage_path": "/Game/UEMMO/Animation/Reactions/RCT_Hit",
+      "sound_path": "/Game/ThirdParty/Kenney/Impact/impactPunch_medium_000.impactPunch_medium_000",
       "effect_path": "",
-      "placeholder": true
+      "placeholder": false
     },
     {
       "presentation_id": "hit_light_02",
       "reaction_id": "light_02",
-      "montage_path": "",
-      "sound_path": "",
+      "montage_path": "/Game/UEMMO/Animation/Reactions/RCT_Hit",
+      "sound_path": "/Game/ThirdParty/Kenney/Impact/impactPunch_medium_000.impactPunch_medium_000",
       "effect_path": "",
-      "placeholder": true
+      "placeholder": false
     },
     {
       "presentation_id": "hit_launcher",
       "reaction_id": "launcher",
       "montage_path": "",
-      "sound_path": "",
+      "sound_path": "/Game/ThirdParty/Kenney/Impact/impactPunch_medium_000.impactPunch_medium_000",
       "effect_path": "",
-      "placeholder": true
+      "placeholder": false
     },
     {
       "presentation_id": "hit_aerial_01",
       "reaction_id": "aerial_01",
-      "montage_path": "",
-      "sound_path": "",
+      "montage_path": "/Game/UEMMO/Animation/Reactions/RCT_Hit",
+      "sound_path": "/Game/ThirdParty/Kenney/Impact/impactPunch_medium_000.impactPunch_medium_000",
       "effect_path": "",
-      "placeholder": true
+      "placeholder": false
     }
   ]
 }
