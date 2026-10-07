@@ -5,6 +5,7 @@
 #include "Combat/CombatComponent.h"
 #include "Combat/CombatGeometry.h"
 #include "Combat/HealthComponent.h"
+#include "Combat/System/TestRoomConfigDriver.h"
 #include "Enemy/EnemyDefinition.h"
 #include "Enemy/TrainingEnemy.h"
 #include "Engine/GameInstance.h"
@@ -1134,10 +1135,9 @@ bool APrototypeHUD::EnsureRewardSettlementCatalog()
     {
         return true;
     }
-    // Interim production source: the code-built double of Data/items.json (the
-    // same values the M3-007 starter drop table references). A data-driven
-    // catalog wiring belongs to a later task; the display degrades to the
-    // readable "<unknown item>" placeholder for any unresolved id.
+    // The legacy staging values (the fallback when the production source
+    // table cannot be read); the display degrades to the readable
+    // "<unknown item>" placeholder for any unresolved id.
     auto StageDefinition = [](FName Id, const FString& DisplayName, EItemSlot Slot,
         float Attack, float Defense, float MaxHP)
     {
@@ -1151,13 +1151,43 @@ bool APrototypeHUD::EnsureRewardSettlementCatalog()
         Definition.Rarity = EItemRarity::Normal;
         return Definition;
     };
+    // M5-020A: the definitions come from the production source table
+    // (Data/items.json); a missing/unreadable source (the packaged build
+    // carries no Data/ directory) falls back to the legacy staging values
+    // with a log - the runtime fallback the contract keeps legal.
     FString CatalogError;
-    RewardSettlementCatalog.AddDefinition(
-        StageDefinition(TEXT("weapon_training"), TEXT("Training Sword"), EItemSlot::Weapon, 5.0f, 0.0f, 0.0f), &CatalogError);
-    RewardSettlementCatalog.AddDefinition(
-        StageDefinition(TEXT("armor_training"), TEXT("Training Armor"), EItemSlot::Armor, 0.0f, 3.0f, 0.0f), &CatalogError);
-    RewardSettlementCatalog.AddDefinition(
-        StageDefinition(TEXT("charm_training"), TEXT("Training Charm"), EItemSlot::Accessory, 0.0f, 0.0f, 20.0f), &CatalogError);
+    TArray<FTestRoomItemRow> Rows;
+    FString SourceError;
+    if (ACombatTestRoomDriver::LoadProductionItems(Rows, SourceError))
+    {
+        for (const FTestRoomItemRow& Row : Rows)
+        {
+            FItemDefinition Definition;
+            Definition.DefinitionId = Row.DefinitionId;
+            Definition.DisplayName = Row.DisplayName;
+            Definition.Slot = Row.Slot == TEXT("Weapon") ? EItemSlot::Weapon
+                : Row.Slot == TEXT("Armor") ? EItemSlot::Armor
+                : Row.Slot == TEXT("Accessory") ? EItemSlot::Accessory
+                : EItemSlot::Weapon;
+            Definition.BaseStats.Attack = Row.Attack;
+            Definition.BaseStats.Defense = Row.Defense;
+            Definition.BaseStats.MaxHP = Row.MaxHP;
+            Definition.Rarity = static_cast<EItemRarity>(FMath::Clamp(Row.Rarity, 1, 3));
+            RewardSettlementCatalog.AddDefinition(Definition, &CatalogError);
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning,
+            TEXT("APrototypeHUD: the items source is unavailable (%s); the legacy staging values apply."),
+            *SourceError);
+        RewardSettlementCatalog.AddDefinition(
+            StageDefinition(TEXT("weapon_training"), TEXT("Training Sword"), EItemSlot::Weapon, 5.0f, 0.0f, 0.0f), &CatalogError);
+        RewardSettlementCatalog.AddDefinition(
+            StageDefinition(TEXT("armor_training"), TEXT("Training Armor"), EItemSlot::Armor, 0.0f, 3.0f, 0.0f), &CatalogError);
+        RewardSettlementCatalog.AddDefinition(
+            StageDefinition(TEXT("charm_training"), TEXT("Training Charm"), EItemSlot::Accessory, 0.0f, 0.0f, 20.0f), &CatalogError);
+    }
     bRewardCatalogReady = true;
     return true;
 }
@@ -1638,12 +1668,45 @@ bool APrototypeHUD::EnsureInventoryStaging()
         return Definition;
     };
 
-    const FItemDefinition Weapon = StageDefinition(TEXT("weapon_training"), TEXT("Training Sword"),
-        EItemSlot::Weapon, 5.0f, 0.0f, 0.0f);
-    const FItemDefinition Armor = StageDefinition(TEXT("armor_training"), TEXT("Training Armor"),
-        EItemSlot::Armor, 0.0f, 3.0f, 20.0f);
-    const FItemDefinition Charm = StageDefinition(TEXT("accessory_training"), TEXT("Training Charm"),
-        EItemSlot::Accessory, 1.0f, 0.0f, 5.0f);
+    // M5-020A: the staging definitions come from the production source table
+    // (the M3-011 debug divergence - accessory_training 1/0/5, armor max_hp
+    // 20 - is eliminated here); a missing source falls back to the legacy
+    // values with a log. The charm registers under the authority id
+    // charm_training; the legacy accessory_training instances resolve through
+    // the frozen alias at lookup (their InstanceIds never change).
+    TArray<FTestRoomItemRow> StagingRows;
+    FString StagingSourceError;
+    const bool bProductionRows = ACombatTestRoomDriver::LoadProductionItems(StagingRows, StagingSourceError);
+    if (!bProductionRows)
+    {
+        UE_LOG(LogTemp, Warning,
+            TEXT("APrototypeHUD: the items source is unavailable (%s); the legacy staging values apply."),
+            *StagingSourceError);
+    }
+    auto RowToDefinition = [](const FTestRoomItemRow& Row)
+    {
+        FItemDefinition Definition;
+        Definition.DefinitionId = Row.DefinitionId;
+        Definition.DisplayName = Row.DisplayName;
+        Definition.Slot = Row.Slot == TEXT("Weapon") ? EItemSlot::Weapon
+            : Row.Slot == TEXT("Armor") ? EItemSlot::Armor
+            : Row.Slot == TEXT("Accessory") ? EItemSlot::Accessory
+            : EItemSlot::Weapon;
+        Definition.BaseStats.Attack = Row.Attack;
+        Definition.BaseStats.Defense = Row.Defense;
+        Definition.BaseStats.MaxHP = Row.MaxHP;
+        Definition.Rarity = static_cast<EItemRarity>(FMath::Clamp(Row.Rarity, 1, 3));
+        return Definition;
+    };
+    const FItemDefinition Weapon = bProductionRows
+        ? RowToDefinition(StagingRows[0])
+        : StageDefinition(TEXT("weapon_training"), TEXT("Training Sword"), EItemSlot::Weapon, 5.0f, 0.0f, 0.0f);
+    const FItemDefinition Armor = bProductionRows
+        ? RowToDefinition(StagingRows[1])
+        : StageDefinition(TEXT("armor_training"), TEXT("Training Armor"), EItemSlot::Armor, 0.0f, 3.0f, 20.0f);
+    const FItemDefinition Charm = bProductionRows
+        ? RowToDefinition(StagingRows[2])
+        : StageDefinition(TEXT("accessory_training"), TEXT("Training Charm"), EItemSlot::Accessory, 1.0f, 0.0f, 5.0f);
     FString CatalogError;
     InventoryStagingCatalog.AddDefinition(Weapon, &CatalogError);
     InventoryStagingCatalog.AddDefinition(Armor, &CatalogError);
@@ -1652,9 +1715,9 @@ bool APrototypeHUD::EnsureInventoryStaging()
 
     FInventoryModel& Inventory = Profile->GetInventory();
     const FItemDefinition* StageDefs[3] = {
-        InventoryStagingCatalog.Find(TEXT("weapon_training")),
-        InventoryStagingCatalog.Find(TEXT("armor_training")),
-        InventoryStagingCatalog.Find(TEXT("accessory_training"))
+        InventoryStagingCatalog.Find(ACombatTestRoomDriver::ResolveItemAlias(TEXT("weapon_training"))),
+        InventoryStagingCatalog.Find(ACombatTestRoomDriver::ResolveItemAlias(TEXT("armor_training"))),
+        InventoryStagingCatalog.Find(ACombatTestRoomDriver::ResolveItemAlias(TEXT("accessory_training")))
     };
     TOptional<FGuid> FirstStagedWeaponId;
     for (int32 Index = 0; Index < 3; ++Index)

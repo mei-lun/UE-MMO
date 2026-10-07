@@ -17,6 +17,7 @@
 #include "RewardService.h"
 
 #include "ProfileSubsystem.h"
+#include "../Combat/System/TestRoomConfigDriver.h"
 #include "../Logging/OperationLogSubsystem.h"
 #include "../Persistence/ProfileSaveService.h"
 
@@ -248,7 +249,28 @@ FRewardBeginOutcome URewardService::M3_023_BeginRewardBody(const FRoomResult& Re
 	// 6. Exactly one equipment piece from the pinned starter table (M3-007),
 	//    identified by the settlement id. No random source other than the
 	//    derived seed participates.
-	const FDropTable Table = MakeStarterDropTable();
+	// M5-020A: the reward pool comes from the production source table
+	// (Data/drops.json); a missing/unreadable source (the packaged build
+	// carries no Data/ directory) falls back to the mirrored starter table
+	// double with a log - the runtime fallback the contract keeps legal.
+	FDropTable Table;
+	FTestRoomDropPool Pool;
+	FString PoolError;
+	if (ACombatTestRoomDriver::LoadProductionDropPool(Pool, PoolError))
+	{
+		Table.TableId = Pool.TableId;
+		for (const FTestRoomDropEntry& Entry : Pool.Entries)
+		{
+			Table.Entries.Add(FDropEntry{ Entry.DefinitionId, Entry.Weight });
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning,
+			TEXT("URewardService: the drops source is unavailable (%s); the mirrored starter table applies."),
+			*PoolError);
+		Table = MakeStarterDropTable();
+	}
 	const FDropRewardResult Drop = FDropGenerator::GenerateReward(RewardSeed, Result.SettlementId, Table, Catalog);
 	if (!Drop.bSuccess)
 	{

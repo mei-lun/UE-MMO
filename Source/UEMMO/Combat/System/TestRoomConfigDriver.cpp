@@ -307,3 +307,211 @@ bool ACombatTestRoomDriver::SpawnVehicles(UWorld& World, FString& OutError)
 	OutError = TEXT("vehicle spawning is not implemented yet (the vehicle segment M5-037+ owns the capability)");
 	return false;
 }
+
+// ---------------------------------------------------------------------------
+// M5-020A: the production item/drop catalog reader. Data/items.json and
+// Data/drops.json are the authority sources; the packaged build carries no
+// Data/ directory, so every consumer keeps its documented runtime fallback
+// and the loaders simply return false there.
+// ---------------------------------------------------------------------------
+
+bool ACombatTestRoomDriver::ParseProductionItems(const FString& JsonText, TArray<FTestRoomItemRow>& OutRows, FString& OutError)
+{
+	OutRows.Reset();
+	TSharedPtr<FCombatJsonValue> Root;
+	if (!FCombatJsonParser::Parse(JsonText, Root, OutError) || !Root.IsValid()
+		|| Root->Kind != FCombatJsonValue::EKind::Object)
+	{
+		OutError = OutError.IsEmpty() ? TEXT("the items source is not a JSON object") : OutError;
+		return false;
+	}
+	double SchemaVersion = 0.0;
+	if (!ReadNumber(*Root, TEXT("schema_version"), SchemaVersion, OutError)
+		|| static_cast<int32>(SchemaVersion) != 1)
+	{
+		OutError = FString::Printf(TEXT("schema_version must be 1 (parse: %s)"), *OutError);
+		return false;
+	}
+	const FCombatJsonValue* Items = FindMember(*Root, TEXT("items"));
+	if (Items == nullptr || Items->Kind != FCombatJsonValue::EKind::Array || Items->Array.Num() < 1)
+	{
+		OutError = TEXT("items must hold at least one row");
+		return false;
+	}
+	TSet<FName> Seen;
+	for (int32 Index = 0; Index < Items->Array.Num(); ++Index)
+	{
+		const FCombatJsonValue& Row = *Items->Array[Index];
+		if (Row.Kind != FCombatJsonValue::EKind::Object)
+		{
+			OutError = FString::Printf(TEXT("items[%d] must be an object"), Index);
+			return false;
+		}
+		FTestRoomItemRow Entry;
+		FString IdText;
+		if (!ReadString(Row, TEXT("definition_id"), IdText, OutError) || !IsValidTestRoomId(IdText))
+		{
+			OutError = FString::Printf(TEXT("items[%d].definition_id must be a valid id (parse: %s)"), Index, *OutError);
+			return false;
+		}
+		Entry.DefinitionId = FName(*IdText);
+		if (Seen.Contains(Entry.DefinitionId))
+		{
+			OutError = FString::Printf(TEXT("items[%d].definition_id '%s' is listed twice"), Index, *IdText);
+			return false;
+		}
+		Seen.Add(Entry.DefinitionId);
+		if (!ReadString(Row, TEXT("display_name"), Entry.DisplayName, OutError))
+		{
+			OutError = FString::Printf(TEXT("items[%d].display_name must be a string (parse: %s)"), Index, *OutError);
+			return false;
+		}
+		if (!ReadString(Row, TEXT("slot"), Entry.Slot, OutError))
+		{
+			OutError = FString::Printf(TEXT("items[%d].slot must be a string (parse: %s)"), Index, *OutError);
+			return false;
+		}
+		const FCombatJsonValue* Stats = FindMember(Row, TEXT("base_stats"));
+		if (Stats == nullptr || Stats->Kind != FCombatJsonValue::EKind::Object)
+		{
+			OutError = FString::Printf(TEXT("items[%d].base_stats must be an object"), Index);
+			return false;
+		}
+		double Attack = 0.0;
+		double Defense = 0.0;
+		double MaxHP = 0.0;
+		if (!ReadNumber(*Stats, TEXT("attack"), Attack, OutError)
+			|| !ReadNumber(*Stats, TEXT("defense"), Defense, OutError)
+			|| !ReadNumber(*Stats, TEXT("max_hp"), MaxHP, OutError))
+		{
+			OutError = FString::Printf(TEXT("items[%d].base_stats must carry numeric attack/defense/max_hp (parse: %s)"), Index, *OutError);
+			return false;
+		}
+		Entry.Attack = static_cast<float>(Attack);
+		Entry.Defense = static_cast<float>(Defense);
+		Entry.MaxHP = static_cast<float>(MaxHP);
+		double Rarity = 1.0;
+		if (FindMember(Row, TEXT("rarity")) != nullptr)
+		{
+			if (!ReadNumber(Row, TEXT("rarity"), Rarity, OutError))
+			{
+				OutError = FString::Printf(TEXT("items[%d].rarity must be a number (parse: %s)"), Index, *OutError);
+				return false;
+			}
+		}
+		Entry.Rarity = static_cast<int32>(Rarity);
+		OutRows.Add(Entry);
+	}
+	return true;
+}
+
+bool ACombatTestRoomDriver::ParseProductionDropPool(const FString& JsonText, FTestRoomDropPool& OutPool, FString& OutError)
+{
+	OutPool = FTestRoomDropPool();
+	TSharedPtr<FCombatJsonValue> Root;
+	if (!FCombatJsonParser::Parse(JsonText, Root, OutError) || !Root.IsValid()
+		|| Root->Kind != FCombatJsonValue::EKind::Object)
+	{
+		OutError = OutError.IsEmpty() ? TEXT("the drops source is not a JSON object") : OutError;
+		return false;
+	}
+	double SchemaVersion = 0.0;
+	if (!ReadNumber(*Root, TEXT("schema_version"), SchemaVersion, OutError)
+		|| static_cast<int32>(SchemaVersion) != 1)
+	{
+		OutError = FString::Printf(TEXT("schema_version must be 1 (parse: %s)"), *OutError);
+		return false;
+	}
+	FString TableIdText;
+	if (!ReadString(*Root, TEXT("table_id"), TableIdText, OutError) || !IsValidTestRoomId(TableIdText))
+	{
+		OutError = FString::Printf(TEXT("table_id must be a valid id (parse: %s)"), *OutError);
+		return false;
+	}
+	OutPool.TableId = FName(*TableIdText);
+	const FCombatJsonValue* Entries = FindMember(*Root, TEXT("entries"));
+	if (Entries == nullptr || Entries->Kind != FCombatJsonValue::EKind::Array || Entries->Array.Num() < 1)
+	{
+		OutError = TEXT("entries must hold at least one row");
+		return false;
+	}
+	TSet<FName> Seen;
+	for (int32 Index = 0; Index < Entries->Array.Num(); ++Index)
+	{
+		const FCombatJsonValue& Row = *Entries->Array[Index];
+		if (Row.Kind != FCombatJsonValue::EKind::Object)
+		{
+			OutError = FString::Printf(TEXT("entries[%d] must be an object"), Index);
+			return false;
+		}
+		FTestRoomDropEntry Entry;
+		FString IdText;
+		double Weight = 0.0;
+		if (!ReadString(Row, TEXT("definition_id"), IdText, OutError) || !IsValidTestRoomId(IdText))
+		{
+			OutError = FString::Printf(TEXT("entries[%d].definition_id must be a valid id (parse: %s)"), Index, *OutError);
+			return false;
+		}
+		Entry.DefinitionId = FName(*IdText);
+		if (Seen.Contains(Entry.DefinitionId))
+		{
+			OutError = FString::Printf(TEXT("entries[%d].definition_id '%s' is listed twice"), Index, *IdText);
+			return false;
+		}
+		Seen.Add(Entry.DefinitionId);
+		if (!ReadNumber(Row, TEXT("weight"), Weight, OutError) || Weight < 0.0)
+		{
+			OutError = FString::Printf(TEXT("entries[%d].weight must be a number not below 0 (parse: %s)"), Index, *OutError);
+			return false;
+		}
+		Entry.Weight = static_cast<int32>(Weight);
+		OutPool.Entries.Add(Entry);
+	}
+	return true;
+}
+
+bool ACombatTestRoomDriver::LoadProductionItems(TArray<FTestRoomItemRow>& OutRows, FString& OutError)
+{
+	const FString AbsolutePath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / TEXT("Data/items.json"));
+	if (!FPlatformFileManager::Get().GetPlatformFile().FileExists(*AbsolutePath))
+	{
+		OutError = FString::Printf(TEXT("the items source does not exist: %s"), *AbsolutePath);
+		return false;
+	}
+	FString JsonText;
+	if (!FFileHelper::LoadFileToString(JsonText, *AbsolutePath))
+	{
+		OutError = FString::Printf(TEXT("the items source could not be read: %s"), *AbsolutePath);
+		return false;
+	}
+	return ParseProductionItems(JsonText, OutRows, OutError);
+}
+
+bool ACombatTestRoomDriver::LoadProductionDropPool(FTestRoomDropPool& OutPool, FString& OutError)
+{
+	const FString AbsolutePath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / TEXT("Data/drops.json"));
+	if (!FPlatformFileManager::Get().GetPlatformFile().FileExists(*AbsolutePath))
+	{
+		OutError = FString::Printf(TEXT("the drops source does not exist: %s"), *AbsolutePath);
+		return false;
+	}
+	FString JsonText;
+	if (!FFileHelper::LoadFileToString(JsonText, *AbsolutePath))
+	{
+		OutError = FString::Printf(TEXT("the drops source could not be read: %s"), *AbsolutePath);
+		return false;
+	}
+	return ParseProductionDropPool(JsonText, OutPool, OutError);
+}
+
+FName ACombatTestRoomDriver::ResolveItemAlias(FName Id)
+{
+	// The frozen M3-era alias (interface contract section 9): the debug
+	// staging id reads as the authority charm id. Display resolution only -
+	// the stored InstanceIds never change.
+	if (Id == FName(TEXT("accessory_training")))
+	{
+		return FName(TEXT("charm_training"));
+	}
+	return Id;
+}

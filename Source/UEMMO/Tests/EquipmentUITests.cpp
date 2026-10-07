@@ -524,17 +524,20 @@ bool FUEMMOTasksM3_012EquipUpdatesMappingSnapshotAndUi::RunTest(const FString& P
 		AddError(TEXT("the Weapon slot lost the staged weapon mapping"));
 	}
 
-	// The profile snapshot re-derived: base 100/0/0 + weapon 5/0/0 + armor 0/3/20.
+	// The profile snapshot re-derived: base 100/0/0 + weapon 5/0/0 + armor
+	// 0/3/0. M5-020A unified the staging definitions with the production
+	// source table (Data/items.json: the armor carries no max_hp - the M3-011
+	// debug value 20 was the documented divergence that this card removed).
 	const FProfileSnapshot Snapshot = Scene.Profile->GetProfileSnapshot();
 	TestEqual(TEXT("the snapshot Attack includes the weapon bonus"), Snapshot.Attack, 5);
 	TestEqual(TEXT("the snapshot Defense includes the armor bonus"), Snapshot.Defense, 3);
-	TestEqual(TEXT("the snapshot MaxHP includes the armor bonus"), Snapshot.MaxHP, 120);
+	TestEqual(TEXT("the snapshot MaxHP matches the unified source (no armor max_hp)"), Snapshot.MaxHP, 100);
 
 	// The production push applied to the pawn (the bottom entry ran).
 	TestNotNull(TEXT("the scene has a player"), Scene.Player);
 	if (Scene.Player != nullptr)
 	{
-		TestEqual(TEXT("the pawn health max follows the snapshot"), Scene.Player->GetHealth()->GetMaxHealth(), 120.0f, 0.01f);
+		TestEqual(TEXT("the pawn health max follows the snapshot"), Scene.Player->GetHealth()->GetMaxHealth(), 100.0f, 0.01f);
 		TestEqual(TEXT("the pawn attack follows the snapshot"), Scene.Player->GetCombat()->GetAttackPower(), 5.0f, 0.01f);
 	}
 

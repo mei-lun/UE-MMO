@@ -202,15 +202,13 @@ bool FUEMMOTasksM5_018ADriverSpawnsTargetsFromConfig::RunTest(const FString& Par
 	TestTrue("the heavy target carries the configured health, policy and location",
 		bFoundHeavyAtConfiguredLocation);
 
-	// Cleanup: remove the spawned actors (the test world may be the shared
-	// game world on the automation fallback path).
+	// Cleanup: destroy the spawned actors (the shared world stays clean for
+	// the suites that run after this one).
 	for (AMeleeEnemy* Enemy : Enemies)
 	{
-		if (UHealthComponent* Health = Enemy->GetHealthComponent())
-		{
-			Health->ApplyDamage(Health->GetMaxHealth());
-		}
+		Enemy->Destroy();
 	}
+	Driver->Destroy();
 	return true;
 }
 
@@ -281,14 +279,12 @@ bool FUEMMOTasksM5_018AUnknownIdsFailExplicitly::RunTest(const FString& Paramete
 	}
 	TestEqual("the unknown-enemy target spawned no stand-in", EnemyCount, 2);
 
-	// Cleanup.
+	// Cleanup: destroy the enemies this test spawned.
 	for (TActorIterator<AMeleeEnemy> It(World); It; ++It)
 	{
-		if (UHealthComponent* Health = It->GetHealthComponent())
-		{
-			Health->ApplyDamage(Health->GetMaxHealth());
-		}
+		It->Destroy();
 	}
+	Driver->Destroy();
 	return true;
 }
 

@@ -72,6 +72,67 @@ struct FTestRoomConfig
 };
 
 /**
+ * M5-020A: one production item row of Data/items.json (the display/claim
+ * source for the HUD and the reward chain). Slot is the raw table token
+ * ("Weapon"/"Armor"/"Accessory") - the consumers map it to their own enums.
+ */
+USTRUCT(BlueprintType)
+struct FTestRoomItemRow
+{
+	GENERATED_BODY()
+
+	/** Business id (a-z, 0-9, _). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "TestRoom|Item")
+	FName DefinitionId;
+
+	/** The display name the HUD shows. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "TestRoom|Item")
+	FString DisplayName;
+
+	/** The slot token from the table. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "TestRoom|Item")
+	FString Slot;
+
+	/** Base stats. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "TestRoom|Item")
+	float Attack = 0.0f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "TestRoom|Item")
+	float Defense = 0.0f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "TestRoom|Item")
+	float MaxHP = 0.0f;
+
+	/** Rarity tier (1 = Normal in the M3 scale). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "TestRoom|Item")
+	int32 Rarity = 1;
+};
+
+/** M5-020A: one weighted entry of a production drop pool. */
+USTRUCT(BlueprintType)
+struct FTestRoomDropEntry
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "TestRoom|Drop")
+	FName DefinitionId;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "TestRoom|Drop")
+	int32 Weight = 0;
+};
+
+/** M5-020A: one production drop pool (Data/drops.json). */
+USTRUCT(BlueprintType)
+struct FTestRoomDropPool
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "TestRoom|Drop")
+	FName TableId;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "TestRoom|Drop")
+	TArray<FTestRoomDropEntry> Entries;
+};
+
+/**
  * M5-018A: the config-driven system test room driver. One driver actor loads
  * the test_room source configuration, spawns every configured target by id in
  * a loop and applies the configured health, reaction policy and location -
@@ -145,6 +206,35 @@ public:
 
 	/** M5-018A: test surface - installs a parsed config (the same state LoadConfig produces). */
 	void SetConfigForTesting(const FTestRoomConfig& InConfig) { Config = InConfig; }
+
+	// ------------------------------------------------------------------
+	// M5-020A: the production item/drop catalog reader (the shared source
+	// for the HUD display and the reward chain). All loaders are pure text
+	// entry points plus file conveniences; a missing file returns false and
+	// the CONSUMER decides the fallback (the packaged build carries no
+	// Data/ directory - the interface contract keeps the runtime fallback
+	// doubles legal there until the catalog assets ship).
+	// ------------------------------------------------------------------
+
+	/** Parses one items.json text; every problem names its field. */
+	static bool ParseProductionItems(const FString& JsonText, TArray<FTestRoomItemRow>& OutRows, FString& OutError);
+
+	/** Parses one drops.json text; unique ids, positive weights, schema 1. */
+	static bool ParseProductionDropPool(const FString& JsonText, FTestRoomDropPool& OutPool, FString& OutError);
+
+	/** Loads Data/items.json (project relative). */
+	static bool LoadProductionItems(TArray<FTestRoomItemRow>& OutRows, FString& OutError);
+
+	/** Loads Data/drops.json (project relative). */
+	static bool LoadProductionDropPool(FTestRoomDropPool& OutPool, FString& OutError);
+
+	/**
+	 * M5-020A: the frozen historical alias (the interface contract section
+	 * 9): accessory_training reads as charm_training (the authority id);
+	 * every other id passes through. The alias carries DISPLAY resolution
+	 * only - InstanceIds never change.
+	 */
+	static FName ResolveItemAlias(FName Id);
 
 private:
 	FTestRoomConfig Config;
