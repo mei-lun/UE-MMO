@@ -91,6 +91,20 @@ bool FUEMMOTasksM5_018BPackagedReactionEvidence::RunTest(const FString& Paramete
 			Sword.BaseStats.Attack = 5.0f;
 			Sword.Rarity = EItemRarity::Normal;
 			TestTrue("the fallback catalog accepts the mirrored sword", Catalog.AddDefinition(Sword));
+			FItemDefinition Armor;
+			Armor.DefinitionId = FName(TEXT("armor_training"));
+			Armor.DisplayName = TEXT("Training Armor");
+			Armor.Slot = EItemSlot::Armor;
+			Armor.BaseStats.Defense = 3.0f;
+			Armor.Rarity = EItemRarity::Normal;
+			TestTrue("the fallback catalog accepts the mirrored armor", Catalog.AddDefinition(Armor));
+			FItemDefinition Charm;
+			Charm.DefinitionId = FName(TEXT("charm_training"));
+			Charm.DisplayName = TEXT("Training Charm");
+			Charm.Slot = EItemSlot::Accessory;
+			Charm.BaseStats.MaxHP = 20.0f;
+			Charm.Rarity = EItemRarity::Normal;
+			TestTrue("the fallback catalog accepts the mirrored charm", Catalog.AddDefinition(Charm));
 			const FDropRewardResult Drop = FDropGenerator::GenerateReward(
 				/*RewardSeed*/ 9001, /*SettlementId*/ 1, Table, Catalog);
 			TestTrue("the fallback table still rolls a real reward", Drop.bSuccess);
