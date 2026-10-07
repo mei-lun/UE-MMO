@@ -36,6 +36,11 @@ namespace
 	const TCHAR* GM3_030_CombatRoomId = TEXT("room_combat_01");
 	const TCHAR* GM3_030_CombatRoomRewardTableId = TEXT("starter");
 
+	// M5-018A: the system test room entry (the menu's second legal destination).
+	const TCHAR* GM5_018A_SystemTestRoomMapPath = TEXT("/Game/UEMMO/Maps/L_SystemTestRoom");
+	const TCHAR* GM5_018A_SystemTestRoomId = TEXT("room_system_test_01");
+	const TCHAR* GM5_018A_SystemTestRoomRewardTableId = TEXT("starter");
+
 	// The production save prefix of the M3-014/M3-015 chain (only ever used
 	// outside automation; automation runs the isolated injected service).
 	const TCHAR* GM3_017_ProductionSlotPrefix = TEXT("Profile_");
@@ -53,6 +58,7 @@ void UGameFlowSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	CurrentRoomDef = nullptr;
 	CachedSelectableRoom = nullptr;
 	CachedCombatRoom = nullptr;
+	CachedSystemTestRoom = nullptr;
 	StartupOutcome = FStartupLoadOutcome();
 	bStartupProfileRestored = false;
 
@@ -313,6 +319,23 @@ URoomDefinition* UGameFlowSubsystem::GetCombatRoomDefinition()
 		CachedCombatRoom = Room;
 	}
 	return CachedCombatRoom;
+}
+
+URoomDefinition* UGameFlowSubsystem::GetSystemTestRoomDefinition()
+{
+	if (CachedSystemTestRoom == nullptr)
+	{
+		// The M5-018A menu's second legal entry: the config-driven test room
+		// the driver actor on L_SystemTestRoom runs. Only the identity fields
+		// matter for the map open; the room content stays with the map's
+		// driver actor and its source table (documented in the task report).
+		URoomDefinition* Room = NewObject<URoomDefinition>(this, NAME_None, RF_Transient);
+		Room->RoomId = FName(GM5_018A_SystemTestRoomId);
+		Room->MapPath = TSoftObjectPtr<UWorld>(FSoftObjectPath(GM5_018A_SystemTestRoomMapPath));
+		Room->RewardTableId = FName(GM5_018A_SystemTestRoomRewardTableId);
+		CachedSystemTestRoom = Room;
+	}
+	return CachedSystemTestRoom;
 }
 
 bool UGameFlowSubsystem::OpenRoomMapProduction(const FString& MapPath)

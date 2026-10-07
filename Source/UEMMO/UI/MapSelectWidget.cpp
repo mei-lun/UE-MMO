@@ -25,7 +25,8 @@ namespace
 	// task): the title, the single map row, the enter label and the settings
 	// placeholder. Unique M3_017 names per the per-file constant rule.
 	const TCHAR* GM3_017_TitleText = TEXT("Map Select");
-	const TCHAR* GM3_017_MapEntryText = TEXT("TrainingArena");
+	const TCHAR* GM3_017_MapEntryText = TEXT("TrainingArena / CombatRoom01 (waves)");
+	const TCHAR* GM5_018A_SystemTestRoomText = TEXT("SystemTestRoom (config-driven)");
 	const TCHAR* GM3_017_EnterLabelText = TEXT("Enter");
 	const TCHAR* GM3_017_SettingsPlaceholderText = TEXT("Settings / Volume: text placeholder (not in the M3-017 scope)");
 }
@@ -79,6 +80,10 @@ void UMapSelectWidget::BuildControls()
 
 	// The card's single selectable map row: the list holds exactly one entry
 	// (no multi-map store).
+	// M5-018A: two legal entries (the wave room keeps the M3-030 override
+	// chain; the system test room is the new config-driven destination).
+	// Both rows are buttons so the selection is a real click, not a console
+	// command; the selected row highlights.
 	MapEntryRow = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass());
 	MapEntryRow->SetBrushColor(FLinearColor(0.08f, 0.12f, 0.18f, 0.9f));
 	MapEntryRow->SetPadding(FMargin(20.0f, 10.0f));
@@ -87,6 +92,21 @@ void UMapSelectWidget::BuildControls()
 	MapEntryBlock->SetJustification(ETextJustify::Center);
 	MapEntryBlock->SetText(FText::FromString(GM3_017_MapEntryText));
 	MapEntryRow->SetContent(MapEntryBlock);
+
+	SystemTestRoomRow = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass());
+	SystemTestRoomRow->SetBrushColor(FLinearColor(0.08f, 0.12f, 0.18f, 0.9f));
+	SystemTestRoomRow->SetPadding(FMargin(20.0f, 10.0f));
+	SystemTestRoomBlock = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
+	SystemTestRoomBlock->SetColorAndOpacity(FSlateColor(FLinearColor(0.85f, 0.95f, 1.0f, 1.0f)));
+	SystemTestRoomBlock->SetJustification(ETextJustify::Center);
+	SystemTestRoomBlock->SetText(FText::FromString(GM5_018A_SystemTestRoomText));
+	SystemTestRoomRow->SetContent(SystemTestRoomBlock);
+
+	SystemTestRoomEnterButton = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass());
+	SystemTestRoomEnterLabel = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
+	SystemTestRoomEnterLabel->SetText(FText::FromString(GM3_017_EnterLabelText));
+	SystemTestRoomEnterButton->AddChild(SystemTestRoomEnterLabel);
+	SystemTestRoomEnterButton->OnClicked.AddDynamic(this, &UMapSelectWidget::HandleSystemTestRoomClicked);
 
 	EnterButton = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass());
 	EnterLabel = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
@@ -110,6 +130,8 @@ void UMapSelectWidget::BuildControls()
 	Stack->AddChildToVerticalBox(TitleBlock);
 	Stack->AddChildToVerticalBox(MapEntryRow);
 	Stack->AddChildToVerticalBox(EnterButton);
+	Stack->AddChildToVerticalBox(SystemTestRoomRow);
+	Stack->AddChildToVerticalBox(SystemTestRoomEnterButton);
 	Stack->AddChildToVerticalBox(ErrorBlock);
 	Stack->AddChildToVerticalBox(SettingsPlaceholderBlock);
 
@@ -125,6 +147,10 @@ void UMapSelectWidget::BindMenu()
 	BuildControls();
 	SetErrorText(FString());
 	SetEnterButtonEnabled(true);
+	if (SystemTestRoomEnterButton != nullptr)
+	{
+		SystemTestRoomEnterButton->SetIsEnabled(true);
+	}
 }
 
 UGameFlowSubsystem* UMapSelectWidget::GetGameFlowSubsystem() const
@@ -160,6 +186,9 @@ void UMapSelectWidget::HandleEnterClicked()
 	// The enter target: the presentation-level override wins when the mount
 	// set one (the combat room the boot world's trigger chain owns); without
 	// it the card's single selectable entry is requested (the M3-017 form).
+	// M5-018A: the wave-room enter keeps the M3-017/M3-030 chain (the boot
+	// world's override first, the selectable definition otherwise); the
+	// system test room has its own enter button and handler below.
 	const URoomDefinition* TargetDefinition = EnterRoomDefinitionOverride.Get();
 	if (TargetDefinition == nullptr)
 	{
@@ -187,6 +216,43 @@ void UMapSelectWidget::HandleEnterClicked()
 	// failure must stay retryable).
 	SetErrorText(Flow->GetLastError());
 	SetEnterButtonEnabled(true);
+}
+void UMapSelectWidget::HandleSystemTestRoomClicked()
+{
+	// The same guard chain as the wave-room enter (the state machine half
+	// lives in the flow; the visible half disables both buttons for the
+	// attempt so a double click cannot request two worlds).
+	UGameFlowSubsystem* Flow = GetGameFlowSubsystem();
+	if (Flow == nullptr)
+	{
+		SetErrorText(TEXT("M5-018A: the game flow subsystem is unavailable - cannot enter the system test room."));
+		return;
+	}
+	if (Flow->GetState() != EGameFlowState::Menu || Flow->IsLoading())
+	{
+		SystemTestRoomEnterButton->SetIsEnabled(false);
+		return;
+	}
+	SystemTestRoomEnterButton->SetIsEnabled(false);
+	EnterButton->SetIsEnabled(false);
+
+	URoomDefinition* TargetDefinition = Flow->GetSystemTestRoomDefinition();
+	if (TargetDefinition == nullptr)
+	{
+		SetErrorText(TEXT("M5-018A: the system test room entry is unavailable."));
+		SystemTestRoomEnterButton->SetIsEnabled(true);
+		EnterButton->SetIsEnabled(true);
+		return;
+	}
+	if (Flow->EnterRoom(TargetDefinition))
+	{
+		SetErrorText(FString());
+		EnterAccepted.Broadcast();
+		return;
+	}
+	SetErrorText(Flow->GetLastError());
+	SystemTestRoomEnterButton->SetIsEnabled(true);
+	EnterButton->SetIsEnabled(true);
 }
 
 void UMapSelectWidget::SetEnterRoomDefinition(const URoomDefinition* Definition)

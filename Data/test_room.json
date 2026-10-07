@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "table": "test_room",
+  "comment": "M5-018A: the system test room source row. Targets spawn by enemy_id (DA_<id> under /Game/UEMMO/Enemy/Definitions) with the configured max_health, target reaction policy_id (DA_Target_<id> from the M5-008 generated assets: normal/heavy/boss are the M5-003 sample rows) and room-local location. Change a value and reload the map - the room follows this table, not class code. vehicle_spawns is the future vehicle list: legal only while empty until the vehicle segment (M5-037+) implements the capability; a non-empty list refuses with an explicit not-implemented error and never fabricates a stand-in.",
+  "rows": [
+    {
+      "room_id": "room_system_test_01",
+      "targets": [
+        {
+          "target_id": "dummy_normal",
+          "enemy_id": "melee_grunt",
+          "max_health": 80,
+          "policy_id": "normal",
+          "location_cm": { "x": 300, "y": 0, "z": 88 }
+        },
+        {
+          "target_id": "dummy_heavy",
+          "enemy_id": "melee_grunt",
+          "max_health": 120,
+          "policy_id": "heavy",
+          "location_cm": { "x": 550, "y": 150, "z": 88 }
+        },
+        {
+          "target_id": "dummy_boss",
+          "enemy_id": "melee_grunt",
+          "max_health": 200,
+          "policy_id": "boss",
+          "location_cm": { "x": 550, "y": -150, "z": 88 }
+        }
+      ],
+      "vehicle_spawns": [],
+      "reward_pool_id": "starter"
+    }
+  ]
+}

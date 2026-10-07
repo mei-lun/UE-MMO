@@ -39,7 +39,9 @@ class UEMMO_API UMapSelectWidget : public UUserWidget
 
 public:
 	/** The card's list rule as code: exactly one selectable map row. */
-	static constexpr int32 MapEntryCount = 1;
+	// M5-018A: the menu carries two legal entries (the wave room and the
+	// config-driven system test room); the count feeds the M3-017 guard.
+	static constexpr int32 MapEntryCount = 2;
 
 	UMapSelectWidget(const FObjectInitializer& ObjectInitializer);
 
@@ -104,6 +106,10 @@ private:
 	UFUNCTION()
 	void HandleEnterButtonClicked();
 
+	/** M5-018A: enters the system test room (the second legal menu entry). */
+	UFUNCTION()
+	void HandleSystemTestRoomClicked();
+
 	UPROPERTY(Transient)
 	TObjectPtr<UCanvasPanel> RootCanvas;
 
@@ -118,6 +124,20 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UBorder> MapEntryRow;
+
+	/** M5-018A: the second legal entry (the config-driven system test room). */
+	UPROPERTY(Transient)
+	TObjectPtr<UBorder> SystemTestRoomRow;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> SystemTestRoomBlock;
+
+	/** M5-018A: the second enter button (the system test room). */
+	UPROPERTY(Transient)
+	TObjectPtr<UButton> SystemTestRoomEnterButton;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> SystemTestRoomEnterLabel;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UTextBlock> MapEntryBlock;

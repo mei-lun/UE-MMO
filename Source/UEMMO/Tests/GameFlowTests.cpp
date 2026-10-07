@@ -877,8 +877,11 @@ bool FUEMMOTasksM3_017WidgetMenuSingleMapAndLoadGuard::RunTest(const FString& Pa
 	Widget->BindMenu();
 
 	// The card's one-map menu surface.
-	TestEqual(TEXT("the widget declares exactly one map entry"),
-		UMapSelectWidget::MapEntryCount, 1);
+	// M5-018A: the menu carries two legal entries now (the wave room row and
+	// the config-driven system test room row) - the M3-017 single-row sample
+	// grew a second destination as the M5-018A card requires.
+	TestEqual(TEXT("the widget declares exactly two map entries"),
+		UMapSelectWidget::MapEntryCount, 2);
 	TestNotNull(TEXT("the title block exists"), Widget->PeekTitleBlock());
 	if (Widget->PeekTitleBlock() != nullptr)
 	{
@@ -888,8 +891,8 @@ bool FUEMMOTasksM3_017WidgetMenuSingleMapAndLoadGuard::RunTest(const FString& Pa
 	TestNotNull(TEXT("the single map entry block exists"), Widget->PeekMapEntryBlock());
 	if (Widget->PeekMapEntryBlock() != nullptr)
 	{
-		TestEqual(TEXT("the single entry is the TrainingArena row"),
-			Widget->PeekMapEntryBlock()->GetText().ToString(), FString(TEXT("TrainingArena")));
+		TestTrue(TEXT("the first entry is the wave room row (TrainingArena / CombatRoom01)"),
+			Widget->PeekMapEntryBlock()->GetText().ToString().Contains(TEXT("TrainingArena")));
 	}
 	TestNotNull(TEXT("the settings/volume placeholder block exists"),
 		Widget->PeekSettingsPlaceholderBlock());

@@ -200,6 +200,15 @@ public:
 	 */
 	URoomDefinition* GetCombatRoomDefinition();
 
+	/**
+	 * M5-018A: the system test room entry (the menu's second legal entry) -
+	 * the config-driven test room the M5-018A driver runs on
+	 * L_SystemTestRoom. The transient definition double carries the identity
+	 * fields only; the room content stays with the map's driver actor and
+	 * its source table.
+	 */
+	URoomDefinition* GetSystemTestRoomDefinition();
+
 	// -- Startup restore (the M3-015 chain) --------------------------------------
 
 	/** True when Initialize restored the profile through RestoreFromSave. */
@@ -263,6 +272,9 @@ private:
 	/** M3-030: the cached combat-room enter target (created on first use). */
 	UPROPERTY(Transient)
 	TObjectPtr<URoomDefinition> CachedCombatRoom;
+
+	/** M5-018A: the cached system test room definition (the second menu entry). */
+	TObjectPtr<URoomDefinition> CachedSystemTestRoom;
 
 	/** Map-open seam (unset in production: the real OpenLevel path runs). */
 	FGameFlowMapOpener MapOpener;
