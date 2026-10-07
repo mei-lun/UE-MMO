@@ -1,19 +1,17 @@
 # 最近一轮交接
 
-## 本轮：批次70——M5 A 段表现+试验房+场景回归完成
+## 本轮：批次71——M5-018B A段独立包完成，H01 就绪
 
-- Owner：ZCode-20260925-A（协调者主检出实现，子代理派发不可用）。时间：2026-10-07T02:10:00+08:00 起至本文件提交；分支 main。
-- 本批完成：**3**（M5-017、M5-018A、M5-018）。任务板 valid=True，total=165，**DONE=121**，TODO=42，IN_PROGRESS=0。M5 计划 **21/63**。明细见 [批次70交接](Docs/Tasks/Handoffs/2026-10-07-ZCode-20260925-A-batch70.md)。
-- **M5-017**（e6b4220）：受害者受击表现层（五类反应状态边沿驱动、一事件一表现、纯控制不伪造扣血音）；RCT_Hit/RCT_Dead 蒙太奇资产 + verify 新进程重载；launch/down/recover 诚实占位；四张渲染采集目击。定向 6/6；全量 635/635。
-- **M5-018A**（d9b1438）：ACombatTestRoomDriver（test_room 源表驱动目标生成，HP/策略/位置来自配置，缺 ID 显式失败，vehicle 冻结缝）；L_SystemTestRoom 地图（verify 新进程重载）；菜单双入口。定向 4/4；全量 639/639。
-- **M5-018**（6153675）：A 段生产场景回归（真链条三场景 + TestCombatSystemScenario.ps1 的 Section/-Render/-TaskId 接口 + 场景 JSON 导出）；渲染目击（双入口菜单、配置血条 200/120、目标浮空、Combo x1）。定向 3/3；全量 643/643。
+- Owner：ZCode-20260925-A（上一会话领取实现；本会话接手收尾修复与验证）。时间：2026-10-08T01:00:00+08:00 起至 02:00:00+08:00；分支 main。
+- 本批完成：**1**（M5-018B）。任务板 valid=True，total=165，**DONE=123**，TODO=40，IN_PROGRESS=0。M5 计划 **22/63**。明细见 [批次71交接](Docs/Tasks/Handoffs/2026-10-08-ZCode-20260925-A-batch71.md)。
+- **M5-018B**（f69ca2b）：修复包内回退测试 catalog 缺镜像定义 + 截图配置暂存/清理；v2 显式目录包（exe SHA256 73A281DB…904A）M0 冒烟 + 包内自动化 1/1 + 包内 Reaction 截图全通；隔离源表复核 Cook 通过且哈希恢复一致；全量 647/647。
+- 证据：`Artifacts/Tasks/M5-018B/2026-10-08T01-30-00+0800/`；报告 [M5-018B](Docs/Tasks/Reports/M5-018B.md)。
 
 ## 下一步（接手者从这里继续）
 
-- **M5-020A**（Item/Drop/HUD 生产目录适配）与 **M5-018B**（A 段独立包+人工清单）均已就绪；018B 涉及打包需串行（唯一资源写者）。
-- 018B 完成 → **M5-H01 用户人工验收**（受击/浮空/倒地试玩，AI 不得代签）→ B 段 019+ 解锁；M5-020A 可在 H01 前完成。
-- 技术要点：子代理派发持续失败时直接主检出实现；共享 GWorld 测试需差集追踪+Destroy 清理；离屏渲染采集用"状态触发即拍"；UE_LOG(Error) 计测试失败。
-- 报告格式红线：DONE 报告必须独立成行 `- Implementation-Revision: <sha>` 与 `- Verification: PASS`；SHA 须已集成进 HEAD。
+- **M5-H01 用户人工验收**（Ready 唯一项）：试玩 `Artifacts/Package/M5A-2026-10-08-v2/Windows/UEMMO/UEMMO.exe`，清单见 [M5-H01.md](Docs/Tasks/M5-H01.md)；AI 不得代签。
+- H01 通过 → B 段 M5-019+ 解锁；旧默认 Package/TestPackage 路径保持兼容。
+- 技术要点：包内测试必须在包环境实测（编辑器绿≠包内绿）；脚本对包目录写入用 try/finally 恢复；报告红线 `- Implementation-Revision:`/`- Verification: PASS` 独立成行。
 
 ## 项目当前状态
 
@@ -24,19 +22,20 @@
 | M2 | 刷怪房：敌人 AI/波次/会话/失败重试/退出/L_CombatRoom01 | M2-001..017 全 DONE |
 | M3 | 成长：装备/背包/穿脱/等级/掉落/领奖/存档 A/B 槽/地图菜单/操作日志 | M3-001..032 全 DONE |
 | M4 | 服务端接入 | M4-000 DEFERRED（待用户提供协议信息） |
-| M5 | 数据驱动战斗扩展（A 配置受击 → B 武器投射物 → C 载具 → D 成长发布） | **21/63 DONE**（000..018A、052）；A 段剩 018B+H01；020A 可先行 |
+| M5 | 数据驱动战斗扩展（A 配置受击 → B 武器投射物 → C 载具 → D 成长发布） | **22/63 DONE**（000..018B、020A、052）；A 段技术项全清，剩 M5-H01 用户验收 → B 段 019+ |
 | 人工关卡 | M0-H01 REVIEW；M2-H01/M3-H01/M5-H01..H04 待用户 | AI 不得代签 |
 
 ## 交付物
 
+- **M5 A段独立包（当前最新，M5-H01 试玩用）**：`Artifacts\Package\M5A-2026-10-08-v2\Windows\UEMMO\UEMMO.exe`（自包含无源表；离屏冒烟/包内自动化/受击截图全通；exe SHA256 73A281DB…904A）。
 - **M3 完整包（最新全内容旧包）**：`Artifacts\Package\Windows\UEMMO.exe`（929MB，2026-09-30；离屏冒烟 success/rendering=true 实测可启动）。进刷怪房：exe 加参数 `/Game/UEMMO/Maps/L_CombatRoom01`。
 - **综合验收入口（用户从这里开始）**：`Docs/07-综合验收摘要.md`。M5 新内容不在旧包内；A 段完成时按 M5-018B 另出独立段包。
 
-## 最新集成验证（批次70，2026-10-07）
+## 最新集成验证（批次71，2026-10-08）
 
-- Build exit 0；编辑器全量自动化 **643/643**（M5-000..018A+052 全链，Artifacts/Tasks/M5-018/ 最新 run）；TestCombatSystemScenario -Section Reaction -Render 全通（场景 JSON 四份 + 渲染截图两份目击）。
-- CheckTaskBoard valid=True，DONE=121，IN_PROGRESS=0。
-- M1/M2/M3 三套场景回归随全量自动化保持绿（TestCombatScenario/TestRoomScenario/TestProgressionScenario 语义在自动化套件内持续覆盖）。
+- Build exit 0；编辑器全量自动化 **647/647**（含 M5-018B 新用例）；TestCombatSystemScenario -Section Reaction -Render 全通。
+- v2 独立包（`Artifacts/Package/M5A-2026-10-08-v2`）：M0 冒烟 + 包内 M5_018B 自动化 1/1 + 包内 Reaction 截图（targets/float）全通；隔离源表复核 Cook BUILD SUCCESSFUL 且 6 源表哈希恢复一致。
+- CheckTaskBoard valid=True，DONE=123，IN_PROGRESS=0，Ready: M5-H01。
 
 ## 流程要点（给下一个 AI）
 
