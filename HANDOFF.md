@@ -1,17 +1,18 @@
 # 最近一轮交接
 
-## 本轮：批次72——M5-018C + M5-H01 完成，A 段收口、B 段解锁
+## 本轮：批次72——M5-018C + M5-H01 + M5-019 完成，B 段开工
 
-- Owner：ZCode-20260925-A（本会话接手收尾，M5-H01 四轮试玩反馈驱动 v2→v5 修复；用户 v5 验收「感觉可以了」签收 H01）。时间：2026-10-08T09:00:00+08:00 起至 12:30:00+08:00；分支 main。
-- 本批完成：**2**（M5-018C、M5-H01）。任务板 valid=True，total=166，**DONE=125**，TODO=39，IN_PROGRESS=0。M5 计划 **24/63**。明细见 [批次72交接](Docs/Tasks/Handoffs/2026-10-08-ZCode-20260925-A-batch72.md)。
+- Owner：ZCode-20260925-A（本会话接手收尾，M5-H01 四轮试玩反馈驱动 v2→v5 修复；用户 v5 验收「感觉可以了」签收 H01；随后开工 B 段首卡 M5-019）。时间：2026-10-08T09:00:00+08:00 起至 14:30:00+08:00；分支 main。
+- 本批完成：**3**（M5-018C、M5-H01、M5-019）。任务板 valid=True，total=166，**DONE=126**，TODO=38，IN_PROGRESS=0。M5 计划 **25/63**。明细见 [批次72交接](Docs/Tasks/Handoffs/2026-10-08-ZCode-20260925-A-batch72.md)。
 - **M5-018C**（实现提交 113c70d）：试验房驱动器补 BeginPlay 运行时接线（此前自动化直调 SpawnTargets，真实地图从未生成三靶）+ 地图清理 ResourcePreview 假靶道具 + MeleeEnemy 蒙太奇受击/死亡表现（用户 v4 确认可见）+ 落地倒地占位姿势 + MapsToCook/包内真实配置；全量 648/648，v5 包内验证全绿。
 - **M5-H01**（用户验收）：v5 重测反馈「感觉可以了」→ Human-Approved: yes、Verification: PASS，AI 据实签收 DONE；报告记录原话、试玩基线（113c70d / ConfigRevision bb1bb8e26ef73d20 / v5 包）与已确认/未确认项。
-- 证据：`Artifacts/Package/M5A-2026-10-08-v5/`；报告 [M5-018C](Docs/Tasks/Reports/M5-018C.md)、[M5-H01](Docs/Tasks/Reports/M5-H01.md)。
+- **M5-019**（实现提交 238aa9f）：会话武器绑定层——`FItemDefinition.WeaponDefinitionId` 映射字段（公共变更先行合入）+ `FWeaponBindingRegistry`（item_definition_id 链解析、身份 FGuid/Level/RollSeed 逐字保留、弹匣按 ItemInstanceId 分离、卸下停泊/重装恢复、六类拒绝枚举不训练剑回退）；红 1/7→绿 7/7，全量 655/655。
+- 证据：`Artifacts/Package/M5A-2026-10-08-v5/`、`Artifacts/Tasks/M5-019/`；报告 [M5-018C](Docs/Tasks/Reports/M5-018C.md)、[M5-H01](Docs/Tasks/Reports/M5-H01.md)、[M5-019](Docs/Tasks/Reports/M5-019.md)。
 
 ## 下一步（接手者从这里继续）
 
-- **M5-019+（B 段：武器/投射物）解锁**，Ready 列表从 M5-019 开始；按卡依赖逐项领取。
-- 已知非阻塞限制（带入 B 段备忘）：倒地为占位姿势（无动画资产）；`DA_<AttackId>` GC 后查找失败仅影响蒙太奇播放速率（表现层回退，非伤害根因），M5-020A 谱系可消除。
+- **M5-020（生产 Catalog 挂载/装备切换，消费 019 注册表）与 M5-021（弹匣/备弹/装填模型）均已 Ready**，两者文件面不相交（020 角色/WeaponComponent、021 AmmoModel 纯模型）可并行；020 内角色挂点共享须串行。
+- 已知非阻塞限制（带入 B 段备忘）：倒地为占位姿势（无动画资产）；`DA_<AttackId>` GC 后查找失败仅影响蒙太奇播放速率（表现层回退，非伤害根因），M5-020A 谱系可消除；019 映射字段目前定义侧承载，items.json 源表字段归 005/020A 谱系。
 
 ## 项目当前状态
 
@@ -22,7 +23,7 @@
 | M2 | 刷怪房：敌人 AI/波次/会话/失败重试/退出/L_CombatRoom01 | M2-001..017 全 DONE |
 | M3 | 成长：装备/背包/穿脱/等级/掉落/领奖/存档 A/B 槽/地图菜单/操作日志 | M3-001..032 全 DONE |
 | M4 | 服务端接入 | M4-000 DEFERRED（待用户提供协议信息） |
-| M5 | 数据驱动战斗扩展（A 配置受击 → B 武器投射物 → C 载具 → D 成长发布） | **24/63 DONE**（000..018C、H01、020A、052）；A 段 + H01 验收完成 → B 段 019+ |
+| M5 | 数据驱动战斗扩展（A 配置受击 → B 武器投射物 → C 载具 → D 成长发布） | **25/63 DONE**（000..018C、H01、019、020A、052）；B 段开工，Ready: 020/021 |
 | 人工关卡 | M0-H01 REVIEW；M2-H01/M3-H01/M5-H02..H04 待用户 | AI 不得代签；M5-H01 已签（2026-10-08） |
 
 ## 交付物
@@ -35,7 +36,8 @@
 
 - Build exit 0；编辑器全量自动化 **648/648**（含 M5-018C 新用例：DriverBeginPlaySpawnsTargets 等）；地图 build 移除假靶 1 个 → verify 新进程通过。
 - v5 独立包（`Artifacts/Package/M5A-2026-10-08-v5`）：BUILD SUCCESSFUL；M0 冒烟 + 包内 reaction-scenario 1/1；截图人工确认试验房三配置靶带血条在场；**用户试玩验收通过（M5-H01 DONE）**。
-- CheckTaskBoard valid=True，DONE=125，IN_PROGRESS=0，Ready: M5-019。
+- M5-019：Build Succeeded；定向 7/7（红 1/7 先行）；全量 **655/655**；实现提交 238aa9f。
+- CheckTaskBoard valid=True，DONE=126，IN_PROGRESS=0，Ready: M5-020, M5-021。
 
 ## 流程要点（给下一个 AI）
 
