@@ -7,9 +7,21 @@
 // M5-020: the pawn owns the session catalog VALUES the weapon component mounts
 // (non-owning pointers there), so the full value types are needed here.
 #include "Combat/Data/CombatCatalog.h"
+// M5-033: the pawn owns the input-layer fire wiring - the delivery bridge
+// (hitscan executor seam, projectile world service, motion policies) and the
+// pacing policies it registers into the weapon component.
+#include "Combat/System/CombatEventTypes.h"
+#include "Combat/System/HitLedger.h"
 #include "Items/ItemDefinition.h"
+#include "Projectiles/HitscanExecutor.h"
+#include "Projectiles/LinearProjectilePolicy.h"
+#include "Projectiles/ProjectileWorldService.h"
+#include "Templates/Function.h"
+#include "Weapons/FirePolicies/AutomaticFirePolicy.h"
+#include "Weapons/FirePolicies/BurstFirePolicy.h"
 #include "PrototypeCharacter.generated.h"
 
+class ACombatProjectile;
 class USideViewCameraComponent;
 class UCombatComponent;
 class UCombatPresentationComponent;
@@ -22,6 +34,7 @@ class UInputAction;
 class UInputMappingContext;
 struct FInputActionValue;
 struct FItemStats;
+struct FShotContext;
 struct FWeaponMountOutcome;
 
 /** Broadcast exactly once per player death lifecycle, when the health pool dies. */
@@ -29,7 +42,7 @@ DECLARE_MULTICAST_DELEGATE(FOnPlayerDied);
 
 /** M0 movement scaffold. M1-012 routes combat intents into the combat component; M1-040 remaps the keys to the DNF layout. */
 UCLASS()
-class UEMMO_API APrototypeCharacter : public ACharacter
+class UEMMO_API APrototypeCharacter : public ACharacter, public IHitscanTargetIdentity
 {
     GENERATED_BODY()
 public:
@@ -167,6 +180,57 @@ public:
     bool RefreshWeaponMountFromEquipment();
 
     /**
+     * M5-033: the Q Started binding target - the weapon-fire trigger. With a
+     * bound ranged weapon that authorizes fire (alive, catalog healthy, no
+     * menu open, no hit stun, no reload window) the press holds the trigger,
+     * arms the burst policy (M5-024) and polls the fire transaction once
+     * (the press-edge shot); without one the press keeps the M1-040
+     * skill-slot 1 intent unchanged. Public because it is the input binding
+     * target and the automation tests drive it directly.
+     */
+    void OnFireInputPressed();
+
+    /** M5-033: the Q Completed binding target - drops the trigger (the burst policy keeps a started burst running). */
+    void OnFireInputReleased();
+
+    /**
+     * M5-033: the T Started binding target - opens the reload window of the
+     * active ranged weapon through the component's real reload entry (the
+     * input layer owns the deadline poll that completes it). Inert without a
+     * bound ranged weapon. Public because it is the input binding target.
+     */
+    void OnReloadInputPressed();
+
+    /**
+     * M5-033: the input-layer weapon wiring pass - selects the fire policy
+     * from the active binding's weapon definition (delivery policy for
+     * projectile weapons, burst policy for multi-round hitscan bursts,
+     * automatic hold policy otherwise), resets the input-layer windows and
+     * refreshes the stale-callback generation. Called by the accepted tail of
+     * RefreshWeaponMountFromEquipment; the automation tests call it directly
+     * after their own component-level binds (the production items source has
+     * no weapon mappings yet, so the HUD/profile bind path refuses).
+     */
+    void ApplyWeaponBindWiring();
+
+    /**
+     * M5-033: injects the input-layer clock (the reload deadline and any
+     * future input-layer pacing read it). Unbound, the owner world's
+     * GetTimeSeconds stays the clock. The automation tests inject a shared
+     * rig clock so pacing is exact.
+     */
+    void SetWeaponInputClockProvider(TFunction<double()> Provider);
+
+    /** M5-033: true between the fire-authorized Q press and its release. */
+    bool IsWeaponFireHeld() const { return bWeaponFireHeld; }
+
+    /** M5-033: true while the input layer polls for the reload deadline. */
+    bool IsWeaponReloadPending() const { return bWeaponReloadPending; }
+
+    /** M5-033: live projectile pellets the delivery bridge currently advances. */
+    int32 GetLiveWeaponProjectileCount() const { return LiveWeaponProjectiles.Num(); }
+
+    /**
      * M1-040: the eight runtime skill-slot actions in slot order (index 0 is
      * slot 1 = Q, index 7 is slot 8 = F), read-only for the automation tests'
      * mapping-table assertions.
@@ -241,6 +305,26 @@ private:
     // M1-012: builds the mapping context and actions exactly once (guarded by
     // Mapping != nullptr); re-setup (re-possess) reuses them.
     void EnsureCombatInputActions();
+    // M5-033: the per-frame input-layer duties (hold/burst polling, the
+    // reload deadline poll and the live-projectile motion advance).
+    void TickWeaponInput(float DeltaSeconds);
+    // M5-033: one fire-transaction poll (hold frame or burst sub-shot): the
+    // local TryFire plus the same-frame ReleaseFire (the M5-023 hold-mode
+    // convention - hitscan/projectile commits resolve instantly).
+    void PollWeaponFire();
+    // M5-033: the delivery bridge (the OnShotCommitted consumer 026..028
+    // delegated to this card): plans the shot pattern and delivers it through
+    // the M5-026 executor (hitscan) or the M5-027/028 projectile service.
+    void HandleWeaponShotCommitted(const FShotContext& Shot);
+    // M5-033: the BeginPlay wiring pass (gates, fire source, ledger bind, the
+    // shot subscription); guarded to run exactly once per pawn.
+    void WireWeaponMount();
+    // M5-033: the injected input-layer clock seconds (provider, world, 0.0).
+    double ResolveWeaponInputClockSeconds() const;
+    // M5-033: the IHitscanTargetIdentity seam - the pawn resolves a hit actor
+    // to its fire-registry entity id, lazily registering hostile bodies that
+    // carry a health pool (walls stay unregistered environment).
+    virtual FEntityId ResolveTargetEntityId(const AActor& HitActor) const override;
     void OnCombatLightPressed();
     void OnCombatLauncherPressed();
     // M1-040: per-slot Started handlers (one member per action keeps the
@@ -326,4 +410,54 @@ private:
     // M2-004: the locomotion AnimBP class captured at death so the revive can
     // re-attach it (death detaches the animation drive; reset restores it).
     UPROPERTY(Transient) TObjectPtr<UClass> SavedAnimInstanceClass = nullptr;
+    // -- M5-033: the input-layer weapon wiring -----------------------------
+    // The T reload action (the Q trigger stays SkillSlotActions[0], rebound
+    // onto the fire handlers; the skill-slot 1 intent keeps its fallback).
+    UPROPERTY(Transient) TObjectPtr<UInputAction> WeaponReloadAction;
+    // True between the fire-authorized Q press and its release.
+    bool bWeaponFireHeld = false;
+    // The caller-local monotonic shot counter feeding FFireIntent (association
+    // only; the common ShotId comes from the fire registry).
+    uint64 NextLocalShotSequence = 1;
+    // The binding generation the delivery bridge's stale-callback checks key on.
+    uint64 BoundWeaponGeneration = 0;
+    // The input-layer reload window: opened by T (through the component's real
+    // BeginReload), completed by the Tick deadline poll. The model's reload
+    // bookkeeping keys on the component's private per-cycle slot id, so the
+    // input layer tracks the deadline itself (the M5-021 model exposes no
+    // external reload-window query keyed by weapon instance).
+    bool bWeaponReloadPending = false;
+    double WeaponReloadDeadlineSeconds = 0.0;
+    // The injected input-layer clock; empty = the owner world clock.
+    TFunction<double()> WeaponInputClockProvider;
+    // The pawn-owned pacing/delivery policies registered through SetFirePolicy
+    // by ApplyWeaponBindWiring (the card owns the instances, per the M5-024
+    // contract "the input layer M5-033 owns the instance").
+    TUniquePtr<FAutomaticFirePolicy> AutoFirePolicy;
+    TUniquePtr<FBurstFirePolicy> BurstFirePolicy;
+    // The concrete delivery policy is defined in the .cpp (pawn-local); the
+    // member stores the interface the component consumes.
+    TUniquePtr<IFirePolicy> DeliveryFirePolicy;
+    // The world-lifetime projectile service (M5-027) and the pawn's production
+    // spawner; created in BeginPlay / lazily at the first commit.
+    TUniquePtr<FProjectileWorldService> ProjectileService;
+    TUniquePtr<IProjectileSpawner> ProjectileSpawner;
+    // One live pellet: its motion policy (the M5-028 linear reference policy)
+    // plus the bound actor; advanced once per pawn tick until finished.
+    struct FLiveWeaponProjectile
+    {
+        FLinearProjectilePolicy Policy;
+        TWeakObjectPtr<ACombatProjectile> Actor;
+    };
+    TArray<FLiveWeaponProjectile> LiveWeaponProjectiles;
+    // The pawn's hit ledger, bound to the mount's fire registry (the bridge
+    // the WeaponComponent class comment documents as the future unified
+    // adjudication injection point).
+    FHitLedger ShotHitLedger;
+    // The hit-actor -> fire-registry entity id cache backing the
+    // IHitscanTargetIdentity seam; mutable (the lazy registration happens
+    // inside the const resolver mid-delivery).
+    mutable TMap<TWeakObjectPtr<const AActor>, FEntityId> ShotTargetEntityIds;
+    // The WireWeaponMount once-guard.
+    bool bWeaponMountWired = false;
 };

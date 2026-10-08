@@ -469,6 +469,21 @@ public:
 	/** The fire registry (read-only; the fire-lineage identity space of this mount). */
 	const FCombatEntityRegistry& GetFireRegistry() const { return FireRegistry; }
 
+	/**
+	 * M5-033: the mutable fire registry view for the pawn's delivery bridge -
+	 * the target-identity seam registers hostile bodies here and the hitscan
+	 * executor consumes the registry per delivery.
+	 */
+	FCombatEntityRegistry& GetFireRegistry() { return FireRegistry; }
+
+	/**
+	 * M5-033: the mounted weapon catalog (non-owning; null while unmounted).
+	 * The pawn's delivery bridge resolves the shot's damage profile and
+	 * projectile definition through the catalog the component actually
+	 * mounted - never through a second copy.
+	 */
+	const FCombatCatalog* GetMountedWeaponCatalog() const { return WeaponCatalog; }
+
 	/** Broadcast exactly once per committed shot (downstream consumers: 027 projectiles, the hit pipeline). */
 	FOnWeaponShotCommitted OnShotCommitted;
 

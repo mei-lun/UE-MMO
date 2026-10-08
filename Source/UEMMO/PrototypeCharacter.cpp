@@ -17,6 +17,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 #include "InputAction.h"
 #include "InputActionValue.h"
 #include "InputMappingContext.h"
@@ -29,6 +30,15 @@
 #include "Room/TrainingResetService.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Weapons/WeaponComponent.h"
+// M5-033: the delivery bridge seams (executor, projectile service/actor,
+// motion policy, the shot-pattern planner) and the pawn-owned pacing policies.
+#include "Projectiles/CombatProjectile.h"
+#include "Projectiles/HitscanExecutor.h"
+#include "Projectiles/LinearProjectilePolicy.h"
+#include "Projectiles/ProjectileWorldService.h"
+#include "Weapons/FirePolicies/AutomaticFirePolicy.h"
+#include "Weapons/FirePolicies/BurstFirePolicy.h"
+#include "Weapons/ShotPattern.h"
 
 using namespace UE::UEMMO::Tasks::M1_029;
 
@@ -111,6 +121,125 @@ namespace
             }
         }
     }
+
+    // -- M5-033: the pawn-local delivery helpers ----------------------------
+
+    // The shot origin rides the feet (design section: the feet-relative muzzle
+    // offset; X forward mirrored by the facing, Y depth, Z height).
+    const FVector M5_033_ShotFeetOffsetCm(30.0, 0.0, 50.0);
+    // The input-layer reload duration constant (no reload-duration field
+    // exists in the M5-004 schema; the card fixes the T semantics here).
+    constexpr double M5_033_ReloadDurationSeconds = 2.0;
+    // The fire-registry metadata of the wielder and of the lazily registered
+    // hostile targets (empty factions would classify as unaligned).
+    const FName M5_033_PlayerFaction(TEXT("player"));
+    const FName M5_033_PlayerCategory(TEXT("player"));
+    const FName M5_033_TargetFaction(TEXT("enemy"));
+    const FName M5_033_TargetCategory(TEXT("target"));
+
+    /**
+     * The delivery fire policy (the pawn's registration for projectile-mode
+     * weapons): grants the transaction's capacity reservation by delivery
+     * mode - the projectile slot count for projectile fire, the raycast slot
+     * count for hitscan fire (multi-pellet shots included) - and refuses
+     * melee candidates (melee delivers through the legacy attack chain).
+     * Pacing-free by design: the component's fire-rate cooldown owns the
+     * cadence for the projectile mode.
+     */
+    class FWeaponDeliveryFirePolicy final : public IFirePolicy
+    {
+    public:
+        FCapacityReservation ReserveShotCapacity(const FShotContext& Candidate) override
+        {
+            FCapacityReservation Out;
+            switch (Candidate.FireMode)
+            {
+            case EWeaponFireMode::Projectile:
+                Out.bGranted = true;
+                Out.ProjectileSlots = Candidate.PelletCount;
+                break;
+            case EWeaponFireMode::Hitscan:
+                Out.bGranted = true;
+                Out.RaycastSlots = Candidate.PelletCount;
+                break;
+            default:
+                Out.RejectDetail = TEXT("melee weapons deliver through the legacy attack chain, not the fire transaction");
+                break;
+            }
+            return Out;
+        }
+
+        void CommitShot(const FShotContext&) override {}
+        void AbortReservation(const FShotContext&) override {}
+        void NotifyShotReleased(const FShotContext&) override {}
+    };
+
+    /**
+     * The production projectile spawner: stamps the committed-shot provenance
+     * onto every pellet actor, configures the movement component from the
+     * definition and arms the engine LifeSpan (the M5-027 test-spawner shape,
+     * bound to the pawn's world). Spawned tracks the live pellets of the last
+     * commit so the delivery bridge can bind one motion policy per body (the
+     * service owns the cleanup; DestroyPellet keeps the list honest).
+     */
+    class FWeaponProjectileSpawner final : public IProjectileSpawner
+    {
+    public:
+        explicit FWeaponProjectileSpawner(UWorld* InWorld)
+            : World(InWorld)
+        {
+        }
+
+        ACombatProjectile* SpawnPellet(const FProjectileSpawnReservation& Reservation, const FShotPellet& Pellet) override
+        {
+            UWorld* SpawnWorld = World.Get();
+            if (SpawnWorld == nullptr)
+            {
+                return nullptr;
+            }
+            FActorSpawnParameters Params;
+            ACombatProjectile* Actor = SpawnWorld->SpawnActor<ACombatProjectile>(
+                ACombatProjectile::StaticClass(), Reservation.Origin, FRotator::ZeroRotator, Params);
+            if (Actor == nullptr)
+            {
+                return nullptr;
+            }
+            Actor->Context.Epoch = Reservation.Epoch;
+            Actor->Context.SourceEntityId = Reservation.Shot.SourceEntityId;
+            Actor->Context.ShotId = Reservation.Shot.ShotId;
+            Actor->Context.PelletIndex = Pellet.PelletIndex;
+            Actor->Context.WeaponInstanceId = Reservation.Shot.WeaponInstanceId;
+            Actor->Context.ProjectileInstanceId = Reservation.ProjectileInstanceId;
+            Actor->Context.ConfigRevision = Reservation.ConfigRevision;
+            Actor->Context.ProjectileId = Reservation.Definition.ProjectileId;
+            Actor->LaunchSpeedCmS = Reservation.Definition.SpeedCmS;
+            Actor->MotionGravityScale = Reservation.Definition.Motion == EProjectileMotion::Parabolic ? 1.0f : 0.0f;
+            if (Actor->Movement != nullptr)
+            {
+                Actor->Movement->InitialSpeed = Reservation.Definition.SpeedCmS;
+                Actor->Movement->MaxSpeed = Reservation.Definition.SpeedCmS;
+                Actor->Movement->ProjectileGravityScale = Actor->MotionGravityScale;
+            }
+            Actor->SetLifeSpan(Reservation.Definition.LifetimeS);
+            Spawned.Add(Actor);
+            return Actor;
+        }
+
+        void DestroyPellet(ACombatProjectile& PelletActor) override
+        {
+            Spawned.Remove(&PelletActor);
+            if (PelletActor.GetWorld() != nullptr && IsValid(&PelletActor))
+            {
+                PelletActor.Destroy();
+            }
+        }
+
+        /** The live pellets of the last CommitSpawn, in pellet-index order. */
+        TArray<TWeakObjectPtr<ACombatProjectile>> Spawned;
+
+    private:
+        TWeakObjectPtr<UWorld> World;
+    };
 }
 
 APrototypeCharacter::APrototypeCharacter()
@@ -257,6 +386,10 @@ void APrototypeCharacter::BeginPlay()
     {
         Health->ResetHealth();
     }
+    // M5-033: the input-layer weapon wiring pass (gates, fire source, ledger
+    // bind, the shot subscription) runs before the first load so every bind
+    // that follows lands on a wired mount.
+    WireWeaponMount();
     // M5-020: the equipment load point (interface contract section 7: the
     // WeaponComponent re-binds at pawn BeginPlay / map travel). Resolves the
     // equipped weapon slot through the local HUD's real equipment model; a
@@ -654,6 +787,11 @@ void APrototypeCharacter::EnsureCombatInputActions()
     // mapping and action single even on a re-setup.
     DebugToggleAction = NewObject<UInputAction>(this, TEXT("DebugToggle"));
     Mapping->MapKey(DebugToggleAction, EKeys::F1);
+    // M5-033: T reloads the active ranged weapon (the input-layer reload
+    // entry; the deadline poll completes it). T collides with no other
+    // mapping in the M1-040 DNF layout.
+    WeaponReloadAction = NewObject<UInputAction>(this, TEXT("WeaponReload"));
+    Mapping->MapKey(WeaponReloadAction, EKeys::T);
 }
 
 void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -680,8 +818,12 @@ void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
     Input->BindAction(DebugToggleAction, ETriggerEvent::Started, this, &APrototypeCharacter::OnDebugTogglePressed);
     // M1-040: the eight DNF skill slots only record a per-slot press counter;
     // no combat effect yet (M2+ placeholder). Started only: one intent per
-    // press, releasing never enqueues.
-    Input->BindAction(SkillSlotActions[0], ETriggerEvent::Started, this, &APrototypeCharacter::OnSkillSlot1Pressed);
+    // press, releasing never enqueues. M5-033: slot 1 (Q) is the exception -
+    // the trigger rebinding routes Started/Completed into the weapon-fire
+    // handlers, which keep the skill-slot intent while no ranged weapon
+    // authorizes fire; slots 2..8 stay pure counters.
+    Input->BindAction(SkillSlotActions[0], ETriggerEvent::Started, this, &APrototypeCharacter::OnFireInputPressed);
+    Input->BindAction(SkillSlotActions[0], ETriggerEvent::Completed, this, &APrototypeCharacter::OnFireInputReleased);
     Input->BindAction(SkillSlotActions[1], ETriggerEvent::Started, this, &APrototypeCharacter::OnSkillSlot2Pressed);
     Input->BindAction(SkillSlotActions[2], ETriggerEvent::Started, this, &APrototypeCharacter::OnSkillSlot3Pressed);
     Input->BindAction(SkillSlotActions[3], ETriggerEvent::Started, this, &APrototypeCharacter::OnSkillSlot4Pressed);
@@ -689,6 +831,9 @@ void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
     Input->BindAction(SkillSlotActions[5], ETriggerEvent::Started, this, &APrototypeCharacter::OnSkillSlot6Pressed);
     Input->BindAction(SkillSlotActions[6], ETriggerEvent::Started, this, &APrototypeCharacter::OnSkillSlot7Pressed);
     Input->BindAction(SkillSlotActions[7], ETriggerEvent::Started, this, &APrototypeCharacter::OnSkillSlot8Pressed);
+    // M5-033: T routes into the reload entry (Started only: one window per
+    // press; the deadline poll completes it).
+    Input->BindAction(WeaponReloadAction, ETriggerEvent::Started, this, &APrototypeCharacter::OnReloadInputPressed);
     if (APlayerController* PC = Cast<APlayerController>(Controller))
     {
         if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
@@ -787,6 +932,428 @@ void APrototypeCharacter::SubmitSkillSlot(int32 SlotIndex)
 int32 APrototypeCharacter::GetSkillSlotPressCount(int32 SlotIndex) const
 {
     return (SlotIndex >= 1 && SlotIndex <= 8) ? SkillSlotPressCounts[SlotIndex - 1] : 0;
+}
+
+// -- M5-033: the input-layer weapon wiring ------------------------------------
+
+void APrototypeCharacter::WireWeaponMount()
+{
+    if (bWeaponMountWired || WeaponMount == nullptr)
+    {
+        return;
+    }
+    bWeaponMountWired = true;
+    // The menu-open gate: an open inventory/map screen refuses fire (the HUD
+    // widget validity IS the open signal; the M5-034 UI pass refines this).
+    WeaponMount->SetMenuOpenPredicate([this]()
+    {
+        const APlayerController* LocalController = Cast<APlayerController>(GetController());
+        const APrototypeHUD* Hud = (LocalController != nullptr) ? Cast<APrototypeHUD>(LocalController->GetHUD()) : nullptr;
+        return Hud != nullptr && (Hud->HasInventoryScreen() || Hud->HasMenuScreen());
+    });
+    // The hit-stun gate: the combat snapshot's stun state refuses fire (the
+    // M1-020 stun keeps the wielder from shooting through the interruption).
+    WeaponMount->SetHitStunPredicate([this]()
+    {
+        return Combat != nullptr && Combat->GetSnapshot().ActionState == ECombatActionState::HitStun;
+    });
+    // The fire source registration (a duplicate registration refuses; the
+    // once-guard above makes that unreachable, the refusal stays named).
+    FCombatEntityMetadata SourceMetadata;
+    SourceMetadata.Faction = M5_033_PlayerFaction;
+    SourceMetadata.Category = M5_033_PlayerCategory;
+    WeaponMount->RegisterFireSource(SourceMetadata);
+    // The pawn's hit ledger binds the mount's fire registry (the injection
+    // point the WeaponComponent class comment documents as the future unified
+    // adjudication bridge).
+    ShotHitLedger.BindRegistry(&WeaponMount->GetFireRegistry());
+    // The delivery bridge: every committed shot routes into the planning +
+    // delivery pipeline (the production consumer 026..028 delegated here).
+    WeaponMount->OnShotCommitted.AddLambda([this](const FShotContext& Shot)
+    {
+        HandleWeaponShotCommitted(Shot);
+    });
+    // The world-lifetime projectile service binds the pawn's world (one
+    // service per world; it dies with the pawn, and the engine LifeSpan owns
+    // the stray-pellet cleanup, so the unified reset needs no epoch bump).
+    if (UWorld* World = GetWorld())
+    {
+        ProjectileService = MakeUnique<FProjectileWorldService>(World);
+    }
+}
+
+double APrototypeCharacter::ResolveWeaponInputClockSeconds() const
+{
+    if (WeaponInputClockProvider)
+    {
+        return WeaponInputClockProvider();
+    }
+    const UWorld* World = GetWorld();
+    return World ? World->GetTimeSeconds() : 0.0;
+}
+
+void APrototypeCharacter::OnFireInputPressed()
+{
+    UWeaponComponent* Mount = GetWeaponMount();
+    if (Mount != nullptr && Mount->IsFireAuthorized())
+    {
+        bWeaponFireHeld = true;
+        if (BurstFirePolicy.IsValid())
+        {
+            BurstFirePolicy->NotifyTriggerPressed();
+        }
+        if (UOperationLogSubsystem* OpLog = UOperationLogSubsystem::FindForContext(this))
+        {
+            OpLog->LogInput(TEXT("Pressed Q (WeaponFire)"));
+        }
+        // The press-edge shot: one immediate poll (the hold keeps polling
+        // per frame from TickWeaponInput).
+        PollWeaponFire();
+    }
+    else
+    {
+        // No ranged weapon authorizes fire: the press keeps the M1-040
+        // skill-slot 1 intent unchanged.
+        SubmitSkillSlot(1);
+    }
+}
+
+void APrototypeCharacter::OnFireInputReleased()
+{
+    if (!bWeaponFireHeld)
+    {
+        return;
+    }
+    bWeaponFireHeld = false;
+    if (BurstFirePolicy.IsValid())
+    {
+        // Only a not-yet-started burst disarms; a started burst runs to its
+        // end (the M5-024 semantics).
+        BurstFirePolicy->NotifyTriggerReleased();
+    }
+}
+
+void APrototypeCharacter::OnReloadInputPressed()
+{
+    UWeaponComponent* Mount = GetWeaponMount();
+    if (Mount == nullptr || !Mount->IsFireAuthorized() || bWeaponReloadPending)
+    {
+        return;
+    }
+    const FWeaponBindingRecord* Binding = Mount->GetActiveBinding();
+    if (Binding == nullptr)
+    {
+        return;
+    }
+    const double Now = ResolveWeaponInputClockSeconds();
+    const FAmmoReloadOutcome Outcome = Mount->BeginReload(Now, M5_033_ReloadDurationSeconds);
+    if (Outcome.bSuccess)
+    {
+        bWeaponReloadPending = true;
+        WeaponReloadDeadlineSeconds = Now + M5_033_ReloadDurationSeconds;
+        // The reload cancels a pending burst (the M5-024 caller duty; the
+        // component's Reloading gate refuses the stream while open).
+        if (BurstFirePolicy.IsValid())
+        {
+            BurstFirePolicy->CancelPendingBurst();
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Verbose, TEXT("UEMMO M5-033: the T reload refused (%d): %s"),
+            static_cast<int32>(Outcome.Error), *Outcome.ErrorDetail);
+    }
+}
+
+void APrototypeCharacter::ApplyWeaponBindWiring()
+{
+    UWeaponComponent* Mount = GetWeaponMount();
+    if (Mount == nullptr)
+    {
+        return;
+    }
+    // Any apply (bind, switch, no-weapon reset) clears the input-layer
+    // windows; the component's own teardown already voided the pending
+    // callbacks and closed its reload window.
+    bWeaponFireHeld = false;
+    bWeaponReloadPending = false;
+    if (BurstFirePolicy.IsValid())
+    {
+        BurstFirePolicy->CancelPendingBurst();
+    }
+    BoundWeaponGeneration = Mount->GetBindingGeneration();
+    const FWeaponBindingRecord* Binding = Mount->GetActiveBinding();
+    if (Binding == nullptr)
+    {
+        Mount->SetFirePolicy(nullptr);
+        return;
+    }
+    const FCombatCatalog* Catalog = Mount->GetMountedWeaponCatalog();
+    const FWeaponDefinition* Definition = (Catalog != nullptr) ? Catalog->FindWeapon(Binding->WeaponDefinitionId) : nullptr;
+    if (Definition == nullptr)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UEMMO M5-033: the bound weapon '%s' has no catalog definition; the mount falls back to the default policy."),
+            *Binding->WeaponDefinitionId.ToString());
+        Mount->SetFirePolicy(nullptr);
+        return;
+    }
+    if (Definition->FireMode == EWeaponFireMode::Projectile)
+    {
+        // The delivery policy grants the projectile slot capacity; the
+        // component's fire-rate cooldown paces the projectile stream alone.
+        if (!DeliveryFirePolicy.IsValid())
+        {
+            DeliveryFirePolicy = MakeUnique<FWeaponDeliveryFirePolicy>();
+        }
+        Mount->SetFirePolicy(DeliveryFirePolicy.Get());
+    }
+    else if (Definition->FireMode == EWeaponFireMode::Hitscan && Definition->BurstCount > 1)
+    {
+        // Point fire: one press edge = one bounded burst (M5-024); the
+        // sub-shot pacing defers to the component's fire-rate cooldown.
+        if (!BurstFirePolicy.IsValid())
+        {
+            BurstFirePolicy = MakeUnique<FBurstFirePolicy>();
+        }
+        BurstFirePolicy->SetBurstCount(Definition->BurstCount);
+        BurstFirePolicy->SetSubShotIntervalSeconds(0.0);
+        Mount->SetFirePolicy(BurstFirePolicy.Get());
+    }
+    else if (Definition->FireMode == EWeaponFireMode::Hitscan)
+    {
+        // Single/automatic hitscan: the hold polls per frame, the policy
+        // defers the cadence to the component's fire-rate cooldown (M5-023).
+        if (!AutoFirePolicy.IsValid())
+        {
+            AutoFirePolicy = MakeUnique<FAutomaticFirePolicy>();
+        }
+        AutoFirePolicy->SetShotIntervalSeconds(0.0);
+        Mount->SetFirePolicy(AutoFirePolicy.Get());
+    }
+    else
+    {
+        // Melee stays legacy: firing is never authorized for a melee bind.
+        Mount->SetFirePolicy(nullptr);
+    }
+}
+
+void APrototypeCharacter::TickWeaponInput(float DeltaSeconds)
+{
+    // The reload deadline poll: the window completes when the input clock
+    // reaches its deadline; a window closed underneath (death, switch) is
+    // dropped by the named CompleteReload refusal (nothing transfers).
+    if (bWeaponReloadPending)
+    {
+        UWeaponComponent* Mount = GetWeaponMount();
+        if (Mount == nullptr)
+        {
+            bWeaponReloadPending = false;
+        }
+        else if (ResolveWeaponInputClockSeconds() >= WeaponReloadDeadlineSeconds)
+        {
+            bWeaponReloadPending = false;
+            const FAmmoReloadOutcome Outcome = Mount->CompleteReload();
+            if (!Outcome.bSuccess)
+            {
+                UE_LOG(LogTemp, Verbose, TEXT("UEMMO M5-033: the reload completion refused (%d): %s"),
+                    static_cast<int32>(Outcome.Error), *Outcome.ErrorDetail);
+            }
+        }
+    }
+    PollWeaponFire();
+    // The live pellets advance one logical step per frame; finished or
+    // destroyed pellets drop out of the list.
+    for (int32 Index = LiveWeaponProjectiles.Num() - 1; Index >= 0; --Index)
+    {
+        FLiveWeaponProjectile& Entry = LiveWeaponProjectiles[Index];
+        ACombatProjectile* Actor = Entry.Actor.Get();
+        if (Actor == nullptr)
+        {
+            LiveWeaponProjectiles.RemoveAtSwap(Index);
+            continue;
+        }
+        Entry.Policy.AdvanceMotion(DeltaSeconds);
+        if (Entry.Policy.IsFinished() || Actor->IsPendingKillPending())
+        {
+            LiveWeaponProjectiles.RemoveAtSwap(Index);
+        }
+    }
+}
+
+void APrototypeCharacter::PollWeaponFire()
+{
+    UWeaponComponent* Mount = GetWeaponMount();
+    if (Mount == nullptr)
+    {
+        return;
+    }
+    const bool bBurstStreaming = BurstFirePolicy.IsValid() && BurstFirePolicy->HasPendingBurst();
+    if (!bWeaponFireHeld && !bBurstStreaming)
+    {
+        return;
+    }
+    const FWeaponBindingRecord* Binding = Mount->GetActiveBinding();
+    if (Binding == nullptr)
+    {
+        return;
+    }
+    FFireIntent Intent;
+    Intent.WeaponInstanceId = Binding->InstanceId;
+    Intent.LocalShotSequence = NextLocalShotSequence++;
+    const FFireOutcome Outcome = Mount->TryFire(Intent);
+    if (Outcome.bFired)
+    {
+        // The M5-023 hold-mode convention: the commit resolves instantly (the
+        // hitscan executor / the projectile commit runs in the broadcast
+        // below), so the same poll closes the in-flight window.
+        Mount->ReleaseFire();
+    }
+}
+
+void APrototypeCharacter::HandleWeaponShotCommitted(const FShotContext& Shot)
+{
+    UWeaponComponent* Mount = GetWeaponMount();
+    UWorld* World = GetWorld();
+    if (Mount == nullptr || World == nullptr)
+    {
+        return;
+    }
+    // A stale callback (the binding was torn down after the commit) drops its
+    // work - never a residual bullet for an unbound weapon.
+    if (!Mount->IsBindingGenerationCurrent(BoundWeaponGeneration))
+    {
+        return;
+    }
+    // The deterministic shot plan: the seed derives from the shot's own
+    // identity (shot-proprietary, replayable), the origin rides the feet
+    // offset and the facing mirrors X only (the M5-025 planner contract).
+    const FCombatCatalog* Catalog = Mount->GetMountedWeaponCatalog();
+    FShotPatternRequest Request;
+    Request.PelletCount = Shot.PelletCount;
+    Request.SpreadDegrees = Shot.SpreadDegrees;
+    Request.Seed = static_cast<uint32>(Shot.ShotId) ^ static_cast<uint32>(Shot.ShotId >> 32)
+        ^ static_cast<uint32>(Shot.LocalShotSequence);
+    Request.AvailablePelletSlots = Shot.PelletCount;
+    Request.Origin.FeetOffsetCm = M5_033_ShotFeetOffsetCm;
+    Request.FeetWorldLocation = (Combat != nullptr) ? Combat->GetDebugFeetLocation() : GetActorLocation();
+    const float Yaw = GetActorRotation().Yaw;
+    Request.Facing = (Yaw > -90.0f && Yaw < 90.0f) ? 1.0f : -1.0f;
+    const FShotPatternPlan Plan = PlanShotPattern(Request);
+    if (!Plan.bPlanned)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UEMMO M5-033: the shot pattern plan refused (%d): %s; the shot delivers nothing."),
+            static_cast<int32>(Plan.Reject), *Plan.RejectDetail);
+        return;
+    }
+    if (Shot.FireMode == EWeaponFireMode::Hitscan)
+    {
+        const FDamageProfile* Profile = (Catalog != nullptr) ? Catalog->FindDamageProfile(Shot.DamageProfileId) : nullptr;
+        if (Profile == nullptr)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("UEMMO M5-033: the damage profile '%s' did not resolve; the hitscan shot delivers nothing."),
+                *Shot.DamageProfileId.ToString());
+            return;
+        }
+        FHitscanRequest Delivery;
+        Delivery.Shot = Shot;
+        Delivery.Origin = Plan.Origin.WorldLocation;
+        Delivery.Pellets = Plan.Pellets;
+        Delivery.AttackProfile = *Profile;
+        const FHitscanExecutionOutcome Outcome = ExecuteHitscan(World, Delivery, &Mount->GetFireRegistry(),
+            &ShotHitLedger, this);
+        if (!Outcome.bExecuted)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("UEMMO M5-033: the hitscan delivery refused (%d): %s"),
+                static_cast<int32>(Outcome.Reject), *Outcome.RejectDetail);
+        }
+        return;
+    }
+    if (Shot.FireMode == EWeaponFireMode::Projectile)
+    {
+        const FProjectileDefinition* Definition = (Catalog != nullptr) ? Catalog->FindProjectile(Shot.ProjectileId) : nullptr;
+        const FDamageProfile* Profile = (Catalog != nullptr && Definition != nullptr)
+            ? Catalog->FindDamageProfile(Definition->DamageProfileId)
+            : nullptr;
+        if (Definition == nullptr || Profile == nullptr || ProjectileService == nullptr)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("UEMMO M5-033: the projectile '%s' or its damage profile did not resolve; the shot delivers nothing."),
+                *Shot.ProjectileId.ToString());
+            return;
+        }
+        FProjectileSpawnReservation Reservation;
+        const FProjectileReserveOutcome ReserveOutcome = ProjectileService->ReserveProjectiles(Shot, *Definition,
+            Plan.Origin.WorldLocation, Plan.Pellets, Catalog->GetConfigRevision(), Reservation);
+        if (!ReserveOutcome.bReserved)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("UEMMO M5-033: the projectile reservation refused (%d): %s"),
+                static_cast<int32>(ReserveOutcome.Reject), *ReserveOutcome.RejectDetail);
+            return;
+        }
+        if (!ProjectileSpawner.IsValid())
+        {
+            ProjectileSpawner = MakeUnique<FWeaponProjectileSpawner>(World);
+        }
+        if (!ProjectileService->CommitSpawn(Reservation, *ProjectileSpawner))
+        {
+            UE_LOG(LogTemp, Warning, TEXT("UEMMO M5-033: the projectile commit failed: %s"), *Reservation.RejectDetail);
+            return;
+        }
+        // Bind exactly one linear motion policy per spawned pellet (the 028
+        // seam contract: never two advancers on one body).
+        FWeaponProjectileSpawner* Spawner = static_cast<FWeaponProjectileSpawner*>(ProjectileSpawner.Get());
+        const int32 PelletTotal = FMath::Min(Plan.Pellets.Num(), Spawner->Spawned.Num());
+        for (int32 PelletAt = 0; PelletAt < PelletTotal; ++PelletAt)
+        {
+            ACombatProjectile* Actor = Spawner->Spawned[PelletAt].Get();
+            if (Actor == nullptr)
+            {
+                continue;
+            }
+            FProjectileHitContext HitContext;
+            HitContext.Registry = &Mount->GetFireRegistry();
+            HitContext.Ledger = &ShotHitLedger;
+            HitContext.Identity = this;
+            HitContext.AttackProfile = *Profile;
+            HitContext.PierceCount = Definition->PierceCount;
+            HitContext.SourceActor = this;
+            FLiveWeaponProjectile Entry;
+            Entry.Actor = Actor;
+            if (Entry.Policy.Begin(*Actor, Plan.Pellets[PelletAt].Direction, HitContext))
+            {
+                LiveWeaponProjectiles.Add(MoveTemp(Entry));
+            }
+        }
+    }
+}
+
+FEntityId APrototypeCharacter::ResolveTargetEntityId(const AActor& HitActor) const
+{
+    if (const FEntityId* Known = ShotTargetEntityIds.Find(&HitActor))
+    {
+        return *Known;
+    }
+    UWeaponComponent* Mount = GetWeaponMount();
+    // Walls and bodies without a health pool stay unregistered environment
+    // (the unified entry ignores them; the trace filter blocks the shot).
+    if (Mount == nullptr || HitActor.FindComponentByClass<UHealthComponent>() == nullptr)
+    {
+        return InvalidCombatTargetId;
+    }
+    FCombatEntityMetadata Metadata;
+    Metadata.Faction = M5_033_TargetFaction;
+    Metadata.Category = M5_033_TargetCategory;
+    const FEntityId TargetId = Mount->GetFireRegistry().RegisterEntity(
+        const_cast<AActor*>(&HitActor), Metadata, Mount->GetFireEpoch());
+    if (TargetId != InvalidCombatTargetId)
+    {
+        ShotTargetEntityIds.Add(&HitActor, TargetId);
+    }
+    return TargetId;
+}
+
+void APrototypeCharacter::SetWeaponInputClockProvider(TFunction<double()> Provider)
+{
+    WeaponInputClockProvider = MoveTemp(Provider);
 }
 void APrototypeCharacter::OnDebugTogglePressed()
 {
@@ -1004,6 +1571,9 @@ void APrototypeCharacter::Tick(float DeltaSeconds)
         }
         Combat->TickCombat(DeltaSeconds);
     }
+    // M5-033: the input-layer weapon duties (hold/burst polling, the reload
+    // deadline poll, the live-projectile motion advance) run per game frame.
+    TickWeaponInput(DeltaSeconds);
     ApplyPlanarMovement(*this, PlanarAxes);
     if (GetActorLocation().Z < -1000.f) ResetPosition();
 }

@@ -78,10 +78,11 @@ namespace UE::UEMMO::Tasks::M2_004
 	// entry with base damage 10 and an X-forward hit box).
 	const FName M2_004_AttackId = FName(TEXT("light_01"));
 
-	// The M1-040 DNF layout maps exactly 18 keys onto the runtime context
-	// (arrows 4, X, Z, C, Space, F2, F1 and the eight skill slots); the
-	// mapping-duplication guard compares against this fixed total.
-	constexpr int32 M2_004_ExpectedMappingCount = 18;
+	// The M1-040 DNF layout maps exactly 19 keys onto the runtime context
+	// (arrows 4, X, Z, C, Space, F2, F1, the eight skill slots and the M5-033
+	// T reload key); the mapping-duplication guard compares against this
+	// fixed total.
+	constexpr int32 M2_004_ExpectedMappingCount = 19;
 
 	// World-static blocking box (floor and walls share the builder).
 	static AActor* M2_004_SpawnBoxActor(UWorld& World, const FVector& Center, const FVector& HalfExtent, const TCHAR* Name)
@@ -612,10 +613,10 @@ bool FUEMMOTasksM2_004WorldResetRevivesPlayerAndRestartsLifecycle::RunTest(const
 	{
 		return true;
 	}
-	TestEqual(TEXT("the DNF layout maps exactly 18 keys after the first setup"),
+	TestEqual(TEXT("the DNF layout maps exactly 19 keys after the first setup"),
 		Mapping->GetMappings().Num(), M2_004_ExpectedMappingCount);
 	Scene.Player->SetupPlayerInputComponent(Input);
-	TestEqual(TEXT("the repeated input setup did not duplicate mappings (still 18)"),
+	TestEqual(TEXT("the repeated input setup did not duplicate mappings (still 19)"),
 		Mapping->GetMappings().Num(), M2_004_ExpectedMappingCount);
 
 	// Controls work again: a submitted Light starts a real attack instance.
