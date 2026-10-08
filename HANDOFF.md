@@ -1,19 +1,19 @@
 # 最近一轮交接
 
-## 本轮：批次75 已满 3 项正式交接，当前批次76（0/3）
+## 本轮：批次76 已满 3 项正式交接，当前批次77（0/3）
 
-- Owner：ZCode-20260925-A（续接批次 74 后用户指令「继续执行」，B 段连续执行中）。时间：2026-10-08T16:45:00+08:00 起；分支 main。
-- **批次 75 已满 3 项正式交接（M5-026/027/028），明细见 [批次75交接](Docs/Tasks/Handoffs/2026-10-08-ZCode-20260925-A-batch75.md)**；批次 74 明细见 [批次74交接](Docs/Tasks/Handoffs/2026-10-08-ZCode-20260925-A-batch74.md)。任务板 valid=True，total=166，**DONE=135**，TODO=29，IN_PROGRESS=0。M5 计划 **34/63**。
-- 批次 75 成果（全量基线 **712/712**）：
-  - **M5-028**（2639320）：直线运动与高速连续碰撞——028 冻结 029..032 唯一运动/命中策略接口 `IProjectileMotionPolicy`（Begin/AdvanceMotion/IsFinished）+ `FProjectileHitContext`/`ClassifyProjectileHitActor`（fail-closed 共享分类，Identity 复用 026 seam）+ `FLinearProjectilePolicy` 参考直线实现（每 tick 一次 `MoveUpdatedComponent` body-radius **整步 sweep 机制上不隧穿薄墙**；pass-through 瞬移过体+续段最多 8 段；一 tick 至多一次命中结果；Hostile 每 passage 恰一次五元组统一提交后按 PierceCount 预算续穿/终结；自体双保险；Y 纵深保留）；`CombatProjectile.cpp` 补 Pawn/WorldStatic Block（投射物互不撞）。红 6/6→绿 6/6（真实现首建 C2664 一次 SourceActor 去 const；绿首跑 19-01-25 一次 5/6：夹具同世界几何重叠假阴性，pass 变体 Y 偏移 2000cm 修正，断言不动，报告已如实记录），全量 712/712；证据 `Artifacts/Tasks/M5-028/`（红 18-56-06 / 绿 19-07-40 / 全量 19-08-00，+0800）。
-  - **M5-027**（402a91d）：投射物生成与生命周期 `FProjectileWorldService` + `ACombatProjectile`——预留/提交两段事务（全有或全无无半串）；拒绝序含 **StaleEpoch（旧代 shot 从不铸 reservation）** + 跨代持有 commit 拒绝；`BeginNextWorldEpoch` 销毁全部 live actor 回基线 0；超时=引擎 LifeSpan（Pause 冻结）；Actor 单运动源；provenance 纯值透传。红 6/6→绿 6/6（中间 18-23-33 一次 5/6 测试语义修正已记录），全量 706/706；证据 `Artifacts/Tasks/M5-027/`（红 18-21-22 / 绿 18-30-30 / 全量 18-30-51，+0800）。
-  - **M5-026**（7bb8817）：射线武器三维命中 `ExecuteHitscan`——每 pellet `LineTraceMultiByObjectType` 按距离决策；过滤面发射者永不/同 faction 按 `bFriendliesBlockShot`/未注册体按 `bUnregisteredActorsBlockShot`；完整五元组 Key → `ApplyUnifiedHit`；11 个命名拒绝先于首次 trace；新注入面 `IHitscanTargetIdentity`。红 6/6→绿 6/6，全量 700/700；证据 `Artifacts/Tasks/M5-026/`（红 18-02-58 / 绿 18-06-37 / 全量 18-06-54，+0800）。
-- 批次 74 成果摘要（全量基线 **694/694**）：M5-023（f8bf518，连射节流 682/682）、M5-024（49f7f82，三连发 688/688）、M5-025（eaf2f3b，散布规划 694/694）。
+- Owner：ZCode-20260925-A（续接批次 75 后用户指令「继续」，B 段连续执行中）。时间：2026-10-08T19:20:00+08:00 起；分支 main。
+- **批次 76 已满 3 项正式交接（M5-029/030/031），明细见 [批次76交接](Docs/Tasks/Handoffs/2026-10-08-ZCode-20260925-A-batch76.md)**；批次 75 明细见 [批次75交接](Docs/Tasks/Handoffs/2026-10-08-ZCode-20260925-A-batch75.md)。任务板 valid=True，total=166，**DONE=138**，TODO=26，IN_PROGRESS=0。M5 计划 **37/63**。
+- 批次 76 成果（全量基线 **731/731**）：
+  - **M5-031**（c1bee9b）：穿透、目标过滤与命中组 `FPenetrationProjectilePolicy`——PierceCount N=首目标后额外 N 个、命中严格距离序（028 同构 8 段扫掠）；每弹命中集合 `TSet<FEntityId>` 按实体 id 记账（已命中实体再接触零重复提交零扣次：同 Actor 双碰撞体、走回弹道线重接触）；标签过滤落 Category（零公共头修改）；世界障碍始终阻断双面钉死（Begin 拒绝穿墙 context + 运行期 Unregistered 终止）；爆炸+穿透组合 Begin 拒绝（M5-004 规则策略缝再强化）；结束集合清理可观测。红 7/7→绿 7/7（绿首跑 4/7 三处测试算术/几何修正已记录），全量 731/731；证据 `Artifacts/Tasks/M5-031/`（红 20-31-26 / 绿 20-34-50 / 全量 20-35-10，+0800）。
+  - **M5-030**（8c71167）：追踪与丢失目标 `FHomingProjectilePolicy`——目标只持实体 id 每步 Registry 重解析（零裸地址）；有界转向导向（引擎 homing 参数面是加速度语义无法表达 deg/s，策略手写方向导向+引擎积分）；丢失 KeepStraight/Destroy 两动作零重搜；`EHomingLostTargetAction`。红 6/6→绿 6/6（绿首跑 3/6、第二跑 5/6 全为夹具几何/参照系缺陷已记录；**追踪收敛前提 (v/r)<ω 已记录**），全量 724/724；证据 `Artifacts/Tasks/M5-030/`（红 20-02-22 / 绿 20-09-26 / 全量 20-09-44，+0800）。
+  - **M5-029**（f491772）：抛物线运动策略 `FBallisticProjectilePolicy`——零手写物理（Begin 只设 UE 参数：InitialSpeed 清零防覆盖、MaxSpeed=0 不限速、ProjectileGravityScale 透传；每步走引擎 ComputeVelocity/ComputeMoveDelta 积分序）；运输仍 028 连续碰撞面；命中面与 028 逐字同构。红 6/6→绿 6/6（绿首跑 5/6 断言符号写反已记录；**Chaos contact-offset ~2.2cm 定量容限已记录**），全量 718/718；证据 `Artifacts/Tasks/M5-029/`（红 19-26-42 / 绿 19-42-11 / 全量 19-42-34，+0800）。
+- 批次 75 成果摘要（全量基线 **712/712**）：M5-026（7bb8817，射线命中 700/700）、M5-027（402a91d，生成事务 706/706）、M5-028（2639320，策略接口冻结+直线 712/712）。
 
 ## 下一步（接手者从这里继续）
 
-- **Ready: M5-029、M5-030、M5-031、M5-032**——028 已冻结 `IProjectileMotionPolicy`/`FProjectileHitContext`/`ClassifyProjectileHitActor`，029..032 仅提供策略（消费 004 的 `FProjectileDefinition` 运动字段）；用户指令为连续执行，批次 76 按 Ready 顺序领取（届时重查任务板）。
-- 已知非阻塞限制（带入 B 段备忘）：023..028 生产接线（策略注册、burst/interval 取值、`CancelPendingBurst`、`PlanShotPattern` 调用点/socket 解析/seed 派生、`ExecuteHitscan` 调用点与 `IHitscanTargetIdentity` 生产实现、`IProjectileSpawner` 生产实现与 Reserve/Commit 调用点、谁构造 HitContext/持策略实例并按 tick 调 AdvanceMotion）归 029..032/033 谱系；桩期测试禁裸索引（M5-025）；UHT 不接受含非反射 typedef 的 USTRUCT——跨系统上下文快照用普通 C++ 值结构（M5-027）；同世界多场景夹具禁几何重叠（M5-028 踩坑：假阴性 fail-closed，修法=Y 纵深轴偏移）；其余同批次 74/73 备忘（倒地占位姿势、items.json 源表字段归 005/020A、021 备弹补给规则、022 虚拟槽语义归 027/033）。
+- **Ready: M5-032**——B 段投射物最后一策略卡（爆炸面："生命损失只经 HitApplication，不多次爆炸，不穿透爆炸共用"）；用户指令为连续执行，批次 77 领取 M5-032（届时重查任务板；先写占位报告再 IN_PROGRESS；拒绝面用例带合法对照）。032 完成后 B 段策略面（直线/抛物线/追踪/穿透/爆炸）即齐，进入 033 谱系生产接线。
+- 已知非阻塞限制（带入 B 段备忘）：023..031 生产接线（策略注册、谁构造策略实例并按 tick 调 AdvanceMotion、`ExecuteHitscan`/`IProjectileSpawner`/`IHitscanTargetIdentity` 生产实现、HitContext 构造）归 033 谱系；桩期拒绝面用例带「合法对照」防桩期天然通过（批次 76 确立）；Policies/ include 用 `../../Combat/`；Chaos contact-offset ~2.2cm 贴地检测自留容差（029）；追踪收敛前提 (v/r)<ω（030）；标签过滤仅 Category 一维、多标签面属公共头契约变更（031）；其余同批次 75/74 备忘（倒地占位姿势、items.json 源表字段归 005/020A、021 备弹补给规则、022 虚拟槽语义归 027/033）。
 
 ## 项目当前状态
 
@@ -24,7 +24,7 @@
 | M2 | 刷怪房：敌人 AI/波次/会话/失败重试/退出/L_CombatRoom01 | M2-001..017 全 DONE |
 | M3 | 成长：装备/背包/穿脱/等级/掉落/领奖/存档 A/B 槽/地图菜单/操作日志 | M3-001..032 全 DONE |
 | M4 | 服务端接入 | M4-000 DEFERRED（待用户提供协议信息） |
-| M5 | 数据驱动战斗扩展（A 配置受击 → B 武器投射物 → C 载具 → D 成长发布） | **34/63 DONE**（000..018C、H01、019、020、020A、021..028、052）；B 段进行中，Ready: 029..032 |
+| M5 | 数据驱动战斗扩展（A 配置受击 → B 武器投射物 → C 载具 → D 成长发布） | **37/63 DONE**（000..018C、H01、019、020、020A、021..031、052）；B 段进行中，Ready: 032 |
 | 人工关卡 | M0-H01 REVIEW；M2-H01/M3-H01/M5-H02..H04 待用户 | AI 不得代签；M5-H01 已签（2026-10-08） |
 
 ## 交付物
@@ -33,14 +33,14 @@
 - **M3 完整包（最新全内容旧包）**：`Artifacts\Package\Windows\UEMMO.exe`（929MB，2026-09-30；离屏冒烟 success/rendering=true 实测可启动）。进刷怪房：exe 加参数 `/Game/UEMMO/Maps/L_CombatRoom01`。
 - **综合验收入口（用户从这里开始）**：`Docs/07-综合验收摘要.md`。M5 新内容不在旧包内；A 段完成时按 M5-018B 另出独立段包。
 
-## 最新集成验证（批次75收口，2026-10-08）
+## 最新集成验证（批次76收口，2026-10-08）
 
-- Build exit 0；编辑器全量自动化 **712/712**（706 + M5-028 新增 6 用例）。
-- M5-028：Build Succeeded；定向 6/6（红 6/6 桩全拒绝先行；真实现首建 C2664 一次、绿首跑 19-01-25 一次 5/6 夹具修正均已记录）；全量 **712/712**；实现提交 2639320，报告/总表提交 a4a4181。
-- M5-027：Build Succeeded；定向 6/6（红 6/6 桩全拒绝先行，中间 18-23-33 一次 5/6 测试修正已记录）；全量 **706/706**；实现提交 402a91d。
-- M5-026：Build Succeeded；定向 6/6（红 6/6 桩全拒绝先行）；全量 **700/700**；实现提交 7bb8817。
-- 批次 74 收口：M5-021（1eb7277，663/663）、M5-020（2dc84af，670/670）、M5-022（d8fb6c1，676/676）、M5-023（f8bf518，682/682）、M5-024（49f7f82，688/688）、M5-025（eaf2f3b，694/694）全 DONE。
-- CheckTaskBoard valid=True，DONE=135，IN_PROGRESS=0，Ready: M5-029..032。
+- Build exit 0；编辑器全量自动化 **731/731**（712 + M5-029 新增 6 + M5-030 新增 6 + M5-031 新增 7 用例）。
+- M5-031：Build Succeeded；定向 7/7（红 7/7 桩全拒绝先行，拒绝面带合法对照；绿首跑 20-33-15 一次 4/7 三处测试算术/几何修正已记录）；全量 **731/731**；实现提交 c1bee9b，报告/总表提交 2128d32。
+- M5-030：Build Succeeded；定向 6/6（红 6/6 桩全拒绝先行；绿首跑 20-03-55 3/6、第二跑 20-07-55 5/6 全为夹具缺陷已记录）；全量 **724/724**；实现提交 8c71167，报告/总表提交 d8f4d32。
+- M5-029：Build Succeeded；定向 6/6（红 6/6 桩全拒绝先行；绿首跑 19-28-01 一次 5/6 断言符号修正已记录）；全量 **718/718**；实现提交 f491772，报告/总表提交 59ca757。
+- 批次 75 收口：M5-026（7bb8817，700/700）、M5-027（402a91d，706/706）、M5-028（2639320，712/712）全 DONE。
+- CheckTaskBoard valid=True，DONE=138，IN_PROGRESS=0，Ready: M5-032。
 
 ## 流程要点（给下一个 AI）
 
