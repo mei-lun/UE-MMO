@@ -18,6 +18,8 @@
 #include "Styling/SlateColor.h"
 #include "UObject/SoftObjectPtr.h"
 
+#include "WeaponStatusWidget.h"
+
 #include "../Items/InventoryModel.h"
 #include "../Items/ItemInstance.h"
 #include "../Items/StatCalculator.h"
@@ -729,6 +731,17 @@ void UInventoryWidget::BuildControls()
 	if (UVerticalBoxSlot* CloseSlot = Stack->AddChildToVerticalBox(CloseButton))
 	{
 		CloseSlot->SetPadding(FMargin(120.0f, 4.0f));
+	}
+
+	// M5-034: the embedded weapon status panel sits between the equip panel
+	// and the close row. It is display-only (the HUD pushes the REAL mount
+	// state through the panel's refresh entry); the screen's own Close/Esc
+	// path dismisses the whole presentation, so the panel adds no second
+	// input-focus switch and no second dismissal.
+	WeaponStatus = WidgetTree->ConstructWidget<UWeaponStatusWidget>(UWeaponStatusWidget::StaticClass());
+	if (UVerticalBoxSlot* StatusSlot = Stack->AddChildToVerticalBox(WeaponStatus))
+	{
+		StatusSlot->SetPadding(FMargin(0.0f, 8.0f, 0.0f, 0.0f));
 	}
 
 	WidgetTree->RootWidget = RootCanvas;

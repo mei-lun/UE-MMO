@@ -792,6 +792,11 @@ void APrototypeCharacter::EnsureCombatInputActions()
     // mapping in the M1-040 DNF layout.
     WeaponReloadAction = NewObject<UInputAction>(this, TEXT("WeaponReload"));
     Mapping->MapKey(WeaponReloadAction, EKeys::T);
+    // M5-034: I toggles the inventory screen (the production open/close entry;
+    // the debug exec command stays a test seam, not the main entry). I collides
+    // with no other mapping in the M1-040 DNF layout.
+    InventoryToggleAction = NewObject<UInputAction>(this, TEXT("InventoryToggle"));
+    Mapping->MapKey(InventoryToggleAction, EKeys::I);
 }
 
 void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -834,6 +839,9 @@ void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
     // M5-033: T routes into the reload entry (Started only: one window per
     // press; the deadline poll completes it).
     Input->BindAction(WeaponReloadAction, ETriggerEvent::Started, this, &APrototypeCharacter::OnReloadInputPressed);
+    // M5-034: I routes into the inventory toggle (Started only: one press is
+    // exactly one open or close).
+    Input->BindAction(InventoryToggleAction, ETriggerEvent::Started, this, &APrototypeCharacter::OnInventoryTogglePressed);
     if (APlayerController* PC = Cast<APlayerController>(Controller))
     {
         if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
@@ -1370,6 +1378,25 @@ void APrototypeCharacter::OnDebugTogglePressed()
         if (APrototypeHUD* HUD = Cast<APrototypeHUD>(PC->GetHUD()))
         {
             HUD->ToggleCombatDebugOverlay();
+        }
+    }
+}
+void APrototypeCharacter::OnInventoryTogglePressed()
+{
+    // M5-034: I is not a combat intent. The press toggles the inventory screen
+    // (with its embedded weapon status panel) through the HUD's real open /
+    // close paths - the same path the debug exec entry uses, so the input
+    // capture and restore stay the screen's own single switch. Without a
+    // player controller / prototype HUD it is a no-op.
+    if (UOperationLogSubsystem* OpLog = UOperationLogSubsystem::FindForContext(this))
+    {
+        OpLog->LogInput(TEXT("Pressed I (InventoryToggle)"));
+    }
+    if (APlayerController* PC = Cast<APlayerController>(Controller))
+    {
+        if (APrototypeHUD* HUD = Cast<APrototypeHUD>(PC->GetHUD()))
+        {
+            HUD->ToggleInventoryScreen();
         }
     }
 }

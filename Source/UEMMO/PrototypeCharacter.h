@@ -227,6 +227,14 @@ public:
     /** M5-033: true while the input layer polls for the reload deadline. */
     bool IsWeaponReloadPending() const { return bWeaponReloadPending; }
 
+    /**
+     * M5-034: the I-key handler (Started only). Resolves the local HUD and
+     * toggles the inventory screen through the real open/close paths; no
+     * combat intent, no fire, no ammo. Without a player controller / HUD it
+     * is a no-op (the F1 debug-toggle precedent).
+     */
+    void OnInventoryTogglePressed();
+
     /** M5-033: live projectile pellets the delivery bridge currently advances. */
     int32 GetLiveWeaponProjectileCount() const { return LiveWeaponProjectiles.Num(); }
 
@@ -414,6 +422,9 @@ private:
     // The T reload action (the Q trigger stays SkillSlotActions[0], rebound
     // onto the fire handlers; the skill-slot 1 intent keeps its fallback).
     UPROPERTY(Transient) TObjectPtr<UInputAction> WeaponReloadAction;
+
+    /** M5-034: I toggles the inventory screen (Started only; no repeat). */
+    UPROPERTY(Transient) TObjectPtr<UInputAction> InventoryToggleAction;
     // True between the fire-authorized Q press and its release.
     bool bWeaponFireHeld = false;
     // The caller-local monotonic shot counter feeding FFireIntent (association

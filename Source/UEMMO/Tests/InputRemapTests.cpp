@@ -159,10 +159,13 @@ bool FUEMMOTasksM1_040CombatAndMovementKeysMatchDnfLayout::RunTest(const FString
 	// F1 keeps its debug-overlay mapping.
 	TestEqual(TEXT("F1 still maps to the DebugToggle action"), CountKeyMappings(*Mapping, EKeys::F1, TEXT("DebugToggle")), 1);
 
+	// M5-034: I maps to the inventory toggle (the production open/close entry).
+	TestEqual(TEXT("I maps to the InventoryToggle action"), CountKeyMappings(*Mapping, EKeys::I, TEXT("InventoryToggle")), 1);
+
 	// Total guard: 2 (MoveX) + 2 (MoveY) + 2 (Jump) + 1 (Reset) + 1 (Light)
-	// + 1 (Launcher) + 1 (F1) + 8 (skill slots) + 1 (T reload, M5-033); no
-	// stale key can hide.
-	TestEqual(TEXT("the mapping context carries exactly the DNF layout"), Mapping->GetMappings().Num(), 19);
+	// + 1 (Launcher) + 1 (F1) + 8 (skill slots) + 1 (T reload, M5-033)
+	// + 1 (I inventory toggle, M5-034); no stale key can hide.
+	TestEqual(TEXT("the mapping context carries exactly the DNF layout"), Mapping->GetMappings().Num(), 20);
 	return true;
 }
 

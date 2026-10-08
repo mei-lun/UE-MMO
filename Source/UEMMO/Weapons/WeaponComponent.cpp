@@ -322,6 +322,13 @@ double UWeaponComponent::ResolveFireClockSeconds() const
 	return World != nullptr ? World->GetTimeSeconds() : 0.0;
 }
 
+double UWeaponComponent::GetRemainingReloadSeconds(double NowSeconds) const
+{
+	// The window lives on the per-cycle model slot (see BeginReload); an
+	// invalid slot id reads as 0.0 - the model's "no window" answer.
+	return Ammo.GetRemainingReloadSeconds(ActiveReloadSlotId, NowSeconds);
+}
+
 void UWeaponComponent::CloseActiveReloadWindow()
 {
 	if (ActiveReloadSlotId.IsValid())

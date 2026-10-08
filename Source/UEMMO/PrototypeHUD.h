@@ -233,6 +233,27 @@ public:
     /** M3-012 test seam: the presented inventory widget itself (weak-safe; null when dismissed). */
     UInventoryWidget* PeekInventoryWidget() const { return InventoryWidgetPtr.Get(); }
 
+    // ----- M5-034: weapon status presentation -----------------------------------
+
+    /**
+     * M5-034: the production open/close entry behind the pawn's inventory-
+     * toggle key (I): an open screen dismisses through the REAL close path
+     * (input focus restored), a closed one presents. No fire, no ammo, no
+     * combat state touched here - the weapon mount's own menu-open gate
+     * refuses fire while the screen holds the input.
+     */
+    void ToggleInventoryScreen();
+
+    /**
+     * M5-034: the refresh entry the presented screen's status panel reads
+     * from: resolves the local pawn's REAL weapon mount (binding, magazine,
+     * reserve, reload window, catalog error) and pushes the fingerprint-
+     * gated snapshot into the embedded panel. No-op while the screen is not
+     * presented; DrawHUD calls this per drawn frame (the reload countdown
+     * advances) and the equip paths call it after the mount refresh.
+     */
+    void RefreshWeaponStatusScreen();
+
     // ----- M3-018: settlement reward claim ------------------------------------
 
     /**

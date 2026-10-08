@@ -21,6 +21,7 @@ class UScrollBox;
 class UTextBlock;
 class UTexture2D;
 class UVerticalBox;
+class UWeaponStatusWidget;
 
 /** Fired by the Close button and the Esc key; the HUD executes the real dismiss. */
 DECLARE_MULTICAST_DELEGATE(FInventoryCloseRequested);
@@ -367,6 +368,13 @@ public:
 	const FGuid& PeekSelectedInstanceId() const { return SelectedInstanceId; }
 	bool HasSelection() const { return bHasSelection; }
 
+	/**
+	 * M5-034: the embedded weapon status panel (built with the control tree;
+	 * the HUD pushes the REAL mount state through the panel's own refresh
+	 * entry - the inventory widget itself never reads the weapon mount).
+	 */
+	UWeaponStatusWidget* PeekWeaponStatus() const { return WeaponStatus; }
+
 	/** Number of row controls actually built in the list (0 before a build). */
 	int32 PeekRowCount() const;
 
@@ -453,6 +461,11 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UTextBlock> StatusBlock;
+
+	// ----- M5-034: the embedded weapon status panel -----------------------------
+
+	UPROPERTY(Transient)
+	TObjectPtr<UWeaponStatusWidget> WeaponStatus;
 
 	// ----- M3-019: per-row icon controls (parallel to the row order) ----------
 

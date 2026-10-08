@@ -20,6 +20,10 @@
 #include "UI/InventoryWidget.h"
 #include "UI/MapSelectWidget.h"
 #include "UI/PendingRewardsWidget.h"
+// M5-034: the weapon status panel (embedded in the inventory screen) and the
+// mount surface the HUD snapshots it from.
+#include "UI/WeaponStatusWidget.h"
+#include "Weapons/WeaponComponent.h"
 #include "Items/ItemDefinition.h"
 #include "Items/ItemInstance.h"
 #include "Items/InventoryModel.h"
@@ -90,6 +94,10 @@ namespace
 void APrototypeHUD::DrawHUD()
 {
     Super::DrawHUD();
+    // M5-034: the weapon status panel tracks the live mount every frame (the
+    // refresh guard skips identical snapshots, so the countdown advances at its
+    // 0.1 s quantization without a per-frame rebuild).
+    RefreshWeaponStatusScreen();
     DrawRect(FLinearColor(0.02f, 0.03f, 0.05f, 0.86f), 18, 18, 630, 110);
     // M2-017: stage copy refreshed for the M2 room combat prototype (pending
     // playtest); the M1-only line is obsolete now that M2 rooms are in.
@@ -1557,6 +1565,9 @@ void APrototypeHUD::ShowInventoryScreen()
     EnsureInventoryEquipmentWiring();
     InventoryActionGuard.ReArm();
     UpdateInventoryEquipContext();
+    // M5-034: the freshly (re)presented screen carries the current mount
+    // snapshot (open -> status matches the mount at presentation time).
+    RefreshWeaponStatusScreen();
 
     APlayerController* PC = GetWorld()->GetFirstPlayerController();
     const bool bCanPresent = GEngine != nullptr && GEngine->GameViewport != nullptr && PC != nullptr;
@@ -1586,6 +1597,69 @@ void APrototypeHUD::HideInventoryScreen()
     }
     InventoryWidgetPtr = nullptr;
     ApplyInventoryInputRestore();
+}
+
+// -- M5-034: weapon status presentation ---------------------------------------
+
+void APrototypeHUD::ToggleInventoryScreen()
+{
+    // M5-034: the production open/close entry (the I key binding target). The
+    // close half routes through the REAL close path (HandleInventoryCloseRequested
+    // -> HideInventoryScreen -> ApplyInventoryInputRestore), so the input-focus
+    // restore contract is the inventory screen's own, never a second switch.
+    if (HasInventoryScreen())
+    {
+        HandleInventoryCloseRequested();
+        return;
+    }
+    ShowInventoryScreen();
+}
+
+void APrototypeHUD::RefreshWeaponStatusScreen()
+{
+    // M5-034: the only data source of the weapon status panel - a read-only
+    // snapshot of the REAL weapon mount pushed into the embedded panel. The
+    // panel itself never reads the mount and never grants ammo; identical
+    // snapshots are skipped by the widget's refresh guard (the per-frame
+    // DrawHUD call below stays cheap).
+    UInventoryWidget* Widget = InventoryWidgetPtr.Get();
+    UWeaponStatusWidget* Status = (Widget != nullptr) ? Widget->PeekWeaponStatus() : nullptr;
+    if (Status == nullptr)
+    {
+        return;
+    }
+
+    FWeaponStatusInputs Inputs;
+    if (APrototypeCharacter* Player = ResolveLocalPlayer())
+    {
+        if (const UWeaponComponent* Mount = Player->GetWeaponMount())
+        {
+            Inputs.bCatalogError = Mount->IsCatalogError();
+            if (const FWeaponBindingRecord* Binding = Mount->GetActiveBinding())
+            {
+                Inputs.Binding = Binding;
+                if (const FCombatCatalog* WeaponCatalog = Mount->GetMountedWeaponCatalog())
+                {
+                    Inputs.Definition = WeaponCatalog->FindWeapon(Binding->WeaponDefinitionId);
+                }
+                const FAmmoModel& Ammo = Mount->GetAmmoModel();
+                const double NowSeconds = (GetWorld() != nullptr) ? GetWorld()->GetTimeSeconds() : 0.0;
+                Inputs.RemainingReloadSeconds = Mount->GetRemainingReloadSeconds(NowSeconds);
+                if (Inputs.Definition != nullptr && !Inputs.Definition->AmmoId.IsNone())
+                {
+                    Inputs.ReserveRounds = Ammo.GetReserveRounds(Inputs.Definition->AmmoId);
+                }
+            }
+        }
+    }
+    if (Inputs.Binding == nullptr)
+    {
+        // No active binding: the display must distinguish "nothing equipped"
+        // from the illegal shape "a weapon item is equipped but no weapon
+        // behavior bound to it" (the production no-mapping refusal).
+        Inputs.bEquippedItemUnbound = InventoryEquipment.GetEquippedId(EItemSlot::Weapon) != nullptr;
+    }
+    Status->RefreshIfChanged(Inputs);
 }
 
 void APrototypeHUD::ApplyInventoryInputCapture()
@@ -1963,6 +2037,10 @@ void APrototypeHUD::HandleInventoryEquipAction(bool bEquip)
         Widget->SetInventoryStatusText(ResultText);
     }
     UpdateInventoryEquipContext();
+    // M5-034: an accepted equip/unequip moves the mount (through the pawn's
+    // equipment push), a refusal leaves it - either way the panel shows the
+    // real outcome (Ready / ConfigFailure after a no-mapping equip).
+    RefreshWeaponStatusScreen();
 }
 
 bool APrototypeHUD::EnsureInventoryEquipmentWiring()

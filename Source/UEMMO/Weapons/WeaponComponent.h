@@ -484,6 +484,14 @@ public:
 	 */
 	const FCombatCatalog* GetMountedWeaponCatalog() const { return WeaponCatalog; }
 
+	/**
+	 * M5-034: remaining seconds of the open reload window at caller-clock
+	 * NowSeconds (0.0 when no window is open) - the read-only display query
+	 * for the weapon status panel. The window lives on the per-cycle model
+	 * slot (see BeginReload), so the component (not the caller) owns its id.
+	 */
+	double GetRemainingReloadSeconds(double NowSeconds) const;
+
 	/** Broadcast exactly once per committed shot (downstream consumers: 027 projectiles, the hit pipeline). */
 	FOnWeaponShotCommitted OnShotCommitted;
 
