@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 
+#include "../Weapons/WeaponTypes.h"
+
 /**
  * Read-side item definition layer of the M3 equipment stack (interface
  * contract section 8). A definition is the shared, reusable description of one
@@ -72,6 +74,17 @@ struct FItemDefinition
 
 	/** Rarity tier 1/2/3; must be one of the closed enum values. */
 	EItemRarity Rarity = EItemRarity::Normal;
+
+	/**
+	 * M5-019: the weapon behavior bound to this item kind through the
+	 * item_definition_id connection (M5 interface contract section 7). Empty
+	 * (None) for every non-weapon item; on a Weapon-slot definition it names
+	 * the FWeaponDefinition (CombatCatalog FindWeapon) this item's instances
+	 * resolve to. The mapping never creates a second item instance - the
+	 * FItemInstance identity (InstanceId/Level/RollSeed) is preserved and the
+	 * per-instance magazine state lives in the M5-019 binding layer.
+	 */
+	FName WeaponDefinitionId;
 };
 
 /**
@@ -134,8 +147,12 @@ inline bool IsValidItemRarity(EItemRarity Rarity)
  * Validates a single item definition in isolation and returns true when legal.
  * Rules (M3-001): DefinitionId non-empty, Slot one of Weapon/Armor/Accessory,
  * BaseStats.Attack/Defense/MaxHP finite and >= 0, Rarity one of 1/2/3.
+ * M5-019 adds the weapon mapping rules: WeaponDefinitionId may only be set on
+ * a Weapon-slot definition and, when set, must match the M5 definition id text
+ * rule (1-64 characters of a-z0-9_, WeaponTypes.h IsValidDefinitionIdText).
  * On failure OutErrors joins every problem with "; " and each problem names
- * its field (e.g. "DefinitionId", "Slot", "BaseStats.Attack", "Rarity").
+ * its field (e.g. "DefinitionId", "Slot", "BaseStats.Attack", "Rarity",
+ * "WeaponDefinitionId").
  * IconPath and DisplayName are display-only and never rejected here.
  */
 inline bool ValidateItemDefinition(const FItemDefinition& Definition, FString& OutErrors)
@@ -179,6 +196,26 @@ inline bool ValidateItemDefinition(const FItemDefinition& Definition, FString& O
 	{
 		Problems.Add(FString::Printf(TEXT("Rarity must be 1 (Normal), 2 (Rare) or 3 (Legendary) (got %d)"),
 			static_cast<int32>(Definition.Rarity)));
+	}
+
+	// M5-019 weapon mapping: the field is empty for armor/accessory items and,
+	// when set, must be a weapon-slot definition carrying a syntactically
+	// valid M5 weapon id (the id resolving to a real row is checked at bind
+	// time against the combat catalog, never silently rerouted).
+	if (!Definition.WeaponDefinitionId.IsNone())
+	{
+		if (Definition.Slot != EItemSlot::Weapon)
+		{
+			Problems.Add(FString::Printf(TEXT("WeaponDefinitionId must be empty for non-Weapon slot items (item '%s' slot %d got weapon '%s')"),
+				*Definition.DefinitionId.ToString(),
+				static_cast<int32>(Definition.Slot),
+				*Definition.WeaponDefinitionId.ToString()));
+		}
+		if (!IsValidDefinitionIdText(Definition.WeaponDefinitionId.ToString()))
+		{
+			Problems.Add(FString::Printf(TEXT("WeaponDefinitionId must be 1-64 characters of a-z0-9_ (got '%s')"),
+				*Definition.WeaponDefinitionId.ToString()));
+		}
 	}
 
 	if (Problems.Num() == 0)
