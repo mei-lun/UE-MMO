@@ -154,7 +154,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M5-023 | [M5-023](Docs/Tasks/M5-023.md) | DONE | M5-022 | ZCode-20260925-A | 2026-10-08T17:06:44+08:00 | [report](Docs/Tasks/Reports/M5-023.md) |
 | M5-024 | [M5-024](Docs/Tasks/M5-024.md) | DONE | M5-022 | ZCode-20260925-A | 2026-10-08T17:29:21+08:00 | [report](Docs/Tasks/Reports/M5-024.md) |
 | M5-025 | [M5-025](Docs/Tasks/M5-025.md) | DONE | M5-022 | ZCode-20260925-A | 2026-10-08T17:44:51+08:00 | [report](Docs/Tasks/Reports/M5-025.md) |
-| M5-026 | [M5-026](Docs/Tasks/M5-026.md) | TODO | M5-012,M5-025 | — | — | — |
+| M5-026 | [M5-026](Docs/Tasks/M5-026.md) | DONE | M5-012,M5-025 | ZCode-20260925-A | 2026-10-08T18:08:52+08:00 | [report](Docs/Tasks/Reports/M5-026.md) |
 | M5-027 | [M5-027](Docs/Tasks/M5-027.md) | TODO | M5-004,M5-020,M5-025 | — | — | — |
 | M5-028 | [M5-028](Docs/Tasks/M5-028.md) | TODO | M5-027,M5-012 | — | — | — |
 | M5-029 | [M5-029](Docs/Tasks/M5-029.md) | TODO | M5-028 | — | — | — |
