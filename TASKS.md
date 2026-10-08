@@ -184,7 +184,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M5-053 | [M5-053](Docs/Tasks/M5-053.md) | TODO | M5-035,M5-044 | — | — | — |
 | M5-054 | [M5-054](Docs/Tasks/M5-054.md) | TODO | M5-048,M5-049,M5-050,M5-051,M5-052,M5-053 | — | — | — |
 | M5-055 | [M5-055](Docs/Tasks/M5-055.md) | TODO | M5-054 | — | — | — |
-| M5-H01 | [M5-H01](Docs/Tasks/M5-H01.md) | TODO | M5-018B | — | — | — |
+| M5-H01 | [M5-H01](Docs/Tasks/M5-H01.md) | DONE | M5-018B | ZCode-20260925-A | 2026-10-08T14:03:17+08:00 | [report](Docs/Tasks/Reports/M5-H01.md) |
 | M5-H02 | [M5-H02](Docs/Tasks/M5-H02.md) | TODO | M5-036 | — | — | — |
 | M5-H03 | [M5-H03](Docs/Tasks/M5-H03.md) | TODO | M5-045 | — | — | — |
 | M5-H04 | [M5-H04](Docs/Tasks/M5-H04.md) | TODO | M5-055,M5-H02,M5-H03 | — | — | — |
