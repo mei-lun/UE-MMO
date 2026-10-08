@@ -7,6 +7,7 @@
 
 class UAnimationAsset;
 class UCombatComponent;
+class UCombatPresentationComponent;
 class UEnemyDefinition;
 class UHealthComponent;
 class UMaterialInstanceDynamic;
@@ -161,12 +162,50 @@ private:
 	 */
 	void RefreshLocomotionAnimation();
 
+	/**
+	 * M5-018C: swaps the single-node mesh to the hit-reaction clip while the
+	 * accepted hit holds this enemy in HitStun and back to the locomotion
+	 * assets on the stun-end edge. Montage playback (the M5-017 presenter path
+	 * this enemy also carries) is inert on a single-node mesh - the engine's
+	 * PlayAnimMontage only works through an Animation Graph AnimInstance - so
+	 * this direct asset swap is the enemy's visible reaction, mirroring the
+	 * M5-017 mapping's source clip.
+	 */
+	void ApplyHitReactAnimation(bool bActive);
+
+	/**
+	 * M5-018C: plays the death clip once inside the existing corpse window
+	 * (called from the health death lambda; presentation only).
+	 */
+	void ApplyDeathReactAnimation();
+
+	/**
+	 * M5-018C: the launched landing shows the M1-026 downed state - the mesh
+	 * eases to a lying rotation while the combat state holds Knockdown, eases
+	 * back upright during Recovering, and is force-restored to the template
+	 * baseline once Free (no knockdown animation asset exists, so the mesh
+	 * pose is the honest placeholder; presentation only - the mesh has no
+	 * collision and the combat pipeline is unaffected).
+	 */
+	void ApplyKnockdownPose(bool bKnockedDown, bool bRecovering, float DeltaSeconds);
+
 	UPROPERTY(VisibleAnywhere, Category = "Combat")
 	TObjectPtr<UHealthComponent> Health;
 
 	/** M1-020: hit stun / death priority state for this enemy. */
 	UPROPERTY(VisibleAnywhere, Category = "Combat")
 	TObjectPtr<UCombatComponent> Combat;
+
+	/**
+	 * M5-018C: this enemy's own montage presenter (the same UCLASS the player
+	 * pawn attaches, M1-032/M5-017). Sources are injected in BeginPlay: the
+	 * component follows this enemy's combat component, so an accepted hit
+	 * staggers through the mapped RCT_Hit montage and a death through
+	 * RCT_Dead - the visible victim feedback beyond the M3-027 flash, which
+	 * the M5-H01 playtest read as missing.
+	 */
+	UPROPERTY(VisibleAnywhere, Category = "Combat")
+	TObjectPtr<UCombatPresentationComponent> Presentation;
 
 	/**
 	 * Applied M2-001 definition (non-owning weak reference: definition data
@@ -229,4 +268,37 @@ private:
 	/** M3-027: the asset currently presented on the mesh. */
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimationAsset> CurrentLocomotionAsset;
+
+	// ---------------- M5-018C visible victim reactions (single-node) ----------------
+
+	/**
+	 * M5-018C: the hit-reaction clip the mesh swaps to while the accepted hit
+	 * holds this enemy in HitStun (the MM_HitReact_Front_Hvy_01 template
+	 * sequence the M5-017 RCT_Hit montage wraps). Class-referenced and
+	 * cook-covered like the locomotion assets above; null keeps the flash as
+	 * the only victim feedback.
+	 */
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimationAsset> HitReactAnimationAsset;
+
+	/**
+	 * M5-018C: the death clip played once when the health pool dies (the
+	 * MM_Death_Back_01 template sequence the M5-017 RCT_Dead montage wraps),
+	 * inside the existing corpse window.
+	 */
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimationAsset> DeathReactAnimationAsset;
+
+	/**
+	 * M5-018C: true while the single-node mesh plays the hit-reaction clip.
+	 * RefreshLocomotionAnimation stays suspended so it cannot override the
+	 * reaction, and the stun-end edge re-issues the idle/jog swap.
+	 */
+	bool bHitReactAnimationActive = false;
+
+	/**
+	 * M5-018C: true while the mesh is rotated into the launched-landing downed
+	 * pose; the Free edge restores the template baseline exactly once.
+	 */
+	bool bKnockdownPoseActive = false;
 };

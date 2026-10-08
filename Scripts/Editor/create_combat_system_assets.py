@@ -96,6 +96,13 @@ def build_system_test_room_map():
                 raise RuntimeError('expected exactly one CombatTestRoomDriver, found ' + str(len(drivers)))
             if 'PlayerStart' not in [a.get_actor_label() for a in actor_sub.get_all_level_actors()]:
                 raise RuntimeError('PlayerStart is missing from the system test room')
+            # M5-018C: the fake-target previews must stay removed (the room
+            # shows only the config-spawned targets).
+            previews = [a for a in actor_sub.get_all_level_actors()
+                        if a.get_actor_label().startswith('ResourcePreview')]
+            if previews:
+                raise RuntimeError('the room still holds ' + str(len(previews))
+                                   + ' ResourcePreview props; rerun the build mode')
         else:
             if len(drivers) == 0:
                 driver = actor_sub.spawn_actor_from_class(
@@ -107,6 +114,16 @@ def build_system_test_room_map():
                 raise RuntimeError('the room already holds ' + str(len(drivers)) + ' drivers; refusing to add more')
             if 'PlayerStart' not in [a.get_actor_label() for a in actor_sub.get_all_level_actors()]:
                 raise RuntimeError('PlayerStart is missing from the base arena')
+            # M5-018C: the copied arena carries the M0 resource preview props -
+            # a static Quinn dummy that no combat query can target, which the
+            # M5-H01 playtest read as a broken test-room target. The room keeps
+            # the arena shell (floor/walls/PlayerStart) but sheds the
+            # fake-target previews so only the config targets stand there.
+            previews = [a for a in actor_sub.get_all_level_actors()
+                        if a.get_actor_label().startswith('ResourcePreview')]
+            for preview in previews:
+                actor_sub.destroy_actor(preview)
+            report['removed_resource_previews'] = len(previews)
             if not levels.save_current_level():
                 raise RuntimeError('could not save ' + system_test_map)
         report['success'] = True

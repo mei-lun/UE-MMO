@@ -332,4 +332,96 @@ bool FUEMMOTasksM5_018AMenuExposesTheSystemTestRoom::RunTest(const FString& Para
 	return true;
 }
 
+// ---------------------------------------------------------------------------
+// M5-018C: DriverBeginPlaySpawnsTargets
+// ---------------------------------------------------------------------------
+
+// The RUNTIME wiring: a driver ACTOR whose BeginPlay runs loads the real
+// Data/test_room.json and spawns the configured targets by itself. The
+// M5-018A suites drove SpawnTargets directly on a bare NewObject, which left
+// the placed map driver inert - the real room stayed empty (the M5-H01
+// playtest found only the copied ResourcePreview_Quinn static prop, which no
+// combat query can target). This test goes through the actor lifecycle so the
+// wiring cannot regress again.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FUEMMOTasksM5_018CDriverBeginPlaySpawnsTargets,
+	"UEMMO.Tasks.M5_018C.DriverBeginPlaySpawnsTargets",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+
+bool FUEMMOTasksM5_018CDriverBeginPlaySpawnsTargets::RunTest(const FString& Parameters)
+{
+	FTestWorldWrapper Wrapper;
+	if (!TestTrue(TEXT("the test world is created"), Wrapper.CreateTestWorld(EWorldType::Game)))
+	{
+		return true;
+	}
+	UWorld* World = Wrapper.GetTestWorld();
+	if (!TestNotNull(TEXT("the test world exists"), World))
+	{
+		return true;
+	}
+
+	// A real driver actor at a remote base; the config targets spawn at their
+	// room-local locations verbatim, so the base never collides with them.
+	ACombatTestRoomDriver* Driver = World->SpawnActor<ACombatTestRoomDriver>(
+		ACombatTestRoomDriver::StaticClass(),
+		FVector(100000.0, 100000.0, 100.0), FRotator::ZeroRotator);
+	if (!TestNotNull(TEXT("the driver actor spawned"), Driver))
+	{
+		return true;
+	}
+
+	// The lifecycle edge the real game runs (world BringAllActorsToLife) -
+	// dispatched explicitly so the assertion is deterministic in both the
+	// editor and the packaged automation contexts.
+	Driver->DispatchBeginPlay();
+
+	// The real Data/test_room.json carries exactly three targets across the
+	// M5-003 sample policies; BeginPlay must have spawned all of them.
+	TArray<AMeleeEnemy*> Enemies;
+	for (TActorIterator<AMeleeEnemy> It(World); It; ++It)
+	{
+		Enemies.Add(*It);
+	}
+	if (!TestEqual("BeginPlay spawned the three configured targets", Enemies.Num(), 3))
+	{
+		return true;
+	}
+
+	bool bNormalAtConfiguredLocation = false;
+	bool bHeavyAtConfiguredLocation = false;
+	bool bBossAtConfiguredLocation = false;
+	for (AMeleeEnemy* Enemy : Enemies)
+	{
+		const UCombatComponent* Combat = Enemy->GetCombatComponent();
+		const FVector Location = Enemy->GetActorLocation();
+		if (Combat == nullptr)
+		{
+			continue;
+		}
+		const FName PolicyId = Combat->GetTargetReactionPolicy().PolicyId;
+		const bool bAtX300 = FMath::Abs(Location.X - 300.0f) < 1.0f;
+		const bool bAtX550 = FMath::Abs(Location.X - 550.0f) < 1.0f;
+		if (PolicyId == FName(TEXT("normal")) && bAtX300 && FMath::Abs(Location.Y) < 1.0f)
+		{
+			bNormalAtConfiguredLocation = true;
+		}
+		if (PolicyId == FName(TEXT("heavy")) && bAtX550 && FMath::Abs(Location.Y - 150.0f) < 1.0f)
+		{
+			bHeavyAtConfiguredLocation = true;
+		}
+		if (PolicyId == FName(TEXT("boss")) && bAtX550 && FMath::Abs(Location.Y + 150.0f) < 1.0f)
+		{
+			bBossAtConfiguredLocation = true;
+		}
+	}
+	TestTrue("the normal target stands at the configured location with its policy",
+		bNormalAtConfiguredLocation);
+	TestTrue("the heavy target stands at the configured location with its policy",
+		bHeavyAtConfiguredLocation);
+	TestTrue("the boss target stands at the configured location with its policy",
+		bBossAtConfiguredLocation);
+	return true;
+}
+
 #endif

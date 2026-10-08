@@ -161,6 +161,16 @@ public:
 	ACombatTestRoomDriver();
 
 	/**
+	 * M5-018C: the runtime wiring. The placed map driver loads the config and
+	 * spawns the targets by itself when the world comes to life. The M5-018A
+	 * automated suites drove SpawnTargets directly on a bare NewObject, so the
+	 * actor placed in L_SystemTestRoom never spawned anything in a real game
+	 * (the M5-H01 playtest found the room empty). A load failure logs a loud
+	 * Warning and the room stays empty - never a stand-in spawn.
+	 */
+	virtual void BeginPlay() override;
+
+	/**
 	 * Parses one test_room source text. Strict: schema_version must be 1, the
 	 * table must be "test_room", exactly one room row, at least one target
 	 * with syntactically valid ids, a finite positive max health, a non-empty

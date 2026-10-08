@@ -2,12 +2,14 @@
 
 #include "../Combat/AttackCatalog.h"
 #include "../Combat/CombatComponent.h"
+#include "../Combat/CombatPresentationComponent.h"
 #include "../Combat/HealthComponent.h"
 #include "../PrototypeHUD.h"
 #include "MeleeEnemyController.h"
 
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Animation/AnimSingleNodeInstance.h"
 #include "EnemyDefinition.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
@@ -86,6 +88,24 @@ AMeleeEnemy::AMeleeEnemy()
 		RunLocomotionAsset = RunAsset.Object;
 	}
 
+	// M5-018C: the visible victim reactions - the exact template sequences the
+	// M5-017 RCT_Hit/RCT_Dead montages wrap (create_reaction_montages.py). The
+	// enemy mesh runs single-node animation (M3-027), where PlayAnimMontage is
+	// inert, so these raw AnimSequences are what actually renders on a hit or
+	// a death. Class-referenced like the locomotion assets: cook-covered.
+	static ConstructorHelpers::FObjectFinder<UAnimationAsset> HitReactAsset(
+		TEXT("/Game/Characters/Mannequins/Anims/Rifle/HitReact/MM_HitReact_Front_Hvy_01.MM_HitReact_Front_Hvy_01"));
+	if (HitReactAsset.Succeeded())
+	{
+		HitReactAnimationAsset = HitReactAsset.Object;
+	}
+	static ConstructorHelpers::FObjectFinder<UAnimationAsset> DeathReactAsset(
+		TEXT("/Game/Characters/Mannequins/Anims/Death/MM_Death_Back_01.MM_Death_Back_01"));
+	if (DeathReactAsset.Succeeded())
+	{
+		DeathReactAnimationAsset = DeathReactAsset.Object;
+	}
+
 	// Contract default approach speed (UEnemyDefinition::MoveSpeed default);
 	// SetEnemyDefinition overrides it from the applied definition data.
 	GetCharacterMovement()->MaxWalkSpeed = 220.0f;
@@ -113,6 +133,11 @@ AMeleeEnemy::AMeleeEnemy()
 	// The shared combat component (interface contract 7): an accepted hit can
 	// interrupt and stun this enemy through the victim-side entry.
 	Combat = CreateDefaultSubobject<UCombatComponent>(TEXT("MeleeEnemyCombat"));
+
+	// M5-018C: this enemy's own montage presenter (the same UCLASS the player
+	// pawn attaches, M1-032/M5-017). Sources are injected in BeginPlay after
+	// the combat catalog wiring, mirroring APrototypeCharacter's order.
+	Presentation = CreateDefaultSubobject<UCombatPresentationComponent>(TEXT("EnemyCombatPresentation"));
 }
 
 void AMeleeEnemy::BeginPlay()
@@ -130,6 +155,10 @@ void AMeleeEnemy::BeginPlay()
 			{
 				Combat->SetDead(true);
 			}
+			// M5-018C: the death clip inside the corpse window (the RCT_Dead
+			// source sequence; the montage presenter path is inert on the
+			// single-node mesh).
+			ApplyDeathReactAnimation();
 		});
 	}
 
@@ -205,6 +234,17 @@ void AMeleeEnemy::BeginPlay()
 			UE_LOG(LogTemp, Warning, TEXT("UEMMO: melee enemy attack catalog unavailable (%s); enemy attacks stay disabled."), *CatalogError.ToString());
 		}
 	}
+
+	// M5-018C: hand presentation ownership to the presenter (the player pawn's
+	// M1-032 wiring point, same ordering: after the catalog is attached): it
+	// plays this enemy's attack montages and follows the combat component's
+	// victim events, so an accepted hit staggers through the mapped RCT_Hit
+	// montage and a death through RCT_Dead. Null-safe on both arguments by
+	// contract (a world-less early test enemy keeps silent presentation).
+	if (Presentation != nullptr)
+	{
+		Presentation->SetSources(Combat, GetMesh());
+	}
 }
 
 void AMeleeEnemy::Tick(float DeltaSeconds)
@@ -234,8 +274,24 @@ void AMeleeEnemy::Tick(float DeltaSeconds)
 		if (bStunned != bHitFlashActive)
 		{
 			ApplyHitFlash(bStunned);
+			// M5-018C: the same HitStun edge drives the visible reaction clip
+			// (the presenter's montage path is inert on the single-node mesh -
+			// see ApplyHitReactAnimation).
+			ApplyHitReactAnimation(bStunned);
 		}
-		RefreshLocomotionAnimation();
+		if (!bHitReactAnimationActive)
+		{
+			RefreshLocomotionAnimation();
+		}
+
+		// M5-018C: the launched landing shows the M1-026 downed state - the
+		// mesh eases into the lying pose while Knockdown holds and eases back
+		// during Recovering (presentation follows the shared combat snapshot,
+		// the M1-032 direction). Death keeps the death clip: the pose helper
+		// refuses a combatant whose cleanup is already armed.
+		const ECombatActionState CurrentActionState = Combat->GetSnapshot().ActionState;
+		ApplyKnockdownPose(CurrentActionState == ECombatActionState::Knockdown,
+			CurrentActionState == ECombatActionState::Recovering, DeltaSeconds);
 	}
 }
 
@@ -406,4 +462,95 @@ void AMeleeEnemy::RefreshLocomotionAnimation()
 	// switches cover the rest of the enemy's life).
 	MeshComponent->SetAnimation(Desired);
 	MeshComponent->Play(true);
+}
+
+void AMeleeEnemy::ApplyHitReactAnimation(bool bActive)
+{
+	USkeletalMeshComponent* MeshComponent = GetMesh();
+	if (MeshComponent == nullptr)
+	{
+		return;
+	}
+	if (bActive)
+	{
+		UAnimationAsset* Reaction = HitReactAnimationAsset.Get();
+		if (Reaction == nullptr)
+		{
+			return;
+		}
+		// Single-node reaction: swap to the hit-reaction clip once (non-looping
+		// so the clip reads as an event, not a pose). CurrentLocomotionAsset
+		// becomes the reaction asset so RefreshLocomotionAnimation sees a
+		// pending swap the moment the reaction ends.
+		MeshComponent->SetAnimation(Reaction);
+		if (UAnimSingleNodeInstance* Node = Cast<UAnimSingleNodeInstance>(MeshComponent->GetAnimInstance()))
+		{
+			Node->SetLooping(false);
+			Node->SetPosition(0.0f, false);
+			Node->SetPlaying(true);
+		}
+		CurrentLocomotionAsset = Reaction;
+		bHitReactAnimationActive = true;
+	}
+	else
+	{
+		// Stun-end edge: release the suspension and re-issue the idle/jog swap
+		// (resetting the current-asset pointer makes the refresh unconditional).
+		bHitReactAnimationActive = false;
+		CurrentLocomotionAsset = nullptr;
+		RefreshLocomotionAnimation();
+	}
+}
+
+void AMeleeEnemy::ApplyDeathReactAnimation()
+{
+	USkeletalMeshComponent* MeshComponent = GetMesh();
+	UAnimationAsset* Death = DeathReactAnimationAsset.Get();
+	if (MeshComponent == nullptr || Death == nullptr)
+	{
+		return;
+	}
+	// Death presentation: the death clip once, inside the existing corpse
+	// window (the M3-025 cleanup freeze keeps the mesh in place while it runs).
+	MeshComponent->SetAnimation(Death);
+	if (UAnimSingleNodeInstance* Node = Cast<UAnimSingleNodeInstance>(MeshComponent->GetAnimInstance()))
+	{
+		Node->SetLooping(false);
+		Node->SetPosition(0.0f, false);
+		Node->SetPlaying(true);
+	}
+	bHitReactAnimationActive = true;
+	CurrentLocomotionAsset = Death;
+}
+
+void AMeleeEnemy::ApplyKnockdownPose(bool bKnockedDown, bool bRecovering, float DeltaSeconds)
+{
+	// Constants mirror the M1-026 process windows (Knockdown 0.45 s ->
+	// Recovering 0.25 s): the pose reaches ~84 degrees inside the downed
+	// window and eases most of the way back before the Free edge snaps the
+	// template baseline exactly.
+	constexpr float KnockdownPosePitchDegrees = 85.0f;
+	constexpr float KnockdownPoseLerpSpeed = 10.0f;
+
+	USkeletalMeshComponent* MeshComponent = GetMesh();
+	if (MeshComponent == nullptr || bDeathCleanupArmed)
+	{
+		return;
+	}
+
+	if (bKnockedDown || bRecovering)
+	{
+		bKnockdownPoseActive = true;
+		const FRotator Current = MeshComponent->GetRelativeRotation();
+		const float TargetPitch = bKnockedDown ? KnockdownPosePitchDegrees : 0.0f;
+		const float NewPitch = FMath::FInterpTo(Current.Pitch, TargetPitch, DeltaSeconds, KnockdownPoseLerpSpeed);
+		MeshComponent->SetRelativeRotation(FRotator(NewPitch, Current.Yaw, Current.Roll));
+	}
+	else if (bKnockdownPoseActive)
+	{
+		// Free edge: restore the template baseline (0, -90, 0) exactly once.
+		bKnockdownPoseActive = false;
+		const FRotator Current = MeshComponent->GetRelativeRotation();
+		MeshComponent->SetRelativeRotation(FRotator(0.0f, Current.Yaw, 0.0f));
+	}
 }

@@ -64,6 +64,37 @@ ACombatTestRoomDriver::ACombatTestRoomDriver()
 	PrimaryActorTick.bCanEverTick = false;
 }
 
+void ACombatTestRoomDriver::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// M5-018C: the runtime spawn wiring the M5-018A suites never exercised
+	// (they called SpawnTargets on a bare NewObject, so the placed map driver
+	// stayed inert and the real room held only the copied ResourcePreview
+	// static prop). Load failures are loud Warnings; the room stays empty and
+	// never fabricates a stand-in target.
+	UWorld* WorldPtr = GetWorld();
+	if (WorldPtr == nullptr)
+	{
+		UE_LOG(LogTemp, Warning,
+			TEXT("UEMMO ACombatTestRoomDriver: no world at BeginPlay; no targets spawn."));
+		return;
+	}
+	FString Error;
+	if (!LoadConfig(Error))
+	{
+		UE_LOG(LogTemp, Warning,
+			TEXT("UEMMO ACombatTestRoomDriver: the test room config did not load (%s); no targets spawn."),
+			*Error);
+		return;
+	}
+	TArray<FName> MissingIds;
+	const int32 Spawned = SpawnTargets(*WorldPtr, MissingIds);
+	UE_LOG(LogTemp, Display,
+		TEXT("UEMMO ACombatTestRoomDriver: room '%s' spawned %d config target(s), %d id failure(s)."),
+		*Config.RoomId.ToString(), Spawned, MissingIds.Num());
+}
+
 bool ACombatTestRoomDriver::ParseTestRoomConfig(const FString& JsonText, FTestRoomConfig& OutConfig, FString& OutError)
 {
 	OutConfig = FTestRoomConfig();

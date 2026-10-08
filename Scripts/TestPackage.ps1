@@ -525,17 +525,22 @@ if($IncludeReactionScenario) {
 
     # Pass 2: the rendered staged reaction capture in the package. The capture
     # companion (UEMMO.Tasks.M5_018.Reaction.ReactionCapture) reads the real
-    # Data/test_room.json to stage the configured targets. The package ships
-    # self-contained (no Data directory - Pass 1's fallback proof depends on
-    # that), so the harness stages the one config file the capture needs,
-    # verifies the PNGs, and removes the staged copy again in a finally block
-    # (only what it staged - a pre-existing Data directory is left untouched):
-    # the delivered package stays exactly the self-contained build Pass 1 proved.
+    # Data/test_room.json to stage the configured targets. Since M5-018C the
+    # package ships that file as runtime config; older packages without it get
+    # it staged from the repo and removed again in the finally block (only what
+    # the harness staged - the package's own Data content is never touched).
     $PackageDataDir = Join-Path $PackageProject 'Data'
     $RepoDataConfig = Join-Path (Split-Path -Parent $PSScriptRoot) 'Data\test_room.json'
-    if(-not (Test-Path -LiteralPath $RepoDataConfig)) { throw "The capture staging source is missing: $RepoDataConfig" }
-    New-Item -ItemType Directory -Path $PackageDataDir -Force | Out-Null
-    Copy-Item -LiteralPath $RepoDataConfig -Destination (Join-Path $PackageDataDir 'test_room.json') -Force
+    $PackageRoomConfig = Join-Path $PackageDataDir 'test_room.json'
+    if(-not (Test-Path -LiteralPath $PackageRoomConfig)) {
+        if(-not (Test-Path -LiteralPath $RepoDataConfig)) { throw "The capture staging source is missing: $RepoDataConfig" }
+        New-Item -ItemType Directory -Path $PackageDataDir -Force | Out-Null
+        Copy-Item -LiteralPath $RepoDataConfig -Destination $PackageRoomConfig -Force
+        $HarnessStagedConfig = $true
+    }
+    else {
+        $HarnessStagedConfig = $false
+    }
     try {
         $ReactionCaptureDir = Join-Path $PackageProject "Artifacts\Tasks\M5-018\scenario-json\render"
         Invoke-UEProcess $Executable @(
@@ -565,9 +570,10 @@ if($IncludeReactionScenario) {
         }
     }
     finally {
-        $StagedFile = Join-Path $PackageDataDir 'test_room.json'
-        if(Test-Path -LiteralPath $StagedFile) { Remove-Item -LiteralPath $StagedFile -Force }
-        if((Test-Path -LiteralPath $PackageDataDir) -and -not (Get-ChildItem -LiteralPath $PackageDataDir)) { Remove-Item -LiteralPath $PackageDataDir -Force }
+        if($HarnessStagedConfig) {
+            if(Test-Path -LiteralPath $PackageRoomConfig) { Remove-Item -LiteralPath $PackageRoomConfig -Force }
+            if((Test-Path -LiteralPath $PackageDataDir) -and -not (Get-ChildItem -LiteralPath $PackageDataDir)) { Remove-Item -LiteralPath $PackageDataDir -Force }
+        }
     }
     [ordered]@{
         success = $true
@@ -577,7 +583,7 @@ if($IncludeReactionScenario) {
         passed = $ReactionParsed.Passed
         failed = $ReactionParsed.Failed
         incomplete = $ReactionParsed.Incomplete
-        captureConfig = 'Data/test_room.json staged from the repo for the capture pass, removed after (the package ships self-contained)'
+        captureConfig = if($HarnessStagedConfig) { 'Data/test_room.json staged from the repo for the capture pass, removed after' } else { 'Data/test_room.json ships inside the package (M5-018C)' }
         screenshots = @($ReactionCaptures.Values)
     } | ConvertTo-Json
 }

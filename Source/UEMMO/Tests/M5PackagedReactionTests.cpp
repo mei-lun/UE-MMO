@@ -1,16 +1,19 @@
 // M5-018B: the packaged Segment-A reaction evidence. These tests run inside
 // the packaged executable (Development builds ship the automation code) and
 // pin what the PACKAGE guarantees:
-// - the reward source fallback holds without the dev Data/ directory (the
-//   loader refuses, the mirrored starter table still rolls a real reward);
+// - the reward source fallback holds without the dev Data/drops.json source
+//   (the loader refuses, the mirrored starter table still rolls a real reward);
 // - the reaction chain flows the real entry against a real spawned enemy
 //   (the cooked DA_ definitions, the M5-012 unified entry, the victim's own
 //   health);
 // - the reaction presentation dispatch resolves the COOKED RCT_Hit montage
 //   (the M5-017 mapping works against cooked assets, not just the editor).
 // The fallback test is packaged-environment-conditional: in a development run
-// (the dev Data/ directory present) it degrades to an informational skip, so
-// the full editor suite stays green while the packaged run carries the proof.
+// (the dev Data/drops.json source present) it degrades to an informational
+// skip, so the full editor suite stays green while the packaged run carries
+// the proof. M5-018C: the proof checks drops.json specifically, not the Data
+// directory - the packaged test room legitimately ships Data/test_room.json
+// as runtime config, and that must not degrade the reward-fallback proof.
 
 #include "Misc/AutomationTest.h"
 #include "UObject/UObjectGlobals.h"
@@ -42,7 +45,11 @@ namespace UE::UEMMO::Tasks::M5_018B
 {
 	static bool M5_018B_DevDataDirectoryPresent()
 	{
-		return FPaths::DirectoryExists(FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / TEXT("Data")));
+		// M5-018C: the dev DROPS SOURCE (drops.json), not the whole Data
+		// directory - the packaged test room legitimately ships
+		// Data/test_room.json as runtime config, which must not flip this
+		// predicate and degrade the reward-fallback proof.
+		return FPaths::FileExists(FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / TEXT("Data") / TEXT("drops.json")));
 	}
 
 }
@@ -65,7 +72,7 @@ bool FUEMMOTasksM5_018BPackagedReactionEvidence::RunTest(const FString& Paramete
 		return true;
 	}
 	const bool bDevDataPresent = M5_018B_DevDataDirectoryPresent();
-	AddInfo(FString::Printf(TEXT("the run carries the dev Data/ directory: %s"),
+	AddInfo(FString::Printf(TEXT("the run carries the dev drops source (Data/drops.json): %s"),
 		bDevDataPresent ? TEXT("true (development run - the fallback assertion degrades to a skip)") : TEXT("false (packaged run - the fallback assertion carries the proof)")));
 
 	// 1. The reward source fallback (packaged-only): the loader refuses, the
@@ -81,7 +88,7 @@ bool FUEMMOTasksM5_018BPackagedReactionEvidence::RunTest(const FString& Paramete
 		}
 		else
 		{
-			TestFalse("the packaged run refuses the drops source (no Data directory)", bLoaded);
+			TestFalse("the packaged run refuses the drops source (no Data/drops.json)", bLoaded);
 			FDropTable Table = MakeStarterDropTable();
 			FItemDefinitionCatalog Catalog;
 			FItemDefinition Sword;
