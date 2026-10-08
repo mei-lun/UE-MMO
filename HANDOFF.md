@@ -1,17 +1,18 @@
 # 最近一轮交接
 
-## 本轮：批次73——M5-021、M5-020 完成，B 段继续（进行中 2/3）
+## 本轮：批次73——M5-021、M5-020、M5-022 完成，B 段武器组件事务面成型
 
-- Owner：ZCode-20260925-A（续接批次 72 后用户指令「继续执行」，B 段连续执行中）。时间：2026-10-08T14:40:00+08:00 起；分支 main。
-- 本批已完成：**2**（M5-021、M5-020）。任务板 valid=True，total=166，**DONE=128**，TODO=36，IN_PROGRESS=0。M5 计划 **27/63**。上批明细见 [批次72交接](Docs/Tasks/Handoffs/2026-10-08-ZCode-20260925-A-batch72.md)。
+- Owner：ZCode-20260925-A（续接批次 72 后用户指令「继续执行」，B 段连续执行中，本轮满 3 项为正式批次交接；用户指令为连续执行，下一批继续）。时间：2026-10-08T14:40:00+08:00 起至 16:40:00+08:00；分支 main。
+- 本批已完成：**3**（M5-021、M5-020、M5-022）。任务板 valid=True，total=166，**DONE=129**，TODO=35，IN_PROGRESS=0。M5 计划 **28/63**。上批明细见 [批次72交接](Docs/Tasks/Handoffs/2026-10-08-ZCode-20260925-A-batch72.md)，本批明细见 [批次73交接](Docs/Tasks/Handoffs/2026-10-08-ZCode-20260925-A-batch73.md)。
 - **M5-021**（实现提交 1eb7277，报告 [M5-021](Docs/Tasks/Reports/M5-021.md)）：弹药账本纯值类型 `FAmmoModel`（Weapons/AmmoModel.h/.cpp）——每实例弹匣按 ItemInstanceId 键控、共享备弹池按 AmmoId 键控、两阶段装填事务（BeginReload 只开窗不动弹、CompleteReload 原子转移 granted=min(capacity−loaded, reserve)、CancelReload 只关窗）；14+1 类显式拒绝枚举，任何拒绝不改状态；红 0/8→绿 8/8，全量 **663/663**。
 - **M5-020**（实现提交 2dc84af，报告 [M5-020](Docs/Tasks/Reports/M5-020.md)）：生产 Catalog 挂载与装备切换 `UWeaponComponent`（Weapons/WeaponComponent.h/.cpp）——MountCatalogs 构建校验+错误锁存、ApplyEquippedWeapon 先拆旧绑再绑新实例（unbind 停泊/关窗不转移/generation 自增）、拒绝序 CatalogUnavailable→BindingRefused→UnsupportedMeleeAttackSet（近战四招全集校验）→AmmoUnavailable；惰性弹药供给（池空启动不发弹、实弹匣空启动）；角色接线 BeginPlay/TryEquipStatBonus 尾部/死亡/复活重置；红 1/7→绿 7/7，全量 **670/670**。
-- 证据：`Artifacts/Tasks/M5-021/`（红 14-43-35 / 绿 14-45-26 / 全量 14-45-53，均 +0800）；`Artifacts/Tasks/M5-020/`（红 15-25-13 / 绿 15-37-22 / 全量 15-37-56，均 +0800）。
+- **M5-022**（实现提交 d8fb6c1，报告 [M5-022](Docs/Tasks/Reports/M5-022.md)）：单发准入与原子扣弹（组件开火事务）——`TryFire(FFireIntent)` 有序门链（目录→绑定→死亡→菜单→受击→装填窗→冷却→在飞→意图身份→空弹匣→定义解析）→ `IFirePolicy` 容量预留 → 一次守卫扣弹（019 `SetInstanceRounds`）→ 公共 ActionSequence 分配（010 `FireRegistry`，方案 A 自有 fire 注册表；分配失败回滚扣弹）；`FFireOutcome`/`EFireReject` 15 值只增、`FShotContext` 全量快照 + `OnShotCommitted` 委托；组件级换弹封装（`BeginReload/CompleteReload/CancelReload`）逐轮虚拟槽把 021 授予量回填 019 火书；死亡/拆绑作废在飞、释放策略预留；`SingleFirePolicy` 首策略（半自动单射线，仅 hitscan）；红 6/6（桩全拒绝）→绿 6/6，全量 **676/676**。
+- 证据：`Artifacts/Tasks/M5-021/`（红 14-43-35 / 绿 14-45-26 / 全量 14-45-53，均 +0800）；`Artifacts/Tasks/M5-020/`（红 15-25-13 / 绿 15-37-22 / 全量 15-37-56，均 +0800）；`Artifacts/Tasks/M5-022/`（红 16-21-31 / 绿 16-29-25 / 全量 16-30-08，均 +0800）。
 
 ## 下一步（接手者从这里继续）
 
-- **M5-022（开火调度接线，消费 020 组件 + 021 模型 + 010）已 Ready**，是当前唯一 Ready 项；本会话正继续领取（批次 73 第 3 项）。
-- 已知非阻塞限制（带入 B 段备忘）：倒地为占位姿势（无动画资产）；`DA_<AttackId>` GC 后查找失败仅影响蒙太奇播放速率（表现层回退，非伤害根因），M5-020A 谱系可消除；019 映射字段目前定义侧承载，items.json 源表字段归 005/020A 谱系（生产 items.json 无 weapon_definition_id → 生产武器绑定显式拒绝，不是假成功）；021/020 备弹补给来源/初始库存规则不在模型内（实弹匣空启动），归后续任务与 046 谱系。
+- **Ready: M5-023（连发策略）、M5-024（投射物）、M5-025（散射/多弹丸）**——均通过 `SetFirePolicy` 注册各自策略文件（`Weapons/FirePolicies/`），分文件扩展不相交；023/024/025 消费 022 的 `IFirePolicy` 挂点与 `FShotContext`。用户指令为连续执行，下一批继续按 Ready 顺序领取。
+- 已知非阻塞限制（带入 B 段备忘）：倒地为占位姿势（无动画资产）；`DA_<AttackId>` GC 后查找失败仅影响蒙太奇播放速率（表现层回退，非伤害根因），M5-020A 谱系可消除；019 映射字段目前定义侧承载，items.json 源表字段归 005/020A 谱系（生产 items.json 无 weapon_definition_id → 生产武器绑定显式拒绝，不是假成功）；021/020 备弹补给来源/初始库存规则不在模型内（实弹匣空启动）；022 逐轮虚拟槽残留记录与防御分支（AmmoWriteFailed 等）见 [M5-022 报告](Docs/Tasks/Reports/M5-022.md)「限制与移交」，归 027/033 知悉；生产输入/HUD/菜单/受击门真实接线归 M5-033/034。
 
 ## 项目当前状态
 
@@ -22,7 +23,7 @@
 | M2 | 刷怪房：敌人 AI/波次/会话/失败重试/退出/L_CombatRoom01 | M2-001..017 全 DONE |
 | M3 | 成长：装备/背包/穿脱/等级/掉落/领奖/存档 A/B 槽/地图菜单/操作日志 | M3-001..032 全 DONE |
 | M4 | 服务端接入 | M4-000 DEFERRED（待用户提供协议信息） |
-| M5 | 数据驱动战斗扩展（A 配置受击 → B 武器投射物 → C 载具 → D 成长发布） | **27/63 DONE**（000..018C、H01、019、020、020A、021、052）；B 段进行中，Ready: 022 |
+| M5 | 数据驱动战斗扩展（A 配置受击 → B 武器投射物 → C 载具 → D 成长发布） | **28/63 DONE**（000..018C、H01、019、020、020A、021、022、052）；B 段进行中，Ready: 023/024/025 |
 | 人工关卡 | M0-H01 REVIEW；M2-H01/M3-H01/M5-H02..H04 待用户 | AI 不得代签；M5-H01 已签（2026-10-08） |
 
 ## 交付物
@@ -31,14 +32,14 @@
 - **M3 完整包（最新全内容旧包）**：`Artifacts\Package\Windows\UEMMO.exe`（929MB，2026-09-30；离屏冒烟 success/rendering=true 实测可启动）。进刷怪房：exe 加参数 `/Game/UEMMO/Maps/L_CombatRoom01`。
 - **综合验收入口（用户从这里开始）**：`Docs/07-综合验收摘要.md`。M5 新内容不在旧包内；A 段完成时按 M5-018B 另出独立段包。
 
-## 最新集成验证（批次72，2026-10-08）
+## 最新集成验证（批次73，2026-10-08）
 
-- Build exit 0；编辑器全量自动化 **648/648**（含 M5-018C 新用例：DriverBeginPlaySpawnsTargets 等）；地图 build 移除假靶 1 个 → verify 新进程通过。
-- v5 独立包（`Artifacts/Package/M5A-2026-10-08-v5`）：BUILD SUCCESSFUL；M0 冒烟 + 包内 reaction-scenario 1/1；截图人工确认试验房三配置靶带血条在场；**用户试玩验收通过（M5-H01 DONE）**。
+- Build exit 0；编辑器全量自动化 **676/676**（670 + M5-022 新增 6 用例）。
 - M5-019：Build Succeeded；定向 7/7（红 1/7 先行）；全量 **655/655**；实现提交 238aa9f。
 - M5-021：Build Succeeded；定向 8/8（红 0/8 先行）；全量 **663/663**；实现提交 1eb7277。
 - M5-020：Build Succeeded；定向 7/7（红 1/7 先行）；全量 **670/670**；实现提交 2dc84af。
-- CheckTaskBoard valid=True，DONE=128，IN_PROGRESS=0，Ready: M5-022。
+- M5-022：Build Succeeded；定向 6/6（红 6/6 桩全拒绝先行）；全量 **676/676**；实现提交 d8fb6c1。
+- CheckTaskBoard valid=True，DONE=129，IN_PROGRESS=0，Ready: M5-023、M5-024、M5-025。
 
 ## 流程要点（给下一个 AI）
 
