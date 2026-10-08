@@ -1,10 +1,11 @@
 # 最近一轮交接
 
-## 本轮：批次75——B 段投射物组进行中（进行中 1/3）
+## 本轮：批次75——B 段投射物组进行中（进行中 2/3）
 
 - Owner：ZCode-20260925-A（续接批次 74 后用户指令「继续执行」，B 段连续执行中）。时间：2026-10-08T16:45:00+08:00 起；分支 main。
-- 本批已完成：**1**（M5-026）。批次 74 已满 3 项正式交接（M5-023/024/025），明细见 [批次74交接](Docs/Tasks/Handoffs/2026-10-08-ZCode-20260925-A-batch74.md)。任务板 valid=True，total=166，**DONE=133**，TODO=31，IN_PROGRESS=0。M5 计划 **32/63**。
-- 本批成果（全量基线 **700/700**）：
+- 本批已完成：**2**（M5-026、M5-027）。批次 74 已满 3 项正式交接（M5-023/024/025），明细见 [批次74交接](Docs/Tasks/Handoffs/2026-10-08-ZCode-20260925-A-batch74.md)。任务板 valid=True，total=166，**DONE=134**，TODO=30，IN_PROGRESS=0。M5 计划 **33/63**。
+- 本批成果（全量基线 **706/706**）：
+  - **M5-027**（402a91d）：投射物生成与生命周期 `FProjectileWorldService` + `ACombatProjectile`（Projectiles/CombatProjectile.h/.cpp、ProjectileWorldService.h/.cpp）——预留/提交两段事务（Reserve 校验+铸身份零 spawn → Commit 经 `IProjectileSpawner` 逐 pellet 生成，任一失败销毁已准备 actor 落 Failed，全有或全无无半串）；拒绝序 NullWorld→InvalidShotContext→**StaleEpoch（旧代 shot 从不铸 reservation）**→PelletCountMismatch→InvalidPelletDirection→InvalidOrigin→InvalidDefinition→CapacityFull(256)；`BeginNextWorldEpoch` 销毁全部 live actor 回基线 0（地图卸载/房间退出/重试统一面）+ 跨代持有 reservation commit 拒绝；超时=引擎 LifeSpan（Pause 冻结世界钟）由 commit 盖 LifetimeS；Actor 单运动源（无 Tick、恰 1 UProjectileMovementComponent）；provenance 纯值透传无源 JSON。红 6/6→绿 6/6（中间 18-23-33 一次 5/6：测试旧 Epoch 段设计与服务语义矛盾，修正为 StaleEpoch 命名拒绝+跨代 commit 拒绝两段语义，报告已如实记录），全量 706/706；证据 `Artifacts/Tasks/M5-027/`（红 18-21-22 / 绿 18-30-30 / 全量 18-30-51，+0800）。
   - **M5-026**（7bb8817）：射线武器三维命中 `ExecuteHitscan`（Projectiles/HitscanExecutor.h/.cpp）——committed Shot + 025 pellet 几何 → 每 pellet `LineTraceMultiByObjectType`（按 Distance 排序，最近候选先决策）；过滤面 = 发射者永不（ignore actor）、同 faction 注册体按 `bFriendliesBlockShot` 挡/穿、未注册体（墙/环境）按 `bUnregisteredActorsBlockShot` 挡/穿；命中装配完整五元组 Key 的 `FUnifiedHitRequest`（TargetReaction 读目标 `UCombatComponent::GetTargetReactionPolicy()`）→ `ApplyUnifiedHit`；11 个命名拒绝先于首次 trace；零 spawn、零直触 HealthComponent。新注入面 `IHitscanTargetIdentity`（Actor→EntityId，010 注册表无反查面且禁改公共服务）。红 6/6→绿 6/6，全量 700/700；证据 `Artifacts/Tasks/M5-026/`（红 18-02-58 / 绿 18-06-37 / 全量 18-06-54，+0800）。
 - 批次 74 成果摘要（全量基线 **694/694**）：
   - **M5-023**（f8bf518）：连射节流与松键停止 `FAutomaticFirePolicy`——按住连射按配置间隔（30/60/120FPS 计数均在区间边界内）；每帧最多一发；长卡顿只补 1 发；暂停冻结零发零扣；HitStop 不在火路径；松键/换弹零残留；策略无自有时钟（读 `FShotContext::CommittedAtSeconds`）；间隔 0 让位组件冷却、正值为更严层；红 6/6→绿 6/6，全量 682/682。
@@ -14,8 +15,8 @@
 
 ## 下一步（接手者从这里继续）
 
-- **Ready: M5-027（投射物 Actor 生成与预留事务）**——026..032 归 Projectiles/* 谱系，消费 004 的 `FProjectileDefinition` 与 022 的事务门链。用户指令为连续执行，本批按 Ready 顺序领取（批次 75 第 2 项）。
-- 已知非阻塞限制（带入 B 段备忘）：023/024/025/026 生产接线（策略注册、burst/interval 取值、`CancelPendingBurst`、`PlanShotPattern` 调用点/socket 解析/seed 派生、`ExecuteHitscan` 调用点与 `IHitscanTargetIdentity` 生产实现）归 M5-033/027 谱系；桩期测试禁裸索引（先 guard 再索引，M5-025 踩坑）；其余同批次 74/73 备忘（倒地占位姿势、items.json 源表字段归 005/020A、021 备弹补给规则、022 虚拟槽语义归 027/033）。
+- **Ready: M5-028（直线运动与高速连续碰撞，LinearProjectilePolicy）**——028 才冻结 029..032 的运动/命中策略接口；消费 027 的 `ACombatProjectile`/`FProjectileWorldService`/`IProjectileSpawner`。用户指令为连续执行，本批按 Ready 顺序领取（批次 75 第 3 项）。
+- 已知非阻塞限制（带入 B 段备忘）：023/024/025/026/027 生产接线（策略注册、burst/interval 取值、`CancelPendingBurst`、`PlanShotPattern` 调用点/socket 解析/seed 派生、`ExecuteHitscan` 调用点与 `IHitscanTargetIdentity` 生产实现、`IProjectileSpawner` 生产实现与 Reserve/Commit 调用点）归 M5-028/033 谱系；桩期测试禁裸索引（先 guard 再索引，M5-025 踩坑）；UHT 不接受含非反射 typedef 的 USTRUCT——跨系统上下文快照用普通 C++ 值结构（M5-027 踩坑）；其余同批次 74/73 备忘（倒地占位姿势、items.json 源表字段归 005/020A、021 备弹补给规则、022 虚拟槽语义归 027/033）。
 
 ## 项目当前状态
 
@@ -26,7 +27,7 @@
 | M2 | 刷怪房：敌人 AI/波次/会话/失败重试/退出/L_CombatRoom01 | M2-001..017 全 DONE |
 | M3 | 成长：装备/背包/穿脱/等级/掉落/领奖/存档 A/B 槽/地图菜单/操作日志 | M3-001..032 全 DONE |
 | M4 | 服务端接入 | M4-000 DEFERRED（待用户提供协议信息） |
-| M5 | 数据驱动战斗扩展（A 配置受击 → B 武器投射物 → C 载具 → D 成长发布） | **32/63 DONE**（000..018C、H01、019、020、020A、021..026、052）；B 段进行中，Ready: 027 |
+| M5 | 数据驱动战斗扩展（A 配置受击 → B 武器投射物 → C 载具 → D 成长发布） | **33/63 DONE**（000..018C、H01、019、020、020A、021..027、052）；B 段进行中，Ready: 028 |
 | 人工关卡 | M0-H01 REVIEW；M2-H01/M3-H01/M5-H02..H04 待用户 | AI 不得代签；M5-H01 已签（2026-10-08） |
 
 ## 交付物
@@ -37,10 +38,11 @@
 
 ## 最新集成验证（批次75进行中，2026-10-08）
 
-- Build exit 0；编辑器全量自动化 **700/700**（694 + M5-026 新增 6 用例）。
+- Build exit 0；编辑器全量自动化 **706/706**（700 + M5-027 新增 6 用例）。
+- M5-027：Build Succeeded；定向 6/6（红 6/6 桩全拒绝先行，中间 18-23-33 一次 5/6 测试修正已记录）；全量 **706/706**；实现提交 402a91d。
 - M5-026：Build Succeeded；定向 6/6（红 6/6 桩全拒绝先行）；全量 **700/700**；实现提交 7bb8817。
 - 批次 74 收口：M5-021（1eb7277，663/663）、M5-020（2dc84af，670/670）、M5-022（d8fb6c1，676/676）、M5-023（f8bf518，682/682）、M5-024（49f7f82，688/688）、M5-025（eaf2f3b，694/694）全 DONE。
-- CheckTaskBoard valid=True，DONE=133，IN_PROGRESS=0，Ready: M5-027。
+- CheckTaskBoard valid=True，DONE=134，IN_PROGRESS=0，Ready: M5-028。
 
 ## 流程要点（给下一个 AI）
 
