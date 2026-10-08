@@ -6,6 +6,8 @@
 #include "Combat/CombatComponent.h"
 #include "Combat/CombatPresentationComponent.h"
 #include "Combat/HealthComponent.h"
+#include "Combat/Data/CombatDataTableParser.h"
+#include "Combat/System/TestRoomConfigDriver.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/GameInstance.h"
@@ -19,12 +21,14 @@
 #include "InputActionValue.h"
 #include "InputMappingContext.h"
 #include "InputModifiers.h"
+#include "Items/ItemInstance.h"
 #include "Logging/OperationLogSubsystem.h"
 #include "PrototypeHUD.h"
 #include "Profile/ProfileSubsystem.h"
 #include "Room/RoomSessionSubsystem.h"
 #include "Room/TrainingResetService.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Weapons/WeaponComponent.h"
 
 using namespace UE::UEMMO::Tasks::M1_029;
 
@@ -156,6 +160,9 @@ APrototypeCharacter::APrototypeCharacter()
     // (after the catalog is attached) because the presenter needs the exact
     // UCombatComponent instance this pawn ticks.
     CombatPresentation = CreateDefaultSubobject<UCombatPresentationComponent>(TEXT("CombatPresentation"));
+    // M5-020: the production weapon mount (session binding registry + ammo
+    // model + the catalogs mounted in BeginPlay).
+    WeaponMount = CreateDefaultSubobject<UWeaponComponent>(TEXT("WeaponMount"));
 }
 
 void APrototypeCharacter::BeginPlay()
@@ -250,6 +257,12 @@ void APrototypeCharacter::BeginPlay()
     {
         Health->ResetHealth();
     }
+    // M5-020: the equipment load point (interface contract section 7: the
+    // WeaponComponent re-binds at pawn BeginPlay / map travel). Resolves the
+    // equipped weapon slot through the local HUD's real equipment model; a
+    // bare world (no HUD/profile) skips silently - an unbound mount, never a
+    // fake bind.
+    RefreshWeaponMountFromEquipment();
     // M3-010: the run-start hook. One accepted StartRoom (the "enter the
     // dungeon" moment, also the re-entry after LeaveRoom) re-loads the fresh
     // snapshot and restores the pool to the CURRENT max - a new run always
@@ -305,6 +318,14 @@ void APrototypeCharacter::HandlePlayerDied()
         Combat->SetDead(true);
         Combat->CancelCurrentAttack(FName(TEXT("PlayerDied")));
     }
+    // M5-020: the death teardown of the weapon mount - the open reload window
+    // closes without transferring rounds and pending fire/reload callbacks
+    // lose their effect (generation bump). The binding identity survives: the
+    // unified reset re-applies the equipment and restores the parked magazine.
+    if (WeaponMount != nullptr)
+    {
+        WeaponMount->NotifyOwnerDied();
+    }
     // Minimal death presentation: drop any running montage and detach the
     // locomotion AnimBP so the death pose is not overridden by idle/walk
     // blending (the mesh rests in its last pose). The unified reset
@@ -353,7 +374,181 @@ bool APrototypeCharacter::TryEquipStatBonus(const FItemStats& NewEquippedBonus)
     // no-heal clamp - an equipment change NEVER restores lost health.
     Profile->SetEquippedStatBonus(NewEquippedBonus);
     ApplyProfileFinalStats();
+    // M5-020: the equipment-changed hook. This entry is the production
+    // equip/unequip push (the HUD flow calls it after the slot mapping moved),
+    // so every accepted change re-loads the weapon mount from the real
+    // equipment model. The Running gate above already guaranteed the
+    // no-combat-unequip rule for both the stats and the mount. A refused
+    // re-load logs its named reason and leaves the previous binding torn down
+    // or kept exactly as the component decides - never a silent half state.
+    RefreshWeaponMountFromEquipment();
     return true;
+}
+
+bool APrototypeCharacter::EnsureWeaponCatalogsMounted()
+{
+    if (bWeaponCatalogsBuilt)
+    {
+        return bWeaponCatalogsMounted;
+    }
+    bWeaponCatalogsBuilt = true;
+
+    // The combat catalog: the six Data/CombatSystem source tables through the
+    // M5-005 loader, adapted into the M5-007 candidate struct (the M5-009
+    // recomputation pattern) and built once per pawn. The cross-table
+    // reference gate is deliberately NOT re-run here: it is M5-006's release
+    // gate against the shipped sample-table gap (a recorded divergence), so
+    // the mount gate is the strict per-table parse plus the builder's own
+    // integrity; a per-weapon ammo-kind check happens at bind time instead.
+    FCombatDataTableSet Tables;
+    TArray<FString> LoadProblems;
+    if (!LoadCombatDataDirectory(FPaths::ProjectDir() / TEXT("Data") / TEXT("CombatSystem"), Tables, LoadProblems))
+    {
+        UE_LOG(LogTemp, Warning,
+            TEXT("UEMMO M5-020: the combat source tables are unavailable (%s); weapon firing stays explicitly disabled."),
+            *FString::Join(LoadProblems, TEXT(" | ")));
+        return false;
+    }
+    FParsedCombatConfig Parsed;
+    Parsed.SchemaVersion = 1;
+    for (const TPair<FName, FDamageProfile>& Row : Tables.DamageProfiles)
+    {
+        Parsed.DamageProfiles.Add(Row.Value);
+    }
+    for (const TPair<FName, FAttackReaction>& Row : Tables.AttackReactions)
+    {
+        Parsed.AttackReactions.Add(Row.Value);
+    }
+    for (const TPair<FName, FTargetReaction>& Row : Tables.TargetReactions)
+    {
+        Parsed.TargetReactions.Add(Row.Value);
+    }
+    for (const TPair<FName, FWeaponDefinition>& Row : Tables.Weapons)
+    {
+        Parsed.Weapons.Add(Row.Value);
+    }
+    for (const TPair<FName, FAmmoType>& Row : Tables.AmmoTypes)
+    {
+        Parsed.AmmoTypes.Add(Row.Value);
+    }
+    for (const TPair<FName, FProjectileDefinition>& Row : Tables.Projectiles)
+    {
+        Parsed.Projectiles.Add(Row.Value);
+    }
+    FString BuildErrors;
+    if (!FCombatCatalog::BuildFromParsed(Parsed, WeaponCatalogValue, BuildErrors))
+    {
+        UE_LOG(LogTemp, Warning,
+            TEXT("UEMMO M5-020: the combat catalog build refused (%s); weapon firing stays explicitly disabled."), *BuildErrors);
+        return false;
+    }
+
+    // The item catalog: the production items source (the M5-020A HUD
+    // precedent). No legacy staging fallback here on purpose: a missing or
+    // unparsable source leaves the catalog EMPTY, so every bind refuses with
+    // its named reason ("缺武器不是假成功") instead of binding a stand-in.
+    TArray<FTestRoomItemRow> ItemRows;
+    FString SourceError;
+    if (ACombatTestRoomDriver::LoadProductionItems(ItemRows, SourceError))
+    {
+        for (const FTestRoomItemRow& Row : ItemRows)
+        {
+            FItemDefinition Definition;
+            Definition.DefinitionId = Row.DefinitionId;
+            Definition.DisplayName = Row.DisplayName;
+            Definition.Slot = Row.Slot == TEXT("Weapon") ? EItemSlot::Weapon
+                : Row.Slot == TEXT("Armor") ? EItemSlot::Armor
+                : Row.Slot == TEXT("Accessory") ? EItemSlot::Accessory
+                : EItemSlot::Weapon;
+            Definition.BaseStats.Attack = Row.Attack;
+            Definition.BaseStats.Defense = Row.Defense;
+            Definition.BaseStats.MaxHP = Row.MaxHP;
+            Definition.Rarity = static_cast<EItemRarity>(FMath::Clamp(Row.Rarity, 1, 3));
+            // WeaponDefinitionId stays None: the shipped items source carries
+            // no weapon mappings yet (the M5-019 report records the table
+            // carrier of that field as future lineage work).
+            FString AddError;
+            if (!WeaponItemCatalogValue.AddDefinition(Definition, &AddError))
+            {
+                UE_LOG(LogTemp, Warning, TEXT("UEMMO M5-020: item definition '%s' refused (%s)."),
+                    *Row.DefinitionId.ToString(), *AddError);
+            }
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning,
+            TEXT("UEMMO M5-020: the items source is unavailable (%s); weapon binds refuse with their named reason."), *SourceError);
+    }
+
+    FString MountError;
+    bWeaponCatalogsMounted = (WeaponMount != nullptr)
+        && WeaponMount->MountCatalogs(&WeaponCatalogValue, &WeaponItemCatalogValue, &MountError);
+    if (!bWeaponCatalogsMounted)
+    {
+        UE_LOG(LogTemp, Warning,
+            TEXT("UEMMO M5-020: the weapon catalog mount refused (%s); firing stays explicitly disabled."), *MountError);
+    }
+    return bWeaponCatalogsMounted;
+}
+
+bool APrototypeCharacter::RefreshWeaponMountFromEquipment()
+{
+    UWeaponComponent* Mount = GetWeaponMount();
+    if (Mount == nullptr)
+    {
+        return false;
+    }
+    // The real equipment model lives on the local HUD (the M3-012 production
+    // flow maps the slots there and pushes the stat row through
+    // TryEquipStatBonus, whose accepted tail re-enters here). No HUD (bare
+    // test worlds) or no profile: skip - an unbound mount, never a fake bind.
+    const APlayerController* LocalController = Cast<APlayerController>(GetController());
+    const APrototypeHUD* Hud = (LocalController != nullptr) ? Cast<APrototypeHUD>(LocalController->GetHUD()) : nullptr;
+    UProfileSubsystem* Profile = ProfilePtr.Get();
+    if (Hud == nullptr || Profile == nullptr || !Profile->HasProfile())
+    {
+        UE_LOG(LogTemp, Verbose, TEXT("UEMMO M5-020: weapon mount refresh skipped (no local HUD or profile yet)."));
+        return false;
+    }
+    // The session catalogs (built from the production sources once; a failure
+    // latches the mount's explicit disable state, so the apply below refuses
+    // with its named reason instead of binding a fallback).
+    EnsureWeaponCatalogsMounted();
+
+    const FGuid* EquippedId = Hud->PeekInventoryEquipment().GetEquippedId(EItemSlot::Weapon);
+    const FItemInstance* WeaponInstance = nullptr;
+    if (EquippedId != nullptr)
+    {
+        for (const FItemInstance& Instance : Profile->GetInventory().GetAll())
+        {
+            if (Instance.InstanceId == *EquippedId)
+            {
+                WeaponInstance = &Instance;
+                break;
+            }
+        }
+        if (WeaponInstance == nullptr)
+        {
+            // A dangling slot mapping (the inventory lost the instance behind
+            // the equipment's back): apply the explicit no-weapon state.
+            UE_LOG(LogTemp, Warning,
+                TEXT("UEMMO M5-020: the equipped weapon instance '%s' is not in the inventory; the mount applies no-weapon."),
+                *EquippedId->ToString());
+        }
+    }
+    const FWeaponMountOutcome Outcome = Mount->ApplyEquippedWeapon(WeaponInstance);
+    if (!Outcome.bSucceeded)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UEMMO M5-020: the weapon mount refused the equipped item (reason %d): %s"),
+            static_cast<int32>(Outcome.Reject), *Outcome.RejectDetail);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Display, TEXT("UEMMO M5-020: weapon mount applied (bound=%d, revision=%s, generation=%llu)."),
+            Outcome.bWeaponBound ? 1 : 0, *Mount->GetMountedRevision(), Mount->GetBindingGeneration());
+    }
+    return Outcome.bSucceeded;
 }
 
 void APrototypeCharacter::ApplyProfileFinalStats()
@@ -734,6 +929,15 @@ void APrototypeCharacter::ApplyTrainingRoomReset()
         Combat->ResetCombat();
         Combat->SetDead(false);
     }
+    // M5-020: the revive re-entry. The death teardown closed the reload window
+    // and voided the pending callbacks; the re-applied equipment load restores
+    // the binding identity with its parked magazine (switching/rebinding never
+    // initializes new ammo) and re-opens firing for a bound ranged weapon.
+    if (WeaponMount != nullptr)
+    {
+        WeaponMount->NotifyOwnerRevived();
+    }
+    RefreshWeaponMountFromEquipment();
     if (USkeletalMeshComponent* MeshComponent = GetMesh())
     {
         if (SavedAnimInstanceClass != nullptr)

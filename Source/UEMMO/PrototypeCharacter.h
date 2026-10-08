@@ -4,6 +4,10 @@
 #include "GameFramework/Character.h"
 #include "Character/PlanarMovement.h"
 #include "Combat/CombatInputBuffer.h"
+// M5-020: the pawn owns the session catalog VALUES the weapon component mounts
+// (non-owning pointers there), so the full value types are needed here.
+#include "Combat/Data/CombatCatalog.h"
+#include "Items/ItemDefinition.h"
 #include "PrototypeCharacter.generated.h"
 
 class USideViewCameraComponent;
@@ -13,10 +17,12 @@ class UHealthComponent;
 class UProfileSubsystem;
 class URoomSessionSubsystem;
 class UTrainingResetService;
+class UWeaponComponent;
 class UInputAction;
 class UInputMappingContext;
 struct FInputActionValue;
 struct FItemStats;
+struct FWeaponMountOutcome;
 
 /** Broadcast exactly once per player death lifecycle, when the health pool dies. */
 DECLARE_MULTICAST_DELEGATE(FOnPlayerDied);
@@ -139,6 +145,28 @@ public:
     int32 GetSkillSlotPressCount(int32 SlotIndex) const;
 
     /**
+     * M5-020: the production weapon mount (M5 interface contract section 1,
+     * owner 019..025). BeginPlay and every accepted equipment push re-resolve
+     * the equipped weapon-slot item through it; the M5-022 fire scheduling and
+     * the M5-043 vehicle mount consume the same component later.
+     */
+    UWeaponComponent* GetWeaponMount() const { return WeaponMount; }
+
+    /**
+     * M5-020: the equipment-changed re-entry - re-resolves the equipped
+     * weapon-slot item from the local HUD's real equipment model and applies
+     * it to the weapon mount (an empty slot applies the explicit "no weapon"
+     * state). Called by BeginPlay (the map-travel rebind point), by the
+     * accepted tail of TryEquipStatBonus (the production equip/unequip push,
+     * so every equipment change re-loads the mount) and by the unified reset.
+     * False (and no state change) without a HUD or a profile - a bare test
+     * world keeps an unbound mount, never a fake bind. The production item
+     * source carries no weapon mappings yet (the M5-019 lineage), so a
+     * production equip is an explicit named refusal until that table lands.
+     */
+    bool RefreshWeaponMountFromEquipment();
+
+    /**
      * M1-040: the eight runtime skill-slot actions in slot order (index 0 is
      * slot 1 = Q, index 7 is slot 8 = F), read-only for the automation tests'
      * mapping-table assertions.
@@ -199,6 +227,17 @@ private:
      * ordinary equipment changes never heal.
      */
     void HandleRoomRunStarted();
+    /**
+     * M5-020: builds the session catalog values once (the combat catalog from
+     * the six Data/CombatSystem source tables via the M5-005 loader and the
+     * M5-007 builder; the item catalog from the production items source) and
+     * mounts them into the weapon component. Only reached with a HUD and a
+     * profile present (bare test worlds never parse anything). Any failure
+     * (missing source, parse/build/mount refusal) latches the component's
+     * explicit catalog-error state: firing stays disabled, never a fallback
+     * weapon. Idempotent: the second call returns the first result.
+     */
+    bool EnsureWeaponCatalogsMounted();
     // M1-012: builds the mapping context and actions exactly once (guarded by
     // Mapping != nullptr); re-setup (re-possess) reuses them.
     void EnsureCombatInputActions();
@@ -223,6 +262,9 @@ private:
     // M1-032: owns attack montage playback; follows Combat's
     // Started/Finished events plus a per-tick snapshot fallback.
     UPROPERTY(VisibleAnywhere) TObjectPtr<UCombatPresentationComponent> CombatPresentation;
+    // M5-020: the production weapon mount (session binding registry + ammo
+    // model + mounted catalogs live inside).
+    UPROPERTY(VisibleAnywhere) TObjectPtr<UWeaponComponent> WeaponMount;
     // M2-004: the pawn's own health pool (MaxHP 100), created as a default
     // subobject exactly like the M2-002 enemies carry theirs. Damage must go
     // through its ApplyDamage; its OnDied event drives HandlePlayerDied.
@@ -258,6 +300,14 @@ private:
     // a game-instance-less pawn - bare test worlds - keeps the component
     // defaults and no equip surface, the documented graceful degradation).
     TWeakObjectPtr<UProfileSubsystem> ProfilePtr;
+    // M5-020: the session catalog VALUES the weapon component mounts (the
+    // component holds non-owning pointers into these; both die with the pawn,
+    // so the pointers cannot dangle). Built lazily by
+    // EnsureWeaponCatalogsMounted exactly once per pawn.
+    FCombatCatalog WeaponCatalogValue;
+    FItemDefinitionCatalog WeaponItemCatalogValue;
+    bool bWeaponCatalogsBuilt = false;
+    bool bWeaponCatalogsMounted = false;
     // M1-029: accumulated planar axis input; applied centrally in Tick.
     UE::UEMMO::Tasks::M1_029::FPlanarAxisState PlanarAxes;
     // M3-023: the move-axis DIRECTION last logged (0 = released). The
