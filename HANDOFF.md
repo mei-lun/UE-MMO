@@ -3,7 +3,7 @@
 ## 本轮：批次72——M5-018C 试验房/受击表现修复链完成，H01 待重测 v5
 
 - Owner：ZCode-20260925-A（本会话接手收尾，M5-H01 四轮试玩反馈驱动 v2→v5 修复）。时间：2026-10-08T09:00:00+08:00 起至 12:00:00+08:00；分支 main。
-- 本批完成：**1**（M5-018C）。任务板 valid=True，total=165，**DONE=124**，TODO=40，IN_PROGRESS=0。M5 计划 **23/63**。明细见 [批次72交接](Docs/Tasks/Handoffs/2026-10-08-ZCode-20260925-A-batch72.md)。
+- 本批完成：**1**（M5-018C）。任务板 valid=True，total=166，**DONE=124**，TODO=40，IN_PROGRESS=0。M5 计划 **23/63**。明细见 [批次72交接](Docs/Tasks/Handoffs/2026-10-08-ZCode-20260925-A-batch72.md)。
 - **M5-018C**（实现提交 113c70d）：试验房驱动器补 BeginPlay 运行时接线（此前自动化直调 SpawnTargets，真实地图从未生成三靶）+ 地图清理 ResourcePreview 假靶道具 + MeleeEnemy 蒙太奇受击/死亡表现（用户 v4 确认可见）+ 落地倒地占位姿势 + MapsToCook/包内真实配置；全量 648/648，v5 包内验证全绿。
 - 证据：`Artifacts/Package/M5A-2026-10-08-v5/`；报告 [M5-018C](Docs/Tasks/Reports/M5-018C.md)、[M5-H01](Docs/Tasks/Reports/M5-H01.md)。
 
