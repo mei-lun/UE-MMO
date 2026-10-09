@@ -87,11 +87,15 @@ struct FAttackReaction
 	EControlPenetration ControlPenetration = EControlPenetration::None;
 };
 
-/** Local validation of one attack reaction (id syntax, enum range). */
+/** Local validation of one attack reaction (id presence, enum range). */
 inline bool ValidateAttackReaction(const FAttackReaction& Reaction, FString& OutErrors)
 {
 	TArray<FString> Problems;
-	if (!IsValidDefinitionIdSyntax(Reaction.ReactionId.ToString()))
+	// The character-set rule lives on the raw JSON string in the parser
+	// (M5-036: FName display casing is not trustworthy in-package); here we
+	// only refuse an absent id (NAME_None displays as the legal-looking
+	// "None", so a syntax check alone would let it through).
+	if (Reaction.ReactionId == NAME_None)
 	{
 		Problems.Add(FString::Printf(TEXT("ReactionId '%s' must be 1..64 characters of a-z, 0-9 and _"),
 			*Reaction.ReactionId.ToString()));
@@ -175,14 +179,18 @@ struct FTargetReaction
 };
 
 /**
- * Local validation of one target reaction policy: id syntax, non-negative
+ * Local validation of one target reaction policy: id presence, non-negative
  * counts and durations, a bounded positive max air time and at least one
  * finite positive launch scale. Collects every problem, joined with "; ".
  */
 inline bool ValidateTargetReaction(const FTargetReaction& Policy, FString& OutErrors)
 {
 	TArray<FString> Problems;
-	if (!IsValidDefinitionIdSyntax(Policy.PolicyId.ToString()))
+	// The character-set rule lives on the raw JSON string in the parser
+	// (M5-036: FName display casing is not trustworthy in-package); here we
+	// only refuse an absent id (NAME_None displays as the legal-looking
+	// "None", so a syntax check alone would let it through).
+	if (Policy.PolicyId == NAME_None)
 	{
 		Problems.Add(FString::Printf(TEXT("PolicyId '%s' must be 1..64 characters of a-z, 0-9 and _"),
 			*Policy.PolicyId.ToString()));

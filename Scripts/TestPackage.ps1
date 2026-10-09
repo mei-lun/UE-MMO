@@ -93,6 +93,13 @@ param(
     # explicit package root (must match the Package.ps1 -PackageRoot used
     # for this package).
     [switch]$IncludeReactionScenario,
+    # M5-036: the Segment-B packaged weapon trial pass. The package ships
+    # its own Data/CombatSystem config (Package.ps1 M5-036 carry), so the
+    # in-package suites prove the production mount, the trial bind/fire and
+    # the inventory door against the package's own tables - no M5 failure
+    # is exempted: this pass runs the gate with an EMPTY allowed-failure
+    # list (the dev-source-JSON validators are not in this filter).
+    [switch]$IncludeWeaponScenario,
     [string]$PackageRoot = '',
     [string]$CombatFilter = 'UEMMO.Tasks',
     [string[]]$DevOnlySourceJsonFilter = @('UEMMO.Tasks.M1_008.', 'UEMMO.Tasks.M2_001.', 'UEMMO.Tasks.M2_005.', 'UEMMO.Tasks.M2_008.', 'UEMMO.Tasks.M3_001.', 'UEMMO.Tasks.M3_007.', 'UEMMO.Tasks.M5_018A.', 'UEMMO.Tasks.M5_020A.'),
@@ -585,5 +592,90 @@ if($IncludeReactionScenario) {
         incomplete = $ReactionParsed.Incomplete
         captureConfig = if($HarnessStagedConfig) { 'Data/test_room.json staged from the repo for the capture pass, removed after' } else { 'Data/test_room.json ships inside the package (M5-018C)' }
         screenshots = @($ReactionCaptures.Values)
+    } | ConvertTo-Json
+}
+
+# M5-036: -IncludeWeaponScenario adds the Segment-B packaged weapon-trial
+# passes after the M0 smoke:
+#   1. in-package weapon automation: UEMMO.Tasks.M5_036.* (the shipped-config
+#      load/build, the production mount + the real bind/fire against the
+#      package's own tables). The gate runs with an EMPTY allowed-failure
+#      list - no M5 failure is exempted; the filter only matches the M5-036
+#      suites, and the dev-source-JSON validator families are not part of it.
+#   2. rendered trial capture: the packaged exe with -RenderOffscreen runs
+#      UEMMO.Tasks.M5_036.WeaponTrialCapture (the staged wall + two targets,
+#      the real bind through the production mount, the real input path, the
+#      inventory/weapon-status screen); the PNGs are verified and copied out.
+#   The package carries its own Data/CombatSystem config (the Package.ps1
+#   M5-036 carry); this pass verifies the directory is present before firing
+#   the exe, so a config-less package fails loudly instead of producing a
+#   false-green trial.
+if($IncludeWeaponScenario) {
+    $PackageCombatDataDir = Join-Path $PackageProject 'Data\CombatSystem'
+    if(-not (Test-Path -LiteralPath (Join-Path $PackageCombatDataDir 'weapons.json'))) { throw 'The package does not carry the Data/CombatSystem config; rebuild with the M5-036 Package.ps1 carry.' }
+
+    # Pass 1: in-package weapon automation with the zero-exemption gate.
+    $WeaponStamp = [DateTimeOffset]::Now.ToString('yyyy-MM-ddTHH-mm-sszzz').Replace(':', '')
+    $WeaponReportDir = Join-Path $PackageProject "Artifacts\Tasks\M5-036\$WeaponStamp"
+    New-Item -ItemType Directory -Path $WeaponReportDir -Force | Out-Null
+    Invoke-UEProcess $Executable @(
+        '-game', '-unattended', '-nosplash', '-nosound', '-nullrhi',
+        "-ExecCmds=Automation RunTests UEMMO.Tasks.M5_036",
+        '-TestExit=Automation Test Queue Empty',
+        "-ReportExportPath=$WeaponReportDir",
+        "-abslog=$ArtifactRoot\Logs\package-weapon-automation.log"
+    ) 'package-weapon-automation' 900
+    $WeaponIndex = Join-Path $WeaponReportDir 'index.json'
+    if(-not (Test-Path -LiteralPath $WeaponIndex)) { throw 'Packaged weapon automation did not produce a report.' }
+    $WeaponParsed = ConvertFrom-AutomationReportJson -ReportJson (Get-Content -LiteralPath $WeaponIndex -Raw) -Filter 'UEMMO.Tasks.M5_036'
+    if(-not $WeaponParsed.Ok) { throw 'Packaged weapon automation gate failed: ' + $WeaponParsed.Error }
+    if($WeaponParsed.Failed -ne 0 -or $WeaponParsed.Incomplete -ne 0) { throw 'Packaged weapon automation gate failed: a trial suite failed or went incomplete (no M5 exemption applies).' }
+    Copy-Item -LiteralPath $WeaponIndex -Destination (Join-Path $ArtifactRoot 'package-weapon-automation-index.json') -Force
+    [ordered]@{
+        success = $true
+        pass = 'package-weapon-automation'
+        test = 'UEMMO.Tasks.M5_036'
+        matched = $WeaponParsed.Matched
+        passed = $WeaponParsed.Passed
+        failed = $WeaponParsed.Failed
+        incomplete = $WeaponParsed.Incomplete
+        allowed_failures = @()
+    } | ConvertTo-Json
+
+    # Pass 2: the rendered trial capture in the package (the package carries
+    # its own Data/CombatSystem config, so no staging is needed - the
+    # M5-018B harness-staging trade-off does not apply here).
+    $WeaponCaptureDir = Join-Path $PackageProject "Artifacts\Tasks\M5-036\scenario-json\render"
+    Invoke-UEProcess $Executable @(
+        '-game', '-unattended', '-nosplash', '-nosound', '-RenderOffscreen',
+        '-ResX=1280', '-ResY=720',
+        "-ExecCmds=Automation RunTests UEMMO.Tasks.M5_036.WeaponTrialCapture",
+        '-TestExit=Automation Test Queue Empty',
+        "-abslog=$ArtifactRoot\Logs\package-weapon-capture.log"
+    ) 'package-weapon-capture' 900
+    $WeaponCaptures = @{}
+    foreach($SourceName in @('capture-trial-staged.png','capture-trial-flight.png','capture-trial-inventory.png')) {
+        $SourceFile = Join-Path $WeaponCaptureDir $SourceName
+        if(-not (Test-Path -LiteralPath $SourceFile)) {
+            # The engine flushes the screenshot during shutdown; poll briefly.
+            $Waited = 0
+            while(-not (Test-Path -LiteralPath $SourceFile) -and $Waited -lt 15) {
+                Start-Sleep -Milliseconds 500
+                $Waited += 1
+            }
+        }
+        if(-not (Test-Path -LiteralPath $SourceFile)) { throw "Packaged weapon capture screenshot missing: $SourceName" }
+        $CaptureBytes = [IO.File]::ReadAllBytes($SourceFile)
+        if($CaptureBytes.Length -lt 1024 -or [BitConverter]::ToString($CaptureBytes,0,8) -ne '89-50-4E-47-0D-0A-1A-0A') { throw "Packaged weapon capture screenshot $SourceName is not a valid PNG." }
+        $OutName = 'package-' + $SourceName
+        Copy-Item -LiteralPath $SourceFile -Destination (Join-Path $ArtifactRoot $OutName) -Force
+        $WeaponCaptures[$SourceName] = $OutName
+    }
+    [ordered]@{
+        success = $true
+        pass = 'package-weapon-capture'
+        test = 'UEMMO.Tasks.M5_036.WeaponTrialCapture'
+        captureConfig = 'Data/CombatSystem ships inside the package (M5-036 carry)'
+        screenshots = @($WeaponCaptures.Values)
     } | ConvertTo-Json
 }

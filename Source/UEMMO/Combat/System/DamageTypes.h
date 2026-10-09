@@ -27,7 +27,15 @@
 /**
  * Business id syntax shared by every combat system source table (design
  * section 4): 1..64 characters of lowercase ASCII a-z, 0-9 and underscore.
- * This single helper is the one definition site used by every 003 validator.
+ * M5-036: this contract is enforced on the RAW JSON string inside
+ * CombatDataTableParser (the FName display string cannot be trusted for
+ * casing in the packaged game build, which compiles without
+ * case-preserving FNames - FName(*RawId) adopts the name pool's existing
+ * display entry, so a legal lowercase 'normal' can surface as 'Normal').
+ * The 003 validators therefore only guard against NAME_None and rely on
+ * the parser for the character-set rule.
+ * This single helper is the one definition site used by every 003 validator
+ * call site that holds a raw string (presentations, test-room ids).
  */
 inline bool IsValidDefinitionIdSyntax(const FString& Id)
 {
@@ -103,14 +111,19 @@ struct FDamageProfile
 
 /**
  * Local validation of one damage profile: finite values, no negative times
- * or speeds, positive base damage and a syntactically valid business id.
+ * or speeds, positive base damage and an id that is present (the raw
+ * character-set rule lives in the parser, M5-036).
  * Collects every problem instead of stopping at the first, joined with "; "
  * so one bad row reports all of its bad fields at once.
  */
 inline bool ValidateDamageProfile(const FDamageProfile& Profile, FString& OutErrors)
 {
 	TArray<FString> Problems;
-	if (!IsValidDefinitionIdSyntax(Profile.DamageProfileId.ToString()))
+	// The character-set rule lives on the raw JSON string in the parser
+	// (M5-036: FName display casing is not trustworthy in-package); here we
+	// only refuse an absent id (NAME_None displays as the legal-looking
+	// "None", so a syntax check alone would let it through).
+	if (Profile.DamageProfileId == NAME_None)
 	{
 		Problems.Add(FString::Printf(TEXT("DamageProfileId '%s' must be 1..64 characters of a-z, 0-9 and _"),
 			*Profile.DamageProfileId.ToString()));

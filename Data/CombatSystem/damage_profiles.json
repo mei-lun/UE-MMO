@@ -38,6 +38,24 @@
       "knockback_cm_s": 80,
       "launch_cm_s": 60,
       "hit_stop_s": 0.04
+    },
+    {
+      "damage_profile_id": "physical_10",
+      "base_damage": 10,
+      "attack_coefficient": 1.0,
+      "hit_stun_s": 0.2,
+      "knockback_cm_s": 90,
+      "launch_cm_s": 0,
+      "hit_stop_s": 0.04
+    },
+    {
+      "damage_profile_id": "explosive_40",
+      "base_damage": 40,
+      "attack_coefficient": 1.0,
+      "hit_stun_s": 0.2,
+      "knockback_cm_s": 90,
+      "launch_cm_s": 0,
+      "hit_stop_s": 0.04
     }
   ]
 }

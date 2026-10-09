@@ -624,6 +624,19 @@ bool ParseDamageProfile(const FCombatJsonValue& Row, FDamageProfile& OutProfile,
 		return false;
 	}
 
+	// M5-036: the character-set contract is checked on the RAW id string
+	// before the FName conversion. The packaged game build compiles without
+	// case-preserving FNames, so FName(*IdText) can adopt the name pool's
+	// existing display entry (the engine registers 'Normal' early) and a
+	// legal lowercase 'normal' would fail any FName-based syntax check
+	// in-package. The error text matches the validator's wording so parser
+	// tests can pin the same field names.
+	if (!IsValidDefinitionIdSyntax(IdText))
+	{
+		OutError = FString::Printf(TEXT("DamageProfileId '%s' must be 1..64 characters of a-z, 0-9 and _"), *IdText);
+		return false;
+	}
+
 	OutProfile.DamageProfileId = FName(*IdText);
 	OutProfile.BaseDamage = static_cast<float>(BaseDamage);
 	OutProfile.AttackCoefficient = static_cast<float>(AttackCoefficient);
@@ -662,6 +675,14 @@ bool ParseAttackReaction(const FCombatJsonValue& Row, FAttackReaction& OutReacti
 	if (Problems.Num() > 0)
 	{
 		OutError = JoinProblems(Problems);
+		return false;
+	}
+
+	// M5-036: raw-string syntax before the FName conversion (see
+	// ParseDamageProfile for the in-package FName display caveat).
+	if (!IsValidDefinitionIdSyntax(IdText))
+	{
+		OutError = FString::Printf(TEXT("ReactionId '%s' must be 1..64 characters of a-z, 0-9 and _"), *IdText);
 		return false;
 	}
 
@@ -732,6 +753,16 @@ bool ParseTargetReaction(const FCombatJsonValue& Row, FTargetReaction& OutPolicy
 	if (Problems.Num() > 0)
 	{
 		OutError = JoinProblems(Problems);
+		return false;
+	}
+
+	// M5-036: raw-string syntax before the FName conversion (see
+	// ParseDamageProfile for the in-package FName display caveat; the shipped
+	// target_reactions 'normal' row hits the pooled 'Normal' display in the
+	// packaged game build).
+	if (!IsValidDefinitionIdSyntax(IdText))
+	{
+		OutError = FString::Printf(TEXT("PolicyId '%s' must be 1..64 characters of a-z, 0-9 and _"), *IdText);
 		return false;
 	}
 

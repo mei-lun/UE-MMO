@@ -289,6 +289,22 @@ bool FUEMMOTasksM5_005DamageProfileRowParsing::RunTest(const FString& Parameters
 		ParseDamageProfile(TEXT("{\"damage_profile_id\": \"Light_01\", \"base_damage\": 10, \"attack_coefficient\": 1.0, \"hit_stun_s\": 0.22, \"knockback_cm_s\": 90, \"launch_cm_s\": 0, \"hit_stop_s\": 0.04}"), BadId, Error));
 	TestTrue(TEXT("the bad-id error names DamageProfileId"), Error.Contains(TEXT("DamageProfileId")));
 
+	// M5-036: the character-set contract lives on the raw string here (the
+	// packaged game build cannot trust FName display casing), so the
+	// remaining syntax cases moved from the M5_003 validator into this test.
+	FDamageProfile HyphenId;
+	TestFalse(TEXT("a hyphenated id is refused"),
+		ParseDamageProfile(TEXT("{\"damage_profile_id\": \"light-01\", \"base_damage\": 10, \"attack_coefficient\": 1.0, \"hit_stun_s\": 0.22, \"knockback_cm_s\": 90, \"launch_cm_s\": 0, \"hit_stop_s\": 0.04}"), HyphenId, Error));
+	TestTrue(TEXT("the hyphen error names DamageProfileId"), Error.Contains(TEXT("DamageProfileId")));
+
+	FDamageProfile SpaceId;
+	TestFalse(TEXT("an id with a space is refused"),
+		ParseDamageProfile(TEXT("{\"damage_profile_id\": \"light 01\", \"base_damage\": 10, \"attack_coefficient\": 1.0, \"hit_stun_s\": 0.22, \"knockback_cm_s\": 90, \"launch_cm_s\": 0, \"hit_stop_s\": 0.04}"), SpaceId, Error));
+
+	FDamageProfile LongId;
+	TestFalse(TEXT("a 65-character id is refused"),
+		ParseDamageProfile(TEXT("{\"damage_profile_id\": \"a1234567890123456789012345678901234567890123456789012345678901234\", \"base_damage\": 10, \"attack_coefficient\": 1.0, \"hit_stun_s\": 0.22, \"knockback_cm_s\": 90, \"launch_cm_s\": 0, \"hit_stop_s\": 0.04}"), LongId, Error));
+
 	// A failed parse leaves the out struct untouched (no half-filled row).
 	TestTrue(TEXT("the failed parse reset the struct"), BadId.DamageProfileId.IsNone());
 	return true;
@@ -371,6 +387,11 @@ bool FUEMMOTasksM5_005TargetReactionRowParsing::RunTest(const FString& Parameter
 		TestEqual(TEXT("PoiseRegenSeconds is parsed"), Policy.PoiseRegenSeconds, 0.0f);
 		TestFalse(TEXT("no immunity axes are set"), Policy.bImmuneDamage || Policy.bImmuneControl || Policy.bDeathResistant);
 	}
+
+	Error.Reset();
+	TestFalse(TEXT("an uppercase policy id is refused"),
+		ParseTargetReaction(TEXT("{\"policy_id\": \"Normal\", \"allow_stagger\": true, \"allow_launch\": true, \"allow_knockdown\": true, \"max_launches_per_air_cycle\": 2, \"launch_z_scales\": [1.0], \"max_air_time_s\": 2.5, \"poise_max\": 0, \"poise_regen_s\": 0, \"knockdown_s\": 0.45, \"recovering_s\": 0.25, \"immune_damage\": false, \"immune_control\": false, \"death_resistant\": false}"), Policy, Error));
+	TestTrue(TEXT("the bad policy id error names PolicyId"), Error.Contains(TEXT("PolicyId")));
 
 	Error.Reset();
 	TestFalse(TEXT("a fractional max_launches_per_air_cycle is refused"),
@@ -655,8 +676,9 @@ bool FUEMMOTasksM5_005DirectoryLoadPositive::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the manifest requires projectiles"), Required.Contains(FName(TEXT("projectiles"))));
 	TestFalse(TEXT("the manifest does not require vehicles"), Required.Contains(FName(TEXT("vehicles"))));
 
-	// Row counts of the shipped tables.
-	TestEqual(TEXT("damage_profiles holds 4 rows"), Tables.DamageProfiles.Num(), 4);
+	// Row counts of the shipped tables. damage_profiles carries the 4 legacy
+	// attack rows plus the 2 sample-projectile profiles shipped by M5-036.
+	TestEqual(TEXT("damage_profiles holds 6 rows"), Tables.DamageProfiles.Num(), 6);
 	TestEqual(TEXT("attack_reactions holds 4 rows"), Tables.AttackReactions.Num(), 4);
 	TestEqual(TEXT("target_reactions holds 3 rows"), Tables.TargetReactions.Num(), 3);
 	TestEqual(TEXT("presentations holds 4 rows"), Tables.Presentations.Num(), 4);

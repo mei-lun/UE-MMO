@@ -30,3 +30,18 @@ if (Test-Path -LiteralPath $RepoRoomConfig) {
 else {
     Write-Warning 'Data/test_room.json not found; the packaged system test room will have no configured targets.'
 }
+# M5-036: the weapon trial package ships the Data/CombatSystem runtime
+# config (the eight source tables the production mount reads per run from
+# FPaths::ProjectDir()/Data/CombatSystem, M5-020). Without this carry the
+# packaged mount refuses and weapon firing stays disabled; the cook itself
+# never reads these files (the isolation check proves it), so the tables ride
+# as runtime config exactly like Data/test_room.json above.
+$RepoCombatDataDir = Join-Path $ProjectRoot 'Data\CombatSystem'
+if (Test-Path -LiteralPath $RepoCombatDataDir) {
+    $StagedCombatDataDir = Join-Path $ArchiveDirectory 'Windows\UEMMO\Data\CombatSystem'
+    New-Item -ItemType Directory -Path $StagedCombatDataDir -Force | Out-Null
+    Copy-Item -Path (Join-Path $RepoCombatDataDir '*.json') -Destination $StagedCombatDataDir -Force
+}
+else {
+    Write-Warning 'Data/CombatSystem not found; the packaged weapon trial will have no combat config and the weapon mount will refuse.'
+}

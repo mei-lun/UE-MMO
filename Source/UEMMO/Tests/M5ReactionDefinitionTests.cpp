@@ -657,7 +657,10 @@ bool FUEMMOTasksM5_003DamageProfilesJsonMatchesLegacyDefaults::RunTest(const FSt
 {
 	// The four legacy melee attacks keep their exact old values in the new
 	// damage_profiles source table: damage 10/14/18/12, the old stun/knockback/
-	// launch magnitudes and the shared 0.04 s hit stop.
+	// launch magnitudes and the shared 0.04 s hit stop. M5-036 additionally
+	// ships the two sample-projectile profiles (physical_10, explosive_40)
+	// that the M5-009 generated assets already reference, so the table now
+	// holds six rows and the projectile weapons resolve their damage.
 	FString LoadError;
 	TSharedPtr<FM5JsonValue> Root;
 	if (!LoadJsonRoot(GetCombatSystemJsonPath(TEXT("damage_profiles.json")), LoadError, Root))
@@ -704,7 +707,7 @@ bool FUEMMOTasksM5_003DamageProfilesJsonMatchesLegacyDefaults::RunTest(const FSt
 			Profiles.Contains(Profile.DamageProfileId));
 		Profiles.Add(Profile.DamageProfileId, Profile);
 	}
-	TestEqual(TEXT("damage_profiles holds exactly the 4 legacy attack rows"), Profiles.Num(), 4);
+	TestEqual(TEXT("damage_profiles holds the 4 legacy attack rows plus the 2 sample projectile profiles"), Profiles.Num(), 6);
 
 	// Pinned legacy values, row by row.
 	struct FLegacyDamageRow
@@ -734,6 +737,27 @@ bool FUEMMOTasksM5_003DamageProfilesJsonMatchesLegacyDefaults::RunTest(const FSt
 		TestEqual(FString::Printf(TEXT("%s KnockbackCmPerSecond keeps its legacy value"), Legacy.Id), Profile->KnockbackCmPerSecond, Legacy.Knockback);
 		TestEqual(FString::Printf(TEXT("%s LaunchCmPerSecond keeps its legacy value"), Legacy.Id), Profile->LaunchCmPerSecond, Legacy.Launch);
 		TestEqual(FString::Printf(TEXT("%s HitStopSeconds keeps the legacy 0.04 s"), Legacy.Id), Profile->HitStopSeconds, 0.04f);
+	}
+
+	// The two sample-projectile profiles ship pinned values that match the
+	// M5-009 generated assets (shared coefficient/stun/knockback/hit stop).
+	const FLegacyDamageRow SampleRows[] = {
+		{TEXT("physical_10"), 10.0f, 0.2f, 90.0f, 0.0f},
+		{TEXT("explosive_40"), 40.0f, 0.2f, 90.0f, 0.0f}
+	};
+	for (const FLegacyDamageRow& Sample : SampleRows)
+	{
+		const FDamageProfile* Profile = Profiles.Find(FName(Sample.Id));
+		if (!TestNotNull(FString::Printf(TEXT("%s is registered"), Sample.Id), Profile))
+		{
+			continue;
+		}
+		TestEqual(FString::Printf(TEXT("%s BaseDamage keeps its pinned value"), Sample.Id), Profile->BaseDamage, Sample.BaseDamage);
+		TestEqual(FString::Printf(TEXT("%s AttackCoefficient is 1.0"), Sample.Id), Profile->AttackCoefficient, 1.0f);
+		TestEqual(FString::Printf(TEXT("%s HitStunSeconds is 0.2 s"), Sample.Id), Profile->HitStunSeconds, Sample.HitStun);
+		TestEqual(FString::Printf(TEXT("%s KnockbackCmPerSecond is 90"), Sample.Id), Profile->KnockbackCmPerSecond, Sample.Knockback);
+		TestEqual(FString::Printf(TEXT("%s LaunchCmPerSecond is 0"), Sample.Id), Profile->LaunchCmPerSecond, Sample.Launch);
+		TestEqual(FString::Printf(TEXT("%s HitStopSeconds is 0.04 s"), Sample.Id), Profile->HitStopSeconds, 0.04f);
 	}
 	return true;
 }
@@ -1136,27 +1160,16 @@ bool FUEMMOTasksM5_003ValidatorsRejectIllegalValues::RunTest(const FString& Para
 	TestFalse(TEXT("a zero BaseDamage is rejected"), ValidateDamageProfile(ZeroDamage, Errors));
 	TestTrue(TEXT("the zero BaseDamage error names BaseDamage"), Errors.Contains(TEXT("BaseDamage")));
 
-	// Ids must be 1..64 characters of a-z, 0-9 and _.
+	// Ids must be present: the validator refuses NAME_None (which displays as
+	// the syntactically legal-looking "None"). M5-036 moved the character-set
+	// rule (uppercase/hyphen/space/length) to the RAW JSON string inside the
+	// parser, because the packaged game build cannot trust FName display
+	// casing (the pooled 'Normal' entry shadows a legal lowercase 'normal');
+	// M5_005 parser tests now pin those syntax cases.
 	FDamageProfile EmptyId = ValidProfile;
 	EmptyId.DamageProfileId = NAME_None;
 	TestFalse(TEXT("an empty DamageProfileId is rejected"), ValidateDamageProfile(EmptyId, Errors));
 	TestTrue(TEXT("the empty DamageProfileId error names DamageProfileId"), Errors.Contains(TEXT("DamageProfileId")));
-
-	FDamageProfile UppercaseId = ValidProfile;
-	UppercaseId.DamageProfileId = TEXT("Light_01");
-	TestFalse(TEXT("an uppercase DamageProfileId is rejected"), ValidateDamageProfile(UppercaseId, Errors));
-
-	FDamageProfile HyphenId = ValidProfile;
-	HyphenId.DamageProfileId = TEXT("light-01");
-	TestFalse(TEXT("a DamageProfileId with a hyphen is rejected"), ValidateDamageProfile(HyphenId, Errors));
-
-	FDamageProfile SpaceId = ValidProfile;
-	SpaceId.DamageProfileId = TEXT("light 01");
-	TestFalse(TEXT("a DamageProfileId with a space is rejected"), ValidateDamageProfile(SpaceId, Errors));
-
-	FDamageProfile LongId = ValidProfile;
-	LongId.DamageProfileId = TEXT("a1234567890123456789012345678901234567890123456789012345678901234");
-	TestFalse(TEXT("a 65-character DamageProfileId is rejected"), ValidateDamageProfile(LongId, Errors));
 
 	FDamageProfile Exactly64Id = ValidProfile;
 	Exactly64Id.DamageProfileId = TEXT("a123456789012345678901234567890123456789012345678901234567890123");
