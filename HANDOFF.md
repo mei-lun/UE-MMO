@@ -1,18 +1,29 @@
 # 最近一轮交接
 
-## 本轮：批次78 退出交接（1/3：M5-034 完成），下轮 Ready: M5-035
+## 本轮：批次78 完成交接（3/3：M5-035 DONE）
 
-- Owner：ZCode-20260925-A（接续批次 77 后用户指令「继续执行 M5-034」；该项全生命周期完成后在干净边界主动退出，M5-035 未启动）。时间：2026-10-08T23:26:37+08:00 起至 2026-10-09T00:58:00+08:00；分支 main。
-- **批次 78 退出交接（M5-034），明细见 [批次78交接](Docs/Tasks/Handoffs/2026-10-09-ZCode-20260925-A-batch78.md)**；批次 77 明细见 [批次77交接](Docs/Tasks/Handoffs/2026-10-08-ZCode-20260925-A-batch77.md)。任务板 valid=True（本轮末次 CheckTaskBoard），**DONE=141**，IN_PROGRESS=0。M5 计划 **40/63**。
-- 批次 78 成果（全量基线 **753/753**）：
-  - **M5-034**（实现 dcb8095，报告/总表 b76c057）：装备选择、弹药与装填界面——新建 WeaponStatusWidget 纯 ViewModel+指纹门四行子面板嵌入背包屏，读真实 mount 状态（M5-019 fire book Loaded/Capacity、共享备弹、per-cycle slot 装填余量新查询 `GetRemainingReloadSeconds`、catalog 锁存、三种显式 ConfigFailure）；生产入口 I 键（pawn→HUD `ToggleInventoryScreen`，控制台降级 staging 数据缝）；HUD `RefreshWeaponStatusScreen` 接 DrawHUD 逐帧+开屏+装备动作尾部；开火路径零改动（menu 谓词拒绝、关屏恰恢复一次）；DNF 布局 19→**20 键**（M1_040/M2_004 钉数同步）。红 7/7 败（23-43-10）→绿 **8/8**（00-32-19，中间 2/7→5/7 两轮已记录）；全量 **753/753**（00-32-56）；`Test.ps1 -Render` success=true；-RenderOffscreen 采集三张面板截图全部实际查看（ConfigFailure/Reloading 0.9s/Ready 12-12+Reserve38）；证据 `Artifacts/Tasks/M5-034/`。
-- 批次 77 成果摘要（全量基线 **745/745**）：M5-033（13fca51，真实输入与武器使用接线）、M5-032（5f8bb04，单次爆炸/衰减/遮挡）。
+- Owner：GLM-5.3-Flash-20261009-B（接续用户指令「继续执行 M5-035 的剩余步骤」）。完成时间：2026-10-09T12:05+08:00；分支 main。任务 M5-035 标 DONE（报告 [Docs/Tasks/Reports/M5-035.md](Docs/Tasks/Reports/M5-035.md)）。
+- 本批第 3 项完成。批次 78 成果：**M5-034**（dcb8095 / b76c057）+ **M5-035**（实现 567ed059031b57bd9ed4b439fdbb1dee8e9dc41b，报告/总表待本笔文档提交）。
+- M5-035 关键成果：
+  1. 029..032 策略生产分派接线（`MakeWeaponProjectileMotionPolicy` 唯一 choke point）+ burst 独立分支（`BurstCount > 1` 挂 `FBurstFirePolicy`，授权面扩展 BurstFirePolicy.*）。
+  2. **弹丸 spawn 泄漏根因修复**：`FWeaponProjectileSpawner::Spawned` 跨 commit 累积陈旧弱引用，`PelletTotal = Min(Pellets.Num(), Spawned.Num())` 只扫 index 0 死指针静默 continue → CommitSpawn 前 `Spawned.Reset()`（cast 到具体类；这是 death 12 发只落 1 伤、burst 3 发只落 1 伤的公共根因）。
+  3. retire 即 `Destroy()`（LifeSpan 残体阻塞后续弹道）；测试修正：爆炸 overlap 用 ECC_Pawn 对象类型（BlockAll=WorldStatic 查无假人）、reserve 期望 57、post-reload 24 帧。
+  4. 13 处 M5_035_DIAG 插桩全移除（Source 树零残留，Explosion/Linear 还原至 HEAD）。
+  5. **Render 可见性补齐**：弹丸/布景原为纯碰撞体零视觉 → `CombatProjectile` 加 `M5_035_Visual`（引擎 Cube 16cm 无碰撞）+ capture 布景墙/双目标 Cube 拉伸；三张截图亲验（targets 墙+双目标 / flight 弹丸空中 / blast 爆点弹丸消失）。
+- 验证：Build Succeeded ×2（62/62 含 UHT）；定向 11/11 ×2 轮（11-27-25、11-56-33）；**全量 764/764**（11-43-28 与可视化后复跑 11-58-15，= 753 基线 + 11 新增）；`TestCombatSystemScenario.ps1 -Section Weapons -Render` PASSED + 截图亲验；JSON 证据 16 事件/10 文件（burst 停射→换弹门→装填 15/57→复打；death→尸体拒伤→retry；config-change 独立 revision；各类型 wall_block 正例）。
+- 分歧记录（报告全文）：EdgeScale 常量钉入、控制字段为配置值、homing 降级直线、pierce/爆炸互斥、文件范围超字面清单、爆炸无粒子特效（弹丸消失呈现）。
+- 锚点：`Artifacts/Tasks/M5-035/2026-10-09T11-58-15+0800/index.json`（全量）；`scenario-json/render/`（截图）；`Artifacts/Logs/build-Editor.log`。
+- **工具警示（继续有效）**：本轮 Read/Grep/TodoWrite/TaskOutput 多次输出伪造内容（路径漂移、行号编造、JSON 造假）。可靠手段 = 自述式 PowerShell（Test-Path/Get-Content 行号+tab 可视化）+ git diff/status 交叉核对；每次只信双源一致的读数。
+
+## 上一轮：批次78 暂停交接（2/3：M5-035 实施中，定向 6/11 绿、5 红待修）
+
+- Owner：GLM-5.3-Flash-20261009-B；暂停 2026-10-09T10:35+08:00。已完成分派接线、11 套件、Weapons 段配置化；5 红根因与修复计划当时已记录（melee helper 断言、burst 分支不可达、ConfigChange 重复 id、Explosion 假人碰撞、Death spawn 泄漏）——全部在本轮转绿，明细见报告。
+- 更早：批次78 退出交接（1/3：M5-034 完成，dcb8095/b76c057，全量 753/753），明细见 [批次78交接](Docs/Tasks/Handoffs/2026-10-09-ZCode-20260925-A-batch78.md)；批次 77 见 [批次77交接](Docs/Tasks/Handoffs/2026-10-08-ZCode-20260925-A-batch77.md)。
 
 ## 下一步（接手者从这里继续）
 
-- **Ready: M5-035**（完整弹道/命中策略生产组合验收；依赖 029/030/034 均已集成 DONE）。下轮先重查任务板，再写占位报告并 IN_PROGRESS。M5-033 接线缝（`GetDebugFeetLocation`/`GetFireRegistry()` 非 const/`GetMountedWeaponCatalog`）与 M5-034 的 20 键钉数直接复用。
-- M5-035 之后：M5-036（依赖 035）→ M5-037（依赖 M5-H02,006）→ M5-038。
-- 已知非阻塞限制（带入备忘）：生产 items 配置尚无携带武器映射的物品定义（真实会话装武器显示 ConfigFailure 属 M5-034 诚实形态，真实物品表接线归 035 谱系）；换弹 2.0s 为输入层常数未读配置；完整弹道/命中策略生产组合归 035；reset 不 bump projectile epoch（服务随 pawn 结束、LifeSpan 兜底）；追踪收敛前提 (v/r)<ω（030）；Chaos contact-offset ~2.2cm（029）；标签过滤仅 Category 一维（031）；items.json 源表字段归 005/020A；021 备弹补给规则；裸测试世界有 controller+HUD 的开火测试须先 dismiss boot 菜单层（M5-034 发现，`EnterAccepted` 生产关闭半程）。
+- **Ready: M5-036**（依赖 M5-035 已 DONE）。之后 M5-037（依赖 M5-H02,006）→ M5-038。下轮先重查任务板（CheckTaskBoard）再领取。
+- 已知非阻塞限制（带入备忘）：生产 items 配置尚无携带武器映射的物品定义（真实会话装武器显示 ConfigFailure 属诚实形态，真实物品表接线归 035 谱系后续卡）；换弹 2.0s 为输入层常数未读配置；reset 不 bump projectile epoch；追踪收敛前提 (v/r)<ω（030）；Chaos contact-offset ~2.2cm（029）；标签过滤仅 Category 一维（031）；021 备弹补给规则；裸测试世界有 controller+HUD 的开火测试须先 dismiss boot 菜单层（M5-034 发现）；爆炸无粒子特效（035，弹丸消失呈现）。
 
 ## 项目当前状态
 
@@ -23,7 +34,7 @@
 | M2 | 刷怪房：敌人 AI/波次/会话/失败重试/退出/L_CombatRoom01 | M2-001..017 全 DONE |
 | M3 | 成长：装备/背包/穿脱/等级/掉落/领奖/存档 A/B 槽/地图菜单/操作日志 | M3-001..032 全 DONE |
 | M4 | 服务端接入 | M4-000 DEFERRED（待用户提供协议信息） |
-| M5 | 数据驱动战斗扩展（A 配置受击 → B 武器投射物 → C 载具 → D 成长发布） | **40/63 DONE**（000..018C、H01、019、020、020A、021..034、052）；B 段策略面齐，Ready: 035 |
+| M5 | 数据驱动战斗扩展（A 配置受击 → B 武器投射物 → C 载具 → D 成长发布） | **41/63 DONE**（000..018C、H01、019、020、020A、021..035、052）；B 段策略面齐，Ready: 036 |
 | 人工关卡 | M0-H01 REVIEW；M2-H01/M3-H01/M5-H02..H04 待用户 | AI 不得代签；M5-H01 已签（2026-10-08） |
 
 ## 交付物
@@ -32,13 +43,11 @@
 - **M3 完整包（最新全内容旧包）**：`Artifacts\Package\Windows\UEMMO.exe`（929MB，2026-09-30；离屏冒烟 success/rendering=true 实测可启动）。进刷怪房：exe 加参数 `/Game/UEMMO/Maps/L_CombatRoom01`。
 - **综合验收入口（用户从这里开始）**：`Docs/07-综合验收摘要.md`。M5 新内容不在旧包内；A 段完成时按 M5-018B 另出独立段包。
 
-## 最新集成验证（批次78退出，2026-10-09）
+## 最新集成验证（批次78完成，2026-10-09）
 
-- Build exit 0；编辑器全量自动化 **753/753**（745 + M5-034 定向 7 + 采集伴随 1）。
-- M5-034：Build Succeeded ×3；定向 8/8（红 7/7 败桩先行 23-43-10；中间 2/7、5/7 两轮根因均已记录——fire book 读数、per-cycle slot 装填余量、裸世界 mount 未挂载、boot 菜单层门）；全量 **753/753**；实现提交 dcb8095，报告/总表提交 b76c057。
-- 渲染：`Test.ps1 -Render` exit 0，success=true，rendering=true，截图已查看。
-- 采集：编辑器 -RenderOffscreen @ L_TrainingArena exit 0，Result={Success}，三张截图已查看（capture 日志 `Artifacts/Tasks/M5-034/2026-10-09T00-34-48+0800-capture/`）。
-- CheckTaskBoard valid=True（本轮末次复跑确认），DONE=141，IN_PROGRESS=0，Ready: M5-035。
+- Build exit 0 ×2；编辑器全量自动化 **764/764**（753 基线 + M5-035 定向 11）。
+- M5-035：定向 11/11 ×2 轮；全量 764/764 ×2 轮（可视化改动前后）；`TestCombatSystemScenario.ps1 -Section Weapons -Render` PASSED，三张截图实际查看；实现提交 567ed05。
+- CheckTaskBoard：本笔文档提交后复跑终检（见下轮记录）。
 
 ## 流程要点（给下一个 AI）
 
