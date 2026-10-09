@@ -8,6 +8,8 @@
 #include "CombatProjectile.h"
 
 #include "Components/SphereComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 
 ACombatProjectile::ACombatProjectile()
@@ -29,4 +31,18 @@ ACombatProjectile::ACombatProjectile()
 	Movement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("M5_027_Movement"));
 	Movement->SetUpdatedComponent(Body);
 	Movement->bAutoActivate = false;
+
+	// M5-035: the render-visible carrier (the card's "Render 可见弹道" face).
+	// The engine's own basic cube, scaled onto the body's diameter - a pure
+	// presentation child with no collision, so the transport and every hit
+	// face keep reading the body alone. The other tests stay headless-safe:
+	// the mesh load failing only leaves the pellet invisible.
+	Visual = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("M5_035_Visual"));
+	Visual->SetupAttachment(Body);
+	Visual->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	if (UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube")))
+	{
+		Visual->SetStaticMesh(Cube);
+		Visual->SetRelativeScale3D(FVector(0.16f)); // cube unit edge 100cm -> 16cm = the body's diameter
+	}
 }

@@ -6,9 +6,10 @@
 # process and requires fresh screenshots.
 #
 # Sections (the card's extension interface - later segments register their own):
-#   Reaction (this card) - UEMMO.Tasks.M5_018.Reaction
-#   Weapons  / Vehicles / Full - not implemented yet; the refusal is explicit
-#   (the capability arrives with the M5-036/M5-045 segment cards).
+#   Reaction (M5-018) - UEMMO.Tasks.M5_018.Reaction
+#   Weapons  (M5-035) - UEMMO.Tasks.M5_035 (melee/hitscan/projectile/policy chains)
+#   Vehicles / Full - not implemented yet; the refusal is explicit
+#   (the capability arrives with the owning segment cards).
 param(
     [ValidateSet('Reaction', 'Weapons', 'Vehicles', 'Full')]
     [string]$Section = 'Reaction',
@@ -23,22 +24,40 @@ if ([string]::IsNullOrWhiteSpace($TaskId) -or $TaskId -match '[/\\]') {
     throw "TestCombatSystemScenario: TaskId must be a non-empty identifier without path separators."
 }
 
-$SectionFilters = @{
-    'Reaction' = 'UEMMO.Tasks.M5_018.Reaction'
-    'Weapons'  = $null
-    'Vehicles' = $null
-    'Full'     = $null
+# Per-section registration: the automation filter, the artifact task folder that
+# owns the exported scenario JSON, the required evidence files, the capture test
+# suffix and the required rendered screenshots.
+$SectionConfigs = @{
+    'Reaction' = @{
+        'Filter' = 'UEMMO.Tasks.M5_018.Reaction'
+        'ArtifactTask' = 'M5-018'
+        'ExpectedFiles' = @('reaction-light-hit.json', 'reaction-depth-whiff.json',
+            'reaction-launch-heavy-normal.json', 'reaction-death.json')
+        'CaptureSuffix' = '.ReactionCapture'
+        'Screenshots' = @('scenario-targets.png', 'scenario-float.png')
+    }
+    'Weapons' = @{
+        'Filter' = 'UEMMO.Tasks.M5_035'
+        'ArtifactTask' = 'M5-035'
+        'ExpectedFiles' = @('weapons-melee.json', 'weapons-hitscan.json',
+            'weapons-straight.json', 'weapons-parabolic.json', 'weapons-homing.json',
+            'weapons-explosion.json', 'weapons-pierce.json', 'weapons-burst-reload.json',
+            'weapons-death-retry.json', 'weapons-config-change.json')
+        'CaptureSuffix' = '.WeaponScenarioCapture'
+        'Screenshots' = @('capture-targets.png', 'capture-flight.png', 'capture-blast.png')
+    }
 }
-$Filter = $SectionFilters[$Section]
-if ([string]::IsNullOrEmpty($Filter)) {
+$Config = $SectionConfigs[$Section]
+if ($null -eq $Config) {
     throw ("TestCombatSystemScenario: section '" + $Section + "' is not implemented yet (the owning segment card must register its filter first).")
 }
+$Filter = $Config['Filter']
 
 $Harness = Join-Path $PSScriptRoot 'TestAutomation.ps1'
 $ProjectRoot = Join-Path $PSScriptRoot '..'
 $ProjectFile = Join-Path $ProjectRoot 'UEMMO.uproject'
 $ArtifactRoot = Join-Path $ProjectRoot 'Artifacts'
-$ScenarioJsonDir = Join-Path $ArtifactRoot (Join-Path 'Tasks' 'M5-018')
+$ScenarioJsonDir = Join-Path $ArtifactRoot (Join-Path 'Tasks' $Config['ArtifactTask'])
 
 Write-Host ("TestCombatSystemScenario: section '" + $Section + "' filter '" + $Filter + "' task '" + $TaskId + "'.")
 
@@ -52,8 +71,7 @@ if ($RunExitCode -ne 0) {
 # Pass 2: the scenario JSON evidence (the exported reaction event sequences)
 # must exist and parse - the card's "读取已保存场景" gate.
 $JsonDir = Join-Path $ScenarioJsonDir 'scenario-json'
-$ExpectedFiles = @('reaction-light-hit.json', 'reaction-depth-whiff.json',
-    'reaction-launch-heavy-normal.json', 'reaction-death.json')
+$ExpectedFiles = $Config['ExpectedFiles']
 $EventsTotal = 0
 foreach ($Name in $ExpectedFiles) {
     $Path = Join-Path $JsonDir $Name
@@ -73,9 +91,9 @@ Write-Host ("TestCombatSystemScenario: scenario evidence ok (" + $EventsTotal + 
 if ($Render) {
     . (Join-Path $PSScriptRoot 'Common.ps1')
     $Editor = Join-Path $EngineRoot 'Engine\Binaries\Win64\UnrealEditor-Cmd.exe'
-    $CaptureFilter = $Filter + '.ReactionCapture'
+    $CaptureFilter = $Filter + $Config['CaptureSuffix']
     $ScreenshotDir = Join-Path $ScenarioJsonDir 'scenario-json/render'
-    foreach ($Stale in @('scenario-targets.png', 'scenario-float.png')) {
+    foreach ($Stale in $Config['Screenshots']) {
         $StalePath = Join-Path $ScreenshotDir $Stale
         if (Test-Path -LiteralPath $StalePath) { Remove-Item -LiteralPath $StalePath }
     }
@@ -83,11 +101,11 @@ if ($Render) {
         '-unattended' '-nosplash' '-nosound' `
         ('-ExecCmds=Automation RunTests ' + $CaptureFilter) `
         '-TestExit=Automation Test Queue Empty' `
-        ('-abslog=' + (Join-Path $ArtifactRoot 'Logs\m5-018-capture.log')) | Out-Null
+        ('-abslog=' + (Join-Path $ArtifactRoot ('Logs\' + $Config['ArtifactTask'].ToLower() + '-capture.log'))) | Out-Null
     if ($LASTEXITCODE -ne 0) {
         throw "TestCombatSystemScenario: the rendered capture run failed (exit $LASTEXITCODE)."
     }
-    foreach ($Name in @('scenario-targets.png', 'scenario-float.png')) {
+    foreach ($Name in $Config['Screenshots']) {
         # The engine flushes the screenshot during shutdown; poll briefly.
         $Path = Join-Path $ScreenshotDir $Name
         $Waited = 0

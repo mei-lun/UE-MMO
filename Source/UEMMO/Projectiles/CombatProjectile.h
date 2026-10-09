@@ -9,6 +9,7 @@
 
 class USphereComponent;
 class UProjectileMovementComponent;
+class UStaticMeshComponent;
 
 /**
  * M5-027: the projectile actor (interface contract section 1, owner 027 the
@@ -80,6 +81,14 @@ public:
 	/** The single motion driver: no second movement component, no motion tick. */
 	UPROPERTY(VisibleAnywhere, Category = "UEMMO|Projectile")
 	TObjectPtr<UProjectileMovementComponent> Movement;
+
+	/**
+	 * M5-035: the visual carrier (the engine basic cube scaled onto the body's
+	 * diameter) - pure presentation, no collision, so the swept transport and
+	 * every hit face stay the body's alone.
+	 */
+	UPROPERTY(VisibleAnywhere, Category = "UEMMO|Projectile")
+	TObjectPtr<UStaticMeshComponent> Visual;
 
 	/** The committed-shot provenance (stamped by the world service at commit). */
 	FProjectileSpawnContext Context;

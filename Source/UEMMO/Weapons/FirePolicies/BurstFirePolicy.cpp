@@ -50,12 +50,16 @@ FCapacityReservation FBurstFirePolicy::ReserveShotCapacity(const FShotContext& C
 {
 	FCapacityReservation Reservation;
 
-	// The burst policy owns the hitscan delivery only: projectile pacing and
-	// capacity belong to the 025 multi-pellet policy.
-	if (Candidate.FireMode != EWeaponFireMode::Hitscan)
+	// M5-035: the burst policy paces both delivery modes - one sub-shot
+	// grants one raycast slot (hitscan) or one projectile slot (the point-fire
+	// volley); per-shot pellet capacity stays with the 025 multi-pellet
+	// policy. Every other mode is refused.
+	const bool bHitscanCandidate = Candidate.FireMode == EWeaponFireMode::Hitscan;
+	const bool bProjectileCandidate = Candidate.FireMode == EWeaponFireMode::Projectile;
+	if (!bHitscanCandidate && !bProjectileCandidate)
 	{
 		Reservation.RejectDetail = FString::Printf(
-			TEXT("the burst-fire policy grants hitscan shots only (the candidate is mode %d)"),
+			TEXT("the burst-fire policy grants hitscan/projectile shots only (the candidate is mode %d)"),
 			static_cast<int32>(Candidate.FireMode));
 		return Reservation;
 	}
@@ -77,8 +81,8 @@ FCapacityReservation FBurstFirePolicy::ReserveShotCapacity(const FShotContext& C
 			return Reservation;
 		}
 		Reservation.bGranted = true;
-		Reservation.RaycastSlots = 1;
-		Reservation.ProjectileSlots = 0;
+		Reservation.RaycastSlots = bHitscanCandidate ? 1 : 0;
+		Reservation.ProjectileSlots = bProjectileCandidate ? 1 : 0;
 		return Reservation;
 	}
 
@@ -93,8 +97,8 @@ FCapacityReservation FBurstFirePolicy::ReserveShotCapacity(const FShotContext& C
 	bPressArmed = false;
 	bFirstSubShotReserved = true;
 	Reservation.bGranted = true;
-	Reservation.RaycastSlots = 1;
-	Reservation.ProjectileSlots = 0;
+	Reservation.RaycastSlots = bHitscanCandidate ? 1 : 0;
+	Reservation.ProjectileSlots = bProjectileCandidate ? 1 : 0;
 	return Reservation;
 }
 

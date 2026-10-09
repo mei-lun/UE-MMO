@@ -1002,7 +1002,7 @@ void APrototypeCharacter::WireWeaponMount()
     }
 }
 
-void APrototypeCharacter::~APrototypeCharacter() = default;
+APrototypeCharacter::~APrototypeCharacter() = default;
 
 double APrototypeCharacter::ResolveWeaponInputClockSeconds() const
 {
@@ -1119,7 +1119,7 @@ void APrototypeCharacter::ApplyWeaponBindWiring()
         Mount->SetFirePolicy(nullptr);
         return;
     }
-    if (Definition->FireMode == EWeaponFireMode::Projectile)
+    if (Definition->FireMode == EWeaponFireMode::Projectile && Definition->BurstCount <= 1)
     {
         // The delivery policy grants the projectile slot capacity; the
         // component's fire-rate cooldown paces the projectile stream alone.
@@ -1133,6 +1133,19 @@ void APrototypeCharacter::ApplyWeaponBindWiring()
     {
         // Point fire: one press edge = one bounded burst (M5-024); the
         // sub-shot pacing defers to the component's fire-rate cooldown.
+        if (!BurstFirePolicy.IsValid())
+        {
+            BurstFirePolicy = MakeUnique<FBurstFirePolicy>();
+        }
+        BurstFirePolicy->SetBurstCount(Definition->BurstCount);
+        BurstFirePolicy->SetSubShotIntervalSeconds(0.0);
+        Mount->SetFirePolicy(BurstFirePolicy.Get());
+    }
+    else if (Definition->FireMode == EWeaponFireMode::Projectile && Definition->BurstCount > 1)
+    {
+        // Projectile point fire: one press edge = one bounded volley (the
+        // same M5-024 policy; the sub-shot pacing defers to the component's
+        // fire-rate cooldown so pellets stream at the configured cadence).
         if (!BurstFirePolicy.IsValid())
         {
             BurstFirePolicy = MakeUnique<FBurstFirePolicy>();
@@ -1197,6 +1210,14 @@ void APrototypeCharacter::TickWeaponInput(float DeltaSeconds)
         Entry.Policy->AdvanceMotion(DeltaSeconds);
         if (Entry.Policy->IsFinished() || Actor->IsPendingKillPending())
         {
+            // A finished pellet retires its body: an actor left at the hit
+            // point would sit in the lane as an unregistered blocker and stop
+            // every later pellet (the lifetime-expired bodies are destroyed
+            // by the engine's LifeSpan timer; the terminated ones are ours).
+            if (Entry.Policy->IsFinished() && !Actor->IsPendingKillPending())
+            {
+                Actor->Destroy();
+            }
             LiveWeaponProjectiles.RemoveAtSwap(Index);
         }
     }
@@ -1321,6 +1342,12 @@ void APrototypeCharacter::HandleWeaponShotCommitted(const FShotContext& Shot)
         {
             ProjectileSpawner = MakeUnique<FWeaponProjectileSpawner>(World);
         }
+        // M5-035: Spawned tracks the live pellets of the LAST commit (the
+        // spawner's class contract), so the previous volley's entries - stale
+        // weak refs to retired bodies - drop before this commit spawns; the
+        // delivery bridge below binds this volley's pellets at 0..N-1 and a
+        // later shot never reads an earlier shot's dead slot.
+        static_cast<FWeaponProjectileSpawner*>(ProjectileSpawner.Get())->Spawned.Reset();
         if (!ProjectileService->CommitSpawn(Reservation, *ProjectileSpawner))
         {
             UE_LOG(LogTemp, Warning, TEXT("UEMMO M5-033: the projectile commit failed: %s"), *Reservation.RejectDetail);

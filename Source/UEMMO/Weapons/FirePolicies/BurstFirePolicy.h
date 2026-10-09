@@ -33,8 +33,10 @@
  * The clock is the component's injected fire clock (the candidate's
  * CommittedAtSeconds): a pause freezes the burst in place, a stalled frame
  * fires at most the single due sub-shot - never the accumulated rest.
- * Only hitscan candidates are granted: the 025 multi-pellet policy owns
- * pellet capacity.
+ * Hitscan and projectile candidates are granted (M5-035: the projectile
+ * point-fire volley rides the same policy - one projectile slot per
+ * sub-shot; per-shot pellet capacity stays with the 025 multi-pellet
+ * policy).
  */
 class FBurstFirePolicy : public IFirePolicy
 {

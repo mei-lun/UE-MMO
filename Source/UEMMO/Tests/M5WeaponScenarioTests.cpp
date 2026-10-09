@@ -23,10 +23,13 @@
 #include "../Items/ItemDefinition.h"
 #include "../Projectiles/CombatProjectile.h"
 #include "../PrototypeHUD.h"
+#include "../UI/MapSelectWidget.h"
 #include "../Weapons/WeaponComponent.h"
 
 #include "Components/BoxComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Engine/CollisionProfile.h"
+#include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
@@ -148,6 +151,11 @@ namespace UE::UEMMO::Tasks::M5_035
 		Body->SetMobility(EComponentMobility::Movable);
 		Body->SetBoxExtent(M5_035_TargetBoxHalfExtent);
 		Body->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
+		// M5-035: the blast overlap queries by pawn object type (the shared
+		// M5-032 dummy shape); BlockAll keeps every channel response while the
+		// object type moves to Pawn, so both the pellet sweeps and the blast
+		// overlap see the body.
+		Body->SetCollisionObjectType(ECC_Pawn);
 		Body->RegisterComponent();
 		Body->SetWorldLocation(Base + Offset);
 		UHealthComponent* Health = NewObject<UHealthComponent>(Actor, TEXT("M5_035_TargetHealth"));
@@ -405,6 +413,13 @@ namespace UE::UEMMO::Tasks::M5_035
 			WeaponIdValue = WeaponDef.WeaponId;
 			ProjectileIdValue = WeaponDef.ProjectileId;
 			AmmoIdValue = WeaponDef.AmmoId;
+			if (WeaponDef.FireMode == EWeaponFireMode::Melee)
+			{
+				// Melee delivers through the legacy attack chain: the mount
+				// never authorizes weapon fire. The melee test asserts the
+				// negative itself, so the helper stops here.
+				return true;
+			}
 			return Test.TestTrue(TEXT("the bound mount authorizes fire"), Mount->IsFireAuthorized());
 		}
 
@@ -500,6 +515,9 @@ namespace UE::UEMMO::Tasks::M5_035
 		Weapon.PelletCount = 1;
 		Weapon.SpreadDegrees = 0.0f;
 		Weapon.RangeCm = 0.0f;
+		// The bind only accepts melee carrying exactly the legacy four-attack
+		// set (the M5-019 mount refusal), so the scenario definition does.
+		Weapon.MeleeAttackIds = GetLegacyMeleeAttackIds();
 		return Weapon;
 	}
 
@@ -1224,15 +1242,18 @@ bool FUEMMOTasksM5_035BurstStopsOnReleaseAndReloadWindowGatesFire::RunTest(const
 	Rig.TickFrames(130);
 	TestFalse(TEXT("the reload window closed on its deadline"), Rig.Player->IsWeaponReloadPending());
 	TestEqual(TEXT("the magazine refilled to capacity"), Rig.MagazineRounds(), 15);
-	TestEqual(TEXT("the reserve paid the grant"), Rig.ReserveRounds(), 117);
+	TestEqual(TEXT("the reserve paid the grant"), Rig.ReserveRounds(), 57);
 	Rig.Record(TEXT("reload_complete"), TEXT(""), -1.0f, 0.0f, TEXT(""));
 
 	// The post-reload fire lands damage again (the chain is repeatable).
+	// The burst paces its sub-shots 60/450s apart (133ms): 24 frames at
+	// M5_035_FrameSeconds (400ms) fit the full 0/133/267ms volley - 12 frames
+	// only fit the first two sub-shots.
 	Rig.Player->OnFireInputPressed();
 	Rig.Player->OnFireInputReleased();
-	Rig.TickFrames(12);
-	TestEqual(TEXT("the post-reload shot committed"), Rig.CommittedShots(), 4);
-	TestEqual(TEXT("the post-reload damage landed"), Rig.TargetHealth->GetHealth(), HealthBefore - 4.0f * M5_035_Damage);
+	Rig.TickFrames(24);
+	TestEqual(TEXT("the post-reload volley committed (a fresh press runs the full burst again)"), Rig.CommittedShots(), 6);
+	TestEqual(TEXT("the post-reload damage landed"), Rig.TargetHealth->GetHealth(), HealthBefore - 6.0f * M5_035_Damage);
 	Rig.Record(TEXT("hit"), TEXT("dummy_normal"), Rig.TargetHealth->GetHealth(), M5_035_Damage, TEXT(""));
 	Rig.ExportJson(*this, TEXT("weapons-burst-reload.json"));
 	return true;
@@ -1294,6 +1315,12 @@ bool FUEMMOTasksM5_035TargetDeathRefusesDamageAndRetryRestoresChain::RunTest(con
 
 	// The retry: the unified reset restores the pawn and a fresh target
 	// reopens the same chain - the identical shot wounds the new target.
+	// The spent body retires first: a corpse at the same offset would sit in
+	// the lane between the muzzle and the fresh target.
+	if (Rig.Target != nullptr)
+	{
+		Rig.Target->Destroy();
+	}
 	Rig.Player->ApplyTrainingRoomReset();
 	Rig.ExtraTarget = M5_035_SpawnTarget(*Rig.World, M5_035_SceneBase, M5_035_TargetOffset, 100.0f, &Rig.ExtraTargetHealth);
 	if (!TestNotNull(TEXT("the retry target spawns"), Rig.ExtraTarget) || Rig.ExtraTargetHealth == nullptr)
@@ -1352,11 +1379,16 @@ bool FUEMMOTasksM5_035ConfigChangeChangesMeasuredDamageAndArrival::RunTest(const
 	RigA.ExportJson(*this, TEXT("weapons-config-change.json"));
 
 	// Config B: the adjusted catalog (25 damage at 750 cm/s) - a fresh rig.
-	const FProjectileDefinition Slow = M5_035_MakeProjectileDefinition(
+	// The adjusted profile rides its own id: the rig's base profile keeps the
+	// weapon's own id (the bind helper refuses a duplicate id), and the
+	// projectile hits with its own profile, so the slow round points at the
+	// adjusted one.
+	FProjectileDefinition Slow = M5_035_MakeProjectileDefinition(
 		FName(TEXT("bullet_rig_slow")), EProjectileMotion::Straight);
 	Slow.SpeedCmS = M5_035_SlowSpeedCmS;
+	Slow.DamageProfileId = FName(TEXT("dmg_rig_round_b"));
 	FDamageProfile Adjusted;
-	Adjusted.DamageProfileId = FName(TEXT("dmg_rig_round"));
+	Adjusted.DamageProfileId = FName(TEXT("dmg_rig_round_b"));
 	Adjusted.BaseDamage = M5_035_AdjustedDamage;
 	FM5_035_Rig RigB;
 	if (!RigB.Build(*this, /*bWithTarget*/ true) || !RigB.Settle(*this))
@@ -1486,7 +1518,7 @@ bool FUEMMOTasksM5_035WeaponScenarioCapture::RunTest(const FString& Parameters)
 		FString ItemError;
 		return Bind.Items.AddDefinition(Item, &ItemError);
 	};
-	auto BindCaptureWeapon = [GamePawn](FM5_035_CaptureBind& Bind, const FWeaponDefinition& WeaponDef) -> bool
+	auto BindCaptureWeapon = [GamePawn](FM5_035_CaptureBind& Bind, const FWeaponDefinition& WeaponDef, const FGuid& InstanceId) -> bool
 	{
 		UWeaponComponent* Mount = GamePawn->GetWeaponMount();
 		FString MountError;
@@ -1499,7 +1531,7 @@ bool FUEMMOTasksM5_035WeaponScenarioCapture::RunTest(const FString& Parameters)
 			Mount->GetAmmoModel().RegisterAmmoType(WeaponDef.AmmoId, 600, 300);
 		}
 		FItemInstance Instance;
-		Instance.InstanceId = FGuid(0x0350C000u, 0x0BECu, 0x5335u, 1u);
+		Instance.InstanceId = InstanceId;
 		Instance.DefinitionId = FName(TEXT("item_capture_scenario"));
 		Instance.RollSeed = 0x52035;
 		Instance.Level = 1;
@@ -1534,7 +1566,11 @@ bool FUEMMOTasksM5_035WeaponScenarioCapture::RunTest(const FString& Parameters)
 		AActor::StaticClass(), Base + M5_035_TargetOffset, FRotator::ZeroRotator, StageParams);
 	AActor* HeavyTarget = World->SpawnActor<AActor>(
 		AActor::StaticClass(), Base + M5_035_SecondTargetOffset, FRotator::ZeroRotator, StageParams);
-	auto GiveTargetBody = [](AActor* Actor, float MaxHealth) -> bool
+	// M5-035: the staged bodies carry the engine's own basic cube so the
+	// rendered capture shows the scenario (a pure collision box renders
+	// nothing); the scale maps the cube's 100cm edge onto each body's extent.
+	UStaticMesh* StageCube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+	auto GiveTargetBody = [StageCube](AActor* Actor, float MaxHealth) -> bool
 	{
 		if (Actor == nullptr)
 		{
@@ -1546,6 +1582,15 @@ bool FUEMMOTasksM5_035WeaponScenarioCapture::RunTest(const FString& Parameters)
 		Body->SetBoxExtent(M5_035_TargetBoxHalfExtent);
 		Body->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
 		Body->RegisterComponent();
+		if (StageCube != nullptr)
+		{
+			UStaticMeshComponent* Visual = NewObject<UStaticMeshComponent>(Actor, TEXT("M5_035_CaptureVisual"));
+			Visual->SetupAttachment(Body);
+			Visual->SetStaticMesh(StageCube);
+			Visual->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			Visual->SetRelativeScale3D(M5_035_TargetBoxHalfExtent * 2.0f / 100.0f);
+			Visual->RegisterComponent();
+		}
 		UHealthComponent* Health = NewObject<UHealthComponent>(Actor, TEXT("M5_035_CaptureHealth"));
 		Health->RegisterComponent();
 		Health->SetMaxHealth(MaxHealth);
@@ -1560,9 +1605,18 @@ bool FUEMMOTasksM5_035WeaponScenarioCapture::RunTest(const FString& Parameters)
 		Body->SetBoxExtent(M5_035_WallHalfExtent);
 		Body->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
 		Body->RegisterComponent();
+		if (StageCube != nullptr)
+		{
+			UStaticMeshComponent* Visual = NewObject<UStaticMeshComponent>(Wall, TEXT("M5_035_CaptureWallVisual"));
+			Visual->SetupAttachment(Body);
+			Visual->SetStaticMesh(StageCube);
+			Visual->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			Visual->SetRelativeScale3D(M5_035_WallHalfExtent * 2.0f / 100.0f);
+			Visual->RegisterComponent();
+		}
 	}
 	if (!TestTrue(TEXT("the capture scenario staged"),
-		Wall != nullptr && GiveTargetBody(NormalTarget, 100.0f) && GiveTargetBody(HighTargetFallback(), 300.0f)))
+		Wall != nullptr && GiveTargetBody(NormalTarget, 100.0f) && GiveTargetBody(HeavyTarget, 300.0f)))
 	{
 		return true;
 	}
@@ -1594,7 +1648,8 @@ bool FUEMMOTasksM5_035WeaponScenarioCapture::RunTest(const FString& Parameters)
 				}
 			}
 		}
-		const bool bBound = BindCaptureWeapon(VolleyBind, VolleyWeapon);
+		const bool bBound = BindCaptureWeapon(VolleyBind, VolleyWeapon,
+			FGuid(0x0350C000u, 0x0BECu, 0x5335u, 1u));
 		if (bBound)
 		{
 			GamePawn->OnFireInputPressed();
@@ -1618,7 +1673,8 @@ bool FUEMMOTasksM5_035WeaponScenarioCapture::RunTest(const FString& Parameters)
 	// The blast: the slow blast round detonates on the wall.
 	ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([GamePawn, &BlastBind, BlastWeapon, BindCaptureWeapon]()
 	{
-		const bool bBound = BindCaptureWeapon(BlastBind, BlastWeapon);
+		const bool bBound = BindCaptureWeapon(BlastBind, BlastWeapon,
+			FGuid(0x0350C000u, 0x0BECu, 0x5335u, 2u));
 		if (bBound)
 		{
 			GamePawn->OnFireInputPressed();
@@ -1642,7 +1698,7 @@ bool FUEMMOTasksM5_035WeaponScenarioCapture::RunTest(const FString& Parameters)
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(1.0f));
 	ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([Wall, NormalTarget, HeavyTarget]()
 	{
-		for (AActor* Staged : {Wall, NormalTarget, HighTargetFallback()})
+		for (AActor* Staged : {Wall, NormalTarget, HeavyTarget})
 		{
 			if (Staged != nullptr && IsValid(Staged))
 			{
