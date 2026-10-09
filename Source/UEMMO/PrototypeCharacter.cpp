@@ -32,9 +32,16 @@
 #include "Weapons/WeaponComponent.h"
 // M5-033: the delivery bridge seams (executor, projectile service/actor,
 // motion policy, the shot-pattern planner) and the pawn-owned pacing policies.
+// M5-035: the 029..032 production motion policies register through the same
+// one-policy seam (dispatched per definition motion in
+// MakeWeaponProjectileMotionPolicy below).
 #include "Projectiles/CombatProjectile.h"
 #include "Projectiles/HitscanExecutor.h"
 #include "Projectiles/LinearProjectilePolicy.h"
+#include "Projectiles/Policies/BallisticPolicy.h"
+#include "Projectiles/Policies/ExplosionPolicy.h"
+#include "Projectiles/Policies/HomingPolicy.h"
+#include "Projectiles/Policies/PenetrationPolicy.h"
 #include "Projectiles/ProjectileWorldService.h"
 #include "Weapons/FirePolicies/AutomaticFirePolicy.h"
 #include "Weapons/FirePolicies/BurstFirePolicy.h"
@@ -136,6 +143,11 @@ namespace
     const FName M5_033_PlayerCategory(TEXT("player"));
     const FName M5_033_TargetFaction(TEXT("enemy"));
     const FName M5_033_TargetCategory(TEXT("target"));
+    // M5-035: the blast falloff at the blast edge. The M5-004 definition
+    // schema carries no edge-scale field yet, so the wiring pins the linear
+    // decay to zero damage at the edge (blast center scales 1); a schema
+    // field would replace this constant without touching the policy.
+    constexpr float M5_035_ExplosionEdgeScale = 0.0f;
 
     /**
      * The delivery fire policy (the pawn's registration for projectile-mode
@@ -990,6 +1002,8 @@ void APrototypeCharacter::WireWeaponMount()
     }
 }
 
+void APrototypeCharacter::~APrototypeCharacter() = default;
+
 double APrototypeCharacter::ResolveWeaponInputClockSeconds() const
 {
     if (WeaponInputClockProvider)
@@ -1180,8 +1194,8 @@ void APrototypeCharacter::TickWeaponInput(float DeltaSeconds)
             LiveWeaponProjectiles.RemoveAtSwap(Index);
             continue;
         }
-        Entry.Policy.AdvanceMotion(DeltaSeconds);
-        if (Entry.Policy.IsFinished() || Actor->IsPendingKillPending())
+        Entry.Policy->AdvanceMotion(DeltaSeconds);
+        if (Entry.Policy->IsFinished() || Actor->IsPendingKillPending())
         {
             LiveWeaponProjectiles.RemoveAtSwap(Index);
         }
@@ -1279,8 +1293,14 @@ void APrototypeCharacter::HandleWeaponShotCommitted(const FShotContext& Shot)
     if (Shot.FireMode == EWeaponFireMode::Projectile)
     {
         const FProjectileDefinition* Definition = (Catalog != nullptr) ? Catalog->FindProjectile(Shot.ProjectileId) : nullptr;
+        // M5-035: an explosive pellet damages through its explosion profile
+        // (the blast is the only damage event it ever delivers); every other
+        // motion hits with the projectile's own profile.
+        const FName HitProfileId = (Definition != nullptr)
+            ? (Definition->ExplosionRadiusCm > 0.0f ? Definition->ExplosionDamageProfileId : Definition->DamageProfileId)
+            : FName(NAME_None);
         const FDamageProfile* Profile = (Catalog != nullptr && Definition != nullptr)
-            ? Catalog->FindDamageProfile(Definition->DamageProfileId)
+            ? Catalog->FindDamageProfile(HitProfileId)
             : nullptr;
         if (Definition == nullptr || Profile == nullptr || ProjectileService == nullptr)
         {
@@ -1306,8 +1326,24 @@ void APrototypeCharacter::HandleWeaponShotCommitted(const FShotContext& Shot)
             UE_LOG(LogTemp, Warning, TEXT("UEMMO M5-033: the projectile commit failed: %s"), *Reservation.RejectDetail);
             return;
         }
-        // Bind exactly one linear motion policy per spawned pellet (the 028
-        // seam contract: never two advancers on one body).
+        // M5-035: the homing target seam resolves BEFORE the pellets begin so
+        // every pellet of the volley binds the same registry id (the candidate
+        // registers through the production lazy path, never a fake id).
+        FEntityId HomingTargetId = InvalidCombatTargetId;
+        if (Definition->Motion == EProjectileMotion::Homing && WeaponHomingTargetProvider)
+        {
+            if (AActor* Candidate = WeaponHomingTargetProvider())
+            {
+                HomingTargetId = ResolveTargetEntityId(*Candidate);
+            }
+            if (!IsValidCombatTargetId(HomingTargetId))
+            {
+                UE_LOG(LogTemp, Verbose, TEXT("UEMMO M5-035: the homing shot has no tracked target; the pellets degrade to straight motion."));
+            }
+        }
+        // Bind exactly one motion policy per spawned pellet (the 028 seam
+        // contract: never two advancers on one body); the policy comes from
+        // the production dispatch (M5-035).
         FWeaponProjectileSpawner* Spawner = static_cast<FWeaponProjectileSpawner*>(ProjectileSpawner.Get());
         const int32 PelletTotal = FMath::Min(Plan.Pellets.Num(), Spawner->Spawned.Num());
         for (int32 PelletAt = 0; PelletAt < PelletTotal; ++PelletAt)
@@ -1326,7 +1362,8 @@ void APrototypeCharacter::HandleWeaponShotCommitted(const FShotContext& Shot)
             HitContext.SourceActor = this;
             FLiveWeaponProjectile Entry;
             Entry.Actor = Actor;
-            if (Entry.Policy.Begin(*Actor, Plan.Pellets[PelletAt].Direction, HitContext))
+            Entry.Policy = MakeWeaponProjectileMotionPolicy(*Definition, HomingTargetId);
+            if (Entry.Policy.IsValid() && Entry.Policy->Begin(*Actor, Plan.Pellets[PelletAt].Direction, HitContext))
             {
                 LiveWeaponProjectiles.Add(MoveTemp(Entry));
             }
@@ -1362,6 +1399,67 @@ FEntityId APrototypeCharacter::ResolveTargetEntityId(const AActor& HitActor) con
 void APrototypeCharacter::SetWeaponInputClockProvider(TFunction<double()> Provider)
 {
     WeaponInputClockProvider = MoveTemp(Provider);
+}
+
+void APrototypeCharacter::SetWeaponHomingTargetProvider(TFunction<AActor*()> Provider)
+{
+    WeaponHomingTargetProvider = MoveTemp(Provider);
+}
+
+// M5-035: the production motion-policy dispatch. Exactly one policy per pellet
+// (the 028 seam contract: never two advancers on one body); the 029..032
+// policies register here - a definition only ever meets its policy through
+// this one choke point, so an unregistered policy cannot silently pass.
+TUniquePtr<IProjectileMotionPolicy> APrototypeCharacter::MakeWeaponProjectileMotionPolicy(
+    const FProjectileDefinition& Definition, FEntityId HomingTargetId) const
+{
+    if (Definition.Motion == EProjectileMotion::Parabolic)
+    {
+        // The ballistic policy reads the actor's MotionGravityScale (stamped
+        // from the motion at spawn: 1 parabolic, 0 straight/homing).
+        return MakeUnique<FBallisticProjectilePolicy>();
+    }
+    if (Definition.Motion == EProjectileMotion::Homing)
+    {
+        if (IsValidCombatTargetId(HomingTargetId))
+        {
+            auto Homing = MakeUnique<FHomingProjectilePolicy>();
+            // Lost-target face: KeepStraight - a lost tracked target leaves a
+            // straight pellet (no re-search ever happens). The turn rate is
+            // definition-validated positive, so the Begin face stays legal.
+            Homing->Configure(Definition.HomingTurnRateDegS, EHomingLostTargetAction::KeepStraight);
+            if (Homing->BindTarget(HomingTargetId))
+            {
+                return MoveTemp(Homing);
+            }
+        }
+        // The honest downgrade: without a tracked target (no provider, an
+        // unresolvable candidate or a refused binding) the shot flies the
+        // straight reference motion instead of dangling unguided.
+        return MakeUnique<FLinearProjectilePolicy>();
+    }
+    // Straight motions. Pierce and explosion are mutually exclusive by the
+    // definition validator (M5-004), so the two dispatches cannot both fire;
+    // the pierce budget takes precedence and the penetration policy's own
+    // Begin re-refuses the illegal pair fail-closed.
+    if (Definition.PierceCount > 0)
+    {
+        auto Pierce = MakeUnique<FPenetrationProjectilePolicy>();
+        FPenetrationPolicyConfig Config;
+        Config.ExplosionRadiusCm = Definition.ExplosionRadiusCm;
+        Pierce->Configure(Config);
+        return MoveTemp(Pierce);
+    }
+    if (Definition.ExplosionRadiusCm > 0.0f)
+    {
+        auto Explosion = MakeUnique<FExplosionProjectilePolicy>();
+        FExplosionPolicyConfig Config;
+        Config.ExplosionRadiusCm = Definition.ExplosionRadiusCm;
+        Config.EdgeScale = M5_035_ExplosionEdgeScale;
+        Explosion->Configure(Config);
+        return MoveTemp(Explosion);
+    }
+    return MakeUnique<FLinearProjectilePolicy>();
 }
 void APrototypeCharacter::OnDebugTogglePressed()
 {

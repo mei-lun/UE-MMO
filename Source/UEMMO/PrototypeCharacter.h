@@ -47,6 +47,13 @@ class UEMMO_API APrototypeCharacter : public ACharacter, public IHitscanTargetId
     GENERATED_BODY()
 public:
     APrototypeCharacter();
+    /**
+     * M5-035: defined out of line - the live-pellet entries own
+     * TUniquePtr<IProjectileMotionPolicy> (the M5-029..032 concrete policies
+     * are complete only in the .cpp), so the implicit inline destructor would
+     * delete through an incomplete type in every other TU.
+     */
+    virtual ~APrototypeCharacter();
     virtual void Tick(float DeltaSeconds) override;
 
     /** M1-012: the combat subobject every submitted intent is buffered into. */
@@ -221,6 +228,17 @@ public:
      */
     void SetWeaponInputClockProvider(TFunction<double()> Provider);
 
+    /**
+     * M5-035: the homing target seam - returns the actor the next homing shot
+     * tracks (null actor or an unset provider = no tracking; the homing shot
+     * then honestly degrades to a straight pellet instead of flying unguided
+     * forever). The pawn resolves the returned actor through the production
+     * lazy fire-registry registration at the shot commit, so the bound id is
+     * the same one the hit path uses. Production target selection wires in as
+     * this provider; the scenario tests inject their staged target directly.
+     */
+    void SetWeaponHomingTargetProvider(TFunction<AActor*()> Provider);
+
     /** M5-033: true between the fire-authorized Q press and its release. */
     bool IsWeaponFireHeld() const { return bWeaponFireHeld; }
 
@@ -324,6 +342,15 @@ private:
     // delegated to this card): plans the shot pattern and delivers it through
     // the M5-026 executor (hitscan) or the M5-027/028 projectile service.
     void HandleWeaponShotCommitted(const FShotContext& Shot);
+    // M5-035: the production motion-policy dispatch - exactly one policy per
+    // pellet, chosen from the resolved definition (parabolic -> the M5-029
+    // ballistic policy, homing -> the M5-030 homing policy when a target id
+    // resolved (straight downgrade otherwise), straight with a pierce budget
+    // -> the M5-031 penetration policy, straight with an explosion radius ->
+    // the M5-032 explosion policy, otherwise the M5-028 linear reference).
+    // This is the registration of 029..032 into the production chain.
+    TUniquePtr<IProjectileMotionPolicy> MakeWeaponProjectileMotionPolicy(
+        const FProjectileDefinition& Definition, FEntityId HomingTargetId) const;
     // M5-033: the BeginPlay wiring pass (gates, fire source, ledger bind, the
     // shot subscription); guarded to run exactly once per pawn.
     void WireWeaponMount();
@@ -441,6 +468,8 @@ private:
     double WeaponReloadDeadlineSeconds = 0.0;
     // The injected input-layer clock; empty = the owner world clock.
     TFunction<double()> WeaponInputClockProvider;
+    // M5-035: the homing target seam (empty = homing shots degrade straight).
+    TFunction<AActor*()> WeaponHomingTargetProvider;
     // The pawn-owned pacing/delivery policies registered through SetFirePolicy
     // by ApplyWeaponBindWiring (the card owns the instances, per the M5-024
     // contract "the input layer M5-033 owns the instance").
@@ -453,11 +482,13 @@ private:
     // spawner; created in BeginPlay / lazily at the first commit.
     TUniquePtr<FProjectileWorldService> ProjectileService;
     TUniquePtr<IProjectileSpawner> ProjectileSpawner;
-    // One live pellet: its motion policy (the M5-028 linear reference policy)
-    // plus the bound actor; advanced once per pawn tick until finished.
+    // One live pellet: its motion policy (the M5-028 linear reference or one
+    // of the M5-029..032 production policies, dispatched per definition
+    // motion) plus the bound actor; advanced once per pawn tick until
+    // finished.
     struct FLiveWeaponProjectile
     {
-        FLinearProjectilePolicy Policy;
+        TUniquePtr<IProjectileMotionPolicy> Policy;
         TWeakObjectPtr<ACombatProjectile> Actor;
     };
     TArray<FLiveWeaponProjectile> LiveWeaponProjectiles;
