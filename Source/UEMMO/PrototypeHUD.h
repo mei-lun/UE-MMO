@@ -233,6 +233,20 @@ public:
     /** M3-012 test seam: the presented inventory widget itself (weak-safe; null when dismissed). */
     UInventoryWidget* PeekInventoryWidget() const { return InventoryWidgetPtr.Get(); }
 
+    /**
+     * M5-057: re-arms the weapon equip after a map travel. The bag lives on
+     * the profile (GameInstance scope) while the equipment model is a HUD
+     * member and dies with the traveled-from world, so the fresh world's pawn
+     * would read an empty slot and stay bound=0 (the M5B-v4 package log:
+     * "10 items, 0 equipped ids"). The pawn's BeginPlay calls this BEFORE the
+     * mount refresh: a non-empty bag with an empty weapon slot re-equips the
+     * boot pick (ranged preferred, the M5-056 rule) through the real model;
+     * an occupied slot or an empty bag never touches the model. Returns true
+     * when an equip was applied. Definitions resolve from the production
+     * items source (this HUD's staging catalog died with the old world).
+     */
+    bool RestoreBootWeaponEquip(const APrototypeCharacter* Pawn);
+
     // ----- M5-034: weapon status presentation -----------------------------------
 
     /**

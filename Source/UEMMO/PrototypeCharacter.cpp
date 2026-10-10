@@ -402,6 +402,26 @@ void APrototypeCharacter::BeginPlay()
     // bind, the shot subscription) runs before the first load so every bind
     // that follows lands on a wired mount.
     WireWeaponMount();
+    // M5-057: a map travel spawns a FRESH HUD whose equipment model starts
+    // empty while the profile's inventory (GameInstance-level) survives with
+    // the granted loadout - the v4 package's bound=0 root cause. Re-arm the
+    // boot weapon equip through the fresh HUD's real model first; the mount
+    // refresh below then binds the granted ranged weapon instead of falling
+    // back to the inert M1 skill slot. No-op when nothing was granted (a truly
+    // fresh profile) or when the slot is already equipped.
+    EnsureWeaponCatalogsMounted();
+    if (APlayerController* LocalController = Cast<APlayerController>(GetController()))
+    {
+        if (APrototypeHUD* Hud = Cast<APrototypeHUD>(LocalController->GetHUD()))
+        {
+            if (Hud->RestoreBootWeaponEquip(this))
+            {
+                // The equip pushed a stat bonus onto the profile; re-apply the
+                // final stats so this pawn's Attack/Defense/MaxHP pick it up.
+                ApplyProfileFinalStats();
+            }
+        }
+    }
     // M5-020: the equipment load point (interface contract section 7: the
     // WeaponComponent re-binds at pawn BeginPlay / map travel). Resolves the
     // equipped weapon slot through the local HUD's real equipment model; a

@@ -1487,6 +1487,115 @@ void APrototypeHUD::StageStarterLoadoutForGameplay()
     }
 }
 
+namespace
+{
+    // M5-057: one production items row -> one staging catalog definition (the
+    // M5-020A field rules). Shared by the boot staging and the post-travel
+    // equip restore, which must rebuild the DEFINITION side without re-granting.
+    FItemDefinition M5_057_InventoryDefinitionFromRow(const FTestRoomItemRow& Row)
+    {
+        FItemDefinition Definition;
+        Definition.DefinitionId = Row.DefinitionId;
+        Definition.DisplayName = Row.DisplayName;
+        Definition.Slot = Row.Slot == TEXT("Weapon") ? EItemSlot::Weapon
+            : Row.Slot == TEXT("Armor") ? EItemSlot::Armor
+            : Row.Slot == TEXT("Accessory") ? EItemSlot::Accessory
+            : EItemSlot::Weapon;
+        Definition.BaseStats.Attack = Row.Attack;
+        Definition.BaseStats.Defense = Row.Defense;
+        Definition.BaseStats.MaxHP = Row.MaxHP;
+        Definition.Rarity = static_cast<EItemRarity>(FMath::Clamp(Row.Rarity, 1, 3));
+        Definition.WeaponDefinitionId = Row.WeaponDefinitionId;
+        return Definition;
+    }
+}
+
+bool APrototypeHUD::RestoreBootWeaponEquip(const APrototypeCharacter* Pawn)
+{
+    UProfileSubsystem* Profile = ResolveProfileSubsystem();
+    if (Profile == nullptr || !Profile->HasProfile() || Profile->GetInventory().Count() == 0)
+    {
+        return false;
+    }
+    if (InventoryEquipment.GetEquippedId(EItemSlot::Weapon) != nullptr)
+    {
+        return false;
+    }
+    // Definitions come straight from the production items source - this HUD's
+    // staging catalog was filled by the OLD world's staging pass and this
+    // fresh HUD never staged.
+    TArray<FTestRoomItemRow> Rows;
+    FString SourceError;
+    if (!ACombatTestRoomDriver::LoadProductionItems(Rows, SourceError))
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UEMMO M5-057: boot equip restore skipped (items source: %s)."), *SourceError);
+        return false;
+    }
+    const UWeaponComponent* Mount = (Pawn != nullptr) ? Pawn->GetWeaponMount() : nullptr;
+    const FCombatCatalog* WeaponCatalog = (Mount != nullptr) ? Mount->GetMountedWeaponCatalog() : nullptr;
+    TOptional<FGuid> FirstWeaponId;
+    TOptional<FGuid> FirstRangedWeaponId;
+    for (const FItemInstance& Instance : Profile->GetInventory().GetAll())
+    {
+        const FTestRoomItemRow* Row = Rows.FindByPredicate([&Instance](const FTestRoomItemRow& R)
+        {
+            return R.DefinitionId == ACombatTestRoomDriver::ResolveItemAlias(Instance.DefinitionId);
+        });
+        if (Row == nullptr || Row->Slot != TEXT("Weapon"))
+        {
+            continue;
+        }
+        if (!FirstWeaponId.IsSet())
+        {
+            FirstWeaponId = Instance.InstanceId;
+        }
+        if (!FirstRangedWeaponId.IsSet() && WeaponCatalog != nullptr && !Row->WeaponDefinitionId.IsNone())
+        {
+            const FWeaponDefinition* Weapon = WeaponCatalog->FindWeapon(Row->WeaponDefinitionId);
+            if (Weapon != nullptr && Weapon->FireMode != EWeaponFireMode::Melee)
+            {
+                FirstRangedWeaponId = Instance.InstanceId;
+            }
+        }
+    }
+    const TOptional<FGuid> TargetId = FirstRangedWeaponId.IsSet() ? FirstRangedWeaponId : FirstWeaponId;
+    if (!TargetId.IsSet())
+    {
+        return false;
+    }
+    // The fresh HUD never staged: its display catalog is empty and the
+    // equipment model refuses every Equip with MissingDefinitions without a
+    // bound catalog (the M3-012 rule - never silently). Rebuild the DEFINITION
+    // side only from the production rows; the inventory itself is the
+    // profile's and must not be re-granted.
+    if (InventoryDisplayCatalog == nullptr)
+    {
+        for (const FTestRoomItemRow& Row : Rows)
+        {
+            FString CatalogError;
+            if (!InventoryStagingCatalog.AddDefinition(M5_057_InventoryDefinitionFromRow(Row), &CatalogError))
+            {
+                UE_LOG(LogTemp, Warning, TEXT("UEMMO M5-057: restore definition '%s' refused (%s)."),
+                    *Row.DefinitionId.ToString(), *CatalogError);
+            }
+        }
+        InventoryDisplayCatalog = &InventoryStagingCatalog;
+    }
+    if (!EnsureInventoryEquipmentWiring())
+    {
+        return false;
+    }
+    if (InventoryEquipment.Equip(EItemSlot::Weapon, TargetId.GetValue(), Profile->GetInventory())
+        != EEquipmentEquipResult::Equipped)
+    {
+        return false;
+    }
+    RebuildEquippedInventoryIds();
+    Profile->SetEquippedStatBonus(ComputeEquippedBonusFromModel());
+    UE_LOG(LogTemp, Display, TEXT("UEMMO M5-057: boot weapon equip restored on the fresh world (ranged preferred)."));
+    return true;
+}
+
 void APrototypeHUD::RefreshInventoryScreen()
 {
     // The HUD-side change-point entry (reward claim / equip UI call this later;
@@ -1793,19 +1902,7 @@ bool APrototypeHUD::EnsureInventoryStaging()
     }
     auto RowToDefinition = [](const FTestRoomItemRow& Row)
     {
-        FItemDefinition Definition;
-        Definition.DefinitionId = Row.DefinitionId;
-        Definition.DisplayName = Row.DisplayName;
-        Definition.Slot = Row.Slot == TEXT("Weapon") ? EItemSlot::Weapon
-            : Row.Slot == TEXT("Armor") ? EItemSlot::Armor
-            : Row.Slot == TEXT("Accessory") ? EItemSlot::Accessory
-            : EItemSlot::Weapon;
-        Definition.BaseStats.Attack = Row.Attack;
-        Definition.BaseStats.Defense = Row.Defense;
-        Definition.BaseStats.MaxHP = Row.MaxHP;
-        Definition.Rarity = static_cast<EItemRarity>(FMath::Clamp(Row.Rarity, 1, 3));
-        Definition.WeaponDefinitionId = Row.WeaponDefinitionId;
-        return Definition;
+        return M5_057_InventoryDefinitionFromRow(Row);
     };
     // M5-056: production staging walks the WHOLE items table - every Weapon
     // row stages (the H02 trial needs the sword and all ranged kinds in the
@@ -1869,6 +1966,7 @@ bool APrototypeHUD::EnsureInventoryStaging()
     const UWeaponComponent* StagingMount = StagingPawn ? StagingPawn->GetWeaponMount() : nullptr;
     const FCombatCatalog* StagingWeaponCatalog = StagingMount ? StagingMount->GetMountedWeaponCatalog() : nullptr;
     int64 RollSeed = 1;
+    int32 StagedCount = 0;
     for (const FName& StagedId : StagedIds)
     {
         const FItemDefinition* Definition = InventoryStagingCatalog.Find(ACombatTestRoomDriver::ResolveItemAlias(StagedId));
@@ -1879,6 +1977,7 @@ bool APrototypeHUD::EnsureInventoryStaging()
         const FItemInstance Item = MakeItemInstance(*Definition, RollSeed++);
         if (Inventory.TryAdd(Item) == EInventoryAddResult::Added)
         {
+            ++StagedCount;
             if (Definition->Slot == EItemSlot::Weapon)
             {
                 if (!FirstStagedWeaponId.IsSet())
@@ -1931,7 +2030,8 @@ bool APrototypeHUD::EnsureInventoryStaging()
     }
 
     bInventoryStaged = true;
-    UE_LOG(LogTemp, Display, TEXT("UEMMO M3-011: staged 3 starter items (first marked equipped)."));
+    UE_LOG(LogTemp, Display, TEXT("UEMMO M3-011: staged %d starter items (first weapon equipped through the real model)."),
+        StagedCount);
     return true;
 }
 

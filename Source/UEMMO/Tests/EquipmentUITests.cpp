@@ -1021,4 +1021,160 @@ bool FUEMMOTasksM3_012SlotReplacementKeepsReplacedItemStored::RunTest(const FStr
 	return true;
 }
 
+// ----- M5-057: the boot weapon equip survives the map travel -------------------
+//
+// The M5B-v4 package proved the travel gap: EnterRoom's second Browse spawns a
+// FRESH HUD whose equipment model starts empty while the profile's inventory
+// (GameInstance-level) survives with the granted loadout, so the new pawn's
+// mount refresh read the empty model and stayed bound=0 (Q fell back to the
+// inert M1 skill slot). The pawn's BeginPlay now re-arms the boot equip
+// through the fresh HUD's RestoreBootWeaponEquip BEFORE the mount refresh.
+// This suite locks the HUD half (the pawn half is the thin controller->HUD
+// glue the test world's controller-less pawn cannot drive):
+//
+//   1. A fresh HUD (the post-travel form) restores the equip from the
+//      surviving inventory: the Weapon slot re-maps the FIRST RANGED weapon
+//      (the melee training sword never authorizes component fire), the
+//      profile's bonus row follows, and the call reports the restore.
+//   2. The restore is idempotent: a second call on the same HUD refuses and
+//      the mapping stays put.
+//   3. The refusal gates: an already-equipped model refuses (the real equip
+//      flow owns the slot) and an empty inventory refuses (nothing to arm).
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FUEMMOTasksM5_057TravelRestoresBootWeaponEquip,
+	"UEMMO.Tasks.M5_057.TravelRestoresBootWeaponEquip",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+
+bool FUEMMOTasksM5_057TravelRestoresBootWeaponEquip::RunTest(const FString& Parameters)
+{
+	FM3_012_Scene Scene;
+	if (!Scene.Build(*this, /*bWithPlayer*/ true))
+	{
+		return true;
+	}
+	UInventoryWidget* Widget = Scene.OpenInventory(*this);
+	if (Widget == nullptr)
+	{
+		return true;
+	}
+
+	// The boot world staged the ten production items and equipped a weapon
+	// through the real model. The travel keeps the profile (the inventory and
+	// the pushed bonus row) but kills the HUD and its equipment model.
+	TestEqual(TEXT("the staged inventory holds the ten production items"),
+		Scene.Profile->GetInventory().Count(), 10);
+	if (!TestTrue(TEXT("the boot world equipped a weapon through the real model"),
+		Scene.Hud->PeekInventoryEquipment().IsSlotEquipped(EItemSlot::Weapon)))
+	{
+		return true;
+	}
+	Scene.Hud->Destroy();
+
+	// The post-travel form: a fresh HUD whose equipment model starts EMPTY.
+	APrototypeHUD* FreshHud = Scene.World->SpawnActor<APrototypeHUD>(APrototypeHUD::StaticClass(),
+		FVector::ZeroVector, FRotator::ZeroRotator, FActorSpawnParameters());
+	if (!TestNotNull(TEXT("the fresh post-travel HUD spawns"), FreshHud))
+	{
+		return true;
+	}
+	TestFalse(TEXT("the fresh HUD's equipment model starts empty (the v4 bound=0 root cause)"),
+		FreshHud->PeekInventoryEquipment().IsSlotEquipped(EItemSlot::Weapon));
+	TestEqual(TEXT("the profile inventory survives the travel"),
+		Scene.Profile->GetInventory().Count(), 10);
+
+	// The restore re-arms the equip on the fresh model.
+	TestTrue(TEXT("the boot weapon equip restore re-arms the fresh model"),
+		FreshHud->RestoreBootWeaponEquip(Scene.Player));
+	const FGuid* RestoredId = FreshHud->PeekInventoryEquipment().GetEquippedId(EItemSlot::Weapon);
+	if (!TestNotNull(TEXT("the Weapon slot is mapped after the restore"), RestoredId))
+	{
+		return true;
+	}
+
+	// The restored weapon is the FIRST RANGED one (the melee training sword
+	// never authorizes Q): the hitscan rifle is the first ranged row of the
+	// production items table, resolved through the pawn's mounted catalog.
+	const FItemInstance* RestoredInstance = nullptr;
+	for (const FItemInstance& Instance : Scene.Profile->GetInventory().GetAll())
+	{
+		if (Instance.InstanceId == *RestoredId)
+		{
+			RestoredInstance = &Instance;
+			break;
+		}
+	}
+	if (!TestNotNull(TEXT("the restored instance is stored in the inventory"), RestoredInstance))
+	{
+		return true;
+	}
+	TestEqual(TEXT("the restore prefers the first ranged weapon (the hitscan rifle)"),
+		RestoredInstance->DefinitionId, FName(TEXT("weapon_hitscan_gun")));
+
+	// The profile row follows the restored mapping (the rifle's attack row).
+	const FProfileSnapshot Snapshot = Scene.Profile->GetProfileSnapshot();
+	TestEqual(TEXT("the snapshot Attack follows the restored equip"), Snapshot.Attack, 5);
+
+	// Idempotent: a second restore on the same HUD refuses (the slot is armed).
+	TestFalse(TEXT("the restore refuses to re-arm an already-equipped model"),
+		FreshHud->RestoreBootWeaponEquip(Scene.Player));
+	const FGuid* AfterRearm = FreshHud->PeekInventoryEquipment().GetEquippedId(EItemSlot::Weapon);
+	TestTrue(TEXT("the mapping is unchanged after the refused re-arm"),
+		AfterRearm != nullptr && *AfterRearm == *RestoredId);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FUEMMOTasksM5_057RestoreRefusesOccupiedSlot,
+	"UEMMO.Tasks.M5_057.RestoreRefusesOccupiedSlot",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+
+bool FUEMMOTasksM5_057RestoreRefusesOccupiedSlot::RunTest(const FString& Parameters)
+{
+	FM3_012_Scene Scene;
+	if (!Scene.Build(*this, /*bWithPlayer*/ true))
+	{
+		return true;
+	}
+	if (Scene.OpenInventory(*this) == nullptr)
+	{
+		return true;
+	}
+	// The boot HUD's model already holds the staged mapping: the real equip
+	// flow owns the slot, so the restore must refuse and leave it untouched.
+	const FGuid* EquippedBefore = Scene.Hud->PeekInventoryEquipment().GetEquippedId(EItemSlot::Weapon);
+	if (!TestNotNull(TEXT("the staged model holds a weapon mapping"), EquippedBefore))
+	{
+		return true;
+	}
+	const FGuid MappingBefore = *EquippedBefore;
+	TestFalse(TEXT("an already-equipped model refuses the restore"),
+		Scene.Hud->RestoreBootWeaponEquip(Scene.Player));
+	const FGuid* EquippedAfter = Scene.Hud->PeekInventoryEquipment().GetEquippedId(EItemSlot::Weapon);
+	TestTrue(TEXT("the existing mapping is untouched by the refused restore"),
+		EquippedAfter != nullptr && *EquippedAfter == MappingBefore);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FUEMMOTasksM5_057RestoreRefusesEmptyInventory,
+	"UEMMO.Tasks.M5_057.RestoreRefusesEmptyInventory",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+
+bool FUEMMOTasksM5_057RestoreRefusesEmptyInventory::RunTest(const FString& Parameters)
+{
+	FM3_012_Scene Scene;
+	if (!Scene.Build(*this, /*bWithPlayer*/ true))
+	{
+		return true;
+	}
+	// A truly fresh profile (no staging, nothing granted) has nothing to arm.
+	TestEqual(TEXT("the fresh profile's inventory is empty"), Scene.Profile->GetInventory().Count(), 0);
+	TestFalse(TEXT("an empty inventory refuses the restore (nothing to arm)"),
+		Scene.Hud->RestoreBootWeaponEquip(Scene.Player));
+	TestFalse(TEXT("the Weapon slot stays empty after the refused restore"),
+		Scene.Hud->PeekInventoryEquipment().IsSlotEquipped(EItemSlot::Weapon));
+	return true;
+}
+
 #endif
