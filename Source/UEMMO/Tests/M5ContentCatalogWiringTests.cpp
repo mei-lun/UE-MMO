@@ -44,13 +44,26 @@ bool FUEMMOTasksM5_020AProductionReadersParseTheShippedTables::RunTest(const FSt
 			AddError(Error);
 			return true;
 		}
-		TestEqual("the shipped table carries the three items", Rows.Num(), 3);
+		TestEqual("the shipped table carries the ten rows", Rows.Num(), 10);
 		TestEqual("the sword id resolves", Rows[0].DefinitionId, FName(TEXT("weapon_training")));
 		TestEqual("the sword attack comes from the table", Rows[0].Attack, 5.0f);
-		TestEqual("the armor defense comes from the table", Rows[1].Defense, 3.0f);
-		TestEqual("the charm max hp comes from the table", Rows[2].MaxHP, 20.0f);
+		// M5-056: the sword row maps its weapon definition; the seven ranged
+		// rows each carry their own mapping (the M5-H02 bind prerequisite).
+		TestEqual("the sword row maps the training sword",
+			Rows[0].WeaponDefinitionId, FName(TEXT("weapon_training_sword")));
+		int32 MappedWeaponRows = 0;
+		for (const FTestRoomItemRow& Row : Rows)
+		{
+			if (Row.Slot == TEXT("Weapon") && !Row.WeaponDefinitionId.IsNone())
+			{
+				++MappedWeaponRows;
+			}
+		}
+		TestEqual("every weapon row maps a weapon definition", MappedWeaponRows, 8);
+		TestEqual("the armor defense comes from the table", Rows[8].Defense, 3.0f);
+		TestEqual("the charm max hp comes from the table", Rows[9].MaxHP, 20.0f);
 		TestEqual("the charm id is the authority charm_training (the alias target)",
-			Rows[2].DefinitionId, FName(TEXT("charm_training")));
+			Rows[9].DefinitionId, FName(TEXT("charm_training")));
 	}
 
 	// 2. The shipped drops table.
@@ -86,6 +99,33 @@ bool FUEMMOTasksM5_020AProductionReadersParseTheShippedTables::RunTest(const FSt
 		TestFalse("a duplicated item id refuses",
 			ACombatTestRoomDriver::ParseProductionItems(Duplicate, Rows, Error));
 		TestTrue("the item refusal names the duplicate", Error.Contains(TEXT("twice")));
+
+		// M5-056: the optional mapping is checked on the raw string (the
+		// M5-036 packaged-FName lesson) - uppercase/hyphen refuse; absent
+		// keeps None (the legacy shape stays legal).
+		const TCHAR* BadMapping = TEXT(R"({
+			"schema_version": 1,
+			"items": [
+				{"definition_id": "weapon_bad", "display_name": "B", "slot": "Weapon",
+				 "weapon_definition_id": "Weapon_Sword",
+				 "base_stats": {"attack": 1, "defense": 0, "max_hp": 0}}
+			]
+		})");
+		TestFalse("an uppercase weapon mapping refuses",
+			ACombatTestRoomDriver::ParseProductionItems(BadMapping, Rows, Error));
+		TestTrue("the mapping refusal names the field", Error.Contains(TEXT("weapon_definition_id")));
+
+		const TCHAR* NoMapping = TEXT(R"({
+			"schema_version": 1,
+			"items": [
+				{"definition_id": "weapon_plain", "display_name": "P", "slot": "Weapon",
+				 "base_stats": {"attack": 1, "defense": 0, "max_hp": 0}}
+			]
+		})");
+		TArray<FTestRoomItemRow> PlainRows;
+		TestTrue("an absent mapping keeps the legacy shape legal",
+			ACombatTestRoomDriver::ParseProductionItems(NoMapping, PlainRows, Error));
+		TestTrue("the absent mapping stays None", PlainRows[0].WeaponDefinitionId.IsNone());
 
 		const TCHAR* UnknownDrop = TEXT(R"({
 			"schema_version": 1, "table_id": "starter",

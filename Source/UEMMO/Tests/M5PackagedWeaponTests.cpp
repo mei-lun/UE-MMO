@@ -25,6 +25,7 @@
 #include "../Combat/Data/CombatCatalog.h"
 #include "../Combat/Data/CombatDataTableParser.h"
 #include "../Combat/HealthComponent.h"
+#include "../Combat/System/TestRoomConfigDriver.h"
 #include "../Items/ItemDefinition.h"
 #include "../Items/ItemInstance.h"
 #include "../PrototypeHUD.h"
@@ -196,6 +197,29 @@ namespace UE::UEMMO::Tasks::M5_036
 			Test.TestNotNull(FString::Printf(TEXT("the shipped catalog defines '%s'"), WeaponId),
 				OutCatalog.FindWeapon(FName(WeaponId)));
 		}
+		// M5-056: the items source rides with the package (the staging grant
+		// and the weapon mappings). A package without it stages no items and
+		// every bind refuses - the M5-H02 "Q does nothing" root cause.
+		const FString ItemsPath = FPaths::ProjectDir() / TEXT("Data") / TEXT("items.json");
+		TArray<FTestRoomItemRow> ItemRows;
+		FString ItemsError;
+		if (!Test.TestTrue(TEXT("the shipped items source is present and loads"),
+			FPaths::FileExists(ItemsPath)
+			&& ACombatTestRoomDriver::LoadProductionItems(ItemRows, ItemsError)))
+		{
+			Test.AddError(FString::Printf(TEXT("the shipped items source refused: %s"), *ItemsError));
+			return false;
+		}
+		const FTestRoomItemRow* SwordRow = ItemRows.FindByPredicate([](const FTestRoomItemRow& Row)
+		{
+			return Row.DefinitionId == FName(TEXT("weapon_training"));
+		});
+		if (!Test.TestNotNull(TEXT("the shipped items define the training sword"), SwordRow))
+		{
+			return false;
+		}
+		Test.TestEqual(TEXT("the training sword row maps its weapon definition"),
+			SwordRow->WeaponDefinitionId, FName(TEXT("weapon_training_sword")));
 		return true;
 	}
 }

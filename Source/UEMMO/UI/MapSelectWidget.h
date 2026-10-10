@@ -16,6 +16,12 @@ class UVerticalBox;
  * dismisses the overlay; nothing is broadcast for a refused request). */
 DECLARE_MULTICAST_DELEGATE(FMapMenuEnterAccepted);
 
+/** M5-056: fired ONLY from the real enter-click handler (after the flow
+ * accepted). The automation tests broadcast EnterAccepted directly and never
+ * cross this bridge, so the gameplay boot loadout stays a production-only
+ * side effect. */
+DECLARE_MULTICAST_DELEGATE(FMapGameplayEnterAccepted);
+
 /**
  * M3-017: the map select menu (native-only UUserWidget, same code-built
  * pattern as M2-012's URoomResultWidget - no UMG asset, no external UI
@@ -86,6 +92,9 @@ public:
 
 	/** M3-030: broadcast exactly once per ACCEPTED enter request. */
 	FMapMenuEnterAccepted EnterAccepted;
+
+	/** M5-056: real-click-only bridge for the gameplay boot loadout. */
+	FMapGameplayEnterAccepted GameplayEnterAccepted;
 
 	// -- Read seams (tests and the future menu HUD wiring) -----------------------
 

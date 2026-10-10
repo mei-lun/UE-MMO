@@ -207,6 +207,10 @@ void UMapSelectWidget::HandleEnterClicked()
 		// this presentation and a stale error line clears. The M3-030 mount
 		// listens on EnterAccepted to dismiss the overlay.
 		SetErrorText(FString());
+		// M5-056: production-only bridge (the real click path) - grants the
+		// gameplay boot loadout before the dismissal broadcast below. The
+		// tests broadcast EnterAccepted directly and never reach this line.
+		GameplayEnterAccepted.Broadcast();
 		EnterAccepted.Broadcast();
 		return;
 	}

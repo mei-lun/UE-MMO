@@ -609,9 +609,10 @@ bool APrototypeCharacter::EnsureWeaponCatalogsMounted()
             Definition.BaseStats.Defense = Row.Defense;
             Definition.BaseStats.MaxHP = Row.MaxHP;
             Definition.Rarity = static_cast<EItemRarity>(FMath::Clamp(Row.Rarity, 1, 3));
-            // WeaponDefinitionId stays None: the shipped items source carries
-            // no weapon mappings yet (the M5-019 report records the table
-            // carrier of that field as future lineage work).
+            // M5-056: the mapping comes from the table now. Rows without the
+            // field keep None and stay unbindable ("缺武器不是假成功"); a
+            // mapped row binds its weapon definition at ApplyEquippedWeapon.
+            Definition.WeaponDefinitionId = Row.WeaponDefinitionId;
             FString AddError;
             if (!WeaponItemCatalogValue.AddDefinition(Definition, &AddError))
             {

@@ -578,8 +578,10 @@ bool FUEMMOTasksM3_011HudExecOpensInventoryAndCloseRestoresFocus::RunTest(const 
 	TestTrue(TEXT("the exec opened the inventory screen"), Hud->HasInventoryScreen());
 	const FInventoryListViewModel& ViewModel = Hud->PeekInventoryViewModel();
 	TestTrue(TEXT("the presented list is valid"), ViewModel.bValid);
-	TestEqual(TEXT("the staged starter inventory has three rows"), ViewModel.Rows.Num(), 3);
-	if (ViewModel.Rows.Num() == 3)
+	// M5-056: the starter grant walks the whole items table - eight mapped
+	// weapons plus armor and charm; the first weapon row stays equipped.
+	TestEqual(TEXT("the staged starter inventory has ten rows"), ViewModel.Rows.Num(), 10);
+	if (ViewModel.Rows.Num() == 10)
 	{
 		TestTrue(TEXT("the staged first item is marked equipped"), ViewModel.Rows[0].bEquipped);
 		TestTrue(TEXT("the staged spare items are not marked equipped"), !ViewModel.Rows[1].bEquipped);
@@ -592,7 +594,7 @@ bool FUEMMOTasksM3_011HudExecOpensInventoryAndCloseRestoresFocus::RunTest(const 
 	Hud->RefreshInventoryScreen();
 	TestTrue(TEXT("the identical refresh keeps the screen up"), Hud->HasInventoryScreen());
 	TestEqual(TEXT("the identical refresh keeps the same rows"),
-		Hud->PeekInventoryViewModel().Rows.Num(), 3);
+		Hud->PeekInventoryViewModel().Rows.Num(), 10);
 
 	// Close (mode 0): the screen is dismissed and the input focus restored.
 	Hud->UEMMODebugInventory(0);

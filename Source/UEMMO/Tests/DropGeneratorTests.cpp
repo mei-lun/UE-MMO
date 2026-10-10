@@ -880,7 +880,9 @@ bool FUEMMOTasksM3_007DropsJsonMatchesItemsCatalogAndDrivesGeneration::RunTest(c
 		}
 		ItemIds.Add((*Id)->String);
 	}
-	TestEqual(TEXT("items.json registers exactly 3 definition ids"), ItemIds.Num(), 3);
+	// M5-056: the shipped items source grew to ten rows (eight mapped weapons
+	// plus armor and charm); the drops ids must still all be registered.
+	TestEqual(TEXT("items.json registers exactly 10 definition ids"), ItemIds.Num(), 10);
 	for (int32 Index = 0; Index < 3; ++Index)
 	{
 		TestTrue(FString::Printf(TEXT("items.json contains the drops entry '%s'"), ExpectedIds[Index]),

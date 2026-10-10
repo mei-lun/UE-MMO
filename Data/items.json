@@ -5,6 +5,70 @@
       "definition_id": "weapon_training",
       "display_name": "Training Sword",
       "slot": "Weapon",
+      "weapon_definition_id": "weapon_training_sword",
+      "base_stats": { "attack": 5, "defense": 0, "max_hp": 0 },
+      "icon_path": "",
+      "rarity": 1
+    },
+    {
+      "definition_id": "weapon_hitscan_gun",
+      "display_name": "Hitscan Rifle",
+      "slot": "Weapon",
+      "weapon_definition_id": "weapon_hitscan_sample",
+      "base_stats": { "attack": 5, "defense": 0, "max_hp": 0 },
+      "icon_path": "",
+      "rarity": 1
+    },
+    {
+      "definition_id": "weapon_burst_gun",
+      "display_name": "Burst Rifle",
+      "slot": "Weapon",
+      "weapon_definition_id": "weapon_burst_sample",
+      "base_stats": { "attack": 5, "defense": 0, "max_hp": 0 },
+      "icon_path": "",
+      "rarity": 1
+    },
+    {
+      "definition_id": "weapon_pellet_gun",
+      "display_name": "Pellet Shotgun",
+      "slot": "Weapon",
+      "weapon_definition_id": "weapon_pellet_sample",
+      "base_stats": { "attack": 5, "defense": 0, "max_hp": 0 },
+      "icon_path": "",
+      "rarity": 1
+    },
+    {
+      "definition_id": "weapon_rifle",
+      "display_name": "Training Rifle",
+      "slot": "Weapon",
+      "weapon_definition_id": "weapon_projectile_sample",
+      "base_stats": { "attack": 5, "defense": 0, "max_hp": 0 },
+      "icon_path": "",
+      "rarity": 1
+    },
+    {
+      "definition_id": "weapon_grenade_launcher",
+      "display_name": "Grenade Launcher",
+      "slot": "Weapon",
+      "weapon_definition_id": "weapon_explosive_sample",
+      "base_stats": { "attack": 5, "defense": 0, "max_hp": 0 },
+      "icon_path": "",
+      "rarity": 1
+    },
+    {
+      "definition_id": "weapon_mortar",
+      "display_name": "Mortar",
+      "slot": "Weapon",
+      "weapon_definition_id": "weapon_parabolic_sample",
+      "base_stats": { "attack": 5, "defense": 0, "max_hp": 0 },
+      "icon_path": "",
+      "rarity": 1
+    },
+    {
+      "definition_id": "weapon_tracker",
+      "display_name": "Tracker",
+      "slot": "Weapon",
+      "weapon_definition_id": "weapon_homing_sample",
       "base_stats": { "attack": 5, "defense": 0, "max_hp": 0 },
       "icon_path": "",
       "rarity": 1

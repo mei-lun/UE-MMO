@@ -104,6 +104,14 @@ struct FTestRoomItemRow
 	/** Rarity tier (1 = Normal in the M3 scale). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "TestRoom|Item")
 	int32 Rarity = 1;
+
+	/**
+	 * M5-056: the optional weapon-definition mapping (a-z, 0-9, _). Absent
+	 * from the table row keeps None - such an item can never bind a weapon
+	 * (ApplyEquippedWeapon refuses None mappings), the M5-H02 lesson.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "TestRoom|Item")
+	FName WeaponDefinitionId;
 };
 
 /** M5-020A: one weighted entry of a production drop pool. */

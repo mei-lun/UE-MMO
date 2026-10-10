@@ -827,8 +827,10 @@ bool FUEMMOTasksM3_001ItemsJsonLoadsThreeDefinitions::RunTest(const FString& Par
 		AddError(TEXT("missing required top-level array 'items'"));
 		return true;
 	}
-	TestEqual(TEXT("items holds exactly 3 entries"), (*Items)->Array.Num(), 3);
-	if ((*Items)->Array.Num() != 3)
+	// M5-056: the shipped items source grew to the eight mapped weapons plus
+	// armor and charm (the M5-H02 bind prerequisite).
+	TestEqual(TEXT("items holds exactly 10 entries"), (*Items)->Array.Num(), 10);
+	if ((*Items)->Array.Num() != 10)
 	{
 		return true;
 	}
@@ -856,7 +858,7 @@ bool FUEMMOTasksM3_001ItemsJsonLoadsThreeDefinitions::RunTest(const FString& Par
 			Catalog.AddDefinition(Definition, &CatalogError));
 	}
 
-	TestEqual(TEXT("the catalog holds all 3 items (no duplicate DefinitionId)"), Catalog.Num(), 3);
+	TestEqual(TEXT("the catalog holds all 10 items (no duplicate DefinitionId)"), Catalog.Num(), 10);
 
 	// Pinned design values of the three training items.
 	const FItemDefinition* Weapon = Catalog.Find(FName(TEXT("weapon_training")));

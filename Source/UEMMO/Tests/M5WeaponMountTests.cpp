@@ -690,6 +690,9 @@ bool FUEMMOTasksM5_020ProductionSourceMount::RunTest(const FString& Parameters)
 			Definition.BaseStats.Defense = Row.Defense;
 			Definition.BaseStats.MaxHP = Row.MaxHP;
 			Definition.Rarity = static_cast<EItemRarity>(FMath::Clamp(Row.Rarity, 1, 3));
+			// M5-056: the mapping rides with the row (the exact production
+			// recipe - without it every bind refuses and Q stays dead).
+			Definition.WeaponDefinitionId = Row.WeaponDefinitionId;
 			FString DefinitionError;
 			if (!TestTrue(TEXT("the production item definition is accepted"), Items.AddDefinition(Definition, &DefinitionError)))
 			{
@@ -704,6 +707,32 @@ bool FUEMMOTasksM5_020ProductionSourceMount::RunTest(const FString& Parameters)
 		return false;
 	}
 	TestEqual(TEXT("the mounted revision is the production revision"), Mount->GetMountedRevision(), ExpectedRevision);
+
+	// M5-056: the mapped rows bind for real - the production H02 chain is
+	// row -> definition (with WeaponDefinitionId) -> ApplyEquippedWeapon. The
+	// melee sword binds without ranged authorization; the rifle binds AND
+	// authorizes fire (the Q-does-nothing root cause is closed exactly here).
+	const FItemDefinition* SwordDefinition = Items.Find(FName(TEXT("weapon_training")));
+	if (!TestNotNull(TEXT("the training sword resolves in the item catalog"), SwordDefinition))
+	{
+		return false;
+	}
+	const FItemInstance SwordInstance = MakeItemInstance(*SwordDefinition, 1);
+	const FWeaponMountOutcome SwordOutcome = Mount->ApplyEquippedWeapon(&SwordInstance);
+	TestTrue(TEXT("the mapped training sword binds"), SwordOutcome.bSucceeded);
+	TestTrue(TEXT("the sword bind is a real bound state"), SwordOutcome.bWeaponBound);
+	TestFalse(TEXT("the melee sword does not authorize ranged fire"), Mount->IsFireAuthorized());
+
+	const FItemDefinition* RifleDefinition = Items.Find(FName(TEXT("weapon_rifle")));
+	if (!TestNotNull(TEXT("the training rifle resolves in the item catalog"), RifleDefinition))
+	{
+		return false;
+	}
+	const FItemInstance RifleInstance = MakeItemInstance(*RifleDefinition, 2);
+	const FWeaponMountOutcome RifleOutcome = Mount->ApplyEquippedWeapon(&RifleInstance);
+	TestTrue(TEXT("the mapped training rifle binds"), RifleOutcome.bSucceeded);
+	TestTrue(TEXT("the rifle bind is a real bound state"), RifleOutcome.bWeaponBound);
+	TestTrue(TEXT("the ranged rifle authorizes fire"), Mount->IsFireAuthorized());
 	return true;
 }
 

@@ -238,9 +238,26 @@ namespace UE::UEMMO::Tasks::M3_012
 			{
 				return nullptr;
 			}
-			Test.TestEqual(TEXT("the staged starter inventory presents three rows"),
-				Widget->PeekRowCount(), 3);
+			// M5-056: the starter grant walks the whole items table (eight
+			// mapped weapons plus armor and charm), so the presented list grew
+			// from three rows to ten.
+			Test.TestEqual(TEXT("the staged starter inventory presents ten rows"),
+				Widget->PeekRowCount(), 10);
 			return Widget;
+		}
+
+		/** M5-056: the list row of an instance id (INDEX_NONE when absent). */
+		int32 RowIndexOf(const FGuid& InstanceId)
+		{
+			const TArray<FInventoryRowViewModel>& Rows = Hud->PeekInventoryViewModel().Rows;
+			for (int32 Index = 0; Index < Rows.Num(); ++Index)
+			{
+				if (Rows[Index].InstanceId == InstanceId)
+				{
+					return Index;
+				}
+			}
+			return INDEX_NONE;
 		}
 
 		/** Clicks one row through its real dynamic OnClicked bridge. */
@@ -494,7 +511,22 @@ bool FUEMMOTasksM3_012EquipUpdatesMappingSnapshotAndUi::RunTest(const FString& P
 	}
 	const TArray<FItemInstance>& Stored = Scene.Profile->GetInventory().GetAll();
 	const FGuid WeaponId = Stored[0].InstanceId;
-	const FGuid ArmorId = Stored[1].InstanceId;
+	// M5-056: the armor is located by definition id (the grant walks the whole
+	// items table now, so "row 1" is the second weapon, not the armor).
+	const FItemInstance* ArmorInstance = Stored.FindByPredicate([](const FItemInstance& Instance)
+	{
+		return Instance.DefinitionId == FName(TEXT("armor_training"));
+	});
+	if (!TestNotNull(TEXT("the staged armor exists"), ArmorInstance))
+	{
+		return true;
+	}
+	const FGuid ArmorId = ArmorInstance->InstanceId;
+	const int32 ArmorRow = Scene.RowIndexOf(ArmorId);
+	if (!TestTrue(TEXT("the armor row resolves in the list"), ArmorRow != INDEX_NONE))
+	{
+		return true;
+	}
 
 	// The staged weapon is equipped through the real model; the armor is not.
 	TestTrue(TEXT("the staged weapon occupies the Weapon slot"),
@@ -503,7 +535,7 @@ bool FUEMMOTasksM3_012EquipUpdatesMappingSnapshotAndUi::RunTest(const FString& P
 		Scene.Hud->PeekInventoryEquipment().IsSlotEquipped(EItemSlot::Armor));
 
 	// Select the armor row and press Equip.
-	if (!Scene.ClickRow(*this, Widget, 1) || !Scene.ClickEquip(*this, Widget))
+	if (!Scene.ClickRow(*this, Widget, ArmorRow) || !Scene.ClickEquip(*this, Widget))
 	{
 		return true;
 	}
@@ -545,7 +577,7 @@ bool FUEMMOTasksM3_012EquipUpdatesMappingSnapshotAndUi::RunTest(const FString& P
 	TestEqual(TEXT("the status line shows the equip result"),
 		Widget->PeekStatusBlock()->GetText().ToString(), MakeEquipResultText(EEquipmentEquipResult::Equipped));
 	TestTrue(TEXT("the refreshed list marks the armor row"),
-		Scene.Hud->PeekInventoryViewModel().Rows[1].bEquipped);
+		Scene.Hud->PeekInventoryViewModel().Rows[ArmorRow].bEquipped);
 	TestTrue(TEXT("the refreshed list still marks the weapon row"),
 		Scene.Hud->PeekInventoryViewModel().Rows[0].bEquipped);
 
@@ -746,10 +778,34 @@ bool FUEMMOTasksM3_012DoubleEquipClickProcessesOnce::RunTest(const FString& Para
 	{
 		return true;
 	}
-	const FGuid ArmorId = Scene.Profile->GetInventory().GetAll()[1].InstanceId;
+	// M5-056: the production staging grants 8 weapons + armor + charm; locate
+	// the armor instance and its list row by definition (no fixed index).
+	const FItemInstance* ArmorInstance = nullptr;
+	for (const FItemInstance& Instance : Scene.Profile->GetInventory().GetAll())
+	{
+		if (Instance.DefinitionId == FName(TEXT("armor_training")))
+		{
+			ArmorInstance = &Instance;
+			break;
+		}
+	}
+	TestNotNull(TEXT("the staged armor instance exists"), ArmorInstance);
+	if (ArmorInstance == nullptr)
+	{
+		Scene.Hud->UEMMODebugInventory(0);
+		return true;
+	}
+	const FGuid ArmorId = ArmorInstance->InstanceId;
+	const int32 ArmorRow = Scene.RowIndexOf(ArmorId);
+	TestTrue(TEXT("the armor list row resolves"), ArmorRow != INDEX_NONE);
+	if (ArmorRow == INDEX_NONE)
+	{
+		Scene.Hud->UEMMODebugInventory(0);
+		return true;
+	}
 
 	// First click: processed (accepted once).
-	if (!Scene.ClickRow(*this, Widget, 1) || !Scene.ClickEquip(*this, Widget))
+	if (!Scene.ClickRow(*this, Widget, ArmorRow) || !Scene.ClickEquip(*this, Widget))
 	{
 		return true;
 	}
@@ -783,7 +839,7 @@ bool FUEMMOTasksM3_012DoubleEquipClickProcessesOnce::RunTest(const FString& Para
 	}
 
 	// Re-selecting re-arms: the next click processes and reports the no-op.
-	if (!Scene.ClickRow(*this, Widget, 1))
+	if (!Scene.ClickRow(*this, Widget, ArmorRow))
 	{
 		return true;
 	}
@@ -821,8 +877,20 @@ bool FUEMMOTasksM3_012RunningDisablesButtonsAndBottomRefuses::RunTest(const FStr
 		return true;
 	}
 
-	// Outside a run: with a selection the buttons are enabled.
-	if (!Scene.ClickRow(*this, Widget, 1))
+	// Outside a run: with a selection the buttons are enabled. M5-056: the
+	// selection is the armor row (located by definition id, not a fixed row).
+	const FItemInstance* RunningArmor = Scene.Profile->GetInventory().GetAll().FindByPredicate(
+		[](const FItemInstance& Instance)
+		{
+			return Instance.DefinitionId == FName(TEXT("armor_training"));
+		});
+	if (!TestNotNull(TEXT("the running-test armor exists"), RunningArmor)
+		|| !TestTrue(TEXT("the running-test armor row resolves"),
+			Scene.RowIndexOf(RunningArmor->InstanceId) != INDEX_NONE))
+	{
+		return true;
+	}
+	if (!Scene.ClickRow(*this, Widget, Scene.RowIndexOf(RunningArmor->InstanceId)))
 	{
 		return true;
 	}
@@ -903,10 +971,16 @@ bool FUEMMOTasksM3_012SlotReplacementKeepsReplacedItemStored::RunTest(const FStr
 	TestEqual(TEXT("the stronger weapon is stored"),
 		Scene.Profile->GetInventory().TryAdd(Stronger), EInventoryAddResult::Added);
 	Scene.Hud->RefreshInventoryScreen();
-	TestEqual(TEXT("the refreshed list shows four rows"), Widget->PeekRowCount(), 4);
+	// M5-056: ten staged rows plus the stronger weapon.
+	TestEqual(TEXT("the refreshed list shows eleven rows"), Widget->PeekRowCount(), 11);
+	const int32 StrongerRow = Scene.RowIndexOf(Stronger.InstanceId);
+	if (!TestTrue(TEXT("the stronger weapon row resolves in the list"), StrongerRow != INDEX_NONE))
+	{
+		return true;
+	}
 
 	// Select the stronger weapon and equip: the Weapon slot re-maps.
-	if (!Scene.ClickRow(*this, Widget, 3) || !Scene.ClickEquip(*this, Widget))
+	if (!Scene.ClickRow(*this, Widget, StrongerRow) || !Scene.ClickEquip(*this, Widget))
 	{
 		return true;
 	}
@@ -930,14 +1004,14 @@ bool FUEMMOTasksM3_012SlotReplacementKeepsReplacedItemStored::RunTest(const FStr
 	TestTrue(TEXT("the replaced weapon stays stored in the inventory"), bStagedStillStored);
 	TestTrue(TEXT("the newly equipped weapon is stored too"), bStrongerStored);
 	TestEqual(TEXT("the inventory count is unchanged by the replacement"),
-		Scene.Profile->GetInventory().Count(), 4);
+		Scene.Profile->GetInventory().Count(), 11);
 
 	// The snapshot sums ONLY the equipped item now (Atk 7), and the markers
 	// moved in the refreshed list.
 	const FProfileSnapshot Snapshot = Scene.Profile->GetProfileSnapshot();
 	TestEqual(TEXT("the snapshot Attack follows the new mapping"), Snapshot.Attack, 7);
 	TestTrue(TEXT("the list moved the marker to the stronger weapon"),
-		Scene.Hud->PeekInventoryViewModel().Rows[3].bEquipped);
+		Scene.Hud->PeekInventoryViewModel().Rows[StrongerRow].bEquipped);
 	TestFalse(TEXT("the list cleared the replaced weapon's marker"),
 		Scene.Hud->PeekInventoryViewModel().Rows[0].bEquipped);
 	TestEqual(TEXT("the status shows the equip result"),

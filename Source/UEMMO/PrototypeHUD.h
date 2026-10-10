@@ -375,6 +375,16 @@ private:
     /** M3-011: debug-only staging (profile + starter items + display catalog). */
     bool EnsureInventoryStaging();
 
+    /**
+     * M5-056: the gameplay boot loadout. Fired from the menu's REAL enter
+     * click only (GameplayEnterAccepted; the tests broadcast EnterAccepted
+     * directly and never reach this). A fresh profile (empty bag) grants the
+     * production items loadout through the same EnsureInventoryStaging path -
+     * the packaged player boots with a ranged weapon equipped and Q authorized;
+     * a non-empty bag (retry, re-entry, an existing save) never re-grants.
+     */
+    void StageStarterLoadoutForGameplay();
+
     // ----- M3-012: inventory equip internals -----------------------------------
 
     /**

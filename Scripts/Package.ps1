@@ -45,3 +45,16 @@ if (Test-Path -LiteralPath $RepoCombatDataDir) {
 else {
     Write-Warning 'Data/CombatSystem not found; the packaged weapon trial will have no combat config and the weapon mount will refuse.'
 }
+# M5-056: the items source ships as runtime config too (LoadProductionItems
+# reads Data/items.json per run; the staging grant and the weapon mappings
+# come from it). Without this carry the package stages nothing and every
+# weapon bind refuses - the M5-H02 "Q does nothing" root cause.
+$RepoItemsSource = Join-Path $ProjectRoot 'Data\items.json'
+if (Test-Path -LiteralPath $RepoItemsSource) {
+    $StagedItemsSource = Join-Path $ArchiveDirectory 'Windows\UEMMO\Data\items.json'
+    New-Item -ItemType Directory -Path (Split-Path -Parent $StagedItemsSource) -Force | Out-Null
+    Copy-Item -LiteralPath $RepoItemsSource -Destination $StagedItemsSource -Force
+}
+else {
+    Write-Warning 'Data/items.json not found; the packaged inventory will stage no items and weapon binds will refuse.'
+}

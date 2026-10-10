@@ -613,6 +613,9 @@ if($IncludeReactionScenario) {
 if($IncludeWeaponScenario) {
     $PackageCombatDataDir = Join-Path $PackageProject 'Data\CombatSystem'
     if(-not (Test-Path -LiteralPath (Join-Path $PackageCombatDataDir 'weapons.json'))) { throw 'The package does not carry the Data/CombatSystem config; rebuild with the M5-036 Package.ps1 carry.' }
+    # M5-056: the items source rides along too (staging grant + weapon mappings);
+    # a package without it stages no items and every weapon bind refuses.
+    if(-not (Test-Path -LiteralPath (Join-Path $PackageProject 'Data\items.json'))) { throw 'The package does not carry Data/items.json; rebuild with the M5-056 Package.ps1 carry.' }
 
     # Pass 1: in-package weapon automation with the zero-exemption gate.
     $WeaponStamp = [DateTimeOffset]::Now.ToString('yyyy-MM-ddTHH-mm-sszzz').Replace(':', '')

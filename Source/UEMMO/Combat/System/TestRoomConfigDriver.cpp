@@ -431,6 +431,24 @@ bool ACombatTestRoomDriver::ParseProductionItems(const FString& JsonText, TArray
 			}
 		}
 		Entry.Rarity = static_cast<int32>(Rarity);
+		// M5-056: the optional weapon mapping. Absent keeps None (the legacy
+		// three-row shape stays legal); present must pass the shared id syntax
+		// checked on the RAW string BEFORE the FName conversion - the packaged
+		// non-case-preserving build folds FName display names through the
+		// global name pool, so a post-conversion check can misread 'normal'
+		// as 'Normal' (the M5-036 lesson).
+		if (const FCombatJsonValue* WeaponMapping = FindMember(Row, TEXT("weapon_definition_id")))
+		{
+			FString WeaponIdText;
+			if (WeaponMapping->Kind != FCombatJsonValue::EKind::String
+				|| !IsValidTestRoomId(WeaponMapping->String))
+			{
+				OutError = FString::Printf(TEXT("items[%d].weapon_definition_id must be a valid id (a-z, 0-9, _) or absent"), Index);
+				return false;
+			}
+			WeaponIdText = WeaponMapping->String;
+			Entry.WeaponDefinitionId = FName(*WeaponIdText);
+		}
 		OutRows.Add(Entry);
 	}
 	return true;

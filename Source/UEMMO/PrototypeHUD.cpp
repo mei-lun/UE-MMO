@@ -1281,16 +1281,27 @@ bool APrototypeHUD::EnsureMenuWidget()
         return false;
     }
     TWeakObjectPtr<APrototypeHUD> WeakHUD(this);
-    Widget->EnterAccepted.AddLambda([WeakHUD]()
-    {
-        if (APrototypeHUD* HUD = WeakHUD.Get())
-        {
-            // The flow accepted the enter: the room world owns the screen now
-            // (in production the travel reloads the boot map and this HUD
-            // dies; the dismissal restores the game input for the travel).
-            HUD->HideMenuOverlay();
-        }
-    });
+	Widget->EnterAccepted.AddLambda([WeakHUD]()
+	{
+		if (APrototypeHUD* HUD = WeakHUD.Get())
+		{
+			// The flow accepted the enter: the room world owns the screen now
+			// (in production the travel reloads the boot map and this HUD
+			// dies; the dismissal restores the game input for the travel).
+			HUD->HideMenuOverlay();
+		}
+	});
+	// M5-056: the real-click-only bridge grants the gameplay boot loadout
+	// (fresh profile only). The direct EnterAccepted broadcasts in the tests
+	// never cross GameplayEnterAccepted, so their explicit staging control is
+	// untouched.
+	Widget->GameplayEnterAccepted.AddLambda([WeakHUD]()
+	{
+		if (APrototypeHUD* HUD = WeakHUD.Get())
+		{
+			HUD->StageStarterLoadoutForGameplay();
+		}
+	});
     MenuWidgetPtr = Widget;
     return true;
 }
@@ -1451,6 +1462,29 @@ void APrototypeHUD::UEMMODebugInventory(int32 Mode)
     // Mode 1 (default): stage the starter inventory once, then present.
     EnsureInventoryStaging();
     ShowInventoryScreen();
+}
+
+// M5-056: the packaged boot loadout. The starter staging above was reachable
+// ONLY through the UEMMODebugInventory console exec, so the real game booted
+// with an empty bag and no equipped weapon - the mount stayed bound=0 and Q
+// fell back to the inert M1 skill slot (the M5-H02 "Q does nothing" second
+// half, proven by the v3 package log). Fired from the menu's REAL enter click
+// only; a fresh profile (empty bag) grants once, anything else never re-grants.
+void APrototypeHUD::StageStarterLoadoutForGameplay()
+{
+    UProfileSubsystem* Profile = ResolveProfileSubsystem();
+    if (Profile == nullptr || Profile->GetInventory().Count() != 0)
+    {
+        return;
+    }
+    EnsureInventoryStaging();
+    // The grant equips through the real equipment model; the boot mount
+    // refresh already ran with an empty mapping (bound=0), so pick the new
+    // mapping up right here - Q authorizes fire from the first frame.
+    if (APrototypeCharacter* Player = Cast<APrototypeCharacter>(GetOwningPawn()))
+    {
+        Player->RefreshWeaponMountFromEquipment();
+    }
 }
 
 void APrototypeHUD::RefreshInventoryScreen()
@@ -1770,47 +1804,101 @@ bool APrototypeHUD::EnsureInventoryStaging()
         Definition.BaseStats.Defense = Row.Defense;
         Definition.BaseStats.MaxHP = Row.MaxHP;
         Definition.Rarity = static_cast<EItemRarity>(FMath::Clamp(Row.Rarity, 1, 3));
+        Definition.WeaponDefinitionId = Row.WeaponDefinitionId;
         return Definition;
     };
-    const FItemDefinition Weapon = bProductionRows
-        ? RowToDefinition(StagingRows[0])
-        : StageDefinition(TEXT("weapon_training"), TEXT("Training Sword"), EItemSlot::Weapon, 5.0f, 0.0f, 0.0f);
-    const FItemDefinition Armor = bProductionRows
-        ? RowToDefinition(StagingRows[1])
-        : StageDefinition(TEXT("armor_training"), TEXT("Training Armor"), EItemSlot::Armor, 0.0f, 3.0f, 20.0f);
-    const FItemDefinition Charm = bProductionRows
-        ? RowToDefinition(StagingRows[2])
-        : StageDefinition(TEXT("accessory_training"), TEXT("Training Charm"), EItemSlot::Accessory, 1.0f, 0.0f, 5.0f);
-    FString CatalogError;
-    InventoryStagingCatalog.AddDefinition(Weapon, &CatalogError);
-    InventoryStagingCatalog.AddDefinition(Armor, &CatalogError);
-    InventoryStagingCatalog.AddDefinition(Charm, &CatalogError);
+    // M5-056: production staging walks the WHOLE items table - every Weapon
+    // row stages (the H02 trial needs the sword and all ranged kinds in the
+    // bag), plus the first Armor and the first Accessory row; the legacy
+    // three-value fallback is unchanged. The first weapon still auto-equips
+    // through the real model further down.
+    TArray<FName> StagedIds;
+    if (bProductionRows)
+    {
+        bool bArmorStaged = false;
+        bool bAccessoryStaged = false;
+        for (const FTestRoomItemRow& Row : StagingRows)
+        {
+            const bool bWeaponRow = Row.Slot == TEXT("Weapon");
+            const bool bArmorRow = Row.Slot == TEXT("Armor");
+            const bool bAccessoryRow = Row.Slot == TEXT("Accessory");
+            if (!bWeaponRow && !(bArmorRow && !bArmorStaged) && !(bAccessoryRow && !bAccessoryStaged))
+            {
+                continue;
+            }
+            const FItemDefinition Definition = RowToDefinition(Row);
+            FString CatalogError;
+            if (!InventoryStagingCatalog.AddDefinition(Definition, &CatalogError))
+            {
+                UE_LOG(LogTemp, Warning, TEXT("UEMMO M3-011: staging definition '%s' refused (%s)."),
+                    *Row.DefinitionId.ToString(), *CatalogError);
+                continue;
+            }
+            bArmorStaged = bArmorStaged || bArmorRow;
+            bAccessoryStaged = bAccessoryStaged || bAccessoryRow;
+            StagedIds.Add(Row.DefinitionId);
+        }
+    }
+    else
+    {
+        const FItemDefinition Weapon = StageDefinition(TEXT("weapon_training"), TEXT("Training Sword"), EItemSlot::Weapon, 5.0f, 0.0f, 0.0f);
+        const FItemDefinition Armor = StageDefinition(TEXT("armor_training"), TEXT("Training Armor"), EItemSlot::Armor, 0.0f, 3.0f, 20.0f);
+        const FItemDefinition Charm = StageDefinition(TEXT("accessory_training"), TEXT("Training Charm"), EItemSlot::Accessory, 1.0f, 0.0f, 5.0f);
+        FString CatalogError;
+        InventoryStagingCatalog.AddDefinition(Weapon, &CatalogError);
+        InventoryStagingCatalog.AddDefinition(Armor, &CatalogError);
+        InventoryStagingCatalog.AddDefinition(Charm, &CatalogError);
+        StagedIds = {
+            FName(TEXT("weapon_training")),
+            FName(TEXT("armor_training")),
+            FName(TEXT("accessory_training"))
+        };
+    }
     InventoryDisplayCatalog = &InventoryStagingCatalog;
 
     FInventoryModel& Inventory = Profile->GetInventory();
-    const FItemDefinition* StageDefs[3] = {
-        InventoryStagingCatalog.Find(ACombatTestRoomDriver::ResolveItemAlias(TEXT("weapon_training"))),
-        InventoryStagingCatalog.Find(ACombatTestRoomDriver::ResolveItemAlias(TEXT("armor_training"))),
-        InventoryStagingCatalog.Find(ACombatTestRoomDriver::ResolveItemAlias(TEXT("accessory_training")))
-    };
     TOptional<FGuid> FirstStagedWeaponId;
-    for (int32 Index = 0; Index < 3; ++Index)
+    // M5-056: the boot default gun must SHOOT. The melee training sword keeps
+    // the legacy X/Z chain and never authorizes component fire, so a sword
+    // default would leave Q inert again (the M5-H02 report). Prefer the first
+    // staged weapon whose mapped definition is ranged, resolved through the
+    // pawn's mounted weapon catalog; debug exec / headless worlds have no pawn
+    // or catalog and keep the legacy first-weapon behavior unchanged.
+    TOptional<FGuid> FirstRangedStagedWeaponId;
+    const APrototypeCharacter* StagingPawn = Cast<APrototypeCharacter>(GetOwningPawn());
+    const UWeaponComponent* StagingMount = StagingPawn ? StagingPawn->GetWeaponMount() : nullptr;
+    const FCombatCatalog* StagingWeaponCatalog = StagingMount ? StagingMount->GetMountedWeaponCatalog() : nullptr;
+    int64 RollSeed = 1;
+    for (const FName& StagedId : StagedIds)
     {
-        if (StageDefs[Index] == nullptr)
+        const FItemDefinition* Definition = InventoryStagingCatalog.Find(ACombatTestRoomDriver::ResolveItemAlias(StagedId));
+        if (Definition == nullptr)
         {
             continue;
         }
-        const FItemInstance Item = MakeItemInstance(*StageDefs[Index], Index + 1);
+        const FItemInstance Item = MakeItemInstance(*Definition, RollSeed++);
         if (Inventory.TryAdd(Item) == EInventoryAddResult::Added)
         {
-            if (Index == 0)
+            if (Definition->Slot == EItemSlot::Weapon)
             {
-                FirstStagedWeaponId = Item.InstanceId;
+                if (!FirstStagedWeaponId.IsSet())
+                {
+                    FirstStagedWeaponId = Item.InstanceId;
+                }
+                const FWeaponDefinition* StagingWeapon = (StagingWeaponCatalog != nullptr && !Definition->WeaponDefinitionId.IsNone())
+                    ? StagingWeaponCatalog->FindWeapon(Definition->WeaponDefinitionId)
+                    : nullptr;
+                if (StagingWeapon != nullptr && StagingWeapon->FireMode != EWeaponFireMode::Melee
+                    && !FirstRangedStagedWeaponId.IsSet())
+                {
+                    FirstRangedStagedWeaponId = Item.InstanceId;
+                }
             }
         }
         else
         {
-            UE_LOG(LogTemp, Warning, TEXT("UEMMO M3-011: staging item %d was rejected by the inventory."), Index);
+            UE_LOG(LogTemp, Warning, TEXT("UEMMO M3-011: staging item '%s' was rejected by the inventory."),
+                *Definition->DefinitionId.ToString());
         }
     }
 
@@ -1822,8 +1910,13 @@ bool APrototypeHUD::EnsureInventoryStaging()
     // always goes through the pawn's TryEquipStatBonus gate.
     if (FirstStagedWeaponId.IsSet() && EnsureInventoryEquipmentWiring())
     {
+        // M5-056: a ranged weapon beats the melee sword for the boot default
+        // (Q must authorize fire); the sword stays in the bag for manual equip.
+        const FGuid StagedWeaponTargetId = FirstRangedStagedWeaponId.IsSet()
+            ? FirstRangedStagedWeaponId.GetValue()
+            : FirstStagedWeaponId.GetValue();
         const EEquipmentEquipResult EquipResult = InventoryEquipment.Equip(
-            EItemSlot::Weapon, FirstStagedWeaponId.GetValue(), Profile->GetInventory());
+            EItemSlot::Weapon, StagedWeaponTargetId, Profile->GetInventory());
         if (EquipResult == EEquipmentEquipResult::Equipped)
         {
             RebuildEquippedInventoryIds();
