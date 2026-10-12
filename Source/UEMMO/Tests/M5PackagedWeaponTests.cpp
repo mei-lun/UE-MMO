@@ -19,6 +19,7 @@
 #include "Misc/AutomationTest.h"
 #include "HAL/FileManager.h"
 #include "Misc/Paths.h"
+#include "Sound/SoundWave.h"
 
 #include "../PrototypeCharacter.h"
 
@@ -847,6 +848,31 @@ bool FUEMMOTasksM5_036WeaponTrialCapture::RunTest(const FString& Parameters)
 		}
 		return true;
 	}));
+	return true;
+}
+
+// ---------------------------------------------------------------------------
+// PackagedFireSoundResolves
+// ---------------------------------------------------------------------------
+
+// M5-059: the shipped game can resolve the CC0 fire feedback sound through
+// the same soft path the pawn's fallback loads - the in-package proof that
+// the feedback audio actually rides the container (the editor always passes
+// this from the source Content tree, so only the packaged gate counts).
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FUEMMOTasksM5_036PackagedFireSoundResolves,
+	"UEMMO.Tasks.M5_036.PackagedFireSoundResolves",
+	EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+
+bool FUEMMOTasksM5_036PackagedFireSoundResolves::RunTest(const FString& Parameters)
+{
+	const USoundWave* FireSound = LoadObject<USoundWave>(nullptr,
+		TEXT("/Game/ThirdParty/Kenney/Impact/impactPunch_heavy_000.impactPunch_heavy_000"));
+	if (!TestNotNull(TEXT("the packaged fire sound resolves inside the shipped game"), FireSound))
+	{
+		return false;
+	}
+	AddInfo(FString::Printf(TEXT("the packaged fire sound resolved: %s"), *FireSound->GetName()));
 	return true;
 }
 

@@ -456,7 +456,9 @@ private:
     UPROPERTY(Transient) TObjectPtr<UInputAction> InventoryToggleAction;
     // M5-059: the fire feedback sound as a constructor hard reference (the
     // soft-path-only assets never enter the cook, the M3-022 AICON precedent).
-    UPROPERTY(Transient) TObjectPtr<USoundWave> FireFeedbackSound;
+    // Deliberately NOT Transient: the cook reachability rides the serialized
+    // CDO reference - a Transient property never reaches the pak.
+    UPROPERTY() TObjectPtr<USoundWave> FireFeedbackSound;
     // True between the fire-authorized Q press and its release.
     bool bWeaponFireHeld = false;
     // M5-059: the press-edge refusal trace - the first TryFire outcome after
