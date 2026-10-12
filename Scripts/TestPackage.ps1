@@ -657,7 +657,7 @@ if($IncludeWeaponScenario) {
         "-abslog=$ArtifactRoot\Logs\package-weapon-capture.log"
     ) 'package-weapon-capture' 900
     $WeaponCaptures = @{}
-    foreach($SourceName in @('capture-trial-staged.png','capture-trial-flight.png','capture-trial-inventory.png')) {
+    foreach($SourceName in @('capture-trial-staged.png','capture-trial-flight.png','capture-trial-inventory.png','capture-trial-hitscan-flash.png','capture-trial-hitscan-after.png')) {
         $SourceFile = Join-Path $WeaponCaptureDir $SourceName
         if(-not (Test-Path -LiteralPath $SourceFile)) {
             # The engine flushes the screenshot during shutdown; poll briefly.
