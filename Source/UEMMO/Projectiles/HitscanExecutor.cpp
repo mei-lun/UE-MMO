@@ -198,6 +198,7 @@ FHitscanExecutionOutcome ExecuteHitscan(UWorld* World, const FHitscanRequest& Re
 				if (Filter.bUnregisteredActorsBlockShot)
 				{
 					++Outcome.PelletsBlocked;
+					Outcome.PelletEndPoints.Add(TraceHit.ImpactPoint);
 					bSettled = true;
 					break;
 				}
@@ -216,6 +217,7 @@ FHitscanExecutionOutcome ExecuteHitscan(UWorld* World, const FHitscanRequest& Re
 				if (Filter.bFriendliesBlockShot)
 				{
 					++Outcome.PelletsBlocked;
+					Outcome.PelletEndPoints.Add(TraceHit.ImpactPoint);
 					bSettled = true;
 					break;
 				}
@@ -238,14 +240,19 @@ FHitscanExecutionOutcome ExecuteHitscan(UWorld* World, const FHitscanRequest& Re
 				++Outcome.HitsApplied;
 			}
 			Outcome.Hits.Add(Hit);
+			Outcome.PelletEndPoints.Add(TraceHit.ImpactPoint);
 
 			bSettled = true;
 			break;
 		}
 
 		// A pellet that neither hit a target nor met a blocker simply flew
-		// its full range (or passed every candidate through): no record.
-		(void)bSettled;
+		// its full range (or passed every candidate through): no hit record,
+		// the endpoint echo still lands on the max-range endpoint.
+		if (!bSettled)
+		{
+			Outcome.PelletEndPoints.Add(End);
+		}
 	}
 
 	return Outcome;

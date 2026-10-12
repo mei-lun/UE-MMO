@@ -18,6 +18,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "InputAction.h"
 #include "InputActionValue.h"
 #include "InputMappingContext.h"
@@ -28,6 +29,7 @@
 #include "Profile/ProfileSubsystem.h"
 #include "Room/RoomSessionSubsystem.h"
 #include "Room/TrainingResetService.h"
+#include "Sound/SoundWave.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Weapons/WeaponComponent.h"
 // M5-033: the delivery bridge seams (executor, projectile service/actor,
@@ -37,6 +39,7 @@
 // MakeWeaponProjectileMotionPolicy below).
 #include "Projectiles/CombatProjectile.h"
 #include "Projectiles/HitscanExecutor.h"
+#include "Projectiles/HitscanTracer.h"
 #include "Projectiles/LinearProjectilePolicy.h"
 #include "Projectiles/Policies/BallisticPolicy.h"
 #include "Projectiles/Policies/ExplosionPolicy.h"
@@ -1325,6 +1328,16 @@ void APrototypeCharacter::HandleWeaponShotCommitted(const FShotContext& Shot)
         Delivery.AttackProfile = *Profile;
         const FHitscanExecutionOutcome Outcome = ExecuteHitscan(World, Delivery, &Mount->GetFireRegistry(),
             &ShotHitLedger, this);
+        // M5-058: the perceivable-feedback face runs on every executed shot -
+        // the tracer geometry and the log read the outcome, the sound only
+        // needs the commit (a miss still fired a round and must still be felt).
+        if (Outcome.bExecuted)
+        {
+            SpawnHitscanTracers(Shot, Plan, Outcome);
+        }
+        PlayFireFeedbackSound();
+        UE_LOG(LogTemp, Display, TEXT("UEMMO M5-058: hitscan shot committed (weapon=%s pellets=%d traced=%d hits=%d blocked=%d)."),
+            *Shot.WeaponDefinitionId.ToString(), Shot.PelletCount, Outcome.PelletsTraced, Outcome.HitsApplied, Outcome.PelletsBlocked);
         if (!Outcome.bExecuted)
         {
             UE_LOG(LogTemp, Warning, TEXT("UEMMO M5-033: the hitscan delivery refused (%d): %s"),
@@ -1374,6 +1387,11 @@ void APrototypeCharacter::HandleWeaponShotCommitted(const FShotContext& Shot)
             UE_LOG(LogTemp, Warning, TEXT("UEMMO M5-033: the projectile commit failed: %s"), *Reservation.RejectDetail);
             return;
         }
+        // M5-058: the projectile-mode fire log (the same perceivable-feedback
+        // face as the hitscan branch; the visual carrier is the pellet cube).
+        UE_LOG(LogTemp, Display, TEXT("UEMMO M5-058: projectile shot committed (weapon=%s projectile=%s pellets=%d)."),
+            *Shot.WeaponDefinitionId.ToString(), *Shot.ProjectileId.ToString(), Shot.PelletCount);
+        PlayFireFeedbackSound();
         // M5-035: the homing target seam resolves BEFORE the pellets begin so
         // every pellet of the volley binds the same registry id (the candidate
         // registers through the production lazy path, never a fake id).
@@ -1417,6 +1435,57 @@ void APrototypeCharacter::HandleWeaponShotCommitted(const FShotContext& Shot)
             }
         }
     }
+}
+
+// -- M5-058: the fire feedback seam --------------------------------------------
+
+void APrototypeCharacter::SpawnHitscanTracers(const FShotContext& Shot, const FShotPatternPlan& Plan,
+    const FHitscanExecutionOutcome& Outcome)
+{
+    UWorld* World = GetWorld();
+    if (World == nullptr || !Outcome.bExecuted)
+    {
+        return;
+    }
+    // One beam per pellet: the endpoint is the executor's per-pellet echo
+    // (the unified hit point, the blocker's impact point, or the max-range
+    // endpoint - input-parallel to the plan); a size mismatch falls back to
+    // the full-range endpoint so the feedback never reads a wrong geometry.
+    LiveHitscanTracers.Reset();
+    for (int32 PelletAt = 0; PelletAt < Plan.Pellets.Num(); ++PelletAt)
+    {
+        const FShotPellet& Pellet = Plan.Pellets[PelletAt];
+        const FVector FallbackEnd = Plan.Origin.WorldLocation + Pellet.Direction * Shot.RangeCm;
+        const FVector EndPoint = Outcome.PelletEndPoints.IsValidIndex(PelletAt)
+            ? Outcome.PelletEndPoints[PelletAt]
+            : FallbackEnd;
+        AHitscanTracer* Tracer = World->SpawnActor<AHitscanTracer>(AHitscanTracer::StaticClass());
+        if (Tracer == nullptr)
+        {
+            continue;
+        }
+        Tracer->InitializeBeam(Plan.Origin.WorldLocation, EndPoint);
+        LiveHitscanTracers.Add(Tracer);
+    }
+}
+
+void APrototypeCharacter::PlayFireFeedbackSound()
+{
+    // The M1-034 audio precedent: a Kenney Impact CC0 SoundWave loaded by the
+    // same soft-path pattern; a load failure degrades silently (verbose) so
+    // headless/cooked environments never block the fire path on presentation.
+    static const TCHAR* const M5_058_FireSoundPath =
+        TEXT("/Game/ThirdParty/Kenney/Impact/impactPunch_heavy_000.impactPunch_heavy_000");
+    UWorld* World = GetWorld();
+    USoundWave* FireSound = (World != nullptr)
+        ? LoadObject<USoundWave>(nullptr, M5_058_FireSoundPath)
+        : nullptr;
+    if (FireSound == nullptr)
+    {
+        UE_LOG(LogTemp, Verbose, TEXT("UEMMO M5-058: the fire feedback sound did not load; the shot feedback stays visual-only."));
+        return;
+    }
+    UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
 }
 
 FEntityId APrototypeCharacter::ResolveTargetEntityId(const AActor& HitActor) const

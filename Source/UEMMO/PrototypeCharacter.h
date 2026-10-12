@@ -36,6 +36,7 @@ struct FInputActionValue;
 struct FItemStats;
 struct FShotContext;
 struct FWeaponMountOutcome;
+class AHitscanTracer;
 
 /** Broadcast exactly once per player death lifecycle, when the health pool dies. */
 DECLARE_MULTICAST_DELEGATE(FOnPlayerDied);
@@ -496,6 +497,15 @@ private:
     // the WeaponComponent class comment documents as the future unified
     // adjudication injection point).
     FHitLedger ShotHitLedger;
+    // -- M5-058: the fire feedback seam ------------------------------------
+    // One tracer beam per hitscan pellet, spawned by the shot-committed
+    // callback (the M5-026 executor stays a pure query-and-submit pipeline;
+    // presentation lives on the caller). The weak array only guards the
+    // test assertions - the engine LifeSpan owns the bodies' destruction.
+    void SpawnHitscanTracers(const FShotContext& Shot, const FShotPatternPlan& Plan,
+        const FHitscanExecutionOutcome& Outcome);
+    void PlayFireFeedbackSound();
+    TArray<TWeakObjectPtr<AHitscanTracer>> LiveHitscanTracers;
     // The hit-actor -> fire-registry entity id cache backing the
     // IHitscanTargetIdentity seam; mutable (the lazy registration happens
     // inside the const resolver mid-delivery).

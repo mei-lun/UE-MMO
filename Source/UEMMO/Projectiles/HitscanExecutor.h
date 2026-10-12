@@ -180,6 +180,14 @@ struct FHitscanExecutionOutcome
 
 	/** How many pellets were blocked by the world/a friendly/environment. */
 	int32 PelletsBlocked = 0;
+
+	/**
+	 * M5-058: one world-space end point per traced pellet, in input order -
+	 * the unified hit point, the blocker's impact point, or the max-range
+	 * endpoint when the pellet flew free. Presentation-only echo (the caller's
+	 * tracer face reads it); the executor itself still spawns nothing.
+	 */
+	TArray<FVector> PelletEndPoints;
 };
 
 /**
