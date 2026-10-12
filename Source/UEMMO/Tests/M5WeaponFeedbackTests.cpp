@@ -555,4 +555,94 @@ bool FUEMMOTasksM5_058FireFeedbackSoundAssetResolves::RunTest(const FString& Par
 	return true;
 }
 
+// ---------------------------------------------------------------------------
+// ProductionBindTailDeliversWithoutManualWiring
+// ---------------------------------------------------------------------------
+
+// M5-059: the production bind path (mount catalogs -> register ammo ->
+// ApplyEquippedWeapon, exactly what RefreshWeaponMountFromEquipment performs,
+// with NO manual ApplyWeaponBindWiring call) must deliver: the binding-applied
+// seam re-derives the input-layer wiring, so the commit callback's generation
+// guard passes and the shot reaches the target (the v6 root cause killed every
+// delivery in the real game while the manual-wiring tests stayed green).
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FUEMMOTasksM5_059ProductionBindTailDeliversWithoutManualWiring,
+	"UEMMO.Tasks.M5_059.ProductionBindTailDeliversWithoutManualWiring",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+
+bool FUEMMOTasksM5_059ProductionBindTailDeliversWithoutManualWiring::RunTest(const FString& Parameters)
+{
+	FM5_058_Rig Rig;
+	if (!Rig.Build(*this, /*bWithTarget*/ true) || !Rig.Settle(*this))
+	{
+		return true;
+	}
+
+	// The production-style bind: the same three calls the refresh tail makes,
+	// deliberately WITHOUT the manual ApplyWeaponBindWiring the test suites
+	// used to own (the M5-035 fixture pattern). The binding-applied seam must
+	// close the gap.
+	FParsedCombatConfig Parsed;
+	Parsed.SchemaVersion = 1;
+	FDamageProfile Profile;
+	Profile.DamageProfileId = FName(TEXT("dmg_rig_feedback"));
+	Profile.BaseDamage = 10.0f;
+	Parsed.DamageProfiles.Add(Profile);
+	FAmmoType Ammo;
+	Ammo.AmmoId = FName(TEXT("ammo_rig_feedback"));
+	Ammo.MaxReserve = 120;
+	Ammo.MagazineSize = 30;
+	Parsed.AmmoTypes.Add(Ammo);
+	Parsed.Weapons.Add(FM5_058_Rig::MakeHitscanDefinition(1));
+	FString BuildErrors;
+	if (!TestTrue(TEXT("the rig catalog builds"),
+		FCombatCatalog::BuildFromParsed(Parsed, Rig.CatalogValue, BuildErrors)))
+	{
+		return true;
+	}
+	FItemDefinition Item;
+	Item.DefinitionId = FName(TEXT("item_rig_production_tail"));
+	Item.DisplayName = TEXT("Production Tail Rifle");
+	Item.Slot = EItemSlot::Weapon;
+	Item.Rarity = EItemRarity::Normal;
+	Item.WeaponDefinitionId = FName(TEXT("weapon_rig_feedback_hitscan"));
+	FString ItemError;
+	if (!TestTrue(TEXT("the rig item registers"), Rig.ItemsValue.AddDefinition(Item, &ItemError)))
+	{
+		return true;
+	}
+	UWeaponComponent* Mount = Rig.Player->GetWeaponMount();
+	FString MountError;
+	if (!TestTrue(TEXT("the catalogs mount"), Mount->MountCatalogs(&Rig.CatalogValue, &Rig.ItemsValue, &MountError)))
+	{
+		return true;
+	}
+	if (!TestTrue(TEXT("the reserve registers"),
+		Mount->GetAmmoModel().RegisterAmmoType(FName(TEXT("ammo_rig_feedback")), 120, 60)))
+	{
+		return true;
+	}
+	FItemInstance Instance;
+	Instance.InstanceId = FGuid(0x0590C000u, 0x0BECu, 0x5335u, 9u);
+	Instance.DefinitionId = Item.DefinitionId;
+	Instance.RollSeed = 0x05905;
+	Instance.Level = 1;
+	const FWeaponMountOutcome BindOutcome = Mount->ApplyEquippedWeapon(&Instance);
+	if (!TestTrue(TEXT("the production bind succeeds"), BindOutcome.bSucceeded && BindOutcome.bWeaponBound))
+	{
+		return true;
+	}
+
+	// Fire through the real input pair; the delivery must land.
+	const float HealthBefore = Rig.TargetHealth->GetHealth();
+	Rig.Player->OnFireInputPressed();
+	Rig.Player->OnFireInputReleased();
+	Rig.TickFrames(2);
+	TestEqual(TEXT("the production-bound shot commits exactly once"), Mount->GetCommittedShotCount(), 1);
+	TestTrue(TEXT("the production-bound shot DELIVERS (the v6 fix: no manual wiring)"),
+		Rig.TargetHealth->GetHealth() < HealthBefore);
+	TestEqual(TEXT("the delivered shot draws its tracer"), Rig.CountTracers(), 1);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

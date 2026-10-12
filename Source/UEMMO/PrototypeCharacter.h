@@ -30,6 +30,7 @@ class UProfileSubsystem;
 class URoomSessionSubsystem;
 class UTrainingResetService;
 class UWeaponComponent;
+class USoundWave;
 class UInputAction;
 class UInputMappingContext;
 struct FInputActionValue;
@@ -453,8 +454,15 @@ private:
 
     /** M5-034: I toggles the inventory screen (Started only; no repeat). */
     UPROPERTY(Transient) TObjectPtr<UInputAction> InventoryToggleAction;
+    // M5-059: the fire feedback sound as a constructor hard reference (the
+    // soft-path-only assets never enter the cook, the M3-022 AICON precedent).
+    UPROPERTY(Transient) TObjectPtr<USoundWave> FireFeedbackSound;
     // True between the fire-authorized Q press and its release.
     bool bWeaponFireHeld = false;
+    // M5-059: the press-edge refusal trace - the first TryFire outcome after
+    // an authorized press logs its rejection once (hold polls stay silent so
+    // the package log stays readable).
+    bool bLogNextFireOutcome = false;
     // The caller-local monotonic shot counter feeding FFireIntent (association
     // only; the common ShotId comes from the fire registry).
     uint64 NextLocalShotSequence = 1;

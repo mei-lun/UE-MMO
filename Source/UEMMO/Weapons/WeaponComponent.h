@@ -233,6 +233,16 @@ struct FFireOutcome
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnWeaponShotCommitted, const FShotContext& /*Shot*/);
 
 /**
+ * M5-059: broadcast exactly once per successful ApplyEquippedWeapon apply -
+ * both the bound outcome and the explicit no-weapon state, after the mount
+ * state has fully landed. The input layer (the pawn) subscribes once at
+ * BeginPlay and re-derives its per-bind wiring from the broadcast, so the
+ * production bind path (boot staging, travel restore, equipment switch) can
+ * never miss the wiring pass the manual test callers used to own.
+ */
+DECLARE_MULTICAST_DELEGATE(FOnWeaponBindingApplied);
+
+/**
  * M5-020: the production weapon mount (M5 interface contract section 1,
  * owner 019..025 "WeaponComponent"; section 7 "存档与实例"). One component per
  * pawn; it mounts the session registries and the production catalogs and
@@ -494,6 +504,9 @@ public:
 
 	/** Broadcast exactly once per committed shot (downstream consumers: 027 projectiles, the hit pipeline). */
 	FOnWeaponShotCommitted OnShotCommitted;
+
+	/** M5-059: the production bind tail seam (see the delegate's contract). */
+	FOnWeaponBindingApplied OnBindingApplied;
 
 private:
 	/**

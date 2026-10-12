@@ -187,6 +187,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M5-056 | [M5-056](Docs/Tasks/M5-056.md) | DONE | M5-020 | GLM-5.3-Flash-20261009-B | 2026-10-10T09:55:00+08:00 | [report](Docs/Tasks/Reports/M5-056.md) |
 | M5-057 | [M5-057](Docs/Tasks/M5-057.md) | DONE | M5-056 | GLM-5.3-Flash-20261009-B | 2026-10-13T00:25:00+08:00 | [report](Docs/Tasks/Reports/M5-057.md) |
 | M5-058 | [M5-058](Docs/Tasks/M5-058.md) | DONE | M5-057 | ZCode-GLM5.3-20261013-A | 2026-10-13T01:30:00+08:00 | [report](Docs/Tasks/Reports/M5-058.md) |
+| M5-059 | [M5-059](Docs/Tasks/M5-059.md) | IN_PROGRESS | M5-058 | ZCode-GLM5.3-20261013-A | 2026-10-13T01:43:00+08:00 | [report](Docs/Tasks/Reports/M5-059.md) |
 | M5-H01 | [M5-H01](Docs/Tasks/M5-H01.md) | DONE | M5-018B | ZCode-20260925-A | 2026-10-08T14:03:17+08:00 | [report](Docs/Tasks/Reports/M5-H01.md) |
 | M5-H02 | [M5-H02](Docs/Tasks/M5-H02.md) | REVIEW | M5-036,M5-056,M5-057,M5-058 | 用户 | 2026-10-13T01:30:00+08:00 | [report](Docs/Tasks/Reports/M5-H02.md) |
 | M5-H03 | [M5-H03](Docs/Tasks/M5-H03.md) | TODO | M5-045 | — | — | — |

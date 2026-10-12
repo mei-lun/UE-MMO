@@ -84,6 +84,9 @@ FWeaponMountOutcome UWeaponComponent::ApplyEquippedWeapon(const FItemInstance* W
 	if (WeaponInstance == nullptr)
 	{
 		Outcome.bSucceeded = true;
+		// M5-059: the no-weapon apply is still a binding-state change the
+		// input layer must re-derive from (the wiring pass resets its policy).
+		OnBindingApplied.Broadcast();
 		return Outcome;
 	}
 
@@ -196,6 +199,10 @@ FWeaponMountOutcome UWeaponComponent::ApplyEquippedWeapon(const FItemInstance* W
 	Outcome.bSucceeded = true;
 	Outcome.bWeaponBound = true;
 	Outcome.Record = Bind.Record;
+	// M5-059: the bound apply's tail - the input layer re-derives its wiring
+	// (generation snapshot, per-mode policy) from this broadcast, so the
+	// production bind path delivers without a manual wiring call.
+	OnBindingApplied.Broadcast();
 	return Outcome;
 }
 

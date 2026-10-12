@@ -266,6 +266,16 @@ APrototypeCharacter::APrototypeCharacter()
     GetCharacterMovement()->bConstrainToPlane = false;
     GetCharacterMovement()->MaxWalkSpeed = 420.f;
     GetCharacterMovement()->JumpZVelocity = 620.f;
+    // M5-059: the fire feedback sound as a constructor hard reference - the
+    // cooker stages what the CDO references, so the packaged game always
+    // carries the asset (the soft-path-only load never entered the pak, the
+    // M3-022 AICON precedent).
+    static ConstructorHelpers::FObjectFinder<USoundWave> FireFeedbackSoundFinder(
+        TEXT("/Game/ThirdParty/Kenney/Impact/impactPunch_heavy_000.impactPunch_heavy_000"));
+    if (FireFeedbackSoundFinder.Succeeded())
+    {
+        FireFeedbackSound = FireFeedbackSoundFinder.Object;
+    }
     GetCharacterMovement()->GravityScale = 1.5f;
     GetCharacterMovement()->AirControl = 0.35f;
     GetCharacterMovement()->BrakingDecelerationWalking = 2400.f;
@@ -1017,7 +1027,15 @@ void APrototypeCharacter::WireWeaponMount()
     {
         HandleWeaponShotCommitted(Shot);
     });
-    // The world-lifetime projectile service binds the pawn's world (one
+    // M5-059: the production bind tail - every successful ApplyEquippedWeapon
+    // (boot staging, travel restore, equipment switch, unequip) re-derives the
+    // input-layer wiring here, so the delivery bridge's generation snapshot
+    // and the per-mode fire policy can never lag the mount's binding state
+    // (the v6 root cause: the manual wiring call existed only in tests).
+    WeaponMount->OnBindingApplied.AddLambda([this]()
+    {
+        ApplyWeaponBindWiring();
+    });    // The world-lifetime projectile service binds the pawn's world (one
     // service per world; it dies with the pawn, and the engine LifeSpan owns
     // the stray-pellet cleanup, so the unified reset needs no epoch bump).
     if (UWorld* World = GetWorld())
@@ -1044,6 +1062,9 @@ void APrototypeCharacter::OnFireInputPressed()
     if (Mount != nullptr && Mount->IsFireAuthorized())
     {
         bWeaponFireHeld = true;
+        // M5-059: the press edge traces the first outcome - a refused trigger
+        // leaves one named Display line in the package log instead of silence.
+        bLogNextFireOutcome = true;
         if (BurstFirePolicy.IsValid())
         {
             BurstFirePolicy->NotifyTriggerPressed();
@@ -1275,6 +1296,18 @@ void APrototypeCharacter::PollWeaponFire()
         // below), so the same poll closes the in-flight window.
         Mount->ReleaseFire();
     }
+    if (bLogNextFireOutcome)
+    {
+        // M5-059: the press-edge trace (once per press; the hold polls stay
+        // silent). A refusal names its gate so the package log alone answers
+        // "did the trigger reach the transaction".
+        bLogNextFireOutcome = false;
+        if (!Outcome.bFired)
+        {
+            UE_LOG(LogTemp, Display, TEXT("UEMMO M5-059: the fire trigger refused (%d): %s"),
+                static_cast<int32>(Outcome.Reject), *Outcome.RejectDetail);
+        }
+    }
 }
 
 void APrototypeCharacter::HandleWeaponShotCommitted(const FShotContext& Shot)
@@ -1471,15 +1504,18 @@ void APrototypeCharacter::SpawnHitscanTracers(const FShotContext& Shot, const FS
 
 void APrototypeCharacter::PlayFireFeedbackSound()
 {
-    // The M1-034 audio precedent: a Kenney Impact CC0 SoundWave loaded by the
-    // same soft-path pattern; a load failure degrades silently (verbose) so
-    // headless/cooked environments never block the fire path on presentation.
+    // The M1-034 audio precedent: a Kenney Impact CC0 SoundWave. The member
+    // carries the constructor's hard reference (always cooked, M5-059); the
+    // soft-path load stays as the headless fallback. A total load failure
+    // degrades silently (verbose) so nothing blocks the fire path.
     static const TCHAR* const M5_058_FireSoundPath =
         TEXT("/Game/ThirdParty/Kenney/Impact/impactPunch_heavy_000.impactPunch_heavy_000");
     UWorld* World = GetWorld();
-    USoundWave* FireSound = (World != nullptr)
-        ? LoadObject<USoundWave>(nullptr, M5_058_FireSoundPath)
-        : nullptr;
+    USoundWave* FireSound = FireFeedbackSound;
+    if (FireSound == nullptr && World != nullptr)
+    {
+        FireSound = LoadObject<USoundWave>(nullptr, M5_058_FireSoundPath);
+    }
     if (FireSound == nullptr)
     {
         UE_LOG(LogTemp, Verbose, TEXT("UEMMO M5-058: the fire feedback sound did not load; the shot feedback stays visual-only."));
