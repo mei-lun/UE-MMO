@@ -754,6 +754,9 @@ bool FUEMMOTasksM5_036WeaponTrialCapture::RunTest(const FString& Parameters)
 		FScreenshotRequest::RequestScreenshot(CaptureDir / TEXT("capture-trial-inventory.png"), true, false);
 		return true;
 	}));
+	// M5-059: the readback breathing room the v6 sequence had - the hitscan
+	// leg's close-and-fire must not outrun the pending screenshot flush.
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(0.5f));
 
 	// M5-058: the hitscan tracer-flash leg. The inventory gate would refuse
 	// fire, so the screen closes first; the rebind walks the same production
