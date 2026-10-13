@@ -19,6 +19,7 @@
 
 #include "../Combat/Data/CombatCatalog.h"
 #include "../Combat/HealthComponent.h"
+#include "../Enemy/MeleeEnemy.h"
 #include "../Items/ItemDefinition.h"
 #include "../Items/ItemInstance.h"
 #include "../Projectiles/CombatProjectile.h"
@@ -642,6 +643,234 @@ bool FUEMMOTasksM5_059ProductionBindTailDeliversWithoutManualWiring::RunTest(con
 	TestTrue(TEXT("the production-bound shot DELIVERS (the v6 fix: no manual wiring)"),
 		Rig.TargetHealth->GetHealth() < HealthBefore);
 	TestEqual(TEXT("the delivered shot draws its tracer"), Rig.CountTracers(), 1);
+	return true;
+}
+
+// ---------------------------------------------------------------------------
+// HitscanHitsRealMeleeEnemyPawn
+// ---------------------------------------------------------------------------
+
+// M5-060: the v7 retest found every Q shot landing hits=0 blocked=1 against
+// the real combat room - the M5-035 rig targets were box components, so the
+// weapon path never met a real AMeleeEnemy pawn in any suite. This regression
+// puts a REAL melee enemy pawn in the firing lane (production-style bind, no
+// manual wiring) and requires the shot to wound it; the manual probe trace
+// reports what the engine query sees for diagnosis.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FUEMMOTasksM5_060HitscanHitsRealMeleeEnemyPawn,
+	"UEMMO.Tasks.M5_060.HitscanHitsRealMeleeEnemyPawn",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+
+bool FUEMMOTasksM5_060HitscanHitsRealMeleeEnemyPawn::RunTest(const FString& Parameters)
+{
+	FM5_058_Rig Rig;
+	if (!Rig.Build(*this, /*bWithTarget*/ false) || !Rig.Settle(*this))
+	{
+		return true;
+	}
+
+	// The real enemy stands 400 cm ahead (+X), same depth, settling on the
+	// floor. Its controller attaches per the production wiring (SpawnDefault
+	// on spawn); the bare test world keeps it idle - a standing target.
+	AMeleeEnemy* Enemy = Rig.GetWorld()->SpawnActor<AMeleeEnemy>(AMeleeEnemy::StaticClass(),
+		M5_058_SceneBase + FVector(400.0, 0.0, M5_058_PlayerSpawnHeight), FRotator::ZeroRotator);
+	if (!TestNotNull(TEXT("the real melee enemy spawns"), Enemy))
+	{
+		return true;
+	}
+	UHealthComponent* EnemyHealth = Enemy->GetHealthComponent();
+	if (!TestNotNull(TEXT("the real enemy carries a health component"), EnemyHealth))
+	{
+		return true;
+	}
+	Rig.TickFrames(30);
+	TestTrue(TEXT("the real enemy settles alive on the floor"), EnemyHealth->IsAlive());
+	AddInfo(FString::Printf(TEXT("the enemy settled at %s (player at %s)"),
+		*Enemy->GetActorLocation().ToString(), *Rig.Player->GetActorLocation().ToString()));
+
+	// The production-style bind (mount + register + apply, no manual wiring).
+	FParsedCombatConfig Parsed;
+	Parsed.SchemaVersion = 1;
+	FDamageProfile Profile;
+	Profile.DamageProfileId = FName(TEXT("dmg_rig_feedback"));
+	Profile.BaseDamage = 10.0f;
+	Parsed.DamageProfiles.Add(Profile);
+	FAmmoType Ammo;
+	Ammo.AmmoId = FName(TEXT("ammo_rig_feedback"));
+	Ammo.MaxReserve = 120;
+	Ammo.MagazineSize = 30;
+	Parsed.AmmoTypes.Add(Ammo);
+	Parsed.Weapons.Add(FM5_058_Rig::MakeHitscanDefinition(1));
+	FString BuildErrors;
+	if (!TestTrue(TEXT("the rig catalog builds"),
+		FCombatCatalog::BuildFromParsed(Parsed, Rig.CatalogValue, BuildErrors)))
+	{
+		return true;
+	}
+	FItemDefinition Item;
+	Item.DefinitionId = FName(TEXT("item_rig_real_enemy"));
+	Item.DisplayName = TEXT("Real Enemy Rifle");
+	Item.Slot = EItemSlot::Weapon;
+	Item.Rarity = EItemRarity::Normal;
+	Item.WeaponDefinitionId = FName(TEXT("weapon_rig_feedback_hitscan"));
+	FString ItemError;
+	if (!TestTrue(TEXT("the rig item registers"), Rig.ItemsValue.AddDefinition(Item, &ItemError)))
+	{
+		return true;
+	}
+	UWeaponComponent* Mount = Rig.Player->GetWeaponMount();
+	FString MountError;
+	if (!TestTrue(TEXT("the catalogs mount"), Mount->MountCatalogs(&Rig.CatalogValue, &Rig.ItemsValue, &MountError)))
+	{
+		return true;
+	}
+	if (!TestTrue(TEXT("the reserve registers"),
+		Mount->GetAmmoModel().RegisterAmmoType(FName(TEXT("ammo_rig_feedback")), 120, 60)))
+	{
+		return true;
+	}
+	FItemInstance Instance;
+	Instance.InstanceId = FGuid(0x0600D000u, 0x0BECu, 0x5335u, 1u);
+	Instance.DefinitionId = Item.DefinitionId;
+	Instance.RollSeed = 0x06006;
+	Instance.Level = 1;
+	const FWeaponMountOutcome BindOutcome = Mount->ApplyEquippedWeapon(&Instance);
+	if (!TestTrue(TEXT("the production bind succeeds"), BindOutcome.bSucceeded && BindOutcome.bWeaponBound))
+	{
+		return true;
+	}
+
+	// The manual probe: the same object query the executor runs, reported for
+	// diagnosis (what does the engine see on the shot line?).
+	{
+		FHitResult ProbeHit;
+		FCollisionObjectQueryParams ProbeParams(ECC_Pawn);
+		ProbeParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+		ProbeParams.AddObjectTypesToQuery(ECC_WorldStatic);
+		FCollisionQueryParams ProbeQueryParams(SCENE_QUERY_STAT(M5_060_Probe), false);
+		ProbeQueryParams.AddIgnoredActor(Rig.Player);
+		const FVector ProbeEnd = Rig.ShotOrigin() + FVector(M5_058_HitscanRangeCm, 0.0, 0.0);
+		const bool bProbeHit = Rig.GetWorld()->LineTraceSingleByObjectType(ProbeHit, Rig.ShotOrigin(), ProbeEnd, ProbeParams, ProbeQueryParams);
+		AddInfo(FString::Printf(TEXT("the probe trace %s: actor=%s component=%s distance=%.1f"),
+			bProbeHit ? TEXT("hit") : TEXT("missed"),
+			ProbeHit.GetActor() ? *ProbeHit.GetActor()->GetName() : TEXT("none"),
+			ProbeHit.GetComponent() ? *ProbeHit.GetComponent()->GetName() : TEXT("none"),
+			ProbeHit.Distance));
+	}
+
+	// Fire through the real input pair; the real enemy must take the damage.
+	const float HealthBefore = EnemyHealth->GetHealth();
+	Rig.Player->OnFireInputPressed();
+	Rig.Player->OnFireInputReleased();
+	Rig.TickFrames(2);
+	TestEqual(TEXT("the shot commits exactly once"), Mount->GetCommittedShotCount(), 1);
+	TestTrue(FString::Printf(TEXT("the shot WOUNDS the real enemy pawn (before=%.1f after=%.1f)"),
+		HealthBefore, EnemyHealth->GetHealth()),
+		EnemyHealth->GetHealth() < HealthBefore);
+	TestEqual(TEXT("the delivered shot draws its tracer"), Rig.CountTracers(), 1);
+	return true;
+}
+
+// ---------------------------------------------------------------------------
+// PointBlankEnemyStillHittable
+// ---------------------------------------------------------------------------
+
+// M5-060: the v7 retest pattern - the user fired while the melee grunts were
+// AT the player (adjacent, attacking). A line trace whose origin sits INSIDE
+// the enemy capsule skips it and flies to the wall behind (blocked=1,
+// hits=0, zero damage) - the point-blank miss. This suite pins the fix
+// contract: an enemy overlapping the shot origin still takes the hit.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FUEMMOTasksM5_060PointBlankEnemyStillHittable,
+	"UEMMO.Tasks.M5_060.PointBlankEnemyStillHittable",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+
+bool FUEMMOTasksM5_060PointBlankEnemyStillHittable::RunTest(const FString& Parameters)
+{
+	FM5_058_Rig Rig;
+	if (!Rig.Build(*this, /*bWithTarget*/ false) || !Rig.Settle(*this))
+	{
+		return true;
+	}
+
+	// The enemy at MELEE range: 70 cm ahead - its capsule (radius ~42) spans
+	// roughly 28..112 cm ahead of the player center, so the shot origin
+	// (feet + 30 cm) lands INSIDE the enemy capsule.
+	AMeleeEnemy* Enemy = Rig.GetWorld()->SpawnActor<AMeleeEnemy>(AMeleeEnemy::StaticClass(),
+		M5_058_SceneBase + FVector(70.0, 0.0, M5_058_PlayerSpawnHeight), FRotator::ZeroRotator);
+	if (!TestNotNull(TEXT("the point-blank enemy spawns"), Enemy))
+	{
+		return true;
+	}
+	UHealthComponent* EnemyHealth = Enemy->GetHealthComponent();
+	if (!TestNotNull(TEXT("the real enemy carries a health component"), EnemyHealth))
+	{
+		return true;
+	}
+	Rig.TickFrames(30);
+	AddInfo(FString::Printf(TEXT("point-blank enemy at %s (player at %s)"),
+		*Enemy->GetActorLocation().ToString(), *Rig.Player->GetActorLocation().ToString()));
+
+	// Production-style bind (the M5-059 seam; no manual wiring).
+	FParsedCombatConfig Parsed;
+	Parsed.SchemaVersion = 1;
+	FDamageProfile Profile;
+	Profile.DamageProfileId = FName(TEXT("dmg_rig_feedback"));
+	Profile.BaseDamage = 10.0f;
+	Parsed.DamageProfiles.Add(Profile);
+	FAmmoType Ammo;
+	Ammo.AmmoId = FName(TEXT("ammo_rig_feedback"));
+	Ammo.MaxReserve = 120;
+	Ammo.MagazineSize = 30;
+	Parsed.AmmoTypes.Add(Ammo);
+	Parsed.Weapons.Add(FM5_058_Rig::MakeHitscanDefinition(1));
+	FString BuildErrors;
+	if (!TestTrue(TEXT("the rig catalog builds"),
+		FCombatCatalog::BuildFromParsed(Parsed, Rig.CatalogValue, BuildErrors)))
+	{
+		return true;
+	}
+	FItemDefinition Item;
+	Item.DefinitionId = FName(TEXT("item_rig_point_blank"));
+	Item.DisplayName = TEXT("Point Blank Rifle");
+	Item.Slot = EItemSlot::Weapon;
+	Item.Rarity = EItemRarity::Normal;
+	Item.WeaponDefinitionId = FName(TEXT("weapon_rig_feedback_hitscan"));
+	FString ItemError;
+	if (!TestTrue(TEXT("the rig item registers"), Rig.ItemsValue.AddDefinition(Item, &ItemError)))
+	{
+		return true;
+	}
+	UWeaponComponent* Mount = Rig.Player->GetWeaponMount();
+	FString MountError;
+	if (!TestTrue(TEXT("the catalogs mount"), Mount->MountCatalogs(&Rig.CatalogValue, &Rig.ItemsValue, &MountError)))
+	{
+		return true;
+	}
+	if (!TestTrue(TEXT("the reserve registers"),
+		Mount->GetAmmoModel().RegisterAmmoType(FName(TEXT("ammo_rig_feedback")), 120, 60)))
+	{
+		return true;
+	}
+	FItemInstance Instance;
+	Instance.InstanceId = FGuid(0x0600D000u, 0x0BECu, 0x5335u, 2u);
+	Instance.DefinitionId = Item.DefinitionId;
+	Instance.RollSeed = 0x06007;
+	Instance.Level = 1;
+	const FWeaponMountOutcome BindOutcome = Mount->ApplyEquippedWeapon(&Instance);
+	if (!TestTrue(TEXT("the production bind succeeds"), BindOutcome.bSucceeded && BindOutcome.bWeaponBound))
+	{
+		return true;
+	}
+
+	const float HealthBefore = EnemyHealth->GetHealth();
+	Rig.Player->OnFireInputPressed();
+	Rig.Player->OnFireInputReleased();
+	Rig.TickFrames(2);
+	TestEqual(TEXT("the point-blank shot commits"), Mount->GetCommittedShotCount(), 1);
+	TestTrue(FString::Printf(TEXT("the point-blank enemy takes the hit (before=%.1f after=%.1f)"),
+		HealthBefore, EnemyHealth->GetHealth()),
+		EnemyHealth->GetHealth() < HealthBefore);
 	return true;
 }
 

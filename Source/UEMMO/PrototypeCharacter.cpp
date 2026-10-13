@@ -1369,8 +1369,16 @@ void APrototypeCharacter::HandleWeaponShotCommitted(const FShotContext& Shot)
             SpawnHitscanTracers(Shot, Plan, Outcome);
         }
         PlayFireFeedbackSound();
-        UE_LOG(LogTemp, Display, TEXT("UEMMO M5-058: hitscan shot committed (weapon=%s pellets=%d traced=%d hits=%d blocked=%d)."),
-            *Shot.WeaponDefinitionId.ToString(), Shot.PelletCount, Outcome.PelletsTraced, Outcome.HitsApplied, Outcome.PelletsBlocked);
+        // M5-058/060: the shot geometry rides the log (origin/endpoint/facing)
+        // so the weapon-vs-enemy questions read against the M5-060 spawn log.
+        const FVector M5_060_LogEnd = Outcome.PelletEndPoints.Num() > 0
+            ? Outcome.PelletEndPoints[0]
+            : (Plan.Pellets.Num() > 0
+                ? Plan.Origin.WorldLocation + Plan.Pellets[0].Direction * Shot.RangeCm
+                : Plan.Origin.WorldLocation);
+        UE_LOG(LogTemp, Display, TEXT("UEMMO M5-058: hitscan shot committed (weapon=%s pellets=%d traced=%d hits=%d blocked=%d origin=%s end=%s facing=%.0f)."),
+            *Shot.WeaponDefinitionId.ToString(), Shot.PelletCount, Outcome.PelletsTraced, Outcome.HitsApplied, Outcome.PelletsBlocked,
+            *Plan.Origin.WorldLocation.ToCompactString(), *M5_060_LogEnd.ToCompactString(), GetActorRotation().Yaw);
         if (!Outcome.bExecuted)
         {
             UE_LOG(LogTemp, Warning, TEXT("UEMMO M5-033: the hitscan delivery refused (%d): %s"),

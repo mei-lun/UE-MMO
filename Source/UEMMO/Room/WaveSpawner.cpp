@@ -266,6 +266,29 @@ bool UWaveSpawner::SpawnNextEnemy()
 	// never a world scan of Characters. Bookkeeping only.
 	Session->NotifyEnemyActorSpawned(EnemyId, Enemy);
 
+	// M5-060: the spawn-position diagnostics line - the weapon-vs-enemy
+	// geometry questions (lane, depth offset, height) read this and the
+	// M5-058 shot log against each other. The chase target resolves the same
+	// way the M3-025 wiring below resolves it (first player controller pawn).
+	const APawn* DiagPlayerTarget = nullptr;
+	if (APlayerController* DiagController = World->GetFirstPlayerController())
+	{
+		DiagPlayerTarget = DiagController->GetPawn();
+	}
+	if (DiagPlayerTarget != nullptr)
+	{
+		UE_LOG(LogTemp, Display, TEXT("UEMMO M5-060: enemy %s spawned at %s (player at %s, dx=%.0f dy=%.0f dist=%.0f cm)."),
+			*EnemyId.ToString(), *Enemy->GetActorLocation().ToString(), *DiagPlayerTarget->GetActorLocation().ToString(),
+			Enemy->GetActorLocation().X - DiagPlayerTarget->GetActorLocation().X,
+			Enemy->GetActorLocation().Y - DiagPlayerTarget->GetActorLocation().Y,
+			FVector::Dist2D(Enemy->GetActorLocation(), DiagPlayerTarget->GetActorLocation()));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Display, TEXT("UEMMO M5-060: enemy %s spawned at %s (no chase target yet)."),
+			*EnemyId.ToString(), *Enemy->GetActorLocation().ToString());
+	}
+
 	// One death binding per born enemy: the first death removes the alive id
 	// and counts one session kill. The lambda holds weak references only, so
 	// it can never outlive the spawner or the enemy.

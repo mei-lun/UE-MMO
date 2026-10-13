@@ -20,6 +20,8 @@
 #include "HAL/FileManager.h"
 #include "Misc/Paths.h"
 #include "Sound/SoundWave.h"
+#include "EngineUtils.h"
+#include "../Enemy/MeleeEnemy.h"
 
 #include "../PrototypeCharacter.h"
 
@@ -31,6 +33,7 @@
 #include "../Items/ItemInstance.h"
 #include "../PrototypeHUD.h"
 #include "../UI/MapSelectWidget.h"
+#include "../Room/RoomTrigger.h"
 #include "../Weapons/WeaponComponent.h"
 
 #include "Components/BoxComponent.h"
@@ -876,6 +879,187 @@ bool FUEMMOTasksM5_036PackagedFireSoundResolves::RunTest(const FString& Paramete
 		return false;
 	}
 	AddInfo(FString::Printf(TEXT("the packaged fire sound resolved: %s"), *FireSound->GetName()));
+	return true;
+}
+
+// ---------------------------------------------------------------------------
+// RoomWeaponFiringCapture
+// ---------------------------------------------------------------------------
+
+// M5-060: the REAL-map firing reproduction. The editor suites proved the
+// weapon chain against a real enemy pawn (400 cm and point blank), so the v7
+// room failure lives in the production map's geometry: the trigger-relative
+// spawn placements, the walk-in position, the chase lanes. This suite drives
+// the packaged boot world (the real L_CombatRoom01): teleport the pawn into
+// the activation volume (the production run starts), let a wave spawn and
+// chase, face the nearest enemy, fire through the real Q pair, and log every
+// position fact (the M5-060 spawn log + the M5-058 shot log read against
+// each other). Assertions stay at the deterministic bookkeeping level (the
+// run starts, enemies spawn, shots commit); the health outcome rides the log
+// for the geometry diagnosis.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FUEMMOTasksM5_036RoomWeaponFiringCapture,
+	"UEMMO.Tasks.M5_036.RoomWeaponFiringCapture",
+	EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+
+bool FUEMMOTasksM5_036RoomWeaponFiringCapture::RunTest(const FString& Parameters)
+{
+	UWorld* World = GWorld;
+	APrototypeCharacter* GamePawn = World != nullptr
+		? Cast<APrototypeCharacter>(UGameplayStatics::GetPlayerCharacter(World, 0))
+		: nullptr;
+	ARoomTrigger* Trigger = World != nullptr ? *TActorIterator<ARoomTrigger>(World) : nullptr;
+	// Packaged-boot only: the diagnosis needs the REAL combat-room geometry
+	// (the editor startup world carries a different trigger and other
+	// suites' session state).
+	if (World == nullptr || GEngine == nullptr || GEngine->GameViewport == nullptr
+		|| World->WorldType != EWorldType::Game || GamePawn == nullptr || Trigger == nullptr
+		|| !World->GetName().Contains(TEXT("L_CombatRoom01")))
+	{
+		AddInfo(TEXT("room firing capture skipped: needs the rendered packaged combat-room world"));
+		return true;
+	}
+	const FVector TriggerLocation = Trigger->GetActorLocation();
+	AddInfo(FString::Printf(TEXT("the room trigger sits at %s (pawn at %s)"),
+		*TriggerLocation.ToString(), *GamePawn->GetActorLocation().ToString()));
+
+	// Step 1: dismiss the boot menu (the production enter seam) and walk the
+	// pawn INTO the activation volume - the run starts on the overlap.
+	ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([GamePawn]()
+	{
+		if (APlayerController* PC = Cast<APlayerController>(GamePawn->Controller))
+		{
+			if (APrototypeHUD* Hud = Cast<APrototypeHUD>(PC->GetHUD()))
+			{
+				if (UMapSelectWidget* BootMenu = Hud->PeekMenuWidget())
+				{
+					BootMenu->EnterAccepted.Broadcast();
+				}
+			}
+		}
+		return true;
+	}));
+	ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([GamePawn, Trigger]()
+	{
+		// The volume's center: the production spawn numbers read against it.
+		GamePawn->SetActorLocation(Trigger->GetActorLocation() + FVector(0.0, 0.0, 120.0));
+		return true;
+	}));
+
+	// Step 2: give the run 2.5s (spawn + fall + chase), then report the
+	// geometry facts and face the nearest enemy.
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(2.5f));
+	ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([GamePawn, Trigger]()
+	{
+		UWorld* World = GamePawn->GetWorld();
+		AMeleeEnemy* Nearest = nullptr;
+		float NearestDist2D = TNumericLimits<float>::Max();
+		int32 EnemyCount = 0;
+		for (TActorIterator<AMeleeEnemy> It(World); It; ++It)
+		{
+			++EnemyCount;
+			const float Dist2D = FVector::Dist2D(It->GetActorLocation(), GamePawn->GetActorLocation());
+			if (Dist2D < NearestDist2D)
+			{
+				NearestDist2D = Dist2D;
+				Nearest = *It;
+			}
+		}
+		UE_LOG(LogTemp, Display, TEXT("UEMMO M5-060: capture facts (enemies=%d nearest=%s dist=%.0f pawn=%s trigger=%s)."),
+			EnemyCount,
+			Nearest ? *Nearest->GetActorLocation().ToCompactString() : TEXT("none"),
+			NearestDist2D,
+			*GamePawn->GetActorLocation().ToCompactString(),
+			*Trigger->GetActorLocation().ToCompactString());
+		if (Nearest != nullptr)
+		{
+			// Face the nearest enemy (the facing mirrors X only: the yaw
+			// quadrant decides the sign).
+			const FVector ToEnemy = Nearest->GetActorLocation() - GamePawn->GetActorLocation();
+			const float Yaw = FMath::RadiansToDegrees(FMath::Atan2(ToEnemy.Y, ToEnemy.X));
+			GamePawn->SetActorRotation(FRotator(0.0, Yaw, 0.0));
+			UE_LOG(LogTemp, Display, TEXT("UEMMO M5-060: the pawn faces yaw=%.0f toward the nearest enemy."), Yaw);
+		}
+		return true;
+	}));
+
+	// Step 3: fire through the real Q pair and report the health delta.
+	ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([GamePawn]()
+	{
+		AMeleeEnemy* Nearest = nullptr;
+		float NearestDist2D = TNumericLimits<float>::Max();
+		for (TActorIterator<AMeleeEnemy> It(GamePawn->GetWorld()); It; ++It)
+		{
+			const float Dist2D = FVector::Dist2D(It->GetActorLocation(), GamePawn->GetActorLocation());
+			if (Dist2D < NearestDist2D)
+			{
+				NearestDist2D = Dist2D;
+				Nearest = *It;
+			}
+		}
+		if (Nearest != nullptr && Nearest->GetHealthComponent() != nullptr)
+		{
+			UE_LOG(LogTemp, Display, TEXT("UEMMO M5-060: pre-fire enemy health %.1f (dist %.0f)."),
+				Nearest->GetHealthComponent()->GetHealth(), NearestDist2D);
+			GamePawn->OnFireInputPressed();
+			GamePawn->OnFireInputReleased();
+		}
+		return true;
+	}));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(0.5f));
+	ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([GamePawn]()
+	{
+		for (TActorIterator<AMeleeEnemy> It(GamePawn->GetWorld()); It; ++It)
+		{
+			if (It->GetHealthComponent() != nullptr)
+			{
+				UE_LOG(LogTemp, Display, TEXT("UEMMO M5-060: post-fire enemy health %.1f at %s."),
+					It->GetHealthComponent()->GetHealth(), *It->GetActorLocation().ToCompactString());
+			}
+		}
+		return true;
+	}));
+
+	// Step 4: the capture frame (the room + the tracer flash, if any).
+	ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([GamePawn]()
+	{
+		if (GEngine == nullptr || GEngine->GameViewport == nullptr || !FApp::CanEverRender())
+		{
+			return true;
+		}
+		// One more round inside the flash window for the visual.
+		GamePawn->OnFireInputPressed();
+		GamePawn->OnFireInputReleased();
+		return true;
+	}));
+	ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([CaptureDir = FPaths::ConvertRelativePathToFull(
+		FPaths::ProjectDir() / TEXT("Artifacts") / TEXT("Tasks") / TEXT("M5-060") / TEXT("render"))]()
+	{
+		if (GEngine == nullptr || GEngine->GameViewport == nullptr || !FApp::CanEverRender())
+		{
+			return true;
+		}
+		IFileManager::Get().MakeDirectory(*CaptureDir, /*Tree*/ true);
+		FScreenshotRequest::RequestScreenshot(CaptureDir / TEXT("capture-room-firing.png"), true, false);
+		return true;
+	}));
+
+	// Step 5: the deterministic assertions (bookkeeping only - the geometry
+	// outcome rides the log).
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(0.5f));
+	ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, GamePawn]()
+	{
+		int32 EnemyCount = 0;
+		for (TActorIterator<AMeleeEnemy> It(GamePawn->GetWorld()); It; ++It)
+		{
+			++EnemyCount;
+		}
+		TestTrue(TEXT("the production room spawned its wave enemies"), EnemyCount > 0);
+		UWeaponComponent* Mount = GamePawn->GetWeaponMount();
+		TestTrue(TEXT("the production shots committed through the real Q pair"),
+			Mount != nullptr && Mount->GetCommittedShotCount() > 0);
+		return true;
+	}));
 	return true;
 }
 
