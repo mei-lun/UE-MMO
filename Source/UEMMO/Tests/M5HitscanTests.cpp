@@ -17,6 +17,7 @@
 #include "../Combat/System/CombatEntityRegistry.h"
 #include "../Combat/System/HitLedger.h"
 #include "../Projectiles/HitscanExecutor.h"
+#include "../Room/RoomTrigger.h"
 
 #include "Engine/CollisionProfile.h"
 #include "Engine/World.h"
@@ -138,6 +139,7 @@ namespace UE::UEMMO::Tasks::M5_026
 		Body->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 		Body->SetCollisionObjectType(ECC_WorldStatic);
 		Body->SetCollisionResponseToAllChannels(ECR_Ignore);
+		Body->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
 		Body->RegisterComponent();
 		Body->SetWorldLocation(Location);
 		return Actor;
@@ -743,6 +745,64 @@ bool FUEMMOTasksM5_026DuplicateShotAppliedOncePelletsSeparate::RunTest(const FSt
 			TestEqual(TEXT("no replay damage landed"),
 				Scene.EnemyHealth->GetMaxHealth() - Scene.EnemyHealth->GetHealth(), 14.0f);
 		}
+	}
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FM5_060RoomSensors,
+	"UEMMO.Tasks.M5_060.HitscanIgnoresRoomSensorsInsideAndOutside",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+
+bool FM5_060RoomSensors::RunTest(const FString& Parameters)
+{
+	for (const double SensorOffset : {0.0, 2000.0})
+	{
+		FM5_026_WorldScope Scope;
+		Scope.World = M5_026_AcquireWorld();
+		FM5_026_Scene Scene;
+		if (!Scope.World || !Scene.Build(*this, *Scope.World, TEXT("Player"), TEXT("Enemy"), FVector(3500, 0, 0)))
+		{
+			return false;
+		}
+		FHitscanRequest Shot = Scene.MakeStraightShot(Scene.AllocateShot(), 5000.0f);
+		ARoomTrigger* Sensor = Scope.World->SpawnActor<ARoomTrigger>(ARoomTrigger::StaticClass(),
+			Shot.Origin + FVector(SensorOffset, 0, 0), FRotator::ZeroRotator);
+		if (!TestNotNull(TEXT("the production room trigger spawns"), Sensor)) { return false; }
+		Scope.World->EnsureCollisionTreeIsBuilt();
+		const auto Outcome = M5_026_Execute(*this, *Scope.World, Scene, Shot);
+		TestEqual(FString::Printf(TEXT("sensor at %.0f does not block the round"), SensorOffset), Outcome.PelletsBlocked, 0);
+		TestEqual(TEXT("the hostile beyond the sensor is hit"), Outcome.HitsApplied, 1);
+		TestEqual(TEXT("the same target loses the profile damage"), Scene.EnemyHealth->GetMaxHealth() - Scene.EnemyHealth->GetHealth(), 7.0f);
+	}
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FM5_060InitialOverlap,
+	"UEMMO.Tasks.M5_060.InitialOverlapKeepsEnemyDamageAndWallBlocking",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+
+bool FM5_060InitialOverlap::RunTest(const FString& Parameters)
+{
+	for (const bool bWallAtOrigin : {false, true})
+	{
+		FM5_026_WorldScope Scope;
+		Scope.World = M5_026_AcquireWorld();
+		FM5_026_Scene Scene;
+		if (!Scope.World || !Scene.Build(*this, *Scope.World)) { return false; }
+		FHitscanRequest Shot = Scene.MakeStraightShot(Scene.AllocateShot());
+		if (bWallAtOrigin)
+		{
+			if (!TestNotNull(TEXT("the wall at the muzzle spawns"), M5_026_SpawnWall(*Scope.World, Shot.Origin))) { return false; }
+		}
+		else
+		{
+			Scene.Enemy->SetActorLocation(Shot.Origin);
+		}
+		Scope.World->EnsureCollisionTreeIsBuilt();
+		const auto Outcome = M5_026_Execute(*this, *Scope.World, Scene, Shot);
+		TestEqual(TEXT("an enemy containing the muzzle is hit, a solid wall still blocks"), Outcome.HitsApplied, bWallAtOrigin ? 0 : 1);
+		TestEqual(TEXT("an initial solid wall blocks without damage behind it"), Outcome.PelletsBlocked, bWallAtOrigin ? 1 : 0);
+		TestEqual(TEXT("the target health matches this shot"), Scene.EnemyHealth->GetMaxHealth() - Scene.EnemyHealth->GetHealth(), bWallAtOrigin ? 0.0f : 7.0f);
 	}
 	return true;
 }

@@ -268,10 +268,19 @@ void FExplosionProjectilePolicy::Detonate(ACombatProjectile& Actor, const FVecto
 			FCollisionObjectQueryParams OcclusionParams;
 			OcclusionParams.AddObjectTypesToQuery(ECC_WorldStatic);
 			OcclusionParams.AddObjectTypesToQuery(ECC_WorldDynamic);
-			FHitResult OcclusionHit;
-			if (World->LineTraceSingleByObjectType(OcclusionHit, BlastCenter + DirectionToTarget * 1.0f, TargetCenter,
-				OcclusionParams, QueryParams)
-				&& OcclusionHit.bBlockingHit)
+			// Object queries include room sensors. Scan all candidates so a
+			// sensor cannot hide a real wall behind it, and use the same
+			// WorldDynamic blocking response as physical projectiles/hitscan.
+			TArray<FHitResult> OcclusionHits;
+			World->LineTraceMultiByObjectType(OcclusionHits, BlastCenter + DirectionToTarget * 1.0f, TargetCenter,
+				OcclusionParams, QueryParams);
+			const bool bOccluded = OcclusionHits.ContainsByPredicate([](const FHitResult& Hit)
+			{
+				const UPrimitiveComponent* Component = Hit.GetComponent();
+				return Hit.bBlockingHit && (Component == nullptr
+					|| Component->GetCollisionResponseToChannel(ECC_WorldDynamic) == ECR_Block);
+			});
+			if (bOccluded)
 			{
 				continue; // Occluded: the wall eats the blast for this target.
 			}

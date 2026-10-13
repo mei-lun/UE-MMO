@@ -12,6 +12,7 @@
 #include "../Combat/CombatComponent.h"
 
 #include "CollisionQueryParams.h"
+#include "Components/PrimitiveComponent.h"
 #include "Engine/World.h"
 
 namespace UE::UEMMO::Tasks::M5_026
@@ -184,7 +185,6 @@ FHitscanExecutionOutcome ExecuteHitscan(UWorld* World, const FHitscanRequest& Re
 			{
 				continue;
 			}
-
 			const FEntityId TargetEntityId = TargetIdentity->ResolveTargetEntityId(*HitActor);
 			const FCombatEntityRecord* TargetRecord = IsValidCombatEntityId(TargetEntityId)
 				? Registry->FindEntity(TargetEntityId)
@@ -192,6 +192,15 @@ FHitscanExecutionOutcome ExecuteHitscan(UWorld* World, const FHitscanRequest& Re
 
 			if (TargetRecord == nullptr)
 			{
+				// Object queries also return overlap-only sensors as hits. Use
+				// the physical projectile's WorldDynamic response to distinguish
+				// obstacles from room triggers, at every distance. Initial hits
+				// on enemies and solid walls must still resolve normally.
+				const UPrimitiveComponent* Component = TraceHit.GetComponent();
+				if (Component != nullptr && Component->GetCollisionResponseToChannel(ECC_WorldDynamic) != ECR_Block)
+				{
+					continue;
+				}
 				// Unregistered body: environment, not a target. Blocking is a
 				// filter decision (walls always arrive through here too - the
 				// trace only ever sees actors with query geometry).

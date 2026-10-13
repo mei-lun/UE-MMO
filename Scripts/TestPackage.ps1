@@ -649,15 +649,28 @@ if($IncludeWeaponScenario) {
     # its own Data/CombatSystem config, so no staging is needed - the
     # M5-018B harness-staging trade-off does not apply here).
     $WeaponCaptureDir = Join-Path $PackageProject "Artifacts\Tasks\M5-036\scenario-json\render"
+    $WeaponCaptureNames = @('capture-trial-staged.png','capture-trial-flight.png','capture-trial-inventory.png','capture-trial-hitscan-flash.png','capture-trial-hitscan-after.png')
+    foreach ($Name in $WeaponCaptureNames) {
+        $OldCapture = Join-Path $WeaponCaptureDir $Name
+        if (Test-Path -LiteralPath $OldCapture) { Remove-Item -LiteralPath $OldCapture -Force }
+    }
+    $WeaponCaptureReportDir = Join-Path $WeaponReportDir 'render'
+    New-Item -ItemType Directory -Path $WeaponCaptureReportDir -Force | Out-Null
+    $WeaponCaptureStartedUtc = [DateTime]::UtcNow
     Invoke-UEProcess $Executable @(
         '-game', '-unattended', '-nosplash', '-nosound', '-RenderOffscreen',
         '-ResX=1280', '-ResY=720',
         "-ExecCmds=Automation RunTests UEMMO.Tasks.M5_036.WeaponTrialCapture",
         '-TestExit=Automation Test Queue Empty',
+        "-ReportExportPath=$WeaponCaptureReportDir",
         "-abslog=$ArtifactRoot\Logs\package-weapon-capture.log"
     ) 'package-weapon-capture' 900
+    $WeaponCaptureIndex = Join-Path $WeaponCaptureReportDir 'index.json'
+    if (-not (Test-Path -LiteralPath $WeaponCaptureIndex)) { throw 'Weapon capture did not export its automation report.' }
+    $WeaponCaptureParsed = ConvertFrom-AutomationReportJson -ReportJson (Get-Content -LiteralPath $WeaponCaptureIndex -Raw) -Filter 'UEMMO.Tasks.M5_036.WeaponTrialCapture'
+    if (-not $WeaponCaptureParsed.Ok) { throw ('Weapon capture failed: ' + $WeaponCaptureParsed.Error) }
     $WeaponCaptures = @{}
-    foreach($SourceName in @('capture-trial-staged.png','capture-trial-flight.png','capture-trial-inventory.png','capture-trial-hitscan-flash.png','capture-trial-hitscan-after.png')) {
+    foreach($SourceName in $WeaponCaptureNames) {
         $SourceFile = Join-Path $WeaponCaptureDir $SourceName
         if(-not (Test-Path -LiteralPath $SourceFile)) {
             # The engine flushes the screenshot during shutdown; poll briefly.
@@ -668,17 +681,15 @@ if($IncludeWeaponScenario) {
             }
         }
         if(-not (Test-Path -LiteralPath $SourceFile)) { throw "Packaged weapon capture screenshot missing: $SourceName" }
+        if ((Get-Item -LiteralPath $SourceFile).LastWriteTimeUtc -lt $WeaponCaptureStartedUtc) { throw "Stale weapon capture: $SourceName" }
         $CaptureBytes = [IO.File]::ReadAllBytes($SourceFile)
         if($CaptureBytes.Length -lt 1024 -or [BitConverter]::ToString($CaptureBytes,0,8) -ne '89-50-4E-47-0D-0A-1A-0A') { throw "Packaged weapon capture screenshot $SourceName is not a valid PNG." }
         $OutName = 'package-' + $SourceName
         Copy-Item -LiteralPath $SourceFile -Destination (Join-Path $ArtifactRoot $OutName) -Force
         $WeaponCaptures[$SourceName] = $OutName
     }
-    [ordered]@{
-        success = $true
-        pass = 'package-weapon-capture'
-        test = 'UEMMO.Tasks.M5_036.WeaponTrialCapture'
-        captureConfig = 'Data/CombatSystem ships inside the package (M5-036 carry)'
-        screenshots = @($WeaponCaptures.Values)
-    } | ConvertTo-Json
+    # M5-060: each weapon runs alone in a fresh rendered process and isolated
+    # save directory. The gate requires actual menu travel, viewport input,
+    # this shot's health delta and a newly generated screenshot.
+    & "$PSScriptRoot\TestWeaponGameplay.ps1" -PackageRoot $PackageRoot
 }

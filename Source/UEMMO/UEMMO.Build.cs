@@ -17,6 +17,9 @@ public class UEMMO : ModuleRules
         // M2-002: AMeleeEnemyController extends AAIController (AIModule type);
         // the module is otherwise unused (no behavior tree, no nav mesh).
         PublicDependencyModuleNames.AddRange(new[] { "AIModule" });
+        // M5-060: serialize gameplay evidence and route viewport keys through
+        // the local player's platform input device.
+        PrivateDependencyModuleNames.AddRange(new[] { "Json", "ApplicationCore" });
         if (Target.bBuildEditor)
         {
             // M1-031 editor-side locomotion graph builder (PrototypeAnimInstance

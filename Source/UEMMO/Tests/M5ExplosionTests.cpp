@@ -465,6 +465,13 @@ bool FUEMMOTasksM5_032WallOcclusionBlocksBlast::RunTest(const FString& Parameter
 	{
 		return false;
 	}
+	// The room's overlap-only sensor must not shadow blast damage, while
+	// the solid wall below must still occlude its target (M5-060).
+	AActor* Sensor = M5_032_SpawnWall(*World, M5_032_SceneBase + FVector(1000.0, 4000.0, 800.0), FVector(2000.0));
+	if (!TestNotNull(TEXT("the room sensor spawns"), Sensor)) { return false; }
+	UPrimitiveComponent* SensorBody = Cast<UPrimitiveComponent>(Sensor->GetRootComponent());
+	SensorBody->SetCollisionResponseToAllChannels(ECR_Ignore);
+	SensorBody->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 
 	// Lane B (Y=4000): a hostile target body detonates the pellet at its
 	// surface (blast center 962..972); an intermediate world-static wall
