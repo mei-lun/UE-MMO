@@ -188,8 +188,8 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M5-057 | [M5-057](Docs/Tasks/M5-057.md) | DONE | M5-056 | GLM-5.3-Flash-20261009-B | 2026-10-13T00:25:00+08:00 | [report](Docs/Tasks/Reports/M5-057.md) |
 | M5-058 | [M5-058](Docs/Tasks/M5-058.md) | DONE | M5-057 | ZCode-GLM5.3-20261013-A | 2026-10-13T01:30:00+08:00 | [report](Docs/Tasks/Reports/M5-058.md) |
 | M5-059 | [M5-059](Docs/Tasks/M5-059.md) | DONE | M5-058 | ZCode-GLM5.3-20261013-A | 2026-10-13T02:40:00+08:00 | [report](Docs/Tasks/Reports/M5-059.md) |
-| M5-060 | [M5-060](Docs/Tasks/M5-060.md) | PAUSED | M5-059 | Codex-20261014-Audit | 2026-10-14T01:20:00+08:00 | [report](Docs/Tasks/Reports/M5-060.md) |
+| M5-060 | [M5-060](Docs/Tasks/M5-060.md) | DONE | M5-059 | Codex-20261014-Fix | 2026-10-14T03:31:00+08:00 | [report](Docs/Tasks/Reports/M5-060.md) |
 | M5-H01 | [M5-H01](Docs/Tasks/M5-H01.md) | DONE | M5-018B | ZCode-20260925-A | 2026-10-08T14:03:17+08:00 | [report](Docs/Tasks/Reports/M5-H01.md) |
-| M5-H02 | [M5-H02](Docs/Tasks/M5-H02.md) | BLOCKED | M5-036,M5-056,M5-057,M5-058,M5-059,M5-060 | 用户 | 2026-10-14T01:20:00+08:00 | [report](Docs/Tasks/Reports/M5-H02.md) |
+| M5-H02 | [M5-H02](Docs/Tasks/M5-H02.md) | REVIEW | M5-036,M5-056,M5-057,M5-058,M5-059,M5-060 | 用户 | 2026-10-14T03:31:00+08:00 | [report](Docs/Tasks/Reports/M5-H02.md) |
 | M5-H03 | [M5-H03](Docs/Tasks/M5-H03.md) | TODO | M5-045 | — | — | — |
 | M5-H04 | [M5-H04](Docs/Tasks/M5-H04.md) | TODO | M5-055,M5-H02,M5-H03 | — | — | — |

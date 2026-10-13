@@ -1,52 +1,47 @@
-# 最近一轮交接：完成情况审计与武器交付复验
+# 最近一轮交接：M5-060修复完成，v9待用户试玩
 
-- Owner：Codex-20261014-Audit；日期2026-10-14，Asia/Shanghai。
-- 审计证据时间：2026-10-14T01:07:41+08:00起；文档整理时间2026-10-14T01:20:00+08:00。
-- 分支main；起点与被验证代码提交：`b64d60ed3971d3af063279acb2b17dab4d85b254`。本轮只有审计文档/状态提交，未产生功能实现提交。
-- 本轮新增DONE：**0项**。M5-H02改BLOCKED，M5-060改PAUSED；没有代签人工通过。
-- [完整审计报告](Docs/Audit-2026-10-14.md)；状态唯一来源仍为根目录TASKS.md。
+- Owner：Codex-20261014-Fix。
+- 开始2026-10-14T02:37:05+08:00，完成登记2026-10-14T03:31:00+08:00（Asia/Shanghai）。
+- 分支main；起点`0d15dee`，实现`a83e2d2e955dc989c551bea85c5883f8d188b756`，验收补强`f2f123b45e9460fea82f7b248657c9e86d759b76`。本记录所在提交只更新报告/状态/交接。
+- 本轮新增DONE：**1项，M5-060**；M5-H02转REVIEW，Human-Approved保持no。没有留IN_PROGRESS。
+- 详细报告：[M5-060](Docs/Tasks/Reports/M5-060.md)。状态唯一来源仍为根目录TASKS.md。
 
-## 结论与本次证据
+## 修复结果
 
-用户确认“**有射击反馈，但敌人不掉血**”。最后正式交付的M5B-v7不能通过武器玩法验收：原用户会话19发射线全为hits=0、blocked=1；历史真实房间诊断为射线origin=end、敌人HP100→100。
+“有射击反馈但敌人不掉血”已在真实玩家业务路径中修复并复验。对象查询会把房间传感器也返回为命中；原实现将其当作障碍，候选skip零距离补丁又误跳敌人/实体墙。本轮按物理弹丸的WorldDynamic阻挡响应过滤传感器，保留实体墙与初始敌人命中；爆炸改多候选遮挡查询，解决同类范围伤害问题。
 
-本轮隔离复制v7/v8包，核对exe/ucas/武器JSON哈希后运行，原包存档和会话日志未覆盖。
+旧房间捕获替换为独立`UEMMO.Acceptance.M5_060.RoomWeaponGameplay`：实际菜单按钮→OpenLevel切图→I背包实际行/Equip按钮→方向键进房→自然波次敌人→视口Q/X→同一目标本次HP下降。未手工绑定目录、造测试靶或直接扣血。脚本逐武器隔离进程与UserDir，要求本次新报告/JSON/PNG；缺环境失败，T空备弹要有真实回调拒绝日志。
 
-| 验证 | 结果 |
+## 本次验证与证据
+
+| 验证命令（均经rtk proxy） | 结果 |
 |---|---|
-| 开始CheckTaskBoard -Json | valid=true，147/171 DONE；发现M5-060遗留IN_PROGRESS |
-| Scripts/Build.ps1 | **失败**：脚本exit1 / UBT exit6；M5PackagedWeaponTests.cpp:922，URoomSessionSubsystem不完整类型 |
-| v7原门禁UEMMO.Tasks.M5_036 | 4/4通过，但属于人工测试世界/目录挂载/布景，不能证明真实房间击伤 |
-| v7 WeaponTrialCapture渲染 | 1/1，五图生成；查看staged/flash两图，均为布景取证 |
-| v8 RoomWeaponFiringCapture渲染 | 1/1且无跳过，真实波次敌人100→90，两发截图80/100，图片已查看 |
-| 整体验收 | **FAIL**；当前源码构建失败，v8仅一条候选二进制路径通过，全部武器及真实键鼠未验收 |
+| `Scripts/Build.ps1` | 完整目标构建成功，本轮含199文件重编译，非Live Coding |
+| `Scripts/TestAutomation.ps1 -Filter UEMMO.Tasks -TaskId M5-060` | 780/780，failed0，success=true |
+| `Scripts/TestWeaponGameplay.ps1 -Editor` | 真实房间八件武器8/8 |
+| `Scripts/Package.ps1 -PackageRoot D:\Github-Poj\UE-MMO\Artifacts\Package\M5B-2026-10-14-v9` | exit0，BUILD SUCCESSFUL |
+| `Scripts/TestPackage.ps1 -IncludeWeaponScenario -PackageRoot 同上` | exit0；冒烟success/rendering=true；局部4/4零豁免；布景渲染1/1；真实房间8/8，success=true |
 
-证据根目录：`Artifacts/Tasks/M5-H02/2026-10-14T01-07-41+0800/`。总结果`audit-summary.json`的success=false；每次包内case另有summary.json/index.json/ue.log。Build日志已复制为`build-Editor.log`。复跑命令见审计报告第5节。结束任务板结果保存为`task-board-final.json`。
+汇总目录：`Artifacts/Tasks/M5-060/2026-10-14T02-37-05+0800-fix/`，`verification-summary.json`为success=true，另有构建/打包日志和各摘要。全量：`2026-10-14T03-06-52+0800`；包内逐件：`2026-10-14T03-25-02-715+0800-gameplay`。八张真实敌人血条截图全部查看。
 
-v8候选exe SHA256：`8552B637A7A7F660A9EE4D1EA43F0CE448491BFBA1230B2ECB4712381709CE2D`。原路径`Artifacts/Package/M5B-2026-10-13-v8/Windows/UEMMO/Binaries/Win64/UEMMO.exe`，为本轮开始前已有产物，**未升级为正式验收包**。
+首次掉血快照：步枪/点射/直线/抛物线/追踪100→90，散弹100→50，爆炸100→67，剑100→85。点射提交3发且15→12弹匣；快照只记录第一次掉血，不将其当作点射整轮总伤害。
 
-## 下一任务：收尾M5-060
+代码复核（requesting-code-review）：解决了模拟按键设备ID无效、零备弹结果缺真实回调证据两项问题，复核无剩余Critical/Important。后续包内门禁已实跑，七件远程各有真实NoReserveAmmo日志。
 
-1. 补齐RoomSessionSubsystem直接包含，让当前源码完整Build通过。
-2. 精确区分查询传感器与真实障碍，验证真实波次敌人/贴脸/墙体/纵深/触发区边界；当前补丁跳过所有初始穿透和零距离结果，边界证据不足。
-3. 房间捕获条件不满足不能return true冒充成功；改为本次同目标HP差断言；清理或隔离旧截图并核对时间。
-4. 完整回归，从可追踪提交重打包，验证实际菜单切图和全部武器；全部技术条件满足后才将M5-060标DONE，再将M5-H02转REVIEW。
-5. 用户明确确认后才能将H02标DONE。当前不要求用户重复试玩已失败的v7。
+## 用户试玩入口与边界
 
-独立可领取项仍有M5-050，但应先恢复武器交付闭环。M4保持DEFERRED，不开始联网。
+**新包v9**：`Artifacts/Package/M5B-2026-10-14-v9/Windows/UEMMO/Binaries/Win64/UEMMO.exe`。
 
-## 工作区与所有权
+SHA256：`D310137B0A3A7A27FE5F7188E1AB3AA902636263E929A5144BDDA9EF6701872C`；ConfigRevision仍`bb1bb8e26ef73d20`。包目录另有`试玩说明.md`。没有测试SaveGames，旧v7/v8保留证据用途。
 
-本轮开始已存在且保留未改的三份补丁属于上一轮M5-060：
+启动→上方CombatRoom01的Enter→需要换枪时先I选行/Equip/Close→再向右进激活区→面对同纵深敌人Q（剑X）。**Running开始后禁止换装**，不同武器可重开包选择。
 
-- `Scripts/TestPackage.ps1`
-- `Source/UEMMO/Projectiles/HitscanExecutor.cpp`
-- `Source/UEMMO/Tests/M5PackagedWeaponTests.cpp`
+**当前备弹0且未接补给，T不会补弹。** 这是本次负向验收与明确限制，不是包内成功装填；正向转移/中断有既有自动化回归，弹药持久化仍归M5-046。原型HUD仍有M3文案，枪声/特效仍为占位。本轮证明每武器真实伤害，不声称每件武器单独清完全部波次。
 
-本轮仅接管该卡的审计/交接，未提交上述他人代码。原diff保存在证据目录`original/pre-existing.patch`。最后已有全量报告`Artifacts/Tasks/M5-060/2026-10-14T00-13-43+0800/automation-summary.json`是778/779、success=false；旧交接的776/776和更早779/779不是当前工作区通过证明。
+自动化用了UMG业务回调与视口按键，不代表物理键鼠/手感/可听性；-nosound，M5-H02等待用户对v9反馈，不能由AI代签。旧v7失败结论保留在审计历史。
 
-## 当前阶段边界
+## 工作区与下一步
 
-总表为147/171 DONE：M0 6/6、M1 43/44、M2 18/18、M3 33/33、M4 0/1、M5 47/69。**M1-H01仍BLOCKED**；M0-H01/M2-H01/M3-H01/M5-H01保留历史签收。M5-H02 BLOCKED，M5-060 PAUSED；没有遗留IN_PROGRESS。C段载具与后续持久化/发布未完成。
+原三份未提交补丁已按本轮用户修复授权接续并收口于上述实现；本轮自己的报告/状态提交后工作区应干净，无外部未提交修改，无推送。
 
-README旧操作细节保留为历史说明；本轮新增审计提示。旧“音效未cook”的推断已被M5-059报告纠正，不能再引用pak缺项作为依据。自动化不等于真实键鼠，-nosound不证明实际可听。
+总表148/171 DONE，M5为48/69。下一步M5-H02用户试玩反馈；独立可领M5-050。H02未通过不解锁载具链；M1-H01仍BLOCKED，M4-000仍DEFERRED。若用户需要有限弹匣之外的补给，需按现有设计另开供弹任务，不把本轮零备弹拒绝说成补给完成。
