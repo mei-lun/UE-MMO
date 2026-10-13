@@ -23,7 +23,7 @@ try {
         $StartedUtc = [DateTime]::UtcNow
         $GameArgs = @()
         if ($Editor) { $GameArgs += $ProjectFile }
-        $GameArgs += @('-game','-unattended','-nosplash','-nosound','-RenderOffscreen','-ResX=1280','-ResY=720',
+        $GameArgs += @('-game','-unattended','-nosplash','-nosound','-RenderOffscreen','-ResX=1280','-ResY=720','-LogCmds=LogTemp Verbose',
             "-UserDir=$CaseDir\user-data", "-ExecCmds=Automation RunTests $Filter", '-TestExit=Automation Test Queue Empty',
             "-ReportExportPath=$CaseDir", "-UEMMOAcceptanceWeapon=$WeaponId", "-UEMMOAcceptanceOutput=$CaseDir", "-abslog=$CaseDir\ue.log")
         Invoke-UEProcess $Executable $GameArgs "gameplay-$WeaponId" 120
@@ -38,6 +38,12 @@ try {
         $Observed = Get-Content -LiteralPath $Evidence -Raw | ConvertFrom-Json
         if (-not $Observed.success -or -not $Observed.menu_travel_completed -or $Observed.weapon -ne $WeaponId -or $Observed.health_after -ge $Observed.health_before -or $Observed.run_id -le 0) {
             throw "Gameplay did not prove menu travel and this shot's damage: $WeaponId"
+        }
+        # EAmmoModelError::NoReserveAmmo is frozen as 13. State remaining
+        # unchanged alone cannot prove that the real T callback ran.
+        if ($Observed.reload_result -eq 'refused_no_reserve') {
+            $ReloadLog = @(Select-String -LiteralPath (Join-Path $CaseDir 'ue.log') -SimpleMatch 'UEMMO M5-033: the T reload refused (13): BeginReload refused: the shared reserve pool is empty')
+            if ($ReloadLog.Count -eq 0) { throw "The real T callback did not report NoReserveAmmo: $WeaponId" }
         }
         $Bytes = [IO.File]::ReadAllBytes($Screenshot)
         if ($Bytes.Length -lt 1024 -or [BitConverter]::ToString($Bytes,0,8) -ne '89-50-4E-47-0D-0A-1A-0A') { throw "Invalid current PNG: $Screenshot" }
