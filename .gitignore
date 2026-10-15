@@ -18,6 +18,7 @@ SourceAssets/Downloads/
 SourceAssets/Unpacked/
 Artifacts/
 .agent-local/
+.codex/config.toml
 
 # parallel-development worktrees (coordinator-managed)
 .worktrees/

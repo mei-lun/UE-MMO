@@ -27,6 +27,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M0-003 | 横版移动与测试房间 | DONE | — | 既有基线 | 2026-09-25T06:05:19+08:00 | [M0-003](Docs/Tasks/Reports/M0-003.md) |
 | M0-004 | 构建、运行与独立包验证 | DONE | — | 既有基线 | 2026-09-25T06:05:19+08:00 | [M0-004](Docs/Tasks/Reports/M0-004.md) |
 | M0-005 | 设计文档与 Agent 准备 | DONE | — | 既有基线 | 2026-09-25T06:05:19+08:00 | [M0-005](Docs/Tasks/Reports/M0-005.md) |
+| M0-006 | [EngineWire MCP安装与接入验证](Docs/Tasks/M0-006.md) | IN_PROGRESS | M0-001,M0-004 | Codex-20261016-MCP | 2026-10-16T02:04:45+08:00 | [report](Docs/Tasks/Reports/M0-006.md) |
 | M0-H01 | [真实键盘与镜头验收](Docs/Tasks/M0-H01.md) | DONE | M0-003,M0-004 | 用户 | 2026-10-03T22:56:38+08:00 | [report](Docs/Tasks/Reports/M0-H01.md) |
 | M1-001 | [接手并复核现有基线](Docs/Tasks/M1-001.md) | DONE | M0-004 | ZCode-20260925-A | 2026-09-25T10:11:53+08:00 | [report](Docs/Tasks/Reports/M1-001.md) |
 | M1-002 | [建立按任务筛选的自动化测试入口](Docs/Tasks/M1-002.md) | DONE | M1-001 | ZCode-20260925-A | 2026-09-25T23:14:22+08:00 | [report](Docs/Tasks/Reports/M1-002.md) |

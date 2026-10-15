@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/ChiR24/Unreal_mcp.git",
+  "tag": "v0.6.0-beta-e",
+  "commit": "6ea45acc2a71cd4d6d680721893c9aff855243fc",
+  "plugin": "McpAutomationBridge",
+  "npmVersion": "0.6.0-beta-e",
+  "license": "MIT",
+  "projectPort": 18090
+}
