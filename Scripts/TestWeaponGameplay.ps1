@@ -55,8 +55,10 @@ try {
             $FlightImage = Join-Path $CaseDir 'flight.png'
             if (-not $Observed.flight_observed_before_damage -or $Observed.projectile_entities_observed -lt 1 -or $Observed.projectile_speed_cm_s -le 0) { throw "No physical bullet flight was observed: $WeaponId" }
             if (-not (Test-Path -LiteralPath $FlightImage) -or (Get-Item -LiteralPath $FlightImage).LastWriteTimeUtc -lt $StartedUtc) { throw "Missing current flight image: $WeaponId" }
+            $FlightBytes = [IO.File]::ReadAllBytes($FlightImage)
+            if ($FlightBytes.Length -lt 1024 -or [BitConverter]::ToString($FlightBytes,0,8) -ne '89-50-4E-47-0D-0A-1A-0A') { throw "Invalid flight PNG: $WeaponId" }
         }
-        $Results += [ordered]@{ weapon=$WeaponId; success=$true; report=$Index; screenshot=$Screenshot; health_before=$Observed.health_before; health_after=$Observed.health_after; shots=$Observed.shots_committed; loaded_before=$Observed.loaded_before; loaded_after=$Observed.loaded_after_fire; reserve=$Observed.reserve_before_reload; reload=$Observed.reload_result }
+        $Results += [ordered]@{ weapon=$WeaponId; success=$true; report=$Index; screenshot=$Screenshot; health_before=$Observed.health_before; health_after=$Observed.health_after; shots=$Observed.shots_committed; loaded_before=$Observed.loaded_before; loaded_after=$Observed.loaded_after_fire; reserve=$Observed.reserve_before_reload; reload=$Observed.reload_result; entities=$Observed.projectile_entities_observed; moving_entities=$Observed.moving_projectile_entities; launch_speed_cm_s=$Observed.projectile_speed_cm_s; measured_linear_speed_cm_s=$Observed.measured_linear_speed_cm_s }
         Write-Host ("PASS {0}: HP {1} -> {2}; shots {3}" -f $WeaponId,$Observed.health_before,$Observed.health_after,$Observed.shots_committed)
     }
     $Summary.success = $true

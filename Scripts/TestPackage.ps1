@@ -691,5 +691,15 @@ if($IncludeWeaponScenario) {
     # M5-060: each weapon runs alone in a fresh rendered process and isolated
     # save directory. The gate requires actual menu travel, viewport input,
     # this shot's health delta and a newly generated screenshot.
+    $BulletReportDir = Join-Path $WeaponReportDir 'bullet-lifecycle'
+    New-Item -ItemType Directory -Path $BulletReportDir -Force | Out-Null
+    Invoke-UEProcess $Executable @('-game','-unattended','-nosplash','-nosound','-nullrhi',
+        '-ExecCmds=Automation RunTests UEMMO.Tasks.M5_061', '-TestExit=Automation Test Queue Empty',
+        "-ReportExportPath=$BulletReportDir", "-abslog=$ArtifactRoot\Logs\package-bullet-lifecycle.log") 'package-bullet-lifecycle' 300
+    $BulletIndex = Join-Path $BulletReportDir 'index.json'
+    if (-not (Test-Path -LiteralPath $BulletIndex)) { throw 'Bullet lifecycle report missing.' }
+    $BulletParsed = ConvertFrom-AutomationReportJson -ReportJson (Get-Content -LiteralPath $BulletIndex -Raw) -Filter 'UEMMO.Tasks.M5_061'
+    if (-not $BulletParsed.Ok) { throw ('Bullet lifecycle failed: ' + $BulletParsed.Error) }
+    [ordered]@{ success=$true; pass='package-bullet-lifecycle'; matched=$BulletParsed.Matched; passed=$BulletParsed.Passed; failed=$BulletParsed.Failed; report=$BulletIndex } | ConvertTo-Json
     & "$PSScriptRoot\TestWeaponGameplay.ps1" -PackageRoot $PackageRoot -TaskId M5-061
 }
