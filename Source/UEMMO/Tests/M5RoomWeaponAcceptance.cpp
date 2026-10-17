@@ -62,7 +62,13 @@ public:
 				if (It->Context.WeaponInstanceId != FiredWeaponInstance) { continue; }
 				const FGuid Id = It->Context.ProjectileInstanceId;
 				const double Now = World->GetTimeSeconds();
-				if (!CaptureBulletId.IsValid()) { CaptureBulletId = Id; }
+				if (!CaptureBulletId.IsValid())
+				{
+					CaptureBulletId = Id;
+					// A newly registered mesh can reach the render thread after
+					// its first simulation sample. Capture only after it is drawn.
+					NextFlightFrameTime = Now + 0.04;
+				}
 				if (const FVector* Start = BulletPositions.Find(Id))
 				{
 					const double Distance = FVector::Dist(*Start, It->GetActorLocation());
@@ -80,7 +86,8 @@ public:
 							}
 							MeasuredLinearSpeeds.Add(Distance / Delta);
 						}
-						if (Id == CaptureBulletId && FlightFrames.Num() < 3 && Now >= NextFlightFrameTime)
+						if (Id == CaptureBulletId && FlightFrames.Num() < 3 && Now >= NextFlightFrameTime
+							&& It->Visual && It->Visual->WasRecentlyRendered(0.05f))
 						{
 							if (!Target.IsValid() || Target->GetHealthComponent()->GetHealth() != HealthBefore) { return Fail(TEXT("target was damaged before the three flight frames")); }
 							FlightFrames.Add(It->GetActorLocation());
