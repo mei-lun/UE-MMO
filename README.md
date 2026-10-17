@@ -2,9 +2,9 @@
 
 UE 5.8.3 单机 3D 横版研究工程：固定侧面镜头，支持 X/Y 地面纵深移动，使用现成免费或引擎附带素材，由编程 Agent 完成客户端实现。
 
-> **2026-10-17 交付：M5-061实体子弹完成，M5-H02待用户试玩v10。** 普通枪、点射和散弹都发射独立弹丸，按配置速度和弹道飞行，碰撞时才扣血，命中/超时后销毁；外观为细小金色弹头。完整构建、782/782回归、包内生命周期2/2、真实UI八武器飞行命中8/8通过。总表149/173项DONE（M5为49/70；不是可玩性百分比）；M1-H01仍BLOCKED，M0-006安装收尾PAUSED。详见[实体子弹报告](Docs/Tasks/Reports/M5-061.md)、[当前交接](HANDOFF.md)与唯一状态源[TASKS.md](TASKS.md)。
+> **2026-10-17 交付：M5-062飞行拖尾完成，M5-H02待用户试玩v11。** 实体子弹现在带沿实际历史路径的细亮短拖尾，最长180cm、0.14s渐隐；碰撞后停止延伸，返回菜单/复位清理。完整构建、785/785回归、包内实体2/2、拖尾3/3、八武器8/8及60Hz默认枪复验通过，实际包内飞行/命中/消退图片已查看。总表150/174项DONE（M5为50/71；不是可玩性百分比）；M1-H01仍BLOCKED，M0-006安装收尾PAUSED。详见[拖尾报告](Docs/Tasks/Reports/M5-062.md)、[当前交接](HANDOFF.md)与唯一状态源[TASKS.md](TASKS.md)。
 
-**本轮试玩包**：`Artifacts/Package/M5B-2026-10-17-v10/Windows/UEMMO/Binaries/Win64/UEMMO.exe`。启动后点上方CombatRoom01的Enter；要换枪时先按I、选一行、Equip、Close，再向右进房。Q射击，训练剑用X；默认步枪的子弹飞行后命中100→90。战斗开始后按现有规则不能换装。**当前备弹0且无补给，T会拒绝补弹**；弹药持久化尚未实现。人工手感/实际声音仍由用户签收。
+**本轮试玩包**：`Artifacts/Package/M5B-2026-10-17-v11/Windows/UEMMO/Binaries/Win64/UEMMO.exe`。启动后点上方CombatRoom01的Enter；要换枪时先按I、选一行、Equip、Close，再向右进房。Q射击，训练剑用X；默认步枪可见短亮尾随弹头飞行，命中后很快消退。战斗开始后按现有规则不能换装。**当前备弹0且无补给，T会拒绝补弹**；弹药持久化尚未实现。人工手感/实际声音仍由用户签收。
 
 子弹配置在`Data/CombatSystem/projectiles.json`：`motion`控制直线/抛物线/追踪，`speed_cm_s`是初速度，`lifetime_s`限制最大寿命；普通弹当前6000cm/s、straight、2s。配置与对应资产通过UE API生成和重载验证，详细步骤见报告。
 
@@ -93,6 +93,6 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/UpdateTaskStatus
 
 ### 当前执行优先级
 
-M5已经实施到B段，当前登记49/70项DONE；设计入口为[M5 数据驱动战斗扩展总计划](Docs/Tasks/M5-数据驱动战斗扩展总计划.md)。M5-061已完成，M5-H02转REVIEW等待用户按v10清单反馈；M5-050为独立可领取任务。C段载具与后续持久化/发布仍有待办，H02未签收不解锁依赖；M4-000保持DEFERRED。
+M5已经实施到B段，当前登记50/71项DONE；设计入口为[M5 数据驱动战斗扩展总计划](Docs/Tasks/M5-数据驱动战斗扩展总计划.md)。M5-062已完成，M5-H02转REVIEW等待用户按v11清单反馈；M5-050为独立可领取任务。C段载具与后续持久化/发布仍有待办，H02未签收不解锁依赖；M4-000保持DEFERRED。
 
 接手前读取AGENTS.md、TASKS.md、HANDOFF.md和执行规则。M0-006的`Scripts/InstallEngineWire.ps1`仍有原会话未提交修改，不属于子弹任务；不要覆盖。M5验收使用真实菜单/视口按键与逐实体飞行采样，人工验收只能由用户明确签收。
