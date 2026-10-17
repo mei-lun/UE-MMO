@@ -1,11 +1,12 @@
 param(
-    # M5-018B: optional explicit package root (the timestamped segment
-    # package). Empty keeps the legacy default directory so the older
-    # Package/TestPackage calls stay byte-compatible.
+    # Kept for callers using the fixed Package root or Windows directory.
+    # M5-064: alternate/versioned output directories are no longer allowed.
     [string]$PackageRoot = ''
 )
 . "$PSScriptRoot\Common.ps1"
-$ArchiveDirectory = if ([string]::IsNullOrWhiteSpace($PackageRoot)) { "$ArtifactRoot\Package" } else { $PackageRoot }
+$ArchiveDirectory = Resolve-DevelopmentPackageRoot $PackageRoot
+$PackageInfo = Join-Path $DevelopmentPackageDirectory 'package-info.json'
+if (Test-Path -LiteralPath $PackageInfo) { Remove-Item -LiteralPath $PackageInfo }
 $Arguments = @('BuildCookRun', "-project=$ProjectFile", '-noP4', '-platform=Win64', '-clientconfig=Development', '-build', '-cook', '-stage', '-pak', '-iostore', '-archive', "-archivedirectory=$ArchiveDirectory", '-unattended', '-utf8output')
 # M1-039: attack montages are resolved at runtime by naming convention
 # (/Game/UEMMO/Animation/Montages/MNT_<AttackId>) and nothing references them
@@ -58,3 +59,21 @@ if (Test-Path -LiteralPath $RepoItemsSource) {
 else {
     Write-Warning 'Data/items.json not found; the packaged inventory will stage no items and weapon binds will refuse.'
 }
+if (-not (Test-Path -LiteralPath $DevelopmentPackageExecutable)) { throw 'Packaging did not produce the fixed development executable.' }
+$SourceRevision = & git -C $ProjectRoot rev-parse HEAD
+Assert-NativeSuccess 'Reading source revision'
+$ExeStream = [IO.File]::OpenRead($DevelopmentPackageExecutable)
+$Hasher = [Security.Cryptography.SHA256]::Create()
+try { $ExeHash = [BitConverter]::ToString($Hasher.ComputeHash($ExeStream)).Replace('-','') }
+finally { $ExeStream.Dispose(); $Hasher.Dispose() }
+Copy-Item -LiteralPath (Join-Path $ProjectRoot 'Docs\DevelopmentPlaytest.txt') -Destination (Join-Path $DevelopmentPackageDirectory 'README.txt') -Force
+# Build identity is evidence, not a numbered delivery directory.
+[ordered]@{
+    success = $true
+    generated_at = [DateTimeOffset]::Now.ToString('o')
+    source_revision = [string]$SourceRevision
+    executable = $DevelopmentPackageExecutable
+    exe_sha256 = $ExeHash
+    validation = 'Packaging completed; run TestPackage.ps1 for runtime acceptance.'
+} | ConvertTo-Json | Set-Content -LiteralPath $PackageInfo -Encoding UTF8
+Write-Host "Development package: $DevelopmentPackageDirectory"

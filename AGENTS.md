@@ -41,6 +41,10 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/CheckTaskBoard.p
 
 ## UE 规则
 
+- **开发包唯一输出目录：`D:\Github-Poj\UE-MMO\Artifacts\Package\Windows`。** 以后运行`Scripts/Package.ps1`默认覆盖这一份；UAT的archive根是`Artifacts/Package`，由UAT追加`Windows`，不能再追加一层Windows。
+- 开发阶段不再创建日期、`vN`、里程碑或`latest`等并行包目录；打包、包内测试、试玩说明和交付链接统一到固定目录。源码追溯使用Git提交，日志/截图/JSON按任务时间戳保存在`Artifacts/Tasks/<ID>`，不靠保留完整旧包追溯。
+- 清理旧包前先保存其中的用户存档、日志和原始验收证据；不能删除用户存档来制造首次运行通过。历史任务报告保留原验证事实，并注明旧包已退役。
+
 - 工程 `UEMMO.uproject`；C++ 模块 `UEMMO`；源码符号不能使用带连字符的目录名。
 - X 横向、Y 纵深、Z 高度；不要启用锁住 Y 的平面约束。
 - UE Python `Rotator` 使用关键字 pitch/yaw/roll，不用位置参数猜顺序。

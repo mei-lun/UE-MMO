@@ -1,0 +1,16 @@
+UE-MMO 开发包
+
+固定目录：D:\Github-Poj\UE-MMO\Artifacts\Package\Windows
+启动：UEMMO.exe，或 UEMMO\Binaries\Win64\UEMMO.exe。
+也可在仓库根目录运行 Scripts/Run.ps1；加 -Editor 打开源码工程编辑器。
+
+点上方 CombatRoom01 的 Enter，向右走进房间，Q射击。
+橙色实体弹头逐帧飞行，碰撞后敌人掉血、子弹销毁。
+普通弹速12米/秒、寿命2秒；当前无拖尾。
+
+换武器：进激活区前按 I，选行，Equip，Close，再向右走。训练剑用 X。
+当前备弹0且无补给，T会拒绝补弹；战斗开始后不能换装；弹药暂不持久化。
+
+开发阶段只更新这一份包，不增加日期、vN或里程碑版本目录。
+修复记录见 Docs/开发交付与修复汇总.md；当前任务状态见 TASKS.md。
+自动化通过不等于用户已签收操作手感或声音。

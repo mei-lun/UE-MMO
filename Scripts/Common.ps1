@@ -13,7 +13,21 @@ if (-not (Test-Path -LiteralPath (Join-Path $EngineRoot 'Engine\Binaries\Win64\U
     throw "Unreal Engine not found at $EngineRoot. Set UE_ENGINE_ROOT or Scripts/local.settings.json."
 }
 $ArtifactRoot = Join-Path $ProjectRoot 'Artifacts'
+$DevelopmentPackageRoot = Join-Path $ArtifactRoot 'Package'
+$DevelopmentPackageDirectory = Join-Path $DevelopmentPackageRoot 'Windows'
+$DevelopmentPackageExecutable = Join-Path $DevelopmentPackageDirectory 'UEMMO\Binaries\Win64\UEMMO.exe'
 New-Item -ItemType Directory -Path (Join-Path $ArtifactRoot 'Logs') -Force | Out-Null
+function Resolve-DevelopmentPackageRoot([string]$RequestedRoot = '') {
+    # UAT adds Windows to its archive root. Accept the fixed root or its
+    # Windows directory, but never create a dated/versioned sibling package.
+    if (-not [string]::IsNullOrWhiteSpace($RequestedRoot)) {
+        $Resolved = [IO.Path]::GetFullPath($RequestedRoot).TrimEnd([char[]]'\/')
+        if ($Resolved -ne $DevelopmentPackageRoot -and $Resolved -ne $DevelopmentPackageDirectory) {
+            throw "Development packages must use $DevelopmentPackageDirectory. Remove the custom/versioned PackageRoot."
+        }
+    }
+    return $DevelopmentPackageRoot
+}
 function Assert-NativeSuccess([string]$Operation) {
     if ($LASTEXITCODE -ne 0) { throw "$Operation failed with exit code $LASTEXITCODE. Inspect Artifacts/Logs." }
 }

@@ -6,7 +6,7 @@ param(
     [string[]]$WeaponIds = @('weapon_hitscan_sample','weapon_burst_sample','weapon_pellet_sample','weapon_projectile_sample','weapon_parabolic_sample','weapon_homing_sample','weapon_explosive_sample','weapon_training_sword')
 )
 . "$PSScriptRoot\Common.ps1"
-if (-not $Editor -and [string]::IsNullOrWhiteSpace($PackageRoot)) { $PackageRoot = Join-Path $ArtifactRoot 'Package' }
+$PackageRoot = Resolve-DevelopmentPackageRoot $PackageRoot
 if ($WeaponIds.Count -lt 1 -or @($WeaponIds | Select-Object -Unique).Count -ne $WeaponIds.Count) { throw 'Provide a nonempty set of distinct weapon ids.' }
 foreach ($WeaponId in $WeaponIds) { if ($WeaponId -notmatch '^weapon_[a-z_]+$') { throw "Invalid weapon id: $WeaponId" } }
 $Executable = if ($Editor) { Join-Path $EngineRoot 'Engine\Binaries\Win64\UnrealEditor-Cmd.exe' } else { Join-Path $PackageRoot 'Windows\UEMMO\Binaries\Win64\UEMMO.exe' }

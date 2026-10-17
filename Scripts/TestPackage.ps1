@@ -90,8 +90,7 @@ param(
     [switch]$IncludeProgressionScenario,
     # M5-018B: the Segment-A packaged reaction pass (the in-package
     # reaction chain + the fallback + the rendered capture) and the
-    # explicit package root (must match the Package.ps1 -PackageRoot used
-    # for this package).
+    # fixed development package root (M5-064).
     [switch]$IncludeReactionScenario,
     # M5-036: the Segment-B packaged weapon trial pass. The package ships
     # its own Data/CombatSystem config (Package.ps1 M5-036 carry), so the
@@ -101,13 +100,15 @@ param(
     # list (the dev-source-JSON validators are not in this filter).
     [switch]$IncludeWeaponScenario,
     [string]$PackageRoot = '',
+    [string]$TaskId = 'M5-063',
     [string]$CombatFilter = 'UEMMO.Tasks',
     [string[]]$DevOnlySourceJsonFilter = @('UEMMO.Tasks.M1_008.', 'UEMMO.Tasks.M2_001.', 'UEMMO.Tasks.M2_005.', 'UEMMO.Tasks.M2_008.', 'UEMMO.Tasks.M3_001.', 'UEMMO.Tasks.M3_007.', 'UEMMO.Tasks.M5_018A.', 'UEMMO.Tasks.M5_020A.'),
     [string[]]$ExpectedInPackageFailures = @('UEMMO.Tasks.M3_005.', 'UEMMO.Tasks.M3_019.'),
     [string]$CombatMap = '/Game/UEMMO/Maps/L_TrainingArena'
 )
 . "$PSScriptRoot\Common.ps1"
-$PackageProject = if ([string]::IsNullOrWhiteSpace($PackageRoot)) { Join-Path $ArtifactRoot 'Package\Windows\UEMMO' } else { Join-Path $PackageRoot 'Windows\UEMMO' }
+$PackageRoot = Resolve-DevelopmentPackageRoot $PackageRoot
+$PackageProject = Join-Path $PackageRoot 'Windows\UEMMO'
 $Executable = Join-Path $PackageProject 'Binaries\Win64\UEMMO.exe'
 if(-not (Test-Path -LiteralPath $Executable)) { throw 'Package not found. Run Package.ps1 first.' }
 $PackageArtifacts = Join-Path $PackageProject 'Artifacts'
@@ -711,5 +712,5 @@ if($IncludeWeaponScenario) {
     $VisibleParsed = ConvertFrom-AutomationReportJson -ReportJson (Get-Content -LiteralPath $VisibleIndex -Raw) -Filter 'UEMMO.Tasks.M5_063'
     if (-not $VisibleParsed.Ok -or $VisibleParsed.Matched -ne 1) { throw ('Visible bullet verification failed: ' + $VisibleParsed.Error) }
     [ordered]@{ success=$true; pass='package-visible-bullets'; matched=$VisibleParsed.Matched; passed=$VisibleParsed.Passed; failed=$VisibleParsed.Failed; report=$VisibleIndex } | ConvertTo-Json
-    & "$PSScriptRoot\TestWeaponGameplay.ps1" -PackageRoot $PackageRoot -TaskId M5-063
+    & "$PSScriptRoot\TestWeaponGameplay.ps1" -PackageRoot $PackageRoot -TaskId $TaskId
 }
