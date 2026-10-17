@@ -1,43 +1,39 @@
-# 最近一轮交接：M5-063可见弹头实体完成，v12待试玩
+# 最近一轮交接：固定开发包目录与历次修复归整
 
-- Owner：Codex-20261017-VisibleBullet；2026-10-17T18:01:47+08:00开始，18:40:25+08:00完成技术验证。
-- main；起点da4eff9，实现`c08edd8e51198a6740edd82744d236edbcfabdea`，验收补强`9df5698209e7166a1ca5f1e4c25a1e264b5de983`。本记录所在提交为报告/状态提交。
-- 本轮新增DONE **1项：M5-063**；M5-H02 REVIEW、不代签。总表151/175 DONE（M5 51/72），无IN_PROGRESS。
-- 详细报告：`Docs/Tasks/Reports/M5-063.md`。TASKS.md仍是唯一任务状态来源。
+- Owner：Codex-20261018-Package；2026-10-18T01:58:00+08:00开始，02:19:34+08:00完成登记。
+- main；起点dc95cae，实现`41da19db4899e4f6959afdf5bd260086484a5e16`。本记录所在提交为报告/任务状态收尾。
+- 本轮新增DONE **1项：M5-064**；总表152/176 DONE（M5 52/73），无IN_PROGRESS。M5-H02仍REVIEW，不代签。
+- 报告：`Docs/Tasks/Reports/M5-064.md`；修复汇总：`Docs/开发交付与修复汇总.md`。TASKS.md仍为唯一状态来源。
 
-## 实际修改
+## 本轮实际修改
 
-用户明确要求“我需要的是一个子弹实体，不是一条线，要能够看到实体的飞行”。v11短拖尾方案不满足要求，反馈留存，停止推荐v11。
+用户明确要求开发阶段不再制造多版本包。**以后全部只打到`D:\Github-Poj\UE-MMO\Artifacts\Package\Windows`**，同一份覆盖更新。AGENTS.md、执行规则、操作手册和README已同步；Common/Package/TestPackage/TestWeaponGameplay共用固定路径约束，拒绝其他目录。UAT archive根是Artifacts/Package，自动追加Windows；传固定Windows也规范到同一处，不嵌套Windows/Windows。
 
-删除ProjectileFlightTrail类及生产生成/维护路径、材质生成脚本。弹头改为24×12×12cm不透明受光橙色实体，普通弹/追踪弹1200cm/s、穿透1600、抛物线2000、爆炸1400；寿命和运动策略保留。实际镜头关闭运动模糊，实体碰撞后才提交伤害，命中/超时/复位/EndPlay/LeaveRoom清理。UE API生成M_BulletSolid及31份数据资产，独立进程重载通过。旧M_Bullet/M_BulletTrail历史资产未手改。
+Run.ps1默认启动固定开发包，-Editor仍打开源码编辑器。包内README.txt为无版本试玩说明，package-info.json记录实际来源提交与exe哈希。历次M5-036、M5-056～063修复、用户失败反馈与当前实现集中在修复汇总；九份历史报告注明旧包退役，原始事实不改写。
 
-八武器验收逐个走真实菜单切图、背包选装备、视口按键进房/发射。同一GUID三次采样间隔至少45ms，目标每次仍未受伤；之后要求扣血和实体清理。最初120Hz首图在网格显示前被请求，实际查看后修正为等待40ms且WasRecentlyRendered，再重建包并复测；不能只凭JSON或截图存在宣称可见。
+10个M5B旧完整包已清理（v3～v12），释放10743914482字节、约10.01GiB，Package下只余Windows。清理前11份包（含旧Windows）的Saved/SaveGames、日志、截图、JSON、说明已逐个SHA校验归档，完整文件清单及exe哈希保存。新目录旧档停在10月6日，已将最后使用包的10月18日Profile_A/B/Index整组迁入；原两套档均归档，迁移后三槽哈希一致。
 
-## 验证结果
+## 验证与证据
 
-所有命令使用`rtk proxy powershell.exe -NoProfile -ExecutionPolicy Bypass -File`前缀。
+命令使用`rtk proxy powershell.exe -NoProfile -ExecutionPolicy Bypass -File`前缀。
 
-| 检查 | 结果 |
+| 验证 | 本次结果 |
 |---|---|
-| Build.ps1 | 完整Editor构建Succeeded；补丁后重建成功 |
-| UE create_bullet_assets.py + 新进程-UEMMOBulletVerify | 生成/保存/重载success=true |
-| TestAutomation.ps1 -Filter UEMMO.Tasks -TaskId M5-063 | **783/783**，success=true；删除两项已退休尾迹用例，保留离场用例 |
-| TestWeaponGameplay.ps1 -Editor -TaskId M5-063 -WeaponIds weapon_hitscan_sample | 默认枪60/120Hz各1/1 |
-| Package.ps1 -PackageRoot D:\Github-Poj\UE-MMO\Artifacts\Package\M5B-2026-10-17-v12 | 最终Game build/cook/stage/archive，BUILD SUCCESSFUL，exit0 |
-| TestPackage.ps1 -IncludeWeaponScenario -PackageRoot 同上 | 冒烟success/rendering=true、局部4/4、布景1/1、实体2/2、离场1/1、真实UI八武器**8/8** |
-| TestWeaponGameplay.ps1 -PackageRoot 同上 -TaskId M5-063 -SimulationFps 60 -WeaponIds weapon_hitscan_sample | 60Hz包内1/1，实测1200cm/s |
-| Test.ps1 -Render | success/rendering=true，图已查看 |
+| Artifacts/Tasks/M5-064/verify-package-paths.ps1 | 16项PowerShell语法、路径正反例、三个入口拒绝版本目录、Run启动路由通过 |
+| Scripts/Package.ps1（无目录参数） | BUILD SUCCESSFUL、exit0，固定Windows；package-info.success=true |
+| Scripts/TestPackage.ps1 -IncludeWeaponScenario -TaskId M5-064（无目录参数） | 冒烟success/rendering=true；局部4/4、布景1/1、实体2/2、离场1/1、真实菜单到房间八武器8/8 |
+| 本次包身份/内容与证据绑定 | 固定exe、非Editor、八武器完整集合、24项原始报告及副本时间/哈希、Binaries/Paks/Data哈希一致 |
+| 旧包清理与迁移校验 | cleanup-summary.success=true，10目录移除；save-migration.success=true，3槽迁入后再次核验 |
+| 开始/结束CheckTaskBoard | valid=true，无进行中；结构检查不代替玩法检查 |
 
-证据汇总：`Artifacts/Tasks/M5-063/2026-10-17T18-01-47+0800-delivery/verification-summary.json`，success=true。全量`2026-10-17T18-23-34+0800`；包内八武器`2026-10-17T18-37-20-701+0800-gameplay`；60Hz`2026-10-17T18-38-34-642+0800-gameplay`。同一弹头三帧对照`same-bullet-flight.png`是原图裁剪排列，无补画/插帧。
+证据根：`Artifacts/Tasks/M5-064/2026-10-18T01-58-00+0800/`，汇总verification-summary.json success=true；实际八武器`2026-10-18T02-12-38-671+0800-gameplay`。新包启动图、实体飞行与100→90掉血图已查看。此次无C++/资源变化，没有重新声称跑783条全量；其历史结果见M5-063。
 
-七件远程各三帧已逐项查看；默认枪t0.883/0.933/0.983秒，X-169.3/-109.3/-49.3cm，目标保持100血；后来碰撞降到90并销毁。点射3实体，散弹5实体；首次掉血：散弹70、爆炸67、剑85，其余90。默认命中/清理及60Hz三帧已看。
+只读复核曾指出初版删除门禁只看success；已绑定本次包、报告时效、八武器与内容哈希后再清理，复核无剩余Critical/Important。删除前每个绝对路径都在Package直接子目录内，文件树无链接且未变化；当前Windows不进删除分支。
 
-## 交付、限制与接续
+## 固定交付与接续
 
-v12：`Artifacts/Package/M5B-2026-10-17-v12/Windows/UEMMO/Binaries/Win64/UEMMO.exe`，SHA256 `CC1D14C5E037C6B4C9F16C1483887C7DB1CD4876D9E1A83873EC1006F783BA65`。包内附试玩说明。
+试玩`Artifacts/Package/Windows/UEMMO.exe`，或实际exe`Windows/UEMMO/Binaries/Win64/UEMMO.exe`；SHA256 `CC1D14C5E037C6B4C9F16C1483887C7DB1CD4876D9E1A83873EC1006F783BA65`。以后不再发vN目录。源码追溯用Git SHA，原始测试证据按任务时间戳归档。
 
-上方Enter→需要换枪先I选行/Equip/Close→向右进房→Q，剑X。备弹0且无补给，T拒绝，不宣称正向换弹通过；弹药不持久、Running禁换装仍保留。固定60/120Hz、自动视口输入不代替真实键鼠/手感/声音的用户签收。
+玩法仍为M5-063可见橙色弹头基线：上方Enter，换枪先I/选行/Equip/Close，向右进房，Q射击、剑X。备弹0且无补给，T拒绝；弹药未持久化，Running禁换装。自动化/截图不代替真实键鼠、声音和手感签收。M5-H02待用户复测，独立可领M5-050；FName大小写摘要差异P2可另卡处理。
 
-资产ConfigRevision84057a17bd92021e，包内运行07fed29fe3390afe。只读复核确认八份JSON逐字节一致；既有摘要函数直接哈希FName显示文字，normal/Normal差异可复算这两个摘要。记录为独立P2：后续规范化名称/编码并补跨Editor/Game测试；本次不扩展修改摘要算法，当前武器运行无拒绝。请求代码复核无剩余Critical/Important。
-
-保留`Scripts/InstallEngineWire.ps1`原未提交修改（M0-006仍PAUSED）；未推送远程。M1-H01 BLOCKED、M4 DEFERRED。下一步：用户M5-H02复测v12；独立可领取M5-050。若另做摘要一致性修复应先建独立任务卡，按总表领取。
+原`Scripts/InstallEngineWire.ps1`修改保留未提交，M0-006 PAUSED；M1-H01 BLOCKED，M4 DEFERRED。未改引擎或推送远程。
