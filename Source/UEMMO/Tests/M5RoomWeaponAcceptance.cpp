@@ -14,7 +14,7 @@
 #include "../UI/MapSelectWidget.h"
 #include "../Weapons/WeaponComponent.h"
 #include "../Projectiles/CombatProjectile.h"
-#include "../Projectiles/ProjectileFlightTrail.h"
+#include "Components/StaticMeshComponent.h"
 #include "../Projectiles/HitscanTracer.h"
 #include "Components/Button.h"
 #include "Dom/JsonObject.h"
@@ -61,11 +61,8 @@ public:
 			{
 				if (It->Context.WeaponInstanceId != FiredWeaponInstance) { continue; }
 				const FGuid Id = It->Context.ProjectileInstanceId;
-				AProjectileFlightTrail* Trail = It->GetFlightTrail();
-				if (!Trail) { return Fail(TEXT("physical bullet has no flight trail")); }
-				MaxTrailLength = FMath::Max(MaxTrailLength, Trail->GetRecordedLength());
-				if (Trail->GetRecordedLength() > AProjectileFlightTrail::MaxLengthCm + 0.1f) { return Fail(TEXT("trail exceeded its maximum length")); }
 				const double Now = World->GetTimeSeconds();
+				if (!CaptureBulletId.IsValid()) { CaptureBulletId = Id; }
 				if (const FVector* Start = BulletPositions.Find(Id))
 				{
 					const double Distance = FVector::Dist(*Start, It->GetActorLocation());
@@ -83,10 +80,14 @@ public:
 							}
 							MeasuredLinearSpeeds.Add(Distance / Delta);
 						}
-						if (!bRequestedFlightImage && Trail->GetVisibleSegmentCount() > 0 && Trail->GetRecordedLength() >= 60.0f)
+						if (Id == CaptureBulletId && FlightFrames.Num() < 3 && Now >= NextFlightFrameTime)
 						{
-							FScreenshotRequest::RequestScreenshot(Output / TEXT("flight.png"), true, false);
-							bRequestedFlightImage = true;
+							if (!Target.IsValid() || Target->GetHealthComponent()->GetHealth() != HealthBefore) { return Fail(TEXT("target was damaged before the three flight frames")); }
+							FlightFrames.Add(It->GetActorLocation());
+							FlightFrameTimes.Add(Now);
+							const FString Name = FlightFrames.Num() == 1 ? TEXT("flight.png") : FString::Printf(TEXT("flight-%02d.png"), FlightFrames.Num());
+							FScreenshotRequest::RequestScreenshot(Output / Name, true, false);
+							NextFlightFrameTime = Now + 0.045;
 						}
 					}
 				}
@@ -95,6 +96,10 @@ public:
 				BulletSpeed = It->LaunchSpeedCmS;
 			}
 			if (TActorIterator<AHitscanTracer>(World)) { return Fail(TEXT("ordinary ammunition produced a hitscan beam")); }
+			for (TActorIterator<AActor> It(World); It; ++It)
+			{
+				if (It->GetClass()->GetName().Contains(TEXT("FlightTrail"))) { return Fail(TEXT("line-like trail actor exists")); }
+			}
 		}
 		if (Stage == 0)
 		{
@@ -225,11 +230,8 @@ public:
 			ShotsAfter = Mount->GetCommittedShotCount();
 			if (!bMelee)
 			{
-				for (TActorIterator<AProjectileFlightTrail> It(World); It; ++It)
-				{
-					if (It->GetOwner() == Pawn) { return Fail(TEXT("flight trail remained after its fade deadline")); }
-				}
-				FScreenshotRequest::RequestScreenshot(Output / TEXT("trail-cleared.png"), true, false);
+				if (Pawn->GetLiveWeaponProjectileCount() > 0) { return false; }
+				FScreenshotRequest::RequestScreenshot(Output / TEXT("projectiles-cleared.png"), true, false);
 			}
 			MagazineAfter = Mount->GetActiveBinding()->LoadedRounds;
 			if (ShotsAfter - ShotsBefore != ExpectedShots) { return Fail(TEXT("release/burst shot count differs from the weapon definition")); }
@@ -260,7 +262,7 @@ public:
 			if (Mount->GetCommittedShotCount() != ShotsAfter) { return Fail(TEXT("weapon kept firing after release")); }
 			if (!bMelee)
 			{
-				if (!bObservedFlightBeforeDamage || !bRequestedFlightImage || BulletPositions.Num() != ExpectedShots * ExpectedPellets || MovingBulletIds.Num() != BulletPositions.Num())
+				if (!bObservedFlightBeforeDamage || FlightFrames.Num() != 3 || BulletPositions.Num() != ExpectedShots * ExpectedPellets || MovingBulletIds.Num() != BulletPositions.Num())
 				{
 					return Fail(TEXT("did not observe all spawned bullets moving before impact"));
 				}
@@ -327,8 +329,18 @@ private:
 		Json->SetNumberField(TEXT("projectile_speed_cm_s"), BulletSpeed);
 		Json->SetBoolField(TEXT("flight_observed_before_damage"), bObservedFlightBeforeDamage);
 		Json->SetNumberField(TEXT("moving_projectile_entities"), MovingBulletIds.Num());
-		Json->SetNumberField(TEXT("maximum_observed_trail_length_cm"), MaxTrailLength);
-		Json->SetBoolField(TEXT("visible_trail_captured"), bRequestedFlightImage);
+		Json->SetStringField(TEXT("captured_projectile_id"), CaptureBulletId.ToString());
+		TArray<TSharedPtr<FJsonValue>> Frames;
+		for (int32 Index = 0; Index < FlightFrames.Num(); ++Index)
+		{
+			auto Frame = MakeShared<FJsonObject>();
+			Frame->SetNumberField(TEXT("time"), FlightFrameTimes[Index]);
+			Frame->SetNumberField(TEXT("x"), FlightFrames[Index].X);
+			Frame->SetNumberField(TEXT("y"), FlightFrames[Index].Y);
+			Frame->SetNumberField(TEXT("z"), FlightFrames[Index].Z);
+			Frames.Add(MakeShared<FJsonValueObject>(Frame));
+		}
+		Json->SetArrayField(TEXT("same_projectile_flight_frames"), Frames);
 		TArray<TSharedPtr<FJsonValue>> SpeedSamples;
 		for (const double Speed : MeasuredLinearSpeeds) { SpeedSamples.Add(MakeShared<FJsonValueNumber>(Speed)); }
 		Json->SetArrayField(TEXT("measured_linear_speed_cm_s"), SpeedSamples);
@@ -358,8 +370,11 @@ private:
 	TArray<double> MeasuredLinearSpeeds;
 	int32 ExpectedPellets = 0;
 	float BulletSpeed = 0;
-	float MaxTrailLength = 0;
-	bool bObservedFlightBeforeDamage = false, bRequestedFlightImage = false;
+	FGuid CaptureBulletId;
+	TArray<FVector> FlightFrames;
+	TArray<double> FlightFrameTimes;
+	double NextFlightFrameTime = 0;
+	bool bObservedFlightBeforeDamage = false;
 };
 }
 

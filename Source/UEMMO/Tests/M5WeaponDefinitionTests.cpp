@@ -1734,7 +1734,7 @@ bool FUEMMOTasksM5_004AmmoAndProjectileJsonLoadAndValidate::RunTest(const FStrin
 	if (Bullet)
 	{
 		TestTrue(TEXT("bullet_linear moves straight"), Bullet->Motion == EProjectileMotion::Straight);
-		TestEqual(TEXT("bullet_linear speed is 6000 cm/s"), Bullet->SpeedCmS, 6000.0f);
+		TestEqual(TEXT("bullet_linear speed is 1200 cm/s"), Bullet->SpeedCmS, 1200.0f);
 		TestEqual(TEXT("bullet_linear lifetime is 2 s"), Bullet->LifetimeS, 2.0f);
 		TestEqual(TEXT("bullet_linear pierces nothing"), Bullet->PierceCount, 0);
 		TestEqual(TEXT("bullet_linear has no explosion"), Bullet->ExplosionRadiusCm, 0.0f);

@@ -742,7 +742,7 @@ bool FUEMMOTasksM5_005DirectoryLoadPositive::RunTest(const FString& Parameters)
 	if (TestNotNull(TEXT("bullet_linear is loaded"), Bullet))
 	{
 		TestTrue(TEXT("bullet_linear flies straight"), Bullet->Motion == EProjectileMotion::Straight);
-		TestEqual(TEXT("bullet_linear keeps speed 6000"), Bullet->SpeedCmS, 6000.0f);
+		TestEqual(TEXT("bullet_linear uses readable flight speed 1200"), Bullet->SpeedCmS, 1200.0f);
 	}
 	const FProjectileDefinition* Rocket = Tables.Projectiles.Find(FName(TEXT("rocket_explosive")));
 	if (TestNotNull(TEXT("rocket_explosive is loaded"), Rocket))

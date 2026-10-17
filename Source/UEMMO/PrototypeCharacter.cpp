@@ -39,7 +39,6 @@
 // one-policy seam (dispatched per definition motion in
 // MakeWeaponProjectileMotionPolicy below).
 #include "Projectiles/CombatProjectile.h"
-#include "Projectiles/ProjectileFlightTrail.h"
 #include "Projectiles/HitscanExecutor.h"
 #include "Projectiles/HitscanTracer.h"
 #include "Projectiles/LinearProjectilePolicy.h"
@@ -248,7 +247,6 @@ namespace
         void DestroyPellet(ACombatProjectile& PelletActor) override
         {
             Spawned.Remove(&PelletActor);
-            PelletActor.DiscardFlightTrail();
             if (PelletActor.GetWorld() != nullptr && IsValid(&PelletActor))
             {
                 PelletActor.Destroy();
@@ -1485,7 +1483,6 @@ void APrototypeCharacter::HandleWeaponShotCommitted(const FShotContext& Shot)
             }
             else
             {
-                Actor->DiscardFlightTrail();
                 Actor->Destroy();
                 UE_LOG(LogTemp, Warning, TEXT("UEMMO M5-061: failed projectile policy initialization; actor retired."));
             }
@@ -1752,16 +1749,9 @@ void APrototypeCharacter::ClearWeaponProjectiles()
     if (BurstFirePolicy.IsValid()) { BurstFirePolicy->CancelPendingBurst(); }
     for (FLiveWeaponProjectile& Entry : LiveWeaponProjectiles)
     {
-        if (ACombatProjectile* Actor = Entry.Actor.Get()) { Actor->DiscardFlightTrail(); Actor->Destroy(); }
+        if (ACombatProjectile* Actor = Entry.Actor.Get()) { Actor->Destroy(); }
     }
     LiveWeaponProjectiles.Reset();
-    if (UWorld* World = GetWorld())
-    {
-        for (TActorIterator<AProjectileFlightTrail> It(World); It; ++It)
-        {
-            if (It->GetOwner() == this) { It->Destroy(); }
-        }
-    }
 }
 
 void APrototypeCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)

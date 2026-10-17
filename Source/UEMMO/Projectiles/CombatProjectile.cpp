@@ -6,7 +6,6 @@
 // lives in the M5-028 policy faces (LinearProjectilePolicy.h), not here.
 
 #include "CombatProjectile.h"
-#include "ProjectileFlightTrail.h"
 
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -36,7 +35,8 @@ ACombatProjectile::ACombatProjectile()
 	Movement->SetUpdatedComponent(Body);
 	Movement->bAutoActivate = false;
 
-	// M5-061: an 8cm x 2cm rounded bullet. Keep visual size independent of
+	// M5-063: a 24cm x 12cm solid bullet, readable in the fixed side camera.
+	// Keep visual size independent of
 	// the conservative sweep radius. Hard references participate in cook.
 	Visual = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("M5_035_Visual"));
 	Visual->SetupAttachment(Body);
@@ -45,9 +45,9 @@ ACombatProjectile::ACombatProjectile()
 	if (BulletMesh.Succeeded())
 	{
 		Visual->SetStaticMesh(BulletMesh.Object);
-		Visual->SetRelativeScale3D(FVector(0.08f, 0.02f, 0.02f));
+		Visual->SetRelativeScale3D(FVector(0.24f, 0.12f, 0.12f));
 	}
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> BulletMaterial(TEXT("/Game/UEMMO/Materials/M_Bullet.M_Bullet"));
+	static ConstructorHelpers::FObjectFinder<UMaterialInterface> BulletMaterial(TEXT("/Game/UEMMO/Materials/M_BulletSolid.M_BulletSolid"));
 	if (BulletMaterial.Succeeded()) { Visual->SetMaterial(0, BulletMaterial.Object); }
 	Visual->SetCastShadow(false);
 }
@@ -55,40 +55,4 @@ ACombatProjectile::ACombatProjectile()
 void ACombatProjectile::FaceFlightDirection(const FVector& Direction)
 {
 	if (Visual && !Direction.IsNearlyZero()) { Visual->SetWorldRotation(Direction.Rotation()); }
-	if (FlightTrail.IsValid()) { FlightTrail->RecordPosition(GetActorLocation()); }
-}
-
-void ACombatProjectile::BeginPlay()
-{
-	Super::BeginPlay();
-	FActorSpawnParameters Params;
-	Params.Owner = GetOwner();
-	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	FlightTrail = GetWorld()->SpawnActor<AProjectileFlightTrail>(AProjectileFlightTrail::StaticClass(), GetActorLocation(), FRotator::ZeroRotator, Params);
-	if (FlightTrail.IsValid()) { FlightTrail->RecordPosition(GetActorLocation()); }
-}
-
-void ACombatProjectile::EndPlay(const EEndPlayReason::Type Reason)
-{
-	if (FlightTrail.IsValid())
-	{
-		if (Reason == EEndPlayReason::Destroyed)
-		{
-			FlightTrail->RecordPosition(GetActorLocation());
-			FlightTrail->Finish();
-		}
-		else { FlightTrail->Destroy(); }
-	}
-	Super::EndPlay(Reason);
-}
-
-void ACombatProjectile::DiscardFlightTrail()
-{
-	if (FlightTrail.IsValid()) { FlightTrail->Destroy(); }
-	FlightTrail.Reset();
-}
-
-AProjectileFlightTrail* ACombatProjectile::GetFlightTrail() const
-{
-	return FlightTrail.Get();
 }

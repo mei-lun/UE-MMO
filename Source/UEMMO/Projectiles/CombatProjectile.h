@@ -10,7 +10,6 @@
 class USphereComponent;
 class UProjectileMovementComponent;
 class UStaticMeshComponent;
-class AProjectileFlightTrail;
 
 /**
  * M5-027: the projectile actor (interface contract section 1, owner 027 the
@@ -74,8 +73,6 @@ class ACombatProjectile : public AActor
 
 public:
 	ACombatProjectile();
-	virtual void BeginPlay() override;
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	/** The single query collision body (the later sweep/hit work rides on it). */
 	UPROPERTY(VisibleAnywhere, Category = "UEMMO|Projectile")
@@ -94,8 +91,6 @@ public:
 
 	/** Presentation only; the policy remains the sole motion integrator. */
 	void FaceFlightDirection(const FVector& Direction);
-	AProjectileFlightTrail* GetFlightTrail() const;
-	void DiscardFlightTrail();
 
 	/** The committed-shot provenance (stamped by the world service at commit). */
 	FProjectileSpawnContext Context;
@@ -105,6 +100,4 @@ public:
 
 	/** Gravity scale derived from the definition motion (0 straight/homing, 1 parabolic). */
 	float MotionGravityScale = 0.0f;
-private:
-	TWeakObjectPtr<AProjectileFlightTrail> FlightTrail;
 };

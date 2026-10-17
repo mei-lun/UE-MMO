@@ -58,13 +58,15 @@ try {
             if (-not (Test-Path -LiteralPath $FlightImage) -or (Get-Item -LiteralPath $FlightImage).LastWriteTimeUtc -lt $StartedUtc) { throw "Missing current flight image: $WeaponId" }
             $FlightBytes = [IO.File]::ReadAllBytes($FlightImage)
             if ($FlightBytes.Length -lt 1024 -or [BitConverter]::ToString($FlightBytes,0,8) -ne '89-50-4E-47-0D-0A-1A-0A') { throw "Invalid flight PNG: $WeaponId" }
-            if (-not $Observed.visible_trail_captured -or $Observed.maximum_observed_trail_length_cm -lt 60 -or $Observed.maximum_observed_trail_length_cm -gt 180.1) { throw "Visible bounded trail was not proven: $WeaponId" }
-            $Cleared = Join-Path $CaseDir 'trail-cleared.png'
-            if (-not (Test-Path -LiteralPath $Cleared) -or (Get-Item -LiteralPath $Cleared).LastWriteTimeUtc -lt $StartedUtc) { throw "Missing trail cleanup image: $WeaponId" }
-            $ClearBytes = [IO.File]::ReadAllBytes($Cleared)
-            if ($ClearBytes.Length -lt 1024 -or [BitConverter]::ToString($ClearBytes,0,8) -ne '89-50-4E-47-0D-0A-1A-0A') { throw "Invalid cleanup PNG: $WeaponId" }
+            if (@($Observed.same_projectile_flight_frames).Count -ne 3 -or -not $Observed.captured_projectile_id) { throw "Three frames of the same projectile were not observed: $WeaponId" }
+            foreach ($Name in @('flight-02.png','flight-03.png','projectiles-cleared.png')) {
+                $Frame = Join-Path $CaseDir $Name
+                if (-not (Test-Path -LiteralPath $Frame) -or (Get-Item -LiteralPath $Frame).LastWriteTimeUtc -lt $StartedUtc) { throw "Missing current image: $Frame" }
+                $FrameBytes = [IO.File]::ReadAllBytes($Frame)
+                if ($FrameBytes.Length -lt 1024 -or [BitConverter]::ToString($FrameBytes,0,8) -ne '89-50-4E-47-0D-0A-1A-0A') { throw "Invalid PNG: $Frame" }
+            }
         }
-        $Results += [ordered]@{ weapon=$WeaponId; success=$true; report=$Index; screenshot=$Screenshot; health_before=$Observed.health_before; health_after=$Observed.health_after; shots=$Observed.shots_committed; loaded_before=$Observed.loaded_before; loaded_after=$Observed.loaded_after_fire; reserve=$Observed.reserve_before_reload; reload=$Observed.reload_result; entities=$Observed.projectile_entities_observed; moving_entities=$Observed.moving_projectile_entities; launch_speed_cm_s=$Observed.projectile_speed_cm_s; measured_linear_speed_cm_s=$Observed.measured_linear_speed_cm_s; maximum_observed_trail_length_cm=$Observed.maximum_observed_trail_length_cm; visible_trail_captured=$Observed.visible_trail_captured }
+        $Results += [ordered]@{ weapon=$WeaponId; success=$true; report=$Index; screenshot=$Screenshot; health_before=$Observed.health_before; health_after=$Observed.health_after; shots=$Observed.shots_committed; loaded_before=$Observed.loaded_before; loaded_after=$Observed.loaded_after_fire; reserve=$Observed.reserve_before_reload; reload=$Observed.reload_result; entities=$Observed.projectile_entities_observed; moving_entities=$Observed.moving_projectile_entities; launch_speed_cm_s=$Observed.projectile_speed_cm_s; measured_linear_speed_cm_s=$Observed.measured_linear_speed_cm_s; captured_projectile_id=$Observed.captured_projectile_id; same_projectile_flight_frames=$Observed.same_projectile_flight_frames }
         Write-Host ("PASS {0}: HP {1} -> {2}; shots {3}" -f $WeaponId,$Observed.health_before,$Observed.health_after,$Observed.shots_committed)
     }
     $Summary.success = $true

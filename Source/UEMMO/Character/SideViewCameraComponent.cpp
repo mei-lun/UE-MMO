@@ -22,6 +22,9 @@ USideViewCameraComponent::USideViewCameraComponent()
     Camera->SetupAttachment(this);
     Camera->bUsePawnControlRotation = false;
     Camera->FieldOfView = Config.FieldOfView;
+    // Keep small moving projectile silhouettes discrete, rather than streaks.
+    Camera->PostProcessSettings.bOverride_MotionBlurAmount = true;
+    Camera->PostProcessSettings.MotionBlurAmount = 0.0f;
 }
 
 void USideViewCameraComponent::BeginPlay()
