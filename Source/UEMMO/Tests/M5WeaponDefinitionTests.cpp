@@ -1519,17 +1519,17 @@ bool FUEMMOTasksM5_004WeaponsJsonLoadsAndValidates::RunTest(const FString& Param
 			Sword->MeleeAttackIds == GetLegacyMeleeAttackIds());
 	}
 
-	// Pinned sample: the hitscan ray gun (single pellet).
+	// Stable legacy id; M5-061 changes this ordinary rifle to a live bullet.
 	const FWeaponDefinition* RayGun = Loaded.Find(FName(TEXT("weapon_hitscan_sample")));
 	TestTrue(TEXT("weapon_hitscan_sample is registered"), RayGun != nullptr);
 	if (RayGun)
 	{
-		TestTrue(TEXT("weapon_hitscan_sample is hitscan"), RayGun->FireMode == EWeaponFireMode::Hitscan);
+		TestTrue(TEXT("the default rifle uses projectile mode"), RayGun->FireMode == EWeaponFireMode::Projectile);
 		TestEqual(TEXT("weapon_hitscan_sample uses ammo_cell"), RayGun->AmmoId, FName(TEXT("ammo_cell")));
-		TestTrue(TEXT("weapon_hitscan_sample has no projectile"), RayGun->ProjectileId.IsNone());
+		TestEqual(TEXT("the default rifle resolves a linear bullet"), RayGun->ProjectileId, FName(TEXT("bullet_linear")));
 		TestEqual(TEXT("weapon_hitscan_sample magazine is 12"), RayGun->MagazineSize, 12);
 		TestEqual(TEXT("weapon_hitscan_sample fire rate is 240 rpm"), RayGun->FireRateRpm, 240.0f);
-		TestEqual(TEXT("weapon_hitscan_sample range is 5000 cm"), RayGun->RangeCm, 5000.0f);
+		TestEqual(TEXT("no instantaneous ray range; flight is bounded by projectile lifetime"), RayGun->RangeCm, 0.0f);
 	}
 
 	// Pinned samples: burst and pellet variants cover the remaining firearm

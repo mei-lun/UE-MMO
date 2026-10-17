@@ -49,6 +49,7 @@ class UEMMO_API APrototypeCharacter : public ACharacter, public IHitscanTargetId
     GENERATED_BODY()
 public:
     APrototypeCharacter();
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
     /**
      * M5-035: defined out of line - the live-pellet entries own
      * TUniquePtr<IProjectileMotionPolicy> (the M5-029..032 concrete policies
@@ -293,6 +294,7 @@ private:
      * Tick) stay unlogged as the non-key events they are.
      */
     void OnResetPressed();
+    void ClearWeaponProjectiles();
     /**
      * M2-004: the death half of the health wiring (bound to Health->OnDied in
      * BeginPlay): marks the combat component dead (refuses attacks and

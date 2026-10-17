@@ -1,6 +1,7 @@
 param(
     [string]$PackageRoot = '',
     [switch]$Editor,
+    [string]$TaskId = 'M5-060',
     [string[]]$WeaponIds = @('weapon_hitscan_sample','weapon_burst_sample','weapon_pellet_sample','weapon_projectile_sample','weapon_parabolic_sample','weapon_homing_sample','weapon_explosive_sample','weapon_training_sword')
 )
 . "$PSScriptRoot\Common.ps1"
@@ -10,7 +11,8 @@ foreach ($WeaponId in $WeaponIds) { if ($WeaponId -notmatch '^weapon_[a-z_]+$') 
 $Executable = if ($Editor) { Join-Path $EngineRoot 'Engine\Binaries\Win64\UnrealEditor-Cmd.exe' } else { Join-Path $PackageRoot 'Windows\UEMMO\Binaries\Win64\UEMMO.exe' }
 if (-not (Test-Path -LiteralPath $Executable)) { throw 'The requested built executable is missing.' }
 $Stamp = [DateTimeOffset]::Now.ToString('yyyy-MM-ddTHH-mm-ss-fffzzz').Replace(':','')
-$EvidenceRoot = Join-Path $ArtifactRoot "Tasks\M5-060\$Stamp-gameplay"
+if ($TaskId -notmatch '^M[0-5]-[0-9]{3}[A-Z]?$') { throw 'Invalid task id.' }
+$EvidenceRoot = Join-Path $ArtifactRoot "Tasks\$TaskId\$Stamp-gameplay"
 if (Test-Path -LiteralPath $EvidenceRoot) { throw 'Refusing to reuse gameplay evidence.' }
 New-Item -ItemType Directory -Path $EvidenceRoot -Force | Out-Null
 $Filter = 'UEMMO.Acceptance.M5_060.RoomWeaponGameplay'
@@ -23,7 +25,9 @@ try {
         $StartedUtc = [DateTime]::UtcNow
         $GameArgs = @()
         if ($Editor) { $GameArgs += $ProjectFile }
-        $GameArgs += @('-game','-unattended','-nosplash','-nosound','-RenderOffscreen','-ResX=1280','-ResY=720','-LogCmds=LogTemp Verbose',
+        # A fixed 120Hz simulation keeps fast bullets observable across frame
+        # readback stalls. Gameplay delays use game time, wall time only limits hangs.
+        $GameArgs += @('-game','-unattended','-nosplash','-nosound','-RenderOffscreen','-ResX=1280','-ResY=720','-LogCmds=LogTemp Verbose','-UseFixedTimeStep','-FPS=120',
             "-UserDir=$CaseDir\user-data", "-ExecCmds=Automation RunTests $Filter", '-TestExit=Automation Test Queue Empty',
             "-ReportExportPath=$CaseDir", "-UEMMOAcceptanceWeapon=$WeaponId", "-UEMMOAcceptanceOutput=$CaseDir", "-abslog=$CaseDir\ue.log")
         Invoke-UEProcess $Executable $GameArgs "gameplay-$WeaponId" 120
@@ -47,6 +51,11 @@ try {
         }
         $Bytes = [IO.File]::ReadAllBytes($Screenshot)
         if ($Bytes.Length -lt 1024 -or [BitConverter]::ToString($Bytes,0,8) -ne '89-50-4E-47-0D-0A-1A-0A') { throw "Invalid current PNG: $Screenshot" }
+        if ($WeaponId -ne 'weapon_training_sword') {
+            $FlightImage = Join-Path $CaseDir 'flight.png'
+            if (-not $Observed.flight_observed_before_damage -or $Observed.projectile_entities_observed -lt 1 -or $Observed.projectile_speed_cm_s -le 0) { throw "No physical bullet flight was observed: $WeaponId" }
+            if (-not (Test-Path -LiteralPath $FlightImage) -or (Get-Item -LiteralPath $FlightImage).LastWriteTimeUtc -lt $StartedUtc) { throw "Missing current flight image: $WeaponId" }
+        }
         $Results += [ordered]@{ weapon=$WeaponId; success=$true; report=$Index; screenshot=$Screenshot; health_before=$Observed.health_before; health_after=$Observed.health_after; shots=$Observed.shots_committed; loaded_before=$Observed.loaded_before; loaded_after=$Observed.loaded_after_fire; reserve=$Observed.reserve_before_reload; reload=$Observed.reload_result }
         Write-Host ("PASS {0}: HP {1} -> {2}; shots {3}" -f $WeaponId,$Observed.health_before,$Observed.health_after,$Observed.shots_committed)
     }

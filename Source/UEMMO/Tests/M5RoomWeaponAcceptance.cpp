@@ -13,6 +13,8 @@
 #include "../Room/RoomSessionSubsystem.h"
 #include "../UI/MapSelectWidget.h"
 #include "../Weapons/WeaponComponent.h"
+#include "../Projectiles/CombatProjectile.h"
+#include "../Projectiles/HitscanTracer.h"
 #include "Components/Button.h"
 #include "Dom/JsonObject.h"
 #include "Engine/GameInstance.h"
@@ -45,13 +47,50 @@ public:
 
 	bool Update() override
 	{
-		const double Elapsed = FPlatformTime::Seconds() - StageStart;
-		if (Elapsed > 15.0) { return Fail(FString::Printf(TEXT("stage %d timed out"), Stage)); }
+		if (FPlatformTime::Seconds() - StageStart > 30.0) { return Fail(FString::Printf(TEXT("stage %d timed out"), Stage)); }
 		UWorld* World = GEngine && GEngine->GameViewport ? GEngine->GameViewport->GetWorld() : nullptr;
+		const double Elapsed = World ? World->GetTimeSeconds() - StageGameStart : 0.0;
 		APrototypeCharacter* Pawn = World ? Cast<APrototypeCharacter>(UGameplayStatics::GetPlayerCharacter(World, 0)) : nullptr;
 		APlayerController* PC = Pawn ? Cast<APlayerController>(Pawn->Controller) : nullptr;
 		APrototypeHUD* HUD = PC ? Cast<APrototypeHUD>(PC->GetHUD()) : nullptr;
 		UWeaponComponent* Mount = Pawn ? Pawn->GetWeaponMount() : nullptr;
+		if (Stage >= 6 && World && !bMelee)
+		{
+			for (TActorIterator<ACombatProjectile> It(World); It; ++It)
+			{
+				if (It->Context.WeaponInstanceId != FiredWeaponInstance) { continue; }
+				const FGuid Id = It->Context.ProjectileInstanceId;
+				const double Now = World->GetTimeSeconds();
+				if (const FVector* Start = BulletPositions.Find(Id))
+				{
+					const double Distance = FVector::Dist(*Start, It->GetActorLocation());
+					const double Delta = Now - BulletTimes.FindChecked(Id);
+					if (Distance > 1.0)
+					{
+						MovingBulletIds.Add(Id);
+						bObservedFlightBeforeDamage |= Target.IsValid() && Target->GetHealthComponent()->GetHealth() == HealthBefore;
+						if (It->Context.ProjectileId == FName(TEXT("bullet_linear")))
+						{
+							const double Expected = It->LaunchSpeedCmS * Delta;
+							if (Delta <= 0 || !FMath::IsNearlyEqual(Distance, Expected, FMath::Max(1.0, Expected * 0.05)))
+							{
+								return Fail(TEXT("measured linear bullet displacement does not match configured speed"));
+							}
+							MeasuredLinearSpeeds.Add(Distance / Delta);
+						}
+						if (!bRequestedFlightImage)
+						{
+							FScreenshotRequest::RequestScreenshot(Output / TEXT("flight.png"), true, false);
+							bRequestedFlightImage = true;
+						}
+					}
+				}
+				BulletPositions.Add(Id, It->GetActorLocation());
+				BulletTimes.Add(Id, Now);
+				BulletSpeed = It->LaunchSpeedCmS;
+			}
+			if (TActorIterator<AHitscanTracer>(World)) { return Fail(TEXT("ordinary ammunition produced a hitscan beam")); }
+		}
 		if (Stage == 0)
 		{
 			if (!World || World->WorldType != EWorldType::Game || !FApp::CanEverRender()
@@ -105,6 +144,8 @@ public:
 			const auto* Definition = Mount->GetMountedWeaponCatalog()->FindWeapon(Binding->WeaponDefinitionId);
 			if (!Definition) { return Fail(TEXT("the bound definition cannot be resolved")); }
 			bMelee = Definition->FireMode == EWeaponFireMode::Melee;
+			if (!bMelee && Definition->FireMode != EWeaponFireMode::Projectile) { return Fail(TEXT("ordinary guns must fire projectile entities")); }
+			ExpectedPellets = Definition->PelletCount;
 			ExpectedShots = bMelee ? 0 : Definition->BurstCount;
 			MagazineSize = Definition->MagazineSize;
 			AmmoId = Definition->AmmoId;
@@ -142,12 +183,13 @@ public:
 			{
 				const FVector Delta = It->GetActorLocation() - Pawn->GetActorLocation();
 				if (It->GetHealthComponent() && It->GetHealthComponent()->IsAlive()
-					&& Delta.X > 65.0 && Delta.X < 180.0 && FMath::Abs(Delta.Y) < 25.0)
+					&& Delta.X > (bMelee ? 65.0 : 400.0) && Delta.X < (bMelee ? 180.0 : 550.0) && FMath::Abs(Delta.Y) < 25.0)
 				{
 					Target = *It;
 					HealthBefore = It->GetHealthComponent()->GetHealth();
 					MagazineBefore = Mount->GetActiveBinding()->LoadedRounds;
 					ShotsBefore = Mount->GetCommittedShotCount();
+					FiredWeaponInstance = Mount->GetActiveBinding()->InstanceId;
 					Key(bMelee ? EKeys::X : EKeys::Q, IE_Pressed);
 					Next();
 					break;
@@ -203,6 +245,14 @@ public:
 			}
 			ReloadResult = bMelee ? TEXT("not_applicable_melee") : (Transfer > 0 ? TEXT("transferred_reserve") : TEXT("refused_no_reserve"));
 			if (Mount->GetCommittedShotCount() != ShotsAfter) { return Fail(TEXT("weapon kept firing after release")); }
+			if (!bMelee)
+			{
+				if (!bObservedFlightBeforeDamage || BulletPositions.Num() != ExpectedShots * ExpectedPellets || MovingBulletIds.Num() != BulletPositions.Num())
+				{
+					return Fail(TEXT("did not observe all spawned bullets moving before impact"));
+				}
+				if (Pawn->GetLiveWeaponProjectileCount() != 0) { return Fail(TEXT("bullets survived after impacts")); }
+			}
 			Test.TestTrue(TEXT("this shot reduced the same real wave enemy's health"), HealthAfter < HealthBefore);
 			return Save(true, FString());
 		}
@@ -210,7 +260,12 @@ public:
 	}
 
 private:
-	void Next() { ++Stage; StageStart = FPlatformTime::Seconds(); }
+	void Next()
+	{
+		++Stage; StageStart = FPlatformTime::Seconds();
+		UWorld* World = GEngine && GEngine->GameViewport ? GEngine->GameViewport->GetWorld() : nullptr;
+		StageGameStart = World ? World->GetTimeSeconds() : 0.0;
+	}
 	void Key(const FKey& Input, EInputEvent Event)
 	{
 		if (GEngine && GEngine->GameViewport)
@@ -255,6 +310,13 @@ private:
 		Json->SetNumberField(TEXT("loaded_after_fire"), MagazineAfter);
 		Json->SetNumberField(TEXT("reserve_before_reload"), ReserveBeforeReload);
 		Json->SetStringField(TEXT("reload_result"), ReloadResult);
+		Json->SetNumberField(TEXT("projectile_entities_observed"), BulletPositions.Num());
+		Json->SetNumberField(TEXT("projectile_speed_cm_s"), BulletSpeed);
+		Json->SetBoolField(TEXT("flight_observed_before_damage"), bObservedFlightBeforeDamage);
+		Json->SetNumberField(TEXT("moving_projectile_entities"), MovingBulletIds.Num());
+		TArray<TSharedPtr<FJsonValue>> SpeedSamples;
+		for (const double Speed : MeasuredLinearSpeeds) { SpeedSamples.Add(MakeShared<FJsonValueNumber>(Speed)); }
+		Json->SetArrayField(TEXT("measured_linear_speed_cm_s"), SpeedSamples);
 		FString Serialized;
 		FJsonSerializer::Serialize(Json, TJsonWriterFactory<>::Create(&Serialized));
 		if (!FFileHelper::SaveStringToFile(Serialized, *(Output / TEXT("gameplay.json")))) { Test.AddError(TEXT("cannot save current gameplay evidence")); }
@@ -265,6 +327,7 @@ private:
 	FString Weapon, Output, ConfigRevision, ReloadResult;
 	int32 Stage = 0;
 	double StageStart = 0;
+	double StageGameStart = 0;
 	TWeakObjectPtr<APrototypeCharacter> OldPawn;
 	TWeakObjectPtr<AMeleeEnemy> Target;
 	bool bTravelled = false, bMelee = false;
@@ -273,6 +336,14 @@ private:
 	int32 MenuShotCount = 0, ShotsBefore = 0, ShotsAfter = 0, ExpectedShots = 0;
 	int32 MagazineBefore = 0, MagazineAfter = 0, MagazineSize = 0, ReserveBeforeReload = 0;
 	FName AmmoId;
+	FGuid FiredWeaponInstance;
+	TMap<FGuid, FVector> BulletPositions;
+	TMap<FGuid, double> BulletTimes;
+	TSet<FGuid> MovingBulletIds;
+	TArray<double> MeasuredLinearSpeeds;
+	int32 ExpectedPellets = 0;
+	float BulletSpeed = 0;
+	bool bObservedFlightBeforeDamage = false, bRequestedFlightImage = false;
 };
 }
 

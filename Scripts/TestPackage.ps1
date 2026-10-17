@@ -649,7 +649,7 @@ if($IncludeWeaponScenario) {
     # its own Data/CombatSystem config, so no staging is needed - the
     # M5-018B harness-staging trade-off does not apply here).
     $WeaponCaptureDir = Join-Path $PackageProject "Artifacts\Tasks\M5-036\scenario-json\render"
-    $WeaponCaptureNames = @('capture-trial-staged.png','capture-trial-flight.png','capture-trial-inventory.png','capture-trial-hitscan-flash.png','capture-trial-hitscan-after.png')
+    $WeaponCaptureNames = @('capture-trial-staged.png','capture-trial-flight.png','capture-trial-inventory.png','capture-trial-bullet-flight.png','capture-trial-bullet-after.png')
     foreach ($Name in $WeaponCaptureNames) {
         $OldCapture = Join-Path $WeaponCaptureDir $Name
         if (Test-Path -LiteralPath $OldCapture) { Remove-Item -LiteralPath $OldCapture -Force }
@@ -691,5 +691,5 @@ if($IncludeWeaponScenario) {
     # M5-060: each weapon runs alone in a fresh rendered process and isolated
     # save directory. The gate requires actual menu travel, viewport input,
     # this shot's health delta and a newly generated screenshot.
-    & "$PSScriptRoot\TestWeaponGameplay.ps1" -PackageRoot $PackageRoot
+    & "$PSScriptRoot\TestWeaponGameplay.ps1" -PackageRoot $PackageRoot -TaskId M5-061
 }

@@ -577,22 +577,20 @@ bool FUEMMOTasksM5_036WeaponTrialCapture::RunTest(const FString& Parameters)
 		return true;
 	}
 
-	// M5-058: the shipped hitscan rifle gets its own mapped item so the
-	// tracer-flash leg can rebind through the same production path (the
-	// hitscan delivery is the one the H02 checklist names "射线").
-	const FWeaponDefinition* HitscanDef = Bundle->Catalog.FindWeapon(FName(TEXT("weapon_hitscan_sample")));
-	if (!TestNotNull(TEXT("the shipped hitscan sample resolves in the game world"), HitscanDef))
+	// M5-061: the ordinary rifle keeps its stable id, but now fires a bullet.
+	const FWeaponDefinition* RifleDef = Bundle->Catalog.FindWeapon(FName(TEXT("weapon_hitscan_sample")));
+	if (!TestNotNull(TEXT("the shipped projectile rifle resolves in the game world"), RifleDef))
 	{
 		delete Bundle;
 		return true;
 	}
-	FItemDefinition HitscanItem;
-	HitscanItem.DefinitionId = FName(TEXT("item_m5_036_capture_hitscan"));
-	HitscanItem.DisplayName = TEXT("M5-036 Capture Hitscan");
-	HitscanItem.Slot = EItemSlot::Weapon;
-	HitscanItem.Rarity = EItemRarity::Normal;
-	HitscanItem.WeaponDefinitionId = HitscanDef->WeaponId;
-	if (!TestTrue(TEXT("the capture hitscan item registers"), Bundle->Items.AddDefinition(HitscanItem, &ItemError)))
+	FItemDefinition RifleItem;
+	RifleItem.DefinitionId = FName(TEXT("item_m5_036_capture_rifle"));
+	RifleItem.DisplayName = TEXT("M5-036 Capture Rifle");
+	RifleItem.Slot = EItemSlot::Weapon;
+	RifleItem.Rarity = EItemRarity::Normal;
+	RifleItem.WeaponDefinitionId = RifleDef->WeaponId;
+	if (!TestTrue(TEXT("the capture rifle item registers"), Bundle->Items.AddDefinition(RifleItem, &ItemError)))
 	{
 		delete Bundle;
 		return true;
@@ -762,13 +760,8 @@ bool FUEMMOTasksM5_036WeaponTrialCapture::RunTest(const FString& Parameters)
 	// leg's close-and-fire must not outrun the pending screenshot flush.
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(0.5f));
 
-	// M5-058: the hitscan tracer-flash leg. The inventory gate would refuse
-	// fire, so the screen closes first; the rebind walks the same production
-	// mount path (a fresh item instance mapped onto the shipped hitscan
-	// rifle, its own ammo_cell pool), one round fires through the real Q
-	// pair, and the screenshot lands inside the 0.12s flash window - the
-	// beam stops at the staged wall (the honest wall-stop face). The second
-	// capture, after the flash retires, evidences the LifeSpan cleanup.
+	// M5-061: the shipped rifle emits a finite-speed bullet. Capture its
+	// flight and the later collision cleanup; never a stretched tracer beam.
 	ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([GamePawn]()
 	{
 		if (APlayerController* PC = Cast<APlayerController>(GamePawn->Controller))
@@ -783,27 +776,26 @@ bool FUEMMOTasksM5_036WeaponTrialCapture::RunTest(const FString& Parameters)
 		}
 		return true;
 	}));
-	ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([GamePawn, Bundle, HitscanDef]()
+	ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([GamePawn, Bundle, RifleDef]()
 	{
 		UWeaponComponent* Mount = GamePawn->GetWeaponMount();
 		if (Mount == nullptr || !Bundle->bBound)
 		{
 			return true;
 		}
-		// The hitscan rifle's own reserve kind (ammo_cell); the projectile
-		// leg registered only its ammo_light pool.
-		const FAmmoType* HitscanAmmo = Bundle->Catalog.FindAmmoType(HitscanDef->AmmoId);
-		if (HitscanAmmo != nullptr)
+		// The rifle's reserve kind differs from the first trial weapon.
+		const FAmmoType* RifleAmmo = Bundle->Catalog.FindAmmoType(RifleDef->AmmoId);
+		if (RifleAmmo != nullptr)
 		{
-			Mount->GetAmmoModel().RegisterAmmoType(HitscanDef->AmmoId, HitscanAmmo->MaxReserve, HitscanAmmo->MaxReserve);
+			Mount->GetAmmoModel().RegisterAmmoType(RifleDef->AmmoId, RifleAmmo->MaxReserve, RifleAmmo->MaxReserve);
 		}
-		FItemInstance HitscanInstance;
-		HitscanInstance.InstanceId = FGuid(0x0360C000u, 0x0BECu, 0x5336u, 2u);
-		HitscanInstance.DefinitionId = FName(TEXT("item_m5_036_capture_hitscan"));
-		HitscanInstance.RollSeed = 0x52037;
-		HitscanInstance.Level = 1;
-		const FWeaponMountOutcome HitscanOutcome = Mount->ApplyEquippedWeapon(&HitscanInstance);
-		Bundle->bBound = HitscanOutcome.bSucceeded && HitscanOutcome.bWeaponBound;
+		FItemInstance RifleInstance;
+		RifleInstance.InstanceId = FGuid(0x0360C000u, 0x0BECu, 0x5336u, 2u);
+		RifleInstance.DefinitionId = FName(TEXT("item_m5_036_capture_rifle"));
+		RifleInstance.RollSeed = 0x52037;
+		RifleInstance.Level = 1;
+		const FWeaponMountOutcome RifleOutcome = Mount->ApplyEquippedWeapon(&RifleInstance);
+		Bundle->bBound = RifleOutcome.bSucceeded && RifleOutcome.bWeaponBound;
 		if (Bundle->bBound)
 		{
 			GamePawn->ApplyWeaponBindWiring();
@@ -818,7 +810,7 @@ bool FUEMMOTasksM5_036WeaponTrialCapture::RunTest(const FString& Parameters)
 		{
 			return true;
 		}
-		FScreenshotRequest::RequestScreenshot(CaptureDir / TEXT("capture-trial-hitscan-flash.png"), true, false);
+		FScreenshotRequest::RequestScreenshot(CaptureDir / TEXT("capture-trial-bullet-flight.png"), true, false);
 		return true;
 	}));
 	ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(1.0f));
@@ -828,7 +820,7 @@ bool FUEMMOTasksM5_036WeaponTrialCapture::RunTest(const FString& Parameters)
 		{
 			return true;
 		}
-		FScreenshotRequest::RequestScreenshot(CaptureDir / TEXT("capture-trial-hitscan-after.png"), true, false);
+		FScreenshotRequest::RequestScreenshot(CaptureDir / TEXT("capture-trial-bullet-after.png"), true, false);
 		return true;
 	}));
 

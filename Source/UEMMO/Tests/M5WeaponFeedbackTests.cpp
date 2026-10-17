@@ -18,6 +18,7 @@
 #include "../PrototypeCharacter.h"
 
 #include "../Combat/Data/CombatCatalog.h"
+#include "../Combat/Data/CombatDataTableParser.h"
 #include "../Combat/HealthComponent.h"
 #include "../Enemy/MeleeEnemy.h"
 #include "../Items/ItemDefinition.h"
@@ -28,6 +29,7 @@
 
 #include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
@@ -35,6 +37,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundWave.h"
+#include "Misc/Paths.h"
 #include "Tests/AutomationCommon.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -871,6 +874,92 @@ bool FUEMMOTasksM5_060PointBlankEnemyStillHittable::RunTest(const FString& Param
 	TestTrue(FString::Printf(TEXT("the point-blank enemy takes the hit (before=%.1f after=%.1f)"),
 		HealthBefore, EnemyHealth->GetHealth()),
 		EnemyHealth->GetHealth() < HealthBefore);
+	return true;
+}
+
+// M5-061: load actual shipped rows; the rig only arranges collision geometry.
+static bool M5_061BindShipped(FM5_058_Rig& Rig, FAutomationTestBase& Test, FName WeaponId)
+{
+	FCombatDataTableSet Tables;
+	TArray<FString> Problems;
+	if (!Test.TestTrue(TEXT("shipped tables load"), LoadCombatDataDirectory(FPaths::ProjectDir() / TEXT("Data/CombatSystem"), Tables, Problems))) { return false; }
+	const FWeaponDefinition* Weapon = Tables.Weapons.Find(WeaponId);
+	if (!Test.TestNotNull(TEXT("shipped weapon exists"), Weapon)) { return false; }
+	if (!Test.TestTrue(TEXT("ordinary gun fires a physical projectile"), Weapon->FireMode == EWeaponFireMode::Projectile)) { return false; }
+	FParsedCombatConfig Parsed;
+	Parsed.SchemaVersion = 1;
+	for (const auto& Row : Tables.DamageProfiles) { Parsed.DamageProfiles.Add(Row.Value); }
+	for (const auto& Row : Tables.AmmoTypes) { Parsed.AmmoTypes.Add(Row.Value); }
+	for (const auto& Row : Tables.Projectiles) { Parsed.Projectiles.Add(Row.Value); }
+	Parsed.Weapons.Add(*Weapon);
+	FString Error;
+	if (!Test.TestTrue(TEXT("shipped catalog builds"), FCombatCatalog::BuildFromParsed(Parsed, Rig.CatalogValue, Error))) { return false; }
+	FItemDefinition Item;
+	Item.DefinitionId = TEXT("bullet_test_item"); Item.DisplayName = TEXT("Bullet");
+	Item.WeaponDefinitionId = WeaponId;
+	if (!Rig.ItemsValue.AddDefinition(Item, &Error)) { Test.AddError(Error); return false; }
+	UWeaponComponent* Mount = Rig.Player->GetWeaponMount();
+	if (!Mount->MountCatalogs(&Rig.CatalogValue, &Rig.ItemsValue, &Error)) { Test.AddError(Error); return false; }
+	FItemInstance Instance;
+	Instance.InstanceId = FGuid::NewGuid(); Instance.DefinitionId = Item.DefinitionId; Instance.Level = 1;
+	return Test.TestTrue(TEXT("production binding applies without manual wiring"), Mount->ApplyEquippedWeapon(&Instance).bWeaponBound);
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FM5_061PhysicalFlight,
+	"UEMMO.Tasks.M5_061.PhysicalFlightCollisionAndCleanup",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+bool FM5_061PhysicalFlight::RunTest(const FString& Parameters)
+{
+	for (const bool bWall : {false, true})
+	{
+		FM5_058_Rig Rig;
+		if (!Rig.Build(*this, true, bWall) || !Rig.Settle(*this) || !M5_061BindShipped(Rig, *this, TEXT("weapon_hitscan_sample"))) { return false; }
+		const float Before = Rig.TargetHealth->GetHealth();
+		Rig.Player->OnFireInputPressed(); Rig.Player->OnFireInputReleased();
+		ACombatProjectile* Bullet = *TActorIterator<ACombatProjectile>(Rig.World);
+		if (!TestNotNull(TEXT("one real bullet created on fire"), Bullet)) { return false; }
+		TWeakObjectPtr<ACombatProjectile> WeakBullet(Bullet);
+		TestEqual(TEXT("no instantaneous hitscan damage"), Rig.TargetHealth->GetHealth(), Before);
+		TestEqual(TEXT("no long tracer column"), Rig.CountTracers(), 0);
+		const FVector Start = Bullet->GetActorLocation();
+		const float Speed = Rig.CatalogValue.FindProjectile(Bullet->Context.ProjectileId)->SpeedCmS;
+		Rig.TickFrames(1);
+		if (!TestTrue(TEXT("bullet still flying before collision"), WeakBullet.IsValid())) { return false; }
+		TestTrue(TEXT("distance is speed times simulation dt"), FMath::IsNearlyEqual(FVector::Dist(Start, Bullet->GetActorLocation()), Speed / 60.0, 0.1));
+		TestEqual(TEXT("target stays healthy while bullet is in flight"), Rig.TargetHealth->GetHealth(), Before);
+		TestTrue(TEXT("rounded mesh replaces cube"), Bullet->Visual->GetStaticMesh()->GetPathName().Contains(TEXT("/Sphere.Sphere")));
+		TestTrue(TEXT("bullet stays small and does not stretch to target"), Bullet->Visual->Bounds.BoxExtent.GetMax() <= 5.0);
+		Rig.TickFrames(10);
+		TestFalse(TEXT("impact destroys bullet entity"), WeakBullet.IsValid());
+		TestEqual(TEXT("wall blocks; open target receives exactly one bullet hit"), Rig.TargetHealth->GetHealth(), Before - (bWall ? 0.0f : 10.0f));
+		TestEqual(TEXT("live owner records return to zero"), Rig.Player->GetLiveWeaponProjectileCount(), 0);
+	}
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FM5_061LifetimeReset,
+	"UEMMO.Tasks.M5_061.ShotgunEntitiesTimeoutResetAndOwnerDestroy",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+bool FM5_061LifetimeReset::RunTest(const FString& Parameters)
+{
+	for (int32 Cleanup = 0; Cleanup < 3; ++Cleanup)
+	{
+		FM5_058_Rig Rig;
+		if (!Rig.Build(*this, false) || !Rig.Settle(*this) || !M5_061BindShipped(Rig, *this, TEXT("weapon_pellet_sample"))) { return false; }
+		Rig.Player->OnFireInputPressed(); Rig.Player->OnFireInputReleased();
+		TArray<TWeakObjectPtr<ACombatProjectile>> Bullets;
+		TSet<FGuid> Ids;
+		for (TActorIterator<ACombatProjectile> It(Rig.World); It; ++It) { Bullets.Add(*It); Ids.Add(It->Context.ProjectileInstanceId); }
+		TestEqual(TEXT("five pellets create five separate entities"), Bullets.Num(), 5);
+		TestEqual(TEXT("every pellet has a unique identity"), Ids.Num(), 5);
+		Rig.TickFrames(3);
+		TestTrue(TEXT("volley remains live during flight"), Bullets.Num() == 5 && Bullets[0].IsValid());
+		if (Cleanup == 0) { Rig.TickFrames(125); }
+		else if (Cleanup == 1) { Rig.Player->ApplyTrainingRoomReset(); }
+		else { Rig.Player->Destroy(); }
+		for (const auto& Bullet : Bullets) { TestFalse(TEXT("timeout/reset/owner destruction retires every pellet"), Bullet.IsValid()); }
+		if (Cleanup != 2) { TestEqual(TEXT("no live owner entries remain"), Rig.Player->GetLiveWeaponProjectileCount(), 0); }
+	}
 	return true;
 }
 

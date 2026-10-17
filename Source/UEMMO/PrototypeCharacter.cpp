@@ -224,7 +224,7 @@ namespace
             Actor->Context.ShotId = Reservation.Shot.ShotId;
             Actor->Context.PelletIndex = Pellet.PelletIndex;
             Actor->Context.WeaponInstanceId = Reservation.Shot.WeaponInstanceId;
-            Actor->Context.ProjectileInstanceId = Reservation.ProjectileInstanceId;
+            Actor->Context.ProjectileInstanceId = FGuid::NewGuid();
             Actor->Context.ConfigRevision = Reservation.ConfigRevision;
             Actor->Context.ProjectileId = Reservation.Definition.ProjectileId;
             Actor->LaunchSpeedCmS = Reservation.Definition.SpeedCmS;
@@ -236,6 +236,7 @@ namespace
                 Actor->Movement->ProjectileGravityScale = Actor->MotionGravityScale;
             }
             Actor->SetLifeSpan(Reservation.Definition.LifetimeS);
+            Actor->FaceFlightDirection(Pellet.Direction);
             Spawned.Add(Actor);
             return Actor;
         }
@@ -1252,7 +1253,9 @@ void APrototypeCharacter::TickWeaponInput(float DeltaSeconds)
             LiveWeaponProjectiles.RemoveAtSwap(Index);
             continue;
         }
+        const FVector PreviousPosition = Actor->GetActorLocation();
         Entry.Policy->AdvanceMotion(DeltaSeconds);
+        Actor->FaceFlightDirection(Actor->GetActorLocation() - PreviousPosition);
         if (Entry.Policy->IsFinished() || Actor->IsPendingKillPending())
         {
             // A finished pellet retires its body: an actor left at the hit
@@ -1473,6 +1476,11 @@ void APrototypeCharacter::HandleWeaponShotCommitted(const FShotContext& Shot)
             if (Entry.Policy.IsValid() && Entry.Policy->Begin(*Actor, Plan.Pellets[PelletAt].Direction, HitContext))
             {
                 LiveWeaponProjectiles.Add(MoveTemp(Entry));
+            }
+            else
+            {
+                Actor->Destroy();
+                UE_LOG(LogTemp, Warning, TEXT("UEMMO M5-061: failed projectile policy initialization; actor retired."));
             }
         }
     }
@@ -1731,6 +1739,23 @@ void APrototypeCharacter::SetTrainingResetService(UTrainingResetService* InServi
     TrainingResetService = InService;
 }
 
+void APrototypeCharacter::ClearWeaponProjectiles()
+{
+    bWeaponFireHeld = false;
+    if (BurstFirePolicy.IsValid()) { BurstFirePolicy->CancelPendingBurst(); }
+    for (FLiveWeaponProjectile& Entry : LiveWeaponProjectiles)
+    {
+        if (ACombatProjectile* Actor = Entry.Actor.Get()) { Actor->Destroy(); }
+    }
+    LiveWeaponProjectiles.Reset();
+}
+
+void APrototypeCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    ClearWeaponProjectiles();
+    Super::EndPlay(EndPlayReason);
+}
+
 void APrototypeCharacter::ResetPosition()
 {
     // M1-027: one reset press (M1-040 key: F2; or one fall-out-of-world
@@ -1752,6 +1777,7 @@ void APrototypeCharacter::ResetPosition()
 
 void APrototypeCharacter::ApplyTrainingRoomReset()
 {
+    ClearWeaponProjectiles();
     // M1-027: the physics half of the unified reset, mirroring the enemy-side
     // ResetEnemy physics: zero every velocity source (including any launch or
     // impulse still pending on the movement component) and re-ground the mode,

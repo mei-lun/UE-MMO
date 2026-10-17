@@ -56,7 +56,7 @@ struct FProjectileSpawnContext
 	/** The weapon item instance that fired (the M5-019 item identity). */
 	FGuid WeaponInstanceId;
 
-	/** The projectile instance identity minted for this reservation (traceable, not a pointer). */
+	/** Unique per-pellet entity identity minted by the spawn adapter (not a pointer). */
 	FGuid ProjectileInstanceId;
 
 	/** The config revision the shot's definitions came from (provenance only). */
@@ -83,12 +83,14 @@ public:
 	TObjectPtr<UProjectileMovementComponent> Movement;
 
 	/**
-	 * M5-035: the visual carrier (the engine basic cube scaled onto the body's
-	 * diameter) - pure presentation, no collision, so the swept transport and
-	 * every hit face stay the body's alone.
+	 * Small rounded bullet mesh, independent of the collision radius. Its
+	 * long axis follows the actual flight direction; never stretches to target.
 	 */
 	UPROPERTY(VisibleAnywhere, Category = "UEMMO|Projectile")
 	TObjectPtr<UStaticMeshComponent> Visual;
+
+	/** Presentation only; the policy remains the sole motion integrator. */
+	void FaceFlightDirection(const FVector& Direction);
 
 	/** The committed-shot provenance (stamped by the world service at commit). */
 	FProjectileSpawnContext Context;

@@ -1215,6 +1215,15 @@ bool FUEMMOTasksM2_014ThreeConsecutiveRunsLeaveNoResidue::RunTest(const FString&
 	{
 		return true;
 	}
+	// Initialize deferred world subsystem actors before taking the leak
+	// baseline. Plugins can create their world manager on the first tick.
+	TSet<TWeakObjectPtr<AActor>> BeforeFirstTick;
+	for (TActorIterator<AActor> It(Scene.World); It; ++It) { BeforeFirstTick.Add(*It); }
+	if (!Scene.Wrapper.TickTestWorld(1.0f / 60.0f)) { AddError(TEXT("world initialization tick failed")); return false; }
+	for (TActorIterator<AActor> It(Scene.World); It; ++It)
+	{
+		if (!BeforeFirstTick.Contains(*It)) { AddInfo(FString::Printf(TEXT("world initialization created %s (%s) before room runs"), *It->GetName(), *It->GetClass()->GetPathName())); }
+	}
 	URoomDefinition* Room = M2_014_MakeRoom();
 	UEnemyDefinition* Def = M2_014_MakeEnemyDef();
 	const FVector& LocW0A = Room->Waves[0].SpawnLocations[0];

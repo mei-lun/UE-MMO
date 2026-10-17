@@ -12,7 +12,7 @@
     },
     {
       "definition_id": "weapon_hitscan_gun",
-      "display_name": "Hitscan Rifle",
+      "display_name": "Rifle",
       "slot": "Weapon",
       "weapon_definition_id": "weapon_hitscan_sample",
       "base_stats": { "attack": 5, "defense": 0, "max_hp": 0 },
