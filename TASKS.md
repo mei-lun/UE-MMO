@@ -27,7 +27,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M0-003 | 横版移动与测试房间 | DONE | — | 既有基线 | 2026-09-25T06:05:19+08:00 | [M0-003](Docs/Tasks/Reports/M0-003.md) |
 | M0-004 | 构建、运行与独立包验证 | DONE | — | 既有基线 | 2026-09-25T06:05:19+08:00 | [M0-004](Docs/Tasks/Reports/M0-004.md) |
 | M0-005 | 设计文档与 Agent 准备 | DONE | — | 既有基线 | 2026-09-25T06:05:19+08:00 | [M0-005](Docs/Tasks/Reports/M0-005.md) |
-| M0-006 | [EngineWire MCP安装与接入验证](Docs/Tasks/M0-006.md) | IN_PROGRESS | M0-001,M0-004 | Codex-20261016-MCP | 2026-10-16T02:04:45+08:00 | [report](Docs/Tasks/Reports/M0-006.md) |
+| M0-006 | [EngineWire MCP安装与接入验证](Docs/Tasks/M0-006.md) | PAUSED | M0-001,M0-004 | Codex-20261016-MCP | 2026-10-17T14:21:43+08:00 | [report](Docs/Tasks/Reports/M0-006.md) |
 | M0-H01 | [真实键盘与镜头验收](Docs/Tasks/M0-H01.md) | DONE | M0-003,M0-004 | 用户 | 2026-10-03T22:56:38+08:00 | [report](Docs/Tasks/Reports/M0-H01.md) |
 | M1-001 | [接手并复核现有基线](Docs/Tasks/M1-001.md) | DONE | M0-004 | ZCode-20260925-A | 2026-09-25T10:11:53+08:00 | [report](Docs/Tasks/Reports/M1-001.md) |
 | M1-002 | [建立按任务筛选的自动化测试入口](Docs/Tasks/M1-002.md) | DONE | M1-001 | ZCode-20260925-A | 2026-09-25T23:14:22+08:00 | [report](Docs/Tasks/Reports/M1-002.md) |
@@ -190,7 +190,8 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M5-058 | [M5-058](Docs/Tasks/M5-058.md) | DONE | M5-057 | ZCode-GLM5.3-20261013-A | 2026-10-13T01:30:00+08:00 | [report](Docs/Tasks/Reports/M5-058.md) |
 | M5-059 | [M5-059](Docs/Tasks/M5-059.md) | DONE | M5-058 | ZCode-GLM5.3-20261013-A | 2026-10-13T02:40:00+08:00 | [report](Docs/Tasks/Reports/M5-059.md) |
 | M5-060 | [M5-060](Docs/Tasks/M5-060.md) | DONE | M5-059 | Codex-20261014-Fix | 2026-10-14T03:31:00+08:00 | [report](Docs/Tasks/Reports/M5-060.md) |
+| M5-061 | [普通枪械实体子弹与弹头表现](Docs/Tasks/M5-061.md) | DONE | M5-060 | Codex-20261017-Bullets | 2026-10-17T15:08:09+08:00 | [report](Docs/Tasks/Reports/M5-061.md) |
 | M5-H01 | [M5-H01](Docs/Tasks/M5-H01.md) | DONE | M5-018B | ZCode-20260925-A | 2026-10-08T14:03:17+08:00 | [report](Docs/Tasks/Reports/M5-H01.md) |
-| M5-H02 | [M5-H02](Docs/Tasks/M5-H02.md) | REVIEW | M5-036,M5-056,M5-057,M5-058,M5-059,M5-060 | 用户 | 2026-10-14T03:31:00+08:00 | [report](Docs/Tasks/Reports/M5-H02.md) |
+| M5-H02 | [M5-H02](Docs/Tasks/M5-H02.md) | REVIEW | M5-036,M5-056,M5-057,M5-058,M5-059,M5-060,M5-061 | 用户 | 2026-10-17T15:08:09+08:00 | [report](Docs/Tasks/Reports/M5-H02.md) |
 | M5-H03 | [M5-H03](Docs/Tasks/M5-H03.md) | TODO | M5-045 | — | — | — |
 | M5-H04 | [M5-H04](Docs/Tasks/M5-H04.md) | TODO | M5-055,M5-H02,M5-H03 | — | — | — |
