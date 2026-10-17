@@ -701,5 +701,15 @@ if($IncludeWeaponScenario) {
     $BulletParsed = ConvertFrom-AutomationReportJson -ReportJson (Get-Content -LiteralPath $BulletIndex -Raw) -Filter 'UEMMO.Tasks.M5_061'
     if (-not $BulletParsed.Ok) { throw ('Bullet lifecycle failed: ' + $BulletParsed.Error) }
     [ordered]@{ success=$true; pass='package-bullet-lifecycle'; matched=$BulletParsed.Matched; passed=$BulletParsed.Passed; failed=$BulletParsed.Failed; report=$BulletIndex } | ConvertTo-Json
-    & "$PSScriptRoot\TestWeaponGameplay.ps1" -PackageRoot $PackageRoot -TaskId M5-061
+    $TrailReportDir = Join-Path $WeaponReportDir 'flight-trails'
+    New-Item -ItemType Directory -Path $TrailReportDir -Force | Out-Null
+    Invoke-UEProcess $Executable @('-game','-unattended','-nosplash','-nosound','-nullrhi',
+        '-ExecCmds=Automation RunTests UEMMO.Tasks.M5_062', '-TestExit=Automation Test Queue Empty',
+        "-ReportExportPath=$TrailReportDir", "-abslog=$ArtifactRoot\Logs\package-flight-trails.log") 'package-flight-trails' 300
+    $TrailIndex = Join-Path $TrailReportDir 'index.json'
+    if (-not (Test-Path -LiteralPath $TrailIndex)) { throw 'Flight trail report missing.' }
+    $TrailParsed = ConvertFrom-AutomationReportJson -ReportJson (Get-Content -LiteralPath $TrailIndex -Raw) -Filter 'UEMMO.Tasks.M5_062'
+    if (-not $TrailParsed.Ok -or $TrailParsed.Matched -ne 3) { throw ('Flight trail verification failed: ' + $TrailParsed.Error) }
+    [ordered]@{ success=$true; pass='package-flight-trails'; matched=$TrailParsed.Matched; passed=$TrailParsed.Passed; failed=$TrailParsed.Failed; report=$TrailIndex } | ConvertTo-Json
+    & "$PSScriptRoot\TestWeaponGameplay.ps1" -PackageRoot $PackageRoot -TaskId M5-062
 }

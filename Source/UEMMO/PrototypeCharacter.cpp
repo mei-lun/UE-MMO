@@ -13,6 +13,7 @@
 #include "Engine/GameInstance.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
+#include "EngineUtils.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -38,6 +39,7 @@
 // one-policy seam (dispatched per definition motion in
 // MakeWeaponProjectileMotionPolicy below).
 #include "Projectiles/CombatProjectile.h"
+#include "Projectiles/ProjectileFlightTrail.h"
 #include "Projectiles/HitscanExecutor.h"
 #include "Projectiles/HitscanTracer.h"
 #include "Projectiles/LinearProjectilePolicy.h"
@@ -200,8 +202,9 @@ namespace
     class FWeaponProjectileSpawner final : public IProjectileSpawner
     {
     public:
-        explicit FWeaponProjectileSpawner(UWorld* InWorld)
+        explicit FWeaponProjectileSpawner(UWorld* InWorld, AActor* InOwner)
             : World(InWorld)
+            , Owner(InOwner)
         {
         }
 
@@ -213,6 +216,7 @@ namespace
                 return nullptr;
             }
             FActorSpawnParameters Params;
+            Params.Owner = Owner.Get();
             ACombatProjectile* Actor = SpawnWorld->SpawnActor<ACombatProjectile>(
                 ACombatProjectile::StaticClass(), Reservation.Origin, FRotator::ZeroRotator, Params);
             if (Actor == nullptr)
@@ -244,6 +248,7 @@ namespace
         void DestroyPellet(ACombatProjectile& PelletActor) override
         {
             Spawned.Remove(&PelletActor);
+            PelletActor.DiscardFlightTrail();
             if (PelletActor.GetWorld() != nullptr && IsValid(&PelletActor))
             {
                 PelletActor.Destroy();
@@ -255,6 +260,7 @@ namespace
 
     private:
         TWeakObjectPtr<UWorld> World;
+        TWeakObjectPtr<AActor> Owner;
     };
 }
 
@@ -1418,7 +1424,7 @@ void APrototypeCharacter::HandleWeaponShotCommitted(const FShotContext& Shot)
         }
         if (!ProjectileSpawner.IsValid())
         {
-            ProjectileSpawner = MakeUnique<FWeaponProjectileSpawner>(World);
+            ProjectileSpawner = MakeUnique<FWeaponProjectileSpawner>(World, this);
         }
         // M5-035: Spawned tracks the live pellets of the LAST commit (the
         // spawner's class contract), so the previous volley's entries - stale
@@ -1479,6 +1485,7 @@ void APrototypeCharacter::HandleWeaponShotCommitted(const FShotContext& Shot)
             }
             else
             {
+                Actor->DiscardFlightTrail();
                 Actor->Destroy();
                 UE_LOG(LogTemp, Warning, TEXT("UEMMO M5-061: failed projectile policy initialization; actor retired."));
             }
@@ -1745,9 +1752,16 @@ void APrototypeCharacter::ClearWeaponProjectiles()
     if (BurstFirePolicy.IsValid()) { BurstFirePolicy->CancelPendingBurst(); }
     for (FLiveWeaponProjectile& Entry : LiveWeaponProjectiles)
     {
-        if (ACombatProjectile* Actor = Entry.Actor.Get()) { Actor->Destroy(); }
+        if (ACombatProjectile* Actor = Entry.Actor.Get()) { Actor->DiscardFlightTrail(); Actor->Destroy(); }
     }
     LiveWeaponProjectiles.Reset();
+    if (UWorld* World = GetWorld())
+    {
+        for (TActorIterator<AProjectileFlightTrail> It(World); It; ++It)
+        {
+            if (It->GetOwner() == this) { It->Destroy(); }
+        }
+    }
 }
 
 void APrototypeCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)

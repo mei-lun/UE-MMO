@@ -21,6 +21,7 @@
 #include "../PrototypeCharacter.h"
 
 #include "Engine/World.h"
+#include "EngineUtils.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 #include "../Logging/OperationLogSubsystem.h"
@@ -315,6 +316,12 @@ bool URoomSessionSubsystem::ResetToIdle()
 
 bool URoomSessionSubsystem::LeaveRoom()
 {
+	// ReturnToMenu keeps the World/Pawn alive. Clear ordnance even from
+	// Idle (the player may fire before stepping into the activation volume).
+	if (UWorld* World = GetWorld())
+	{
+		for (TActorIterator<APrototypeCharacter> It(World); It; ++It) { It->ClearWeaponProjectiles(); }
+	}
 	if (State == ERoomSessionState::Idle)
 	{
 		// Nothing was ever started: there is no room to leave and no state to

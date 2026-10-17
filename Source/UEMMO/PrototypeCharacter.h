@@ -258,6 +258,8 @@ public:
 
     /** M5-033: live projectile pellets the delivery bridge currently advances. */
     int32 GetLiveWeaponProjectileCount() const { return LiveWeaponProjectiles.Num(); }
+    /** Retire this player's projectiles/afterglow on reset, exit or teardown. */
+    void ClearWeaponProjectiles();
 
     /**
      * M1-040: the eight runtime skill-slot actions in slot order (index 0 is
@@ -294,7 +296,6 @@ private:
      * Tick) stay unlogged as the non-key events they are.
      */
     void OnResetPressed();
-    void ClearWeaponProjectiles();
     /**
      * M2-004: the death half of the health wiring (bound to Health->OnDied in
      * BeginPlay): marks the combat component dead (refuses attacks and

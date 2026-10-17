@@ -6,10 +6,12 @@
 // lives in the M5-028 policy faces (LinearProjectilePolicy.h), not here.
 
 #include "CombatProjectile.h"
+#include "ProjectileFlightTrail.h"
 
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/World.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Materials/MaterialInterface.h"
 #include "UObject/ConstructorHelpers.h"
@@ -53,4 +55,40 @@ ACombatProjectile::ACombatProjectile()
 void ACombatProjectile::FaceFlightDirection(const FVector& Direction)
 {
 	if (Visual && !Direction.IsNearlyZero()) { Visual->SetWorldRotation(Direction.Rotation()); }
+	if (FlightTrail.IsValid()) { FlightTrail->RecordPosition(GetActorLocation()); }
+}
+
+void ACombatProjectile::BeginPlay()
+{
+	Super::BeginPlay();
+	FActorSpawnParameters Params;
+	Params.Owner = GetOwner();
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	FlightTrail = GetWorld()->SpawnActor<AProjectileFlightTrail>(AProjectileFlightTrail::StaticClass(), GetActorLocation(), FRotator::ZeroRotator, Params);
+	if (FlightTrail.IsValid()) { FlightTrail->RecordPosition(GetActorLocation()); }
+}
+
+void ACombatProjectile::EndPlay(const EEndPlayReason::Type Reason)
+{
+	if (FlightTrail.IsValid())
+	{
+		if (Reason == EEndPlayReason::Destroyed)
+		{
+			FlightTrail->RecordPosition(GetActorLocation());
+			FlightTrail->Finish();
+		}
+		else { FlightTrail->Destroy(); }
+	}
+	Super::EndPlay(Reason);
+}
+
+void ACombatProjectile::DiscardFlightTrail()
+{
+	if (FlightTrail.IsValid()) { FlightTrail->Destroy(); }
+	FlightTrail.Reset();
+}
+
+AProjectileFlightTrail* ACombatProjectile::GetFlightTrail() const
+{
+	return FlightTrail.Get();
 }

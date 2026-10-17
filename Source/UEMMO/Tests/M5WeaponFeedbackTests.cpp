@@ -24,8 +24,11 @@
 #include "../Items/ItemDefinition.h"
 #include "../Items/ItemInstance.h"
 #include "../Projectiles/CombatProjectile.h"
+#include "../Projectiles/ProjectileFlightTrail.h"
 #include "../Projectiles/HitscanTracer.h"
 #include "../Weapons/WeaponComponent.h"
+#include "../Room/RoomSessionSubsystem.h"
+#include "../Room/RoomDefinition.h"
 
 #include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -959,6 +962,114 @@ bool FM5_061LifetimeReset::RunTest(const FString& Parameters)
 		else { Rig.Player->Destroy(); }
 		for (const auto& Bullet : Bullets) { TestFalse(TEXT("timeout/reset/owner destruction retires every pellet"), Bullet.IsValid()); }
 		if (Cleanup != 2) { TestEqual(TEXT("no live owner entries remain"), Rig.Player->GetLiveWeaponProjectileCount(), 0); }
+	}
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FM5_062TrailHistory,
+	"UEMMO.Tasks.M5_062.TrailFollowsHistoryBoundsAndFades",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+bool FM5_062TrailHistory::RunTest(const FString& Parameters)
+{
+	FM5_058_Rig Rig;
+	if (!Rig.Build(*this, false) || !Rig.Settle(*this)) { return false; }
+	AProjectileFlightTrail* Trail = Rig.World->SpawnActor<AProjectileFlightTrail>();
+	if (!TestNotNull(TEXT("trail actor created"), Trail)) { return false; }
+	TWeakObjectPtr<AProjectileFlightTrail> WeakTrail(Trail);
+	const FVector Base = Rig.ShotOrigin();
+	Trail->RecordPosition(Base);
+	TestEqual(TEXT("no line before bullet movement"), Trail->GetVisibleSegmentCount(), 0);
+	Trail->RecordPosition(Base + FVector(50, 0, 0));
+	Trail->RecordPosition(Base + FVector(50, 40, 0));
+	TestEqual(TEXT("bent trajectory has separate historical edges"), Trail->GetVisibleSegmentCount(), 2);
+	TestTrue(TEXT("path length follows the bend instead of its chord"), FMath::IsNearlyEqual(Trail->GetRecordedLength(), 90.0f));
+	TestTrue(TEXT("last endpoint is the last actual position"), Trail->GetLastRecordedPosition().Equals(Base + FVector(50, 40, 0)));
+	TArray<UStaticMeshComponent*> Segments;
+	Trail->GetComponents(Segments);
+	int32 Visible = 0;
+	for (UStaticMeshComponent* Segment : Segments)
+	{
+		TestEqual(TEXT("trail cannot participate in collision"), Segment->GetCollisionEnabled(), ECollisionEnabled::NoCollision);
+		if (Segment->IsVisible())
+		{
+			TestTrue(TEXT("curved path segment is not a straight shooter-target beam"),
+				Segment->GetComponentLocation().Equals(Base + FVector(25,0,0), 0.01)
+				|| Segment->GetComponentLocation().Equals(Base + FVector(50,20,0), 0.01));
+			++Visible;
+		}
+	}
+	TestEqual(TEXT("two visible mesh segments match the two observed motions"), Visible, 2);
+	for (int32 Index = 1; Index <= 30; ++Index) { Trail->RecordPosition(Base + FVector(50 + Index * 20, 40, 0)); }
+	TestTrue(TEXT("history length stays bounded"), Trail->GetRecordedLength() <= AProjectileFlightTrail::MaxLengthCm + 0.01f);
+	TestTrue(TEXT("history segment count stays bounded"), Trail->GetVisibleSegmentCount() <= AProjectileFlightTrail::MaxSegments);
+	const FVector Last = Trail->GetLastRecordedPosition();
+	Trail->Finish();
+	Trail->RecordPosition(Last + FVector(1000,0,0));
+	TestTrue(TEXT("retired trail never extends beyond the impact point"), Trail->GetLastRecordedPosition().Equals(Last));
+	Rig.TickFrames(3);
+	TestTrue(TEXT("impact leaves a brief readable afterglow"), WeakTrail.IsValid() && Trail->GetVisibleSegmentCount() > 0);
+	Rig.TickFrames(12);
+	TestFalse(TEXT("trail actor fully disappears after the fade"), WeakTrail.IsValid());
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FM5_062ImpactReset,
+	"UEMMO.Tasks.M5_062.RealBulletTrailStopsAtWallAndResetClearsFade",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+bool FM5_062ImpactReset::RunTest(const FString& Parameters)
+{
+	for (const bool bReset : {false, true})
+	{
+		FM5_058_Rig Rig;
+		if (!Rig.Build(*this, true, true) || !Rig.Settle(*this) || !M5_061BindShipped(Rig, *this, TEXT("weapon_hitscan_sample"))) { return false; }
+		Rig.Player->OnFireInputPressed(); Rig.Player->OnFireInputReleased();
+		ACombatProjectile* Bullet = *TActorIterator<ACombatProjectile>(Rig.World);
+		if (!TestNotNull(TEXT("real bullet spawned"), Bullet)) { return false; }
+		TWeakObjectPtr<AProjectileFlightTrail> Trail = Bullet->GetFlightTrail();
+		if (!TestTrue(TEXT("real bullet owns one trail"), Trail.IsValid())) { return false; }
+		TestTrue(TEXT("trail owner supports player cleanup"), Trail->GetOwner() == Rig.Player);
+		Rig.TickFrames(2);
+		TestEqual(TEXT("wall leaves target undamaged"), Rig.TargetHealth->GetHealth(), Rig.TargetHealth->GetMaxHealth());
+		TestEqual(TEXT("bullet collision already retired the physical actor"), Rig.Player->GetLiveWeaponProjectileCount(), 0);
+		if (!TestTrue(TEXT("fading path remains briefly readable after collision"), Trail.IsValid())) { return false; }
+		TestTrue(TEXT("trail never crosses wall front"), Trail->GetLastRecordedPosition().X <= M5_058_SceneBase.X + M5_058_WallCenter.X - M5_058_WallHalfExtent.X + 0.1);
+		if (bReset) { Rig.Player->ApplyTrainingRoomReset(); } else { Rig.Player->Destroy(); }
+		TestFalse(TEXT("reset or owner destruction also clears detached fading trails"), Trail.IsValid());
+	}
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FM5_062RoomExit,
+	"UEMMO.Tasks.M5_062.RoomExitClearsLiveBulletsWithoutDestroyingPawn",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+bool FM5_062RoomExit::RunTest(const FString& Parameters)
+{
+	for (const bool bStarted : {false, true})
+	{
+		FM5_058_Rig Rig;
+		if (!Rig.Build(*this, false) || !Rig.Settle(*this) || !M5_061BindShipped(Rig, *this, TEXT("weapon_hitscan_sample"))) { return false; }
+		URoomSessionSubsystem* Session = Rig.World->GetSubsystem<URoomSessionSubsystem>();
+		if (!TestNotNull(TEXT("actual room session exists"), Session)) { return false; }
+		if (bStarted)
+		{
+			URoomDefinition* Room = NewObject<URoomDefinition>();
+			Room->RoomId = TEXT("trail_exit_test");
+			if (!TestTrue(TEXT("a run starts"), Session->StartRoom(Room))) { return false; }
+			Session->SetPlayer(Rig.Player);
+		}
+		Rig.Player->OnFireInputPressed();
+		Rig.TickFrames(1);
+		ACombatProjectile* Bullet = *TActorIterator<ACombatProjectile>(Rig.World);
+		if (!TestNotNull(TEXT("a bullet is actually flying before room exit"), Bullet)) { return false; }
+		TWeakObjectPtr<ACombatProjectile> WeakBullet(Bullet);
+		TWeakObjectPtr<AProjectileFlightTrail> Trail = Bullet->GetFlightTrail();
+		Session->LeaveRoom();
+		TestTrue(TEXT("leave preserves the player and world"), IsValid(Rig.Player) && Rig.Player->GetWorld() == Rig.World);
+		TestFalse(TEXT("leave destroys the still-flying bullet"), WeakBullet.IsValid());
+		TestFalse(TEXT("leave clears the trail immediately"), Trail.IsValid());
+		Rig.TickFrames(30);
+		TestEqual(TEXT("the held trigger cannot continue firing after leaving"), Rig.Player->GetWeaponMount()->GetCommittedShotCount(), 1);
+		TestEqual(TEXT("no projectile entries remain"), Rig.Player->GetLiveWeaponProjectileCount(), 0);
 	}
 	return true;
 }

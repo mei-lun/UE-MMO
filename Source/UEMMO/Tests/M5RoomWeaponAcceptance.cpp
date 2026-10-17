@@ -14,6 +14,7 @@
 #include "../UI/MapSelectWidget.h"
 #include "../Weapons/WeaponComponent.h"
 #include "../Projectiles/CombatProjectile.h"
+#include "../Projectiles/ProjectileFlightTrail.h"
 #include "../Projectiles/HitscanTracer.h"
 #include "Components/Button.h"
 #include "Dom/JsonObject.h"
@@ -60,6 +61,10 @@ public:
 			{
 				if (It->Context.WeaponInstanceId != FiredWeaponInstance) { continue; }
 				const FGuid Id = It->Context.ProjectileInstanceId;
+				AProjectileFlightTrail* Trail = It->GetFlightTrail();
+				if (!Trail) { return Fail(TEXT("physical bullet has no flight trail")); }
+				MaxTrailLength = FMath::Max(MaxTrailLength, Trail->GetRecordedLength());
+				if (Trail->GetRecordedLength() > AProjectileFlightTrail::MaxLengthCm + 0.1f) { return Fail(TEXT("trail exceeded its maximum length")); }
 				const double Now = World->GetTimeSeconds();
 				if (const FVector* Start = BulletPositions.Find(Id))
 				{
@@ -78,7 +83,7 @@ public:
 							}
 							MeasuredLinearSpeeds.Add(Distance / Delta);
 						}
-						if (!bRequestedFlightImage)
+						if (!bRequestedFlightImage && Trail->GetVisibleSegmentCount() > 0 && Trail->GetRecordedLength() >= 60.0f)
 						{
 							FScreenshotRequest::RequestScreenshot(Output / TEXT("flight.png"), true, false);
 							bRequestedFlightImage = true;
@@ -218,6 +223,14 @@ public:
 		{
 			if (Elapsed < 0.8) { return false; }
 			ShotsAfter = Mount->GetCommittedShotCount();
+			if (!bMelee)
+			{
+				for (TActorIterator<AProjectileFlightTrail> It(World); It; ++It)
+				{
+					if (It->GetOwner() == Pawn) { return Fail(TEXT("flight trail remained after its fade deadline")); }
+				}
+				FScreenshotRequest::RequestScreenshot(Output / TEXT("trail-cleared.png"), true, false);
+			}
 			MagazineAfter = Mount->GetActiveBinding()->LoadedRounds;
 			if (ShotsAfter - ShotsBefore != ExpectedShots) { return Fail(TEXT("release/burst shot count differs from the weapon definition")); }
 			if (!bMelee && MagazineBefore - MagazineAfter != ExpectedShots) { return Fail(TEXT("magazine cost differs from the number of committed shots")); }
@@ -247,7 +260,7 @@ public:
 			if (Mount->GetCommittedShotCount() != ShotsAfter) { return Fail(TEXT("weapon kept firing after release")); }
 			if (!bMelee)
 			{
-				if (!bObservedFlightBeforeDamage || BulletPositions.Num() != ExpectedShots * ExpectedPellets || MovingBulletIds.Num() != BulletPositions.Num())
+				if (!bObservedFlightBeforeDamage || !bRequestedFlightImage || BulletPositions.Num() != ExpectedShots * ExpectedPellets || MovingBulletIds.Num() != BulletPositions.Num())
 				{
 					return Fail(TEXT("did not observe all spawned bullets moving before impact"));
 				}
@@ -314,6 +327,8 @@ private:
 		Json->SetNumberField(TEXT("projectile_speed_cm_s"), BulletSpeed);
 		Json->SetBoolField(TEXT("flight_observed_before_damage"), bObservedFlightBeforeDamage);
 		Json->SetNumberField(TEXT("moving_projectile_entities"), MovingBulletIds.Num());
+		Json->SetNumberField(TEXT("maximum_observed_trail_length_cm"), MaxTrailLength);
+		Json->SetBoolField(TEXT("visible_trail_captured"), bRequestedFlightImage);
 		TArray<TSharedPtr<FJsonValue>> SpeedSamples;
 		for (const double Speed : MeasuredLinearSpeeds) { SpeedSamples.Add(MakeShared<FJsonValueNumber>(Speed)); }
 		Json->SetArrayField(TEXT("measured_linear_speed_cm_s"), SpeedSamples);
@@ -343,6 +358,7 @@ private:
 	TArray<double> MeasuredLinearSpeeds;
 	int32 ExpectedPellets = 0;
 	float BulletSpeed = 0;
+	float MaxTrailLength = 0;
 	bool bObservedFlightBeforeDamage = false, bRequestedFlightImage = false;
 };
 }

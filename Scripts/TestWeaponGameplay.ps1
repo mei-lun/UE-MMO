@@ -2,6 +2,7 @@ param(
     [string]$PackageRoot = '',
     [switch]$Editor,
     [string]$TaskId = 'M5-060',
+    [ValidateSet(60,120)][int]$SimulationFps = 120,
     [string[]]$WeaponIds = @('weapon_hitscan_sample','weapon_burst_sample','weapon_pellet_sample','weapon_projectile_sample','weapon_parabolic_sample','weapon_homing_sample','weapon_explosive_sample','weapon_training_sword')
 )
 . "$PSScriptRoot\Common.ps1"
@@ -17,7 +18,7 @@ if (Test-Path -LiteralPath $EvidenceRoot) { throw 'Refusing to reuse gameplay ev
 New-Item -ItemType Directory -Path $EvidenceRoot -Force | Out-Null
 $Filter = 'UEMMO.Acceptance.M5_060.RoomWeaponGameplay'
 $Results = @()
-$Summary = [ordered]@{ success=$false; executable=$Executable; filter=$Filter; editor=[bool]$Editor; evidence_root=$EvidenceRoot; cases=@(); error='' }
+$Summary = [ordered]@{ success=$false; executable=$Executable; filter=$Filter; editor=[bool]$Editor; simulation_fps=$SimulationFps; evidence_root=$EvidenceRoot; cases=@(); error='' }
 try {
     foreach ($WeaponId in $WeaponIds) {
         $CaseDir = Join-Path $EvidenceRoot $WeaponId
@@ -27,7 +28,7 @@ try {
         if ($Editor) { $GameArgs += $ProjectFile }
         # A fixed 120Hz simulation keeps fast bullets observable across frame
         # readback stalls. Gameplay delays use game time, wall time only limits hangs.
-        $GameArgs += @('-game','-unattended','-nosplash','-nosound','-RenderOffscreen','-ResX=1280','-ResY=720','-LogCmds=LogTemp Verbose','-UseFixedTimeStep','-FPS=120',
+        $GameArgs += @('-game','-unattended','-nosplash','-nosound','-RenderOffscreen','-ResX=1280','-ResY=720','-LogCmds=LogTemp Verbose','-UseFixedTimeStep',"-FPS=$SimulationFps",
             "-UserDir=$CaseDir\user-data", "-ExecCmds=Automation RunTests $Filter", '-TestExit=Automation Test Queue Empty',
             "-ReportExportPath=$CaseDir", "-UEMMOAcceptanceWeapon=$WeaponId", "-UEMMOAcceptanceOutput=$CaseDir", "-abslog=$CaseDir\ue.log")
         Invoke-UEProcess $Executable $GameArgs "gameplay-$WeaponId" 120
@@ -57,8 +58,13 @@ try {
             if (-not (Test-Path -LiteralPath $FlightImage) -or (Get-Item -LiteralPath $FlightImage).LastWriteTimeUtc -lt $StartedUtc) { throw "Missing current flight image: $WeaponId" }
             $FlightBytes = [IO.File]::ReadAllBytes($FlightImage)
             if ($FlightBytes.Length -lt 1024 -or [BitConverter]::ToString($FlightBytes,0,8) -ne '89-50-4E-47-0D-0A-1A-0A') { throw "Invalid flight PNG: $WeaponId" }
+            if (-not $Observed.visible_trail_captured -or $Observed.maximum_observed_trail_length_cm -lt 60 -or $Observed.maximum_observed_trail_length_cm -gt 180.1) { throw "Visible bounded trail was not proven: $WeaponId" }
+            $Cleared = Join-Path $CaseDir 'trail-cleared.png'
+            if (-not (Test-Path -LiteralPath $Cleared) -or (Get-Item -LiteralPath $Cleared).LastWriteTimeUtc -lt $StartedUtc) { throw "Missing trail cleanup image: $WeaponId" }
+            $ClearBytes = [IO.File]::ReadAllBytes($Cleared)
+            if ($ClearBytes.Length -lt 1024 -or [BitConverter]::ToString($ClearBytes,0,8) -ne '89-50-4E-47-0D-0A-1A-0A') { throw "Invalid cleanup PNG: $WeaponId" }
         }
-        $Results += [ordered]@{ weapon=$WeaponId; success=$true; report=$Index; screenshot=$Screenshot; health_before=$Observed.health_before; health_after=$Observed.health_after; shots=$Observed.shots_committed; loaded_before=$Observed.loaded_before; loaded_after=$Observed.loaded_after_fire; reserve=$Observed.reserve_before_reload; reload=$Observed.reload_result; entities=$Observed.projectile_entities_observed; moving_entities=$Observed.moving_projectile_entities; launch_speed_cm_s=$Observed.projectile_speed_cm_s; measured_linear_speed_cm_s=$Observed.measured_linear_speed_cm_s }
+        $Results += [ordered]@{ weapon=$WeaponId; success=$true; report=$Index; screenshot=$Screenshot; health_before=$Observed.health_before; health_after=$Observed.health_after; shots=$Observed.shots_committed; loaded_before=$Observed.loaded_before; loaded_after=$Observed.loaded_after_fire; reserve=$Observed.reserve_before_reload; reload=$Observed.reload_result; entities=$Observed.projectile_entities_observed; moving_entities=$Observed.moving_projectile_entities; launch_speed_cm_s=$Observed.projectile_speed_cm_s; measured_linear_speed_cm_s=$Observed.measured_linear_speed_cm_s; maximum_observed_trail_length_cm=$Observed.maximum_observed_trail_length_cm; visible_trail_captured=$Observed.visible_trail_captured }
         Write-Host ("PASS {0}: HP {1} -> {2}; shots {3}" -f $WeaponId,$Observed.health_before,$Observed.health_after,$Observed.shots_committed)
     }
     $Summary.success = $true
