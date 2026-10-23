@@ -1,39 +1,23 @@
-# 最近一轮交接：固定开发包目录与历次修复归整
+# 最近一轮交接：服务端战斗与场景适配设计
 
-- Owner：Codex-20261018-Package；2026-10-18T01:58:00+08:00开始，02:19:34+08:00完成登记。
-- main；起点dc95cae，实现`41da19db4899e4f6959afdf5bd260086484a5e16`。本记录所在提交为报告/任务状态收尾。
-- 本轮新增DONE **1项：M5-064**；总表152/176 DONE（M5 52/73），无IN_PROGRESS。M5-H02仍REVIEW，不代签。
-- 报告：`Docs/Tasks/Reports/M5-064.md`；修复汇总：`Docs/开发交付与修复汇总.md`。TASKS.md仍为唯一状态来源。
+- Owner：Codex-20261023-ServerDesign；2026-10-23T20:55:07+08:00 开始，2026-10-23T21:01:48+08:00 完成设计记录。
+- 分支 main；起点 `d954a1244c7c969b06b92763a07866f23463d079`；设计提交 `c2c6392170c8fb5c4f577a18f092f14f0408b41f`。本交接与状态报告单独提交。
+- 本轮新增 DONE **1 项：M5-065**。任务板 153/177 DONE、0 个 IN_PROGRESS；M5-H02 仍 REVIEW，未由 AI 代签。
+- 设计文档：`Docs/Tasks/M5-服务端战斗与场景适配设计.md`；报告：`Docs/Tasks/Reports/M5-065.md`。历史交接：`Docs/Tasks/Handoffs/2026-10-23-Codex-M5-065.md`。
 
-## 本轮实际修改
+## 本轮结果
 
-用户明确要求开发阶段不再制造多版本包。**以后全部只打到`D:\Github-Poj\UE-MMO\Artifacts\Package\Windows`**，同一份覆盖更新。AGENTS.md、执行规则、操作手册和README已同步；Common/Package/TestPackage/TestWeaponGameplay共用固定路径约束，拒绝其他目录。UAT archive根是Artifacts/Package，自动追加Windows；传固定Windows也规范到同一处，不嵌套Windows/Windows。
+用户指定先只完成设计文档。只读分析 `C:/Users/mei/Desktop/game/` 的技能、命中、场景规则、刷怪和转场代码；对照 UE 现有 CombatComponent、统一命中与 RoomSessionSubsystem。方案采用现有 UE 所有者 + 有限场景规则：以区域/波次事件推进现有两波房间，保留单机横版、Y 纵深、现有攻击/武器与奖励链。文档给出事件/配置契约、幂等与清理、四阶段实施及验收。**未改游戏代码、地图、资产、配置或开发包；方案尚未实现。**
 
-Run.ps1默认启动固定开发包，-Editor仍打开源码编辑器。包内README.txt为无版本试玩说明，package-info.json记录实际来源提交与exe哈希。历次M5-036、M5-056～063修复、用户失败反馈与当前实现集中在修复汇总；九份历史报告注明旧包退役，原始事实不改写。
+代码观察出的未来修复项：运行中未知/重复 EnemyId 仍增加击杀统计；敌人资源加载失败可让房间保持 Running 而不开波。它们在设计文档标为风险，本轮没有修复。
 
-10个M5B旧完整包已清理（v3～v12），释放10743914482字节、约10.01GiB，Package下只余Windows。清理前11份包（含旧Windows）的Saved/SaveGames、日志、截图、JSON、说明已逐个SHA校验归档，完整文件清单及exe哈希保存。新目录旧档停在10月6日，已将最后使用包的10月18日Profile_A/B/Index整组迁入；原两套档均归档，迁移后三槽哈希一致。
+## 验证和工作区
 
-## 验证与证据
+- `rtk git diff --check` exit=0；设计与任务卡提交已核对只含两份文档。
+- `rtk proxy powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/CheckTaskBoard.ps1 -Json`：最终 `valid=true`、total=177、done=153、in_progress=0。文档检查记录 `Artifacts/Tasks/M5-065/2026-10-23T21-00-14+0800/documentation-verification.json`，`success=true`。
+- 本轮未跑 Build、Test、Render、Package，也未人工试玩；任务板结构检查不代表游戏逻辑通过。
+- 入场前 `Scripts/InstallEngineWire.ps1` 有用户暂存修改，仍保持暂存且未纳入本轮提交。报告、总表与交接由本轮收尾提交保存。
 
-命令使用`rtk proxy powershell.exe -NoProfile -ExecutionPolicy Bypass -File`前缀。
+## 接续
 
-| 验证 | 本次结果 |
-|---|---|
-| Artifacts/Tasks/M5-064/verify-package-paths.ps1 | 16项PowerShell语法、路径正反例、三个入口拒绝版本目录、Run启动路由通过 |
-| Scripts/Package.ps1（无目录参数） | BUILD SUCCESSFUL、exit0，固定Windows；package-info.success=true |
-| Scripts/TestPackage.ps1 -IncludeWeaponScenario -TaskId M5-064（无目录参数） | 冒烟success/rendering=true；局部4/4、布景1/1、实体2/2、离场1/1、真实菜单到房间八武器8/8 |
-| 本次包身份/内容与证据绑定 | 固定exe、非Editor、八武器完整集合、24项原始报告及副本时间/哈希、Binaries/Paks/Data哈希一致 |
-| 旧包清理与迁移校验 | cleanup-summary.success=true，10目录移除；save-migration.success=true，3槽迁入后再次核验 |
-| 开始/结束CheckTaskBoard | valid=true，无进行中；结构检查不代替玩法检查 |
-
-证据根：`Artifacts/Tasks/M5-064/2026-10-18T01-58-00+0800/`，汇总verification-summary.json success=true；实际八武器`2026-10-18T02-12-38-671+0800-gameplay`。新包启动图、实体飞行与100→90掉血图已查看。此次无C++/资源变化，没有重新声称跑783条全量；其历史结果见M5-063。
-
-只读复核曾指出初版删除门禁只看success；已绑定本次包、报告时效、八武器与内容哈希后再清理，复核无剩余Critical/Important。删除前每个绝对路径都在Package直接子目录内，文件树无链接且未变化；当前Windows不进删除分支。
-
-## 固定交付与接续
-
-试玩`Artifacts/Package/Windows/UEMMO.exe`，或实际exe`Windows/UEMMO/Binaries/Win64/UEMMO.exe`；SHA256 `CC1D14C5E037C6B4C9F16C1483887C7DB1CD4876D9E1A83873EC1006F783BA65`。以后不再发vN目录。源码追溯用Git SHA，原始测试证据按任务时间戳归档。
-
-玩法仍为M5-063可见橙色弹头基线：上方Enter，换枪先I/选行/Equip/Close，向右进房，Q射击、剑X。备弹0且无补给，T拒绝；弹药未持久化，Running禁换装。自动化/截图不代替真实键鼠、声音和手感签收。M5-H02待用户复测，独立可领M5-050；FName大小写摘要差异P2可另卡处理。
-
-原`Scripts/InstallEngineWire.ps1`修改保留未提交，M0-006 PAUSED；M1-H01 BLOCKED，M4 DEFERRED。未改引擎或推送远程。
+先请用户审阅设计并确认是否启动实施。若启动，按设计第 6 节拆独立任务卡：先配置闭环与两个风险修复，再做有限场景规则，之后接战斗事件，最后完整验收。现有独立可领项 M5-050 是投射物压力测试；M5-H02 待用户真实试玩。M0-006 PAUSED、M1-H01 BLOCKED、M4 DEFERRED 不因本次设计改变。
