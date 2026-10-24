@@ -1,24 +1,22 @@
-# 最近一轮交接：战斗与场景适配执行计划
+# 最近一轮交接：战斗与场景适配接手指导
 
-- Owner：Codex-20261024-ExecutionPlan；2026-10-24T11:12:46+08:00 开始，2026-10-24T11:20:25+08:00 完成计划验收。
-- 分支 main；起点 `e62a6c0`；计划与任务卡提交 `4f9e9dd59c7a074e5a7cdd8381de1b89ab579cd4`；本轮总表/报告/交接由收尾提交保存。
-- 本轮新增 DONE **1 项：M5-066**。任务板 154/186 DONE、0 个 IN_PROGRESS。实施卡 M5-067～074 全部 TODO；M5-H02 仍 REVIEW，不代签。
-- 主计划：`Docs/Tasks/M5-战斗与场景适配执行计划.md`；任务卡 `Docs/Tasks/M5-067.md`～`M5-074.md`；报告 `Docs/Tasks/Reports/M5-066.md`；历史交接 `Docs/Tasks/Handoffs/2026-10-24-Codex-M5-066.md`。
+- Owner：Codex-20261024-Handoff；2026-10-24T16:29:17+08:00 开始，16:32:33+08:00 完成文档验收。
+- 当前分支 `main`；本轮基线 `dcc66499cbba8f61b801e4c6b8a3356fef25113e`，接手指南实现提交 `20d938a55723204ef864384a11ef9387aa7cfe0f`；本文件、报告与总表另作收尾提交。
+- 本轮新增 DONE **1 项：M5-075**；总表 155/187 DONE、0 个 IN_PROGRESS。M5-067～074 仍全部 TODO，`M5-H02` 仍 REVIEW。
+- **新接手第一入口**：[接手工作指导](Docs/Tasks/接手工作指导.md)。然后读[适配设计](Docs/Tasks/M5-服务端战斗与场景适配设计.md)、[执行计划](Docs/Tasks/M5-战斗与场景适配执行计划.md)，再领[M5-067](Docs/Tasks/M5-067.md)。正式状态以 `TASKS.md` 为准。
 
-## 本轮实际交付
+## 本轮实际内容
 
-用户要求使用另一工具手动改造，之后交给 Codex 审核。本轮只写执行材料：外部 Lua 服务端与本项目 UE 文件的参考索引、当前事实与风险、房间数据/事件/时间契约、8 项依赖顺序、各卡正反例与测试命令、状态/提交规范和复审材料清单。另提供可复制给外部工具的首条工作说明。上一版设计文档加入计划入口。
+写了一份可由用户或外部编程工具直接接手的指南，记录本项目单机战斗/房间原型已做的事、M5-067～074 尚待实施、独立 M5-050、用户 M5-H02 试玩门禁、文件阅读次序、每项领取/报告/提交/任务板/交接的先后、固定包与存档边界，以及交 Codex 审核所需的代码和证据材料。`README.md` 和主执行计划已增加指南链接。
 
-**未修改游戏 C++、地图、uasset、配置、固定开发包；M5-067～074 尚未实施。** 现有训练房、战斗房与系统测试房的区别、生产战斗房 transient 两波定义、公共击杀计数缺口、资源缺失卡 Running 风险均已写入计划。`Scripts/InstallEngineWire.ps1` 入场前有用户已暂存修改，本轮未修改且未纳入提交。
+入场前 `git status --short --branch` 为干净的 `main`。旧交接中“EngineWire 安装器有用户暂存修改”的快照已过期：用户在 `dcc6649` 将 `Scripts/InstallEngineWire.ps1` 修改提交，**但 M0-006 仍 PAUSED，不代表 MCP 完成验收**。
 
-## 验证与限制
+## 验证、包与限制
 
-- `rtk git diff --check` exit=0；计划提交 `git show --stat` 只含本轮 11 份文档/任务卡。
-- 开始与结束运行 `rtk proxy powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/CheckTaskBoard.ps1 -Json`；结束前 valid=true、total=186、done=154、in_progress=0、ready=`M5-050,M5-067`。
-- 文档自查摘要 `Artifacts/Tasks/M5-066/2026-10-24T11-19-37+0800/plan-verification.json` success=true；本轮无 Build/Test/Render/Package 或人工试玩，不以计划检查替代玩法验收。
+- 开始/结束 `rtk proxy powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/CheckTaskBoard.ps1 -Json`：结束结构检查 valid=true、total=187、done=155、in_progress=0、ready M5-050/M5-067。12 个指南 Markdown 链接均存在；`rtk git diff --check` exit=0。报告 `Docs/Tasks/Reports/M5-075.md`；原始核对摘要 `Artifacts/Tasks/M5-075/2026-10-24T16-32-33+0800/handoff-verification.json` success=true。
+- 固定开发包仅 `Artifacts/Package/Windows`；其 `package-info.json` 的最近打包时间是 2026-10-18T02:10:54+08:00、源修订 `41da19d`。本轮**无 UE 构建、Test、Render、Package 或新试玩**；旧包不代表 M5-067～074 的改动已 Cook。
+- 本轮只改文档/任务状态，不改 C++、地图、uasset 或游戏数值。用户真实键鼠/音效/手感只由 `M5-H02` 签收。M0-006 PAUSED、M1-H01 BLOCKED、M4-000 DEFERRED。
 
-## 接续
+## 下一步
 
-用户把主计划交给另一工具，从 `M5-067` 一次一项执行；虽然 M5-050 数字更小，本次用户指定的适配链可优先，任务报告需说明。每项代码/资产在当前分支提交、验证、报告并标 DONE 后，才能领取下一个 ID。每三项或退出写交接。若外部工具在别的分支完成，先合入当前分支并复验，才算解除依赖。执行后用户提供计划第 7 节审核包，我再做代码和证据审核。
-
-M5-H02 仍待用户真人试玩；M0-006 PAUSED、M1-H01 BLOCKED、M4 DEFERRED 不因本计划改变。没有自动推送远程。
+外部工具按接手指南从 M5-067 一张一张做，严格依赖 `067→068→069→070→071→072→073→074`。独立可领的 M5-050 仍 TODO；本轮用户指定的适配链优先时在报告说明原因。每张先实现并提交，再写实际 SHA/测试结果、改总表 DONE；三张或提前停时写 HANDOFF 和历史交接。用户将提交、报告、JSON/日志/截图与固定包信息交 Codex 复审。不要自动推送或代签人工验收。
