@@ -195,6 +195,15 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M5-063 | [清晰可见的弹头实体飞行](Docs/Tasks/M5-063.md) | DONE | M5-062 | Codex-20261017-VisibleBullet | 2026-10-17T18:40:25+08:00 | [report](Docs/Tasks/Reports/M5-063.md) |
 | M5-064 | [开发包目录统一与修复归整](Docs/Tasks/M5-064.md) | DONE | M5-063 | Codex-20261018-Package | 2026-10-18T02:19:34+08:00 | [report](Docs/Tasks/Reports/M5-064.md) |
 | M5-065 | [服务端战斗与场景架构适配设计](Docs/Tasks/M5-065.md) | DONE | M2-014,M5-012 | Codex-20261023-ServerDesign | 2026-10-23T21:01:48+08:00 | [report](Docs/Tasks/Reports/M5-065.md) |
+| M5-066 | [战斗与场景适配执行计划](Docs/Tasks/M5-066.md) | DONE | M5-065 | Codex-20261024-ExecutionPlan | 2026-10-24T11:20:25+08:00 | [report](Docs/Tasks/Reports/M5-066.md) |
+| M5-067 | [房间出生与死亡记账幂等](Docs/Tasks/M5-067.md) | TODO | M5-066 | — | — | — |
+| M5-068 | [房间资源缺失与开波失败处理](Docs/Tasks/M5-068.md) | TODO | M5-067 | — | — | — |
+| M5-069 | [生产战斗房唯一源数据](Docs/Tasks/M5-069.md) | TODO | M5-068 | — | — | — |
+| M5-070 | [房间定义资产生成与生产入口接线](Docs/Tasks/M5-070.md) | TODO | M5-069 | — | — | — |
+| M5-071 | [有限场景规则配置与校验](Docs/Tasks/M5-071.md) | TODO | M5-070 | — | — | — |
+| M5-072 | [单局场景规则评估器](Docs/Tasks/M5-072.md) | TODO | M5-071 | — | — | — |
+| M5-073 | [区域与波次事件接入生产房间](Docs/Tasks/M5-073.md) | TODO | M5-072 | — | — | — |
+| M5-074 | [战斗场景整体验收与固定包验证](Docs/Tasks/M5-074.md) | TODO | M5-073 | — | — | — |
 | M5-H01 | [M5-H01](Docs/Tasks/M5-H01.md) | DONE | M5-018B | ZCode-20260925-A | 2026-10-08T14:03:17+08:00 | [report](Docs/Tasks/Reports/M5-H01.md) |
 | M5-H02 | [M5-H02](Docs/Tasks/M5-H02.md) | REVIEW | M5-036,M5-056,M5-057,M5-058,M5-059,M5-060,M5-061,M5-062,M5-063,M5-064 | 用户 | 2026-10-18T02:19:34+08:00 | [report](Docs/Tasks/Reports/M5-H02.md) |
 | M5-H03 | [M5-H03](Docs/Tasks/M5-H03.md) | TODO | M5-045 | — | — | — |
