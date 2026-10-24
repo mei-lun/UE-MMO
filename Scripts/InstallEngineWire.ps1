@@ -107,14 +107,23 @@ $Changes = @(
     @{Path=$ConfigFile;Text=$ConfigText}
 )
 $Written = [Collections.Generic.List[object]]::new()
+$Temps = [Collections.Generic.List[string]]::new()
 try {
     foreach ($Change in $Changes) {
         $Exists = Test-Path -LiteralPath $Change.Path
         if ($Exists -and [IO.File]::ReadAllText($Change.Path) -eq $Change.Text) { continue }
         $Original = if ($Exists) { [IO.File]::ReadAllBytes($Change.Path) } else { $null }
         New-Item -ItemType Directory -Force -Path (Split-Path $Change.Path) | Out-Null
+        $Temp = $Change.Path+'.enginewire-'+[Guid]::NewGuid().ToString('N')+'.tmp'
+        $Temps.Add($Temp)
+        [IO.File]::WriteAllText($Temp,$Change.Text,$Utf8)
+        if ($Exists) {
+            $BackupPath=$Temp+'.bak'
+            $Temps.Add($BackupPath)
+            [IO.File]::Replace($Temp,$Change.Path,$BackupPath)
+        }
+        else { [IO.File]::Move($Temp,$Change.Path) }
         $Written.Add(@{Path=$Change.Path;Exists=$Exists;Bytes=$Original})
-        [IO.File]::WriteAllText($Change.Path,$Change.Text,$Utf8)
     }
 } catch {
     $InstallError = $_
@@ -124,6 +133,10 @@ try {
         elseif (Test-Path -LiteralPath $Backup.Path) { Remove-Item -LiteralPath $Backup.Path }
     }
     throw $InstallError
+} finally {
+    foreach ($Temp in $Temps) {
+        if (Test-Path -LiteralPath $Temp) { Remove-Item -LiteralPath $Temp }
+    }
 }
 Write-Output "Installed EngineWire $($Pin.npmVersion), plugin $($Pin.plugin), project MCP ue_mmo_enginewire."
 Write-Output 'Next run Scripts/Build.ps1, then Scripts/Run.ps1 -Editor. Open a new Codex session to load the project MCP entry.'
