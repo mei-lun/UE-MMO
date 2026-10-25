@@ -1178,6 +1178,14 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FUEMMOTasksM5_069CombatRoom01RowParsesValidatesAndStaysDistinct::RunTest(const FString& Parameters)
 {
+	// M5-074: the dev source JSON is not shipped in the package; in that
+	// environment this validator skips (the packaged room contract is the
+	// cooked DA_room_combat_01 asset, re-validated in-package by M5_070).
+	if (!FPaths::FileExists(GetRoomsJsonPath()))
+	{
+		AddInfo(TEXT("Skipped in the packaged build: Data/rooms.json is dev-only source data."));
+		return true;
+	}
 	FString LoadError;
 	TSharedPtr<FRoomJsonValue> Root;
 	if (!LoadJsonRoot(GetRoomsJsonPath(), LoadError, Root))
@@ -1299,6 +1307,12 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FUEMMOTasksM5_069RejectsDuplicateIdsAndBrokenProductionRowFields::RunTest(const FString& Parameters)
 {
+	// M5-074: dev-source skip guard (see the sibling test above).
+	if (!FPaths::FileExists(GetRoomsJsonPath()))
+	{
+		AddInfo(TEXT("Skipped in the packaged build: Data/rooms.json is dev-only source data."));
+		return true;
+	}
 	FString LoadError;
 	TSharedPtr<FRoomJsonValue> Root;
 	if (!LoadJsonRoot(GetRoomsJsonPath(), LoadError, Root))
@@ -1563,6 +1577,15 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FUEMMOTasksM5_071CombatRulesParseValidateAndLegacyMigrationIsExplicit::RunTest(const FString& Parameters)
 {
+	// M5-074: the dev source JSON is not shipped in the package; in that
+	// environment this validator skips (the in-package rule contract is the
+	// cooked asset's Rules, re-validated by M5_070, plus the pure in-memory
+	// rule tests of M5_072 which DO run in-package).
+	if (!FPaths::FileExists(GetRoomsJsonPath()))
+	{
+		AddInfo(TEXT("Skipped in the packaged build: Data/rooms.json is dev-only source data."));
+		return true;
+	}
 	FString LoadError;
 	TSharedPtr<FRoomJsonValue> Root;
 	if (!LoadJsonRoot(GetRoomsJsonPath(), LoadError, Root))
@@ -1686,6 +1709,14 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FUEMMOTasksM5_071RejectsBrokenRulesWithRoomRuleFieldNames::RunTest(const FString& Parameters)
 {
+	// M5-074: dev-source skip guard (the JSON-level rejections need the dev
+	// rooms.json; the pure in-memory ValidateRoomRules contract is separately
+	// pinned by the editor runs and by M5_072's in-package evaluator tests).
+	if (!FPaths::FileExists(GetRoomsJsonPath()))
+	{
+		AddInfo(TEXT("Skipped in the packaged build: Data/rooms.json is dev-only source data."));
+		return true;
+	}
 	// -- In-memory mutations against ValidateRoomRules -------------------------
 	URoomDefinition* Base = M5_071_MakeCombatRoom();
 	BuildLegacySchemaOneDefaultRules(Base->Waves, Base->Rules);

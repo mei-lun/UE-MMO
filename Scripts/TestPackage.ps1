@@ -102,8 +102,18 @@ param(
     [string]$PackageRoot = '',
     [string]$TaskId = 'M5-063',
     [string]$CombatFilter = 'UEMMO.Tasks',
-    [string[]]$DevOnlySourceJsonFilter = @('UEMMO.Tasks.M1_008.', 'UEMMO.Tasks.M2_001.', 'UEMMO.Tasks.M2_005.', 'UEMMO.Tasks.M2_008.', 'UEMMO.Tasks.M3_001.', 'UEMMO.Tasks.M3_007.', 'UEMMO.Tasks.M5_018A.', 'UEMMO.Tasks.M5_020A.'),
-    [string[]]$ExpectedInPackageFailures = @('UEMMO.Tasks.M3_005.', 'UEMMO.Tasks.M3_019.'),
+    [string[]]$DevOnlySourceJsonFilter = @('UEMMO.Tasks.M1_008.', 'UEMMO.Tasks.M2_001.', 'UEMMO.Tasks.M2_005.', 'UEMMO.Tasks.M2_008.', 'UEMMO.Tasks.M3_001.', 'UEMMO.Tasks.M3_007.', 'UEMMO.Tasks.M5_009.', 'UEMMO.Tasks.M5_018A.', 'UEMMO.Tasks.M5_020A.'),
+    # M5-074 (registered in the M5-076 follow-up card, never silenced - every
+    # failed name is still reported in full): the two M5_004 validators pin
+    # "an UPPERCASE definition id is rejected" through FName round-trips. FName
+    # is case-insensitive and pools display names, so in the packaged process -
+    # where the cooked content pre-pools the lowercase production ids (e.g.
+    # "ammo_cell") - FName("AMMO_CELL").ToString() echoes the pooled lowercase
+    # spelling and the rejection under test never happens. Editor runs keep the
+    # full pin. The M5_009 family validates the repo working tree's saved
+    # .uasset files on disk (Content/UEMMO/Combat/Data), which the package
+    # never ships - the same dev-only category as the JSON validators above.
+    [string[]]$ExpectedInPackageFailures = @('UEMMO.Tasks.M3_005.', 'UEMMO.Tasks.M3_019.', 'UEMMO.Tasks.M5_004.AmmoTypeValidation', 'UEMMO.Tasks.M5_004.ProjectileDefinitionValidation'),
     [string]$CombatMap = '/Game/UEMMO/Maps/L_TrainingArena'
 )
 . "$PSScriptRoot\Common.ps1"

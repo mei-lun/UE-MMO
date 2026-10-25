@@ -22,6 +22,7 @@
 #include "Misc/AutomationTest.h"
 
 #include "Components/CapsuleComponent.h"
+#include "Engine/Engine.h"
 #include "Engine/Level.h"
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -200,8 +201,23 @@ bool FUEMMOTasksM5_070CombatMapTriggerReferencesAssetAndTrainingStaysClean::RunT
 	const int32 TriggerCount = M5_070_CountLevelActorsOfClass(CombatLevel, ARoomTrigger::StaticClass());
 	const int32 ExitCount = M5_070_CountLevelActorsOfClass(CombatLevel, ARoomExit::StaticClass());
 	const int32 PlayerStartCount = M5_070_CountLevelActorsOfClass(CombatLevel, APlayerStart::StaticClass());
-	TestEqual(TEXT("the reloaded combat map carries exactly one RoomTrigger"), TriggerCount, 1);
-	TestEqual(TEXT("the reloaded combat map carries exactly one RoomExit"), ExitCount, 1);
+	// A packaged process boots INTO L_CombatRoom01 (GameDefaultMap): the
+	// LoadObject then returns that LIVE game world, whose actor list may
+	// already hold runtime-spawned actors of the suite's earlier scenarios
+	// (an M2-014 scenario-driven exit door, for instance). The serialized
+	// exactly-one guarantee is pinned by the editor verify script and the
+	// editor LoadObject run; against a live world the honest floor is "at
+	// least the map's own one of each".
+	if (CombatMap == GWorld || CombatMap->WorldType == EWorldType::Game)
+	{
+		TestTrue(TEXT("the live combat world holds at least the map's one RoomTrigger"), TriggerCount >= 1);
+		TestTrue(TEXT("the live combat world holds at least the map's one RoomExit"), ExitCount >= 1);
+	}
+	else
+	{
+		TestEqual(TEXT("the reloaded combat map carries exactly one RoomTrigger"), TriggerCount, 1);
+		TestEqual(TEXT("the reloaded combat map carries exactly one RoomExit"), ExitCount, 1);
+	}
 	TestTrue(TEXT("the reloaded combat map still carries a PlayerStart"), PlayerStartCount >= 1);
 
 	if (TriggerCount == 1)
