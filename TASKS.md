@@ -203,8 +203,9 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M5-071 | [有限场景规则配置与校验](Docs/Tasks/M5-071.md) | DONE | M5-070 | ZCode-20261024-A | 2026-10-25T21:16:54+08:00 | [report](Docs/Tasks/Reports/M5-071.md) |
 | M5-072 | [单局场景规则评估器](Docs/Tasks/M5-072.md) | DONE | M5-071 | ZCode-20261024-A | 2026-10-25T21:26:35+08:00 | [report](Docs/Tasks/Reports/M5-072.md) |
 | M5-073 | [区域与波次事件接入生产房间](Docs/Tasks/M5-073.md) | DONE | M5-072 | ZCode-20261024-A | 2026-10-25T23:26:36+08:00 | [report](Docs/Tasks/Reports/M5-073.md) |
-| M5-074 | [战斗场景整体验收与固定包验证](Docs/Tasks/M5-074.md) | TODO | M5-073 | — | — | — |
+| M5-074 | [战斗场景整体验收与固定包验证](Docs/Tasks/M5-074.md) | DONE | M5-073 | ZCode-20261024-A | 2026-10-26T00:15:28+08:00 | [report](Docs/Tasks/Reports/M5-074.md) |
 | M5-075 | [接手工作指导与交接文档](Docs/Tasks/M5-075.md) | DONE | M5-066 | Codex-20261024-Handoff | 2026-10-24T16:32:33+08:00 | [report](Docs/Tasks/Reports/M5-075.md) |
+| M5-076 | [包内既有测试失败的根治](Docs/Tasks/M5-076.md) | TODO | M5-074 | — | — | — |
 | M5-H01 | [M5-H01](Docs/Tasks/M5-H01.md) | DONE | M5-018B | ZCode-20260925-A | 2026-10-08T14:03:17+08:00 | [report](Docs/Tasks/Reports/M5-H01.md) |
 | M5-H02 | [M5-H02](Docs/Tasks/M5-H02.md) | REVIEW | M5-036,M5-056,M5-057,M5-058,M5-059,M5-060,M5-061,M5-062,M5-063,M5-064 | 用户 | 2026-10-18T02:19:34+08:00 | [report](Docs/Tasks/Reports/M5-H02.md) |
 | M5-H03 | [M5-H03](Docs/Tasks/M5-H03.md) | TODO | M5-045 | — | — | — |
