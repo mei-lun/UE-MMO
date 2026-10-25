@@ -499,13 +499,31 @@ private:
     // One live pellet: its motion policy (the M5-028 linear reference or one
     // of the M5-029..032 production policies, dispatched per definition
     // motion) plus the bound actor; advanced once per pawn tick until
-    // finished.
+    // finished. M5-077: every pellet also carries its shot's ledger identity,
+    // so the retirement loop can EndShot the pellet's ledger keys exactly
+    // when the LAST pellet of that shot retires (the M5-050 capacity fix).
     struct FLiveWeaponProjectile
     {
         TUniquePtr<IProjectileMotionPolicy> Policy;
         TWeakObjectPtr<ACombatProjectile> Actor;
+        FCombatEpoch ShotEpoch = InvalidCombatEpoch;
+        FEntityId ShotSourceEntityId = InvalidCombatEntityId;
+        FShotId ShotId = InvalidCombatShotId;
     };
     TArray<FLiveWeaponProjectile> LiveWeaponProjectiles;
+    // M5-077: shots whose pellets are still in flight (one entry per committed
+    // projectile shot; the retirement loop EndShots an entry when its last
+    // pellet retires, releasing the ledger's event/control keys back - the
+    // tombstone keeps rejecting late resends). Hitscan shots EndShot inline at
+    // the end of their delivery (no in-flight phase).
+    struct FPendingShotEnd
+    {
+        FCombatEpoch Epoch = InvalidCombatEpoch;
+        FEntityId SourceEntityId = InvalidCombatEntityId;
+        FShotId ShotId = InvalidCombatShotId;
+        int32 LivePellets = 0;
+    };
+    TArray<FPendingShotEnd> PendingProjectileShotEnds;
     // The pawn's hit ledger, bound to the mount's fire registry (the bridge
     // the WeaponComponent class comment documents as the future unified
     // adjudication injection point).
@@ -518,6 +536,13 @@ private:
     void SpawnHitscanTracers(const FShotContext& Shot, const FShotPatternPlan& Plan,
         const FHitscanExecutionOutcome& Outcome);
     void PlayFireFeedbackSound();
+    // M5-077: registers a committed projectile shot in PendingProjectileShotEnds
+    // (pellet count = spawned entries) and stamps each FLiveWeaponProjectile
+    // with the shot's ledger identity; called once per projectile shot commit.
+    void TrackProjectileShotLedgerEnd(const FShotContext& Shot, int32 SpawnedPelletCount);
+    // M5-077: retires one pellet; when its shot's last pellet is gone, EndShots
+    // the ledger entry (releasing event/control keys) and drops the tracking.
+    void RetireWeaponProjectilePellet(int32 LiveIndex);
     TArray<TWeakObjectPtr<AHitscanTracer>> LiveHitscanTracers;
     // The hit-actor -> fire-registry entity id cache backing the
     // IHitscanTargetIdentity seam; mutable (the lazy registration happens

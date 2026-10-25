@@ -1254,7 +1254,10 @@ void APrototypeCharacter::TickWeaponInput(float DeltaSeconds)
         ACombatProjectile* Actor = Entry.Actor.Get();
         if (Actor == nullptr)
         {
-            LiveWeaponProjectiles.RemoveAtSwap(Index);
+            // M5-077: the retirement goes through the shared helper so a
+            // destroyed body still counts against its shot's pending pellet
+            // total (the ledger EndShot fires when the last pellet retires).
+            RetireWeaponProjectilePellet(Index);
             continue;
         }
         const FVector PreviousPosition = Actor->GetActorLocation();
@@ -1270,7 +1273,7 @@ void APrototypeCharacter::TickWeaponInput(float DeltaSeconds)
             {
                 Actor->Destroy();
             }
-            LiveWeaponProjectiles.RemoveAtSwap(Index);
+            RetireWeaponProjectilePellet(Index);
         }
     }
 }
@@ -1368,6 +1371,12 @@ void APrototypeCharacter::HandleWeaponShotCommitted(const FShotContext& Shot)
         Delivery.AttackProfile = *Profile;
         const FHitscanExecutionOutcome Outcome = ExecuteHitscan(World, Delivery, &Mount->GetFireRegistry(),
             &ShotHitLedger, this);
+        // M5-077: the hitscan delivery is a pure query-and-submit pipeline -
+        // every ledger key the shot holds is held NOW and nothing is in
+        // flight, so the shot ends inline (the tombstone keeps rejecting late
+        // resends). Without this, sustained hitscan fire exhausts the ledger's
+        // 256 active shots exactly like the projectile path did (M5-050).
+        ShotHitLedger.EndShot(Shot.Epoch, Shot.SourceEntityId, Shot.ShotId);
         // M5-058: the perceivable-feedback face runs on every executed shot -
         // the tracer geometry and the log read the outcome, the sound only
         // needs the commit (a miss still fired a round and must still be felt).
@@ -1477,6 +1486,12 @@ void APrototypeCharacter::HandleWeaponShotCommitted(const FShotContext& Shot)
             FLiveWeaponProjectile Entry;
             Entry.Actor = Actor;
             Entry.Policy = MakeWeaponProjectileMotionPolicy(*Definition, HomingTargetId);
+            // M5-077: the pellet remembers its shot's ledger identity so the
+            // retirement loop can EndShot when the LAST pellet of the shot is
+            // gone (see TrackProjectileShotLedgerEnd).
+            Entry.ShotEpoch = Shot.Epoch;
+            Entry.ShotSourceEntityId = Shot.SourceEntityId;
+            Entry.ShotId = Shot.ShotId;
             if (Entry.Policy.IsValid() && Entry.Policy->Begin(*Actor, Plan.Pellets[PelletAt].Direction, HitContext))
             {
                 LiveWeaponProjectiles.Add(MoveTemp(Entry));
@@ -1487,6 +1502,63 @@ void APrototypeCharacter::HandleWeaponShotCommitted(const FShotContext& Shot)
                 UE_LOG(LogTemp, Warning, TEXT("UEMMO M5-061: failed projectile policy initialization; actor retired."));
             }
         }
+        // M5-077: the shot is now fully spawned - arm its ledger end tracking
+        // against the actually bound pellets (a refused policy initialization
+        // destroyed its actor and never joined the live list).
+        TrackProjectileShotLedgerEnd(Shot, PelletTotal);
+    }
+}
+
+// -- M5-077: the projectile shot ledger release seam ----------------------------
+
+void APrototypeCharacter::TrackProjectileShotLedgerEnd(const FShotContext& Shot, int32 SpawnedPelletCount)
+{
+    if (SpawnedPelletCount <= 0)
+    {
+        // Nothing is in flight: the shot holds no ledger keys that a later
+        // pellet's retirement would release, so end it right here.
+        ShotHitLedger.EndShot(Shot.Epoch, Shot.SourceEntityId, Shot.ShotId);
+        return;
+    }
+    FPendingShotEnd Pending;
+    Pending.Epoch = Shot.Epoch;
+    Pending.SourceEntityId = Shot.SourceEntityId;
+    Pending.ShotId = Shot.ShotId;
+    Pending.LivePellets = SpawnedPelletCount;
+    PendingProjectileShotEnds.Add(Pending);
+}
+
+void APrototypeCharacter::RetireWeaponProjectilePellet(int32 LiveIndex)
+{
+    if (!LiveWeaponProjectiles.IsValidIndex(LiveIndex))
+    {
+        return;
+    }
+    const FCombatEpoch PelletEpoch = LiveWeaponProjectiles[LiveIndex].ShotEpoch;
+    const FEntityId PelletSource = LiveWeaponProjectiles[LiveIndex].ShotSourceEntityId;
+    const FShotId PelletShotId = LiveWeaponProjectiles[LiveIndex].ShotId;
+    LiveWeaponProjectiles.RemoveAtSwap(LiveIndex);
+
+    for (int32 PendingIndex = PendingProjectileShotEnds.Num() - 1; PendingIndex >= 0; --PendingIndex)
+    {
+        FPendingShotEnd& Pending = PendingProjectileShotEnds[PendingIndex];
+        if (Pending.Epoch != PelletEpoch || Pending.SourceEntityId != PelletSource || Pending.ShotId != PelletShotId)
+        {
+            continue;
+        }
+        --Pending.LivePellets;
+        if (Pending.LivePellets <= 0)
+        {
+            // The LAST pellet of the shot retired: release its event/control
+            // keys back to the ledger pool (the tombstone keeps rejecting
+            // late resends of this shot instance). Without this release the
+            // M5-050 stress finding applies - sustained fire exhausts the
+            // ledger's 256 active shots and every later hit is refused with
+            // a silent CapacityFull.
+            ShotHitLedger.EndShot(Pending.Epoch, Pending.SourceEntityId, Pending.ShotId);
+            PendingProjectileShotEnds.RemoveAtSwap(PendingIndex);
+        }
+        break;
     }
 }
 
@@ -1752,6 +1824,14 @@ void APrototypeCharacter::ClearWeaponProjectiles()
         if (ACombatProjectile* Actor = Entry.Actor.Get()) { Actor->Destroy(); }
     }
     LiveWeaponProjectiles.Reset();
+    // M5-077: the bulk clear retires every in-flight pellet at once, so every
+    // pending projectile shot ends right here (the ledger keys release; the
+    // tombstones keep the late-resend idempotency).
+    for (const FPendingShotEnd& Pending : PendingProjectileShotEnds)
+    {
+        ShotHitLedger.EndShot(Pending.Epoch, Pending.SourceEntityId, Pending.ShotId);
+    }
+    PendingProjectileShotEnds.Reset();
 }
 
 void APrototypeCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)

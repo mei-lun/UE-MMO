@@ -109,7 +109,12 @@ bool FHitLedger::TryRecordHitEvent(const FCombatEventKey& Key, EHitLedgerRejectR
 	if (Existing == nullptr && NumActiveShots >= Capacity)
 	{
 		// Hard capacity: refuse the NEW attack instance instead of evicting a
-		// live key - evicting would let the same hit apply twice.
+		// live key - evicting would let the same hit apply twice. M5-077: the
+		// refusal is locatable (the M5-050 finding was a SILENT refusal).
+		UE_LOG(LogTemp, Warning,
+			TEXT("UEMMO HitLedger: hit event refused CapacityFull (epoch=%llu source=%llu shot=%llu target=%llu; active=%d/capacity=%d) - the producing chain is not releasing its shots."),
+			static_cast<uint64>(Key.Epoch), static_cast<uint64>(Key.EntityId), static_cast<uint64>(Key.ShotId),
+			static_cast<uint64>(Key.TargetId), NumActiveShots, Capacity);
 		OutReason = EHitLedgerRejectReason::CapacityFull;
 		return false;
 	}
