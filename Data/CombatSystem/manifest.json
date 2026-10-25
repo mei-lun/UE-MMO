@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "required_tables": [
+    "damage_profiles",
+    "attack_reactions",
+    "target_reactions",
+    "presentations",
+    "weapons",
+    "ammo_types",
+    "projectiles",
+    "vehicles",
+    "vehicle_seats",
+    "vehicle_mounts"
+  ],
+  "comment": "M5-037: the combat data directory manifest - the explicit required-table registry the loader enforces. Every listed table must exist and parse; a supported table file that is not listed is refused, never silently loaded or ignored. The first seven entries are the A/B segment tables (the loader's code-defined fallback when a directory carries no manifest.json); the three vehicle tables are enabled here by M5-037 - removing them (and their files) returns the directory to the A/B-only required set. vehicle_spawns stays part of the test_room structures (Data/test_room.json and the target_filters.json test_room manifest), not a combat table of its own."
+}

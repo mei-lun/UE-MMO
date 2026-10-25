@@ -7,6 +7,7 @@
 #include "../../Weapons/WeaponTypes.h"
 #include "../../Weapons/AmmoTypes.h"
 #include "../../Projectiles/ProjectileTypes.h"
+#include "../../Vehicles/VehicleTypes.h"
 
 /**
  * M5-005: structured source-table parsing and field validation for the
@@ -23,13 +24,23 @@
  *   local value validators on every parsed row, the in-table rules
  *   (duplicate ids, the one-presentation-per-reaction mapping), the
  *   required-table manifest and the rejection of unknown table file names.
+ * - M5-037 extends the same machinery to the vehicle segment: the vehicles/
+ *   vehicle_seats/vehicle_mounts rows are parsed strictly into the 037 value
+ *   types, and manifest.json (when the directory carries one) becomes the
+ *   explicit required-table registry the loader enforces - the manifest
+ *   decides which tables a directory enables, so a supported table file that
+ *   no manifest registers is refused instead of silently loaded or ignored.
+ *   Without a manifest file the loader keeps the code-defined A-segment
+ *   required set, so the older A/B directories keep loading unchanged.
  * - It does NOT resolve cross-table references inside LoadCombatDataDirectory
  *   and does not cook assets or generate actors. Reference checking is
  *   provided as the explicit ValidateCombatDataReferences entry (tested here,
- *   both directions) so M5-006 owns the release-gate wiring; the shipped
- *   A-segment samples deliberately reference damage profiles that arrive with
- *   that card, so a hard reference gate inside the loader would reject the
- *   current source tables.
+ *   both directions) so M5-006 owns the release-gate wiring; M5-037 adds the
+ *   vehicle edges (seats/mounts resolve their vehicle, mounts resolve their
+ *   turret weapon, one seat per vehicle) to the same entry. The loader still
+ *   does not hard-gate references: the shipped A-segment samples deliberately
+ *   reference damage profiles that arrive with that card, so a hard reference
+ *   gate inside the loader would reject the current source tables.
  * - Data/items.json and Data/drops.json stay the single source of item and
  *   drop definitions; nothing here copies them (normalizing import belongs
  *   to the catalog card 007).
@@ -180,6 +191,42 @@ bool ParseAmmoType(const FCombatJsonValue& Row, FAmmoType& OutAmmo, FString& Out
  */
 bool ParseProjectileDefinition(const FCombatJsonValue& Row, FProjectileDefinition& OutProjectile, FString& OutError);
 
+/**
+ * M5-037: parses one vehicles row into FVehicleDefinition (vehicle_id,
+ * drive_type, max_health, defense, max_speed_cm_s, acceleration_cm_s2,
+ * mesh_path, camera_distance_cm, camera_height_cm, camera_pitch_deg). Same
+ * strict-schema rules; only the "ground" drive type is accepted (any other
+ * token is reported as an unsupported drive type) and
+ * ValidateVehicleDefinition must pass.
+ */
+bool ParseVehicleDefinition(const FCombatJsonValue& Row, FVehicleDefinition& OutVehicle, FString& OutError);
+
+/**
+ * M5-037: parses one vehicle_seats row into FVehicleSeatDefinition (seat_id,
+ * vehicle_id, seat_role, seat_location_cm, exit_offset_cm; the two offsets
+ * are {x, y, z} objects in centimeters). Only the "driver" seat role is
+ * accepted; ValidateVehicleSeatDefinition must pass.
+ */
+bool ParseVehicleSeat(const FCombatJsonValue& Row, FVehicleSeatDefinition& OutSeat, FString& OutError);
+
+/**
+ * M5-037: parses one vehicle_mounts row into FVehicleMountDefinition
+ * (mount_id, vehicle_id, turret_weapon_id, location_cm, pitch_min_deg,
+ * pitch_max_deg). Same strict-schema rules; ValidateVehicleMountDefinition
+ * must pass.
+ */
+bool ParseVehicleMount(const FCombatJsonValue& Row, FVehicleMountDefinition& OutMount, FString& OutError);
+
+/**
+ * M5-037: parses one vehicle_spawns entry (vehicle_id, location_cm) into
+ * FVehicleSpawnEntry. Same strict-schema rules; ValidateVehicleSpawnEntry
+ * must pass (the room-local location bounds live there). The entry schema
+ * is what the future test-room wiring (038 generates, 044 drives) consumes;
+ * new vehicles join a room by adding a list entry, never by script
+ * branches on concrete ids.
+ */
+bool ParseVehicleSpawnEntry(const FCombatJsonValue& Row, FVehicleSpawnEntry& OutSpawn, FString& OutError);
+
 // Convenience overloads: parse the row from raw JSON text first. They share
 // the value-based implementations above and exist so tools and tests can
 // throw a single row at the parser without building a document.
@@ -190,6 +237,10 @@ bool ParsePresentation(const FString& RowJsonText, FCombatPresentation& OutPrese
 bool ParseWeaponDefinition(const FString& RowJsonText, FWeaponDefinition& OutWeapon, FString& OutError);
 bool ParseAmmoType(const FString& RowJsonText, FAmmoType& OutAmmo, FString& OutError);
 bool ParseProjectileDefinition(const FString& RowJsonText, FProjectileDefinition& OutProjectile, FString& OutError);
+bool ParseVehicleDefinition(const FString& RowJsonText, FVehicleDefinition& OutVehicle, FString& OutError);
+bool ParseVehicleSeat(const FString& RowJsonText, FVehicleSeatDefinition& OutSeat, FString& OutError);
+bool ParseVehicleMount(const FString& RowJsonText, FVehicleMountDefinition& OutMount, FString& OutError);
+bool ParseVehicleSpawnEntry(const FString& RowJsonText, FVehicleSpawnEntry& OutSpawn, FString& OutError);
 
 // ===========================================================================
 // Directory loading
@@ -199,8 +250,9 @@ bool ParseProjectileDefinition(const FString& RowJsonText, FProjectileDefinition
  * The parsed content of one combat data directory. Every table is keyed by
  * its business id, so a duplicate id can never enter the set silently.
  * SkippedKnownTableFiles lists the known tables this parser does not parse
- * yet (target_filters/tags/vehicles/vehicle_seats/vehicle_mounts) that were
- * present in the directory - skipped explicitly, never silently.
+ * (target_filters/tags) that were present in the directory - skipped
+ * explicitly, never silently. The vehicle tables (M5-037) are parsed tables
+ * like the A-segment ones.
  */
 struct FCombatDataTableSet
 {
@@ -211,6 +263,9 @@ struct FCombatDataTableSet
 	TMap<FName, FWeaponDefinition> Weapons;
 	TMap<FName, FAmmoType> AmmoTypes;
 	TMap<FName, FProjectileDefinition> Projectiles;
+	TMap<FName, FVehicleDefinition> Vehicles;
+	TMap<FName, FVehicleSeatDefinition> VehicleSeats;
+	TMap<FName, FVehicleMountDefinition> VehicleMounts;
 
 	TArray<FString> SkippedKnownTableFiles;
 
@@ -218,13 +273,45 @@ struct FCombatDataTableSet
 };
 
 /**
- * The required-table manifest of the A segment. The source manifest stays
- * code-defined until a data manifest file lands; vehicles and the other
- * C-segment tables are deliberately absent so a legal A-segment source set
- * parses without them (task acceptance), while an unknown table FILE name is
- * still refused.
+ * The parsed manifest.json content (M5-037): the explicit required-table
+ * registry of one combat data directory. The manifest decides which tables
+ * the directory enables - every listed table must exist and parse, and a
+ * supported table file the manifest does not list is refused (never silently
+ * loaded or ignored).
+ */
+struct FCombatTableManifest
+{
+	/** Tables the directory must carry; each must be a supported table name. */
+	TArray<FName> RequiredTables;
+};
+
+/**
+ * Parses one manifest.json document value. Strict schema: exactly the known
+ * top-level fields (schema_version, required_tables, optional comment),
+ * schema_version must be the integer 1, required_tables must be a non-empty
+ * array of supported table names (unknown names and duplicate entries are
+ * refused). On failure OutError names the offending field/entry.
+ */
+bool ParseCombatTableManifest(const FCombatJsonValue& Root, FCombatTableManifest& OutManifest, FString& OutError);
+
+/** Text convenience overload: parses the manifest document from raw JSON text first. */
+bool ParseCombatTableManifest(const FString& ManifestJsonText, FCombatTableManifest& OutManifest, FString& OutError);
+
+/**
+ * The code-defined required-table fallback of the A segment, used when the
+ * directory carries no manifest.json (the M5-005 behavior, still pinned by
+ * its tests: exactly the seven A-segment tables). When a manifest.json is
+ * present its required_tables list REPLACES this fallback.
  */
 const TArray<FName>& GetRequiredCombatTableNames();
+
+/**
+ * Every combat table name this parser can parse: the seven A-segment tables
+ * plus the three vehicle tables (M5-037). A manifest may only require names
+ * from this set, and a directory file named after one of these names is a
+ * table file that must be registered (or refused).
+ */
+const TArray<FName>& GetSupportedCombatTableNames();
 
 /**
  * Known combat tables that a later card owns parsing for. A file named after
@@ -234,12 +321,16 @@ const TArray<FName>& GetKnownUnparsedCombatTableNames();
 
 /**
  * Loads every combat source table of one directory (Data/CombatSystem).
+ * - manifest.json, when present, is parsed first and its required_tables
+ *   list becomes the required set (M5-037); without one the code-defined
+ *   A-segment fallback is used.
  * - Each required table file is parsed strictly (document schema_version=1,
  *   matching inner table name, rows array; per-row strict schema and value
  *   validation; in-table duplicate ids refused).
- * - Unknown .json table file names are refused (no silent ignoring of
- *   typos); known-unparsed tables and a manifest.json are skipped and
- *   recorded. Non-JSON files are ignored.
+ * - A supported table file that is NOT in the required set is refused (the
+ *   manifest decides which tables a directory enables); known-unparsed
+ *   tables are skipped and recorded; unknown .json table file names are
+ *   refused.
  * - One presentation per attack reaction is enforced inside the set.
  * On success OutTables holds the parsed candidate data and true is returned.
  * On failure OutProblems carries one message per problem (each names the
@@ -252,11 +343,26 @@ bool LoadCombatDataDirectory(const FString& DataDir, FCombatDataTableSet& OutTab
 /**
  * Cross-table reference check over a loaded set: weapons.ammo_id resolves
  * into ammo_types, weapons.projectile_id into projectiles, the weapon,
- * projectile and explosion damage profile ids into damage_profiles and the
- * presentation reaction ids into attack_reactions. Returns true exactly when
- * no dangling reference remains; every problem names the source table, the
- * row id and the field. This is the mechanism for M5-006; wiring it into a
- * release gate (and reconciling the shipped sample damage profiles) belongs
- * to that card, so LoadCombatDataDirectory does not call it.
+ * projectile and explosion damage profile ids into damage_profiles, the
+ * presentation reaction ids into attack_reactions, and (M5-037) the vehicle
+ * edges: seats and mounts resolve their vehicle, mounts resolve their
+ * turret weapon, and every vehicle keeps at most one seat (the single-seat
+ * first version; a second seat row for the same vehicle is refused).
+ * Returns true exactly when no dangling reference remains; every problem
+ * names the source table, the row id and the field. This is the mechanism
+ * for M5-006; wiring it into a release gate (and reconciling the shipped
+ * sample damage profiles) belongs to that card, so LoadCombatDataDirectory
+ * does not call it.
  */
 bool ValidateCombatDataReferences(const FCombatDataTableSet& Tables, TArray<FString>& OutProblems);
+
+/**
+ * M5-037: the vehicle_spawns gate over a parsed room spawn list. Every
+ * entry re-runs ValidateVehicleSpawnEntry (id present, finite in-bounds
+ * room-local location) and its vehicle_id must resolve into the vehicles
+ * table. Every problem is prefixed "vehicle_spawns: entry <index>:" and
+ * names the field. This is the generic validation the future test-room
+ * wiring (038 generates, 044 drives) consumes; new vehicles join a room by
+ * adding a list entry, never by script branches on concrete ids.
+ */
+bool ValidateVehicleSpawnReferences(const FCombatDataTableSet& Tables, const TArray<FVehicleSpawnEntry>& Spawns, TArray<FString>& OutProblems);

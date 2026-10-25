@@ -578,6 +578,57 @@ namespace
 		}
 	}
 
+	/**
+	 * M5-037: requires one {x, y, z} object of numbers (centimeters; the
+	 * room-local/vehicle-local offset shape the test room targets already
+	 * use). Strict: the object may carry exactly x, y and z, and every value
+	 * must be a finite number (the hand-rolled parser refuses non-finite
+	 * literals already, so the value is finite by construction).
+	 */
+	void RequireVector3(const FCombatJsonValue& Object, const TCHAR* Name, FVector& OutValue, FProblemList& Problems)
+	{
+		OutValue = FVector::ZeroVector;
+		const TSharedPtr<FCombatJsonValue>* Value = Object.Object.Find(Name);
+		if (!Value || !Value->IsValid())
+		{
+			Problems.Add(FString::Printf(TEXT("field '%s' must be an object with numeric x/y/z (the field is missing)"), Name));
+			return;
+		}
+		if ((*Value)->Kind != FCombatJsonValue::EKind::Object)
+		{
+			Problems.Add(FString::Printf(TEXT("field '%s' must be an object with numeric x/y/z (got %s)"), Name, *GetJsonKindName((*Value)->Kind)));
+			return;
+		}
+		const FCombatJsonValue& VectorObject = **Value;
+		static const TCHAR* const KnownFields[] = { TEXT("x"), TEXT("y"), TEXT("z") };
+		for (const TPair<FString, TSharedPtr<FCombatJsonValue>>& Field : VectorObject.Object)
+		{
+			bool bKnown = false;
+			for (int32 Index = 0; Index < UE_ARRAY_COUNT(KnownFields); ++Index)
+			{
+				if (Field.Key.Equals(KnownFields[Index]))
+				{
+					bKnown = true;
+					break;
+				}
+			}
+			if (!bKnown)
+			{
+				Problems.Add(FString::Printf(TEXT("field '%s' carries the unknown member '%s' (only x/y/z are allowed)"), Name, *Field.Key));
+			}
+		}
+		double X = 0.0;
+		double Y = 0.0;
+		double Z = 0.0;
+		RequireNumber(VectorObject, TEXT("x"), X, Problems);
+		RequireNumber(VectorObject, TEXT("y"), Y, Problems);
+		RequireNumber(VectorObject, TEXT("z"), Z, Problems);
+		if (Problems.Num() == 0)
+		{
+			OutValue = FVector(X, Y, Z);
+		}
+	}
+
 	FString JoinProblems(const FProblemList& Problems)
 	{
 		return FString::Join(Problems, TEXT("; "));
@@ -1038,6 +1089,269 @@ bool ParseProjectileDefinition(const FCombatJsonValue& Row, FProjectileDefinitio
 	return true;
 }
 
+bool ParseVehicleDefinition(const FCombatJsonValue& Row, FVehicleDefinition& OutVehicle, FString& OutError)
+{
+	OutVehicle = FVehicleDefinition();
+	OutError.Reset();
+	if (Row.Kind != FCombatJsonValue::EKind::Object)
+	{
+		OutError = FString::Printf(TEXT("the row must be a JSON object (got %s)"), *GetJsonKindName(Row.Kind));
+		return false;
+	}
+	static const TCHAR* const KnownFields[] = {
+		TEXT("vehicle_id"), TEXT("drive_type"), TEXT("max_health"), TEXT("defense"),
+		TEXT("max_speed_cm_s"), TEXT("acceleration_cm_s2"), TEXT("mesh_path"),
+		TEXT("camera_distance_cm"), TEXT("camera_height_cm"), TEXT("camera_pitch_deg")
+	};
+	FProblemList Problems;
+	RequireOnlyKnownFields(Row, KnownFields, UE_ARRAY_COUNT(KnownFields), Problems);
+
+	FString IdText;
+	FString DriveTypeText;
+	double MaxHealth = 0.0;
+	double Defense = 0.0;
+	double MaxSpeed = 0.0;
+	double Acceleration = 0.0;
+	FString MeshPath;
+	double CameraDistance = 0.0;
+	double CameraHeight = 0.0;
+	double CameraPitch = 0.0;
+	RequireString(Row, TEXT("vehicle_id"), IdText, Problems);
+	RequireString(Row, TEXT("drive_type"), DriveTypeText, Problems);
+	RequireNumber(Row, TEXT("max_health"), MaxHealth, Problems);
+	RequireNumber(Row, TEXT("defense"), Defense, Problems);
+	RequireNumber(Row, TEXT("max_speed_cm_s"), MaxSpeed, Problems);
+	RequireNumber(Row, TEXT("acceleration_cm_s2"), Acceleration, Problems);
+	RequireString(Row, TEXT("mesh_path"), MeshPath, Problems);
+	RequireNumber(Row, TEXT("camera_distance_cm"), CameraDistance, Problems);
+	RequireNumber(Row, TEXT("camera_height_cm"), CameraHeight, Problems);
+	RequireNumber(Row, TEXT("camera_pitch_deg"), CameraPitch, Problems);
+	if (Problems.Num() > 0)
+	{
+		OutError = JoinProblems(Problems);
+		return false;
+	}
+
+	// M5-036: the character-set contract is checked on the RAW id string
+	// before the FName conversion (see ParseDamageProfile for the in-package
+	// FName display caveat).
+	if (!IsValidDefinitionIdSyntax(IdText))
+	{
+		OutError = FString::Printf(TEXT("VehicleId '%s' must be 1..64 characters of a-z, 0-9 and _"), *IdText);
+		return false;
+	}
+
+	OutVehicle.VehicleId = FName(*IdText);
+	// Only "ground" exists: an aircraft/boat token must be reported as the
+	// unsupported drive type it is, never mapped onto the ground value.
+	if (!ParseVehicleDriveType(DriveTypeText, OutVehicle.DriveType))
+	{
+		OutError = FString::Printf(TEXT("field 'drive_type' must be 'ground' (the only implemented drive type; aircraft and boat drive types are not supported) (got '%s')"), *DriveTypeText);
+		OutVehicle = FVehicleDefinition();
+		return false;
+	}
+	OutVehicle.MaxHealth = static_cast<float>(MaxHealth);
+	OutVehicle.Defense = static_cast<float>(Defense);
+	OutVehicle.MaxSpeedCmS = static_cast<float>(MaxSpeed);
+	OutVehicle.AccelerationCmS2 = static_cast<float>(Acceleration);
+	OutVehicle.MeshPath = MeshPath;
+	OutVehicle.CameraDistanceCm = static_cast<float>(CameraDistance);
+	OutVehicle.CameraHeightCm = static_cast<float>(CameraHeight);
+	OutVehicle.CameraPitchDeg = static_cast<float>(CameraPitch);
+
+	// The mesh path is the hull resource reference: presence is the
+	// source-table gate (the cook-list wiring belongs to the later cards).
+	if (MeshPath.IsEmpty())
+	{
+		OutError = TEXT("field 'mesh_path' must be a non-empty soft object path (the hull mesh reference)");
+		OutVehicle = FVehicleDefinition();
+		return false;
+	}
+
+	FString ValidationErrors;
+	if (!ValidateVehicleDefinition(OutVehicle, ValidationErrors))
+	{
+		OutVehicle = FVehicleDefinition();
+		OutError = ValidationErrors;
+		return false;
+	}
+	return true;
+}
+
+bool ParseVehicleSeat(const FCombatJsonValue& Row, FVehicleSeatDefinition& OutSeat, FString& OutError)
+{
+	OutSeat = FVehicleSeatDefinition();
+	OutError.Reset();
+	if (Row.Kind != FCombatJsonValue::EKind::Object)
+	{
+		OutError = FString::Printf(TEXT("the row must be a JSON object (got %s)"), *GetJsonKindName(Row.Kind));
+		return false;
+	}
+	static const TCHAR* const KnownFields[] = {
+		TEXT("seat_id"), TEXT("vehicle_id"), TEXT("seat_role"), TEXT("seat_location_cm"), TEXT("exit_offset_cm")
+	};
+	FProblemList Problems;
+	RequireOnlyKnownFields(Row, KnownFields, UE_ARRAY_COUNT(KnownFields), Problems);
+
+	FString IdText;
+	FString VehicleIdText;
+	FString SeatRoleText;
+	FVector SeatLocation = FVector::ZeroVector;
+	FVector ExitOffset = FVector::ZeroVector;
+	RequireString(Row, TEXT("seat_id"), IdText, Problems);
+	RequireString(Row, TEXT("vehicle_id"), VehicleIdText, Problems);
+	RequireString(Row, TEXT("seat_role"), SeatRoleText, Problems);
+	RequireVector3(Row, TEXT("seat_location_cm"), SeatLocation, Problems);
+	RequireVector3(Row, TEXT("exit_offset_cm"), ExitOffset, Problems);
+	if (Problems.Num() > 0)
+	{
+		OutError = JoinProblems(Problems);
+		return false;
+	}
+
+	if (!IsValidDefinitionIdSyntax(IdText))
+	{
+		OutError = FString::Printf(TEXT("SeatId '%s' must be 1..64 characters of a-z, 0-9 and _"), *IdText);
+		return false;
+	}
+	if (!IsValidDefinitionIdSyntax(VehicleIdText))
+	{
+		OutError = FString::Printf(TEXT("field 'vehicle_id' '%s' must be 1..64 characters of a-z, 0-9 and _"), *VehicleIdText);
+		return false;
+	}
+
+	OutSeat.SeatId = FName(*IdText);
+	OutSeat.VehicleId = FName(*VehicleIdText);
+	// Only "driver" exists: a gunner/passenger token is the unsupported
+	// multi-seat capability, reported as such instead of silently mapped.
+	if (!ParseVehicleSeatRole(SeatRoleText, OutSeat.SeatRole))
+	{
+		OutError = FString::Printf(TEXT("field 'seat_role' must be 'driver' (the only implemented seat role; gunner and passenger roles of multi-seat layouts are not supported) (got '%s')"), *SeatRoleText);
+		OutSeat = FVehicleSeatDefinition();
+		return false;
+	}
+	OutSeat.SeatLocationCm = SeatLocation;
+	OutSeat.ExitOffsetCm = ExitOffset;
+
+	FString ValidationErrors;
+	if (!ValidateVehicleSeatDefinition(OutSeat, ValidationErrors))
+	{
+		OutSeat = FVehicleSeatDefinition();
+		OutError = ValidationErrors;
+		return false;
+	}
+	return true;
+}
+
+bool ParseVehicleMount(const FCombatJsonValue& Row, FVehicleMountDefinition& OutMount, FString& OutError)
+{
+	OutMount = FVehicleMountDefinition();
+	OutError.Reset();
+	if (Row.Kind != FCombatJsonValue::EKind::Object)
+	{
+		OutError = FString::Printf(TEXT("the row must be a JSON object (got %s)"), *GetJsonKindName(Row.Kind));
+		return false;
+	}
+	static const TCHAR* const KnownFields[] = {
+		TEXT("mount_id"), TEXT("vehicle_id"), TEXT("turret_weapon_id"), TEXT("location_cm"),
+		TEXT("pitch_min_deg"), TEXT("pitch_max_deg")
+	};
+	FProblemList Problems;
+	RequireOnlyKnownFields(Row, KnownFields, UE_ARRAY_COUNT(KnownFields), Problems);
+
+	FString IdText;
+	FString VehicleIdText;
+	FString WeaponIdText;
+	FVector Location = FVector::ZeroVector;
+	double PitchMin = 0.0;
+	double PitchMax = 0.0;
+	RequireString(Row, TEXT("mount_id"), IdText, Problems);
+	RequireString(Row, TEXT("vehicle_id"), VehicleIdText, Problems);
+	RequireString(Row, TEXT("turret_weapon_id"), WeaponIdText, Problems);
+	RequireVector3(Row, TEXT("location_cm"), Location, Problems);
+	RequireNumber(Row, TEXT("pitch_min_deg"), PitchMin, Problems);
+	RequireNumber(Row, TEXT("pitch_max_deg"), PitchMax, Problems);
+	if (Problems.Num() > 0)
+	{
+		OutError = JoinProblems(Problems);
+		return false;
+	}
+
+	if (!IsValidDefinitionIdSyntax(IdText))
+	{
+		OutError = FString::Printf(TEXT("MountId '%s' must be 1..64 characters of a-z, 0-9 and _"), *IdText);
+		return false;
+	}
+	if (!IsValidDefinitionIdSyntax(VehicleIdText))
+	{
+		OutError = FString::Printf(TEXT("field 'vehicle_id' '%s' must be 1..64 characters of a-z, 0-9 and _"), *VehicleIdText);
+		return false;
+	}
+	if (!IsValidDefinitionIdSyntax(WeaponIdText))
+	{
+		OutError = FString::Printf(TEXT("field 'turret_weapon_id' '%s' must be 1..64 characters of a-z, 0-9 and _"), *WeaponIdText);
+		return false;
+	}
+
+	OutMount.MountId = FName(*IdText);
+	OutMount.VehicleId = FName(*VehicleIdText);
+	OutMount.TurretWeaponId = FName(*WeaponIdText);
+	OutMount.LocationCm = Location;
+	OutMount.MinPitchDegrees = static_cast<float>(PitchMin);
+	OutMount.MaxPitchDegrees = static_cast<float>(PitchMax);
+
+	FString ValidationErrors;
+	if (!ValidateVehicleMountDefinition(OutMount, ValidationErrors))
+	{
+		OutMount = FVehicleMountDefinition();
+		OutError = ValidationErrors;
+		return false;
+	}
+	return true;
+}
+
+bool ParseVehicleSpawnEntry(const FCombatJsonValue& Row, FVehicleSpawnEntry& OutSpawn, FString& OutError)
+{
+	OutSpawn = FVehicleSpawnEntry();
+	OutError.Reset();
+	if (Row.Kind != FCombatJsonValue::EKind::Object)
+	{
+		OutError = FString::Printf(TEXT("the row must be a JSON object (got %s)"), *GetJsonKindName(Row.Kind));
+		return false;
+	}
+	static const TCHAR* const KnownFields[] = { TEXT("vehicle_id"), TEXT("location_cm") };
+	FProblemList Problems;
+	RequireOnlyKnownFields(Row, KnownFields, UE_ARRAY_COUNT(KnownFields), Problems);
+
+	FString VehicleIdText;
+	FVector Location = FVector::ZeroVector;
+	RequireString(Row, TEXT("vehicle_id"), VehicleIdText, Problems);
+	RequireVector3(Row, TEXT("location_cm"), Location, Problems);
+	if (Problems.Num() > 0)
+	{
+		OutError = JoinProblems(Problems);
+		return false;
+	}
+
+	if (!IsValidDefinitionIdSyntax(VehicleIdText))
+	{
+		OutError = FString::Printf(TEXT("VehicleId '%s' must be 1..64 characters of a-z, 0-9 and _"), *VehicleIdText);
+		return false;
+	}
+
+	OutSpawn.VehicleId = FName(*VehicleIdText);
+	OutSpawn.LocationCm = Location;
+
+	FString ValidationErrors;
+	if (!ValidateVehicleSpawnEntry(OutSpawn, ValidationErrors))
+	{
+		OutSpawn = FVehicleSpawnEntry();
+		OutError = ValidationErrors;
+		return false;
+	}
+	return true;
+}
+
 // ===========================================================================
 // Row parsers (text convenience overloads)
 // ===========================================================================
@@ -1136,6 +1450,50 @@ bool ParseProjectileDefinition(const FString& RowJsonText, FProjectileDefinition
 		return false;
 	}
 	return ParseProjectileDefinition(*Row, OutProjectile, OutError);
+}
+
+bool ParseVehicleDefinition(const FString& RowJsonText, FVehicleDefinition& OutVehicle, FString& OutError)
+{
+	OutVehicle = FVehicleDefinition();
+	TSharedPtr<FCombatJsonValue> Row;
+	if (!ParseRowTextToObject(RowJsonText, Row, OutError))
+	{
+		return false;
+	}
+	return ParseVehicleDefinition(*Row, OutVehicle, OutError);
+}
+
+bool ParseVehicleSeat(const FString& RowJsonText, FVehicleSeatDefinition& OutSeat, FString& OutError)
+{
+	OutSeat = FVehicleSeatDefinition();
+	TSharedPtr<FCombatJsonValue> Row;
+	if (!ParseRowTextToObject(RowJsonText, Row, OutError))
+	{
+		return false;
+	}
+	return ParseVehicleSeat(*Row, OutSeat, OutError);
+}
+
+bool ParseVehicleMount(const FString& RowJsonText, FVehicleMountDefinition& OutMount, FString& OutError)
+{
+	OutMount = FVehicleMountDefinition();
+	TSharedPtr<FCombatJsonValue> Row;
+	if (!ParseRowTextToObject(RowJsonText, Row, OutError))
+	{
+		return false;
+	}
+	return ParseVehicleMount(*Row, OutMount, OutError);
+}
+
+bool ParseVehicleSpawnEntry(const FString& RowJsonText, FVehicleSpawnEntry& OutSpawn, FString& OutError)
+{
+	OutSpawn = FVehicleSpawnEntry();
+	TSharedPtr<FCombatJsonValue> Row;
+	if (!ParseRowTextToObject(RowJsonText, Row, OutError))
+	{
+		return false;
+	}
+	return ParseVehicleSpawnEntry(*Row, OutSpawn, OutError);
 }
 
 // ===========================================================================
@@ -1312,7 +1670,134 @@ void FCombatDataTableSet::Reset()
 	Weapons.Reset();
 	AmmoTypes.Reset();
 	Projectiles.Reset();
+	Vehicles.Reset();
+	VehicleSeats.Reset();
+	VehicleMounts.Reset();
 	SkippedKnownTableFiles.Reset();
+}
+
+bool ParseCombatTableManifest(const FCombatJsonValue& Root, FCombatTableManifest& OutManifest, FString& OutError)
+{
+	OutManifest = FCombatTableManifest();
+	OutError.Reset();
+	if (Root.Kind != FCombatJsonValue::EKind::Object)
+	{
+		OutError = FString::Printf(TEXT("the manifest document must be a JSON object (got %s)"), *GetJsonKindName(Root.Kind));
+		return false;
+	}
+
+	// Strict schema: the manifest is a registry document, not a row table -
+	// exactly schema_version, required_tables and an optional comment.
+	static const TCHAR* const KnownFields[] = { TEXT("schema_version"), TEXT("required_tables"), TEXT("comment") };
+	for (const TPair<FString, TSharedPtr<FCombatJsonValue>>& Field : Root.Object)
+	{
+		bool bKnown = false;
+		for (int32 Index = 0; Index < UE_ARRAY_COUNT(KnownFields); ++Index)
+		{
+			if (Field.Key.Equals(KnownFields[Index]))
+			{
+				bKnown = true;
+				break;
+			}
+		}
+		if (!bKnown)
+		{
+			OutError = FString::Printf(TEXT("unknown field '%s'"), *Field.Key);
+			return false;
+		}
+	}
+
+	const TSharedPtr<FCombatJsonValue>* SchemaVersion = FindTyped(Root, TEXT("schema_version"), FCombatJsonValue::EKind::Number);
+	if (!SchemaVersion)
+	{
+		OutError = TEXT("field 'schema_version' must be the number 1");
+		return false;
+	}
+	const double Rounded = FMath::RoundToZero((*SchemaVersion)->Number);
+	if (FMath::Abs((*SchemaVersion)->Number - Rounded) > 1e-9 || Rounded != 1.0)
+	{
+		OutError = FString::Printf(TEXT("field 'schema_version' must be the number 1 (got %s)"),
+			*FString::SanitizeFloat((*SchemaVersion)->Number));
+		return false;
+	}
+
+	const TSharedPtr<FCombatJsonValue>* Required = FindTyped(Root, TEXT("required_tables"), FCombatJsonValue::EKind::Array);
+	if (!Required)
+	{
+		OutError = TEXT("field 'required_tables' must be an array of table names");
+		return false;
+	}
+	if ((*Required)->Array.Num() == 0)
+	{
+		OutError = TEXT("field 'required_tables' must list at least one table (an empty registry would silently disable every table)");
+		return false;
+	}
+
+	const TArray<FName>& SupportedTables = GetSupportedCombatTableNames();
+	for (int32 Index = 0; Index < (*Required)->Array.Num(); ++Index)
+	{
+		const TSharedPtr<FCombatJsonValue>& Element = (*Required)->Array[Index];
+		if (!Element.IsValid() || Element->Kind != FCombatJsonValue::EKind::String)
+		{
+			OutError = FString::Printf(TEXT("field 'required_tables[%d]' must be a string"), Index);
+			return false;
+		}
+		const FString& NameText = Element->String;
+		if (!IsValidDefinitionIdSyntax(NameText))
+		{
+			OutError = FString::Printf(TEXT("field 'required_tables[%d]' '%s' must be 1..64 characters of a-z, 0-9 and _"), Index, *NameText);
+			return false;
+		}
+		bool bSupported = false;
+		for (const FName Supported : SupportedTables)
+		{
+			if (Supported.ToString().Equals(NameText))
+			{
+				bSupported = true;
+				break;
+			}
+		}
+		if (!bSupported)
+		{
+			OutError = FString::Printf(TEXT("field 'required_tables[%d]' '%s' is not a supported combat table name; the manifest can only require tables this parser parses"), Index, *NameText);
+			return false;
+		}
+		const FName Entry(*NameText);
+		if (OutManifest.RequiredTables.Contains(Entry))
+		{
+			OutError = FString::Printf(TEXT("field 'required_tables' lists '%s' more than once"), *NameText);
+			return false;
+		}
+		OutManifest.RequiredTables.Add(Entry);
+	}
+
+	if (const TSharedPtr<FCombatJsonValue>* Comment = Root.Object.Find(TEXT("comment")))
+	{
+		if (!Comment->IsValid() || (*Comment)->Kind != FCombatJsonValue::EKind::String)
+		{
+			OutError = TEXT("field 'comment' must be a string when present");
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool ParseCombatTableManifest(const FString& ManifestJsonText, FCombatTableManifest& OutManifest, FString& OutError)
+{
+	OutManifest = FCombatTableManifest();
+	TSharedPtr<FCombatJsonValue> Root;
+	if (!FCombatJsonParser::Parse(ManifestJsonText, Root, OutError))
+	{
+		OutError = FString::Printf(TEXT("invalid manifest JSON: %s"), *OutError);
+		return false;
+	}
+	if (!Root.IsValid() || Root->Kind != FCombatJsonValue::EKind::Object)
+	{
+		OutError = TEXT("the manifest document must be a JSON object");
+		return false;
+	}
+	return ParseCombatTableManifest(*Root, OutManifest, OutError);
 }
 
 const TArray<FName>& GetRequiredCombatTableNames()
@@ -1324,10 +1809,20 @@ const TArray<FName>& GetRequiredCombatTableNames()
 	return RequiredTables;
 }
 
+const TArray<FName>& GetSupportedCombatTableNames()
+{
+	static const TArray<FName> SupportedTables = {
+		TEXT("damage_profiles"), TEXT("attack_reactions"), TEXT("target_reactions"),
+		TEXT("presentations"), TEXT("weapons"), TEXT("ammo_types"), TEXT("projectiles"),
+		TEXT("vehicles"), TEXT("vehicle_seats"), TEXT("vehicle_mounts")
+	};
+	return SupportedTables;
+}
+
 const TArray<FName>& GetKnownUnparsedCombatTableNames()
 {
 	static const TArray<FName> KnownUnparsedTables = {
-		TEXT("target_filters"), TEXT("tags"), TEXT("vehicles"), TEXT("vehicle_seats"), TEXT("vehicle_mounts")
+		TEXT("target_filters"), TEXT("tags")
 	};
 	return KnownUnparsedTables;
 }
@@ -1344,9 +1839,41 @@ bool LoadCombatDataDirectory(const FString& DataDir, FCombatDataTableSet& OutTab
 		return false;
 	}
 
+	// M5-037: manifest.json, when the directory carries one, is the explicit
+	// required-table registry and is parsed first - its required_tables list
+	// replaces the code-defined A-segment fallback. A broken manifest refuses
+	// the whole load: the registry is the switch that enables tables, so a
+	// registry nobody can read must never silently degrade to the fallback.
+	FCombatTableManifest Manifest;
+	bool bHasManifest = false;
+	const FString ManifestPath = FPaths::Combine(DataDir, TEXT("manifest.json"));
+	if (PlatformFile.FileExists(*ManifestPath))
+	{
+		FString ManifestText;
+		if (!FFileHelper::LoadFileToString(ManifestText, *ManifestPath))
+		{
+			OutProblems.Add(FString::Printf(TEXT("manifest.json: could not read the manifest file")));
+			return false;
+		}
+		TSharedPtr<FCombatJsonValue> ManifestRoot;
+		FString ManifestError;
+		if (!FCombatJsonParser::Parse(ManifestText, ManifestRoot, ManifestError))
+		{
+			OutProblems.Add(FString::Printf(TEXT("manifest.json: %s"), *ManifestError));
+			return false;
+		}
+		if (!ParseCombatTableManifest(*ManifestRoot, Manifest, ManifestError))
+		{
+			OutProblems.Add(FString::Printf(TEXT("manifest.json: %s"), *ManifestError));
+			return false;
+		}
+		bHasManifest = true;
+	}
+	const TArray<FName>& RequiredTables = bHasManifest ? Manifest.RequiredTables : GetRequiredCombatTableNames();
+
 	// Required tables: each has exactly one file named after the table. A
 	// missing file is a missing table (never silently accepted as empty).
-	for (const FName TableName : GetRequiredCombatTableNames())
+	for (const FName TableName : RequiredTables)
 	{
 		const FString FileName = TableName.ToString() + TEXT(".json");
 		const FString FilePath = FPaths::Combine(DataDir, FileName);
@@ -1391,11 +1918,29 @@ bool LoadCombatDataDirectory(const FString& DataDir, FCombatDataTableSet& OutTab
 			LoadCombatTableFile(FilePath, TEXT("projectiles"), TEXT("projectile_id"),
 				&ParseProjectileDefinition, OutTables.Projectiles, OutProblems);
 		}
+		else if (TableName == FName(TEXT("vehicles")))
+		{
+			LoadCombatTableFile(FilePath, TEXT("vehicles"), TEXT("vehicle_id"),
+				&ParseVehicleDefinition, OutTables.Vehicles, OutProblems);
+		}
+		else if (TableName == FName(TEXT("vehicle_seats")))
+		{
+			LoadCombatTableFile(FilePath, TEXT("vehicle_seats"), TEXT("seat_id"),
+				&ParseVehicleSeat, OutTables.VehicleSeats, OutProblems);
+		}
+		else if (TableName == FName(TEXT("vehicle_mounts")))
+		{
+			LoadCombatTableFile(FilePath, TEXT("vehicle_mounts"), TEXT("mount_id"),
+				&ParseVehicleMount, OutTables.VehicleMounts, OutProblems);
+		}
 	}
 
-	// Every other .json file must be a known table name. Known-unparsed
-	// tables (owned by later cards) and a manifest file are skipped and
-	// recorded; anything else is refused instead of silently ignored.
+	// Every other .json file must be a known table name. A supported table
+	// file that the required set does not name is REFUSED (the manifest
+	// decides which tables a directory enables - a stray table file is never
+	// silently loaded or ignored); known-unparsed tables (owned by later
+	// cards) are skipped and recorded; anything else is refused instead of
+	// silently ignored. The manifest file itself is consumed above.
 	TArray<FString> FoundFiles;
 	PlatformFile.FindFiles(FoundFiles, *DataDir, TEXT(".json"));
 	FoundFiles.Sort();
@@ -1405,12 +1950,25 @@ bool LoadCombatDataDirectory(const FString& DataDir, FCombatDataTableSet& OutTab
 		const FString Stem = FPaths::GetBaseFilename(FileName);
 
 		bool bKnown = false;
-		for (const FName Required : GetRequiredCombatTableNames())
+		for (const FName Required : RequiredTables)
 		{
 			if (Stem.Equals(Required.ToString(), ESearchCase::IgnoreCase))
 			{
 				bKnown = true;
 				break;
+			}
+		}
+		if (!bKnown)
+		{
+			for (const FName Supported : GetSupportedCombatTableNames())
+			{
+				if (Stem.Equals(Supported.ToString(), ESearchCase::IgnoreCase))
+				{
+					OutProblems.Add(FString::Printf(TEXT("%s: table '%s' is present but not registered in the required table set; add it to manifest.json 'required_tables' or remove the file"),
+						*FileName, *Stem));
+					bKnown = true;
+					break;
+				}
 			}
 		}
 		if (!bKnown)
@@ -1427,7 +1985,6 @@ bool LoadCombatDataDirectory(const FString& DataDir, FCombatDataTableSet& OutTab
 		}
 		if (!bKnown && FileName.Equals(TEXT("manifest.json"), ESearchCase::IgnoreCase))
 		{
-			OutTables.SkippedKnownTableFiles.AddUnique(FileName);
 			bKnown = true;
 		}
 		if (!bKnown)
@@ -1499,6 +2056,80 @@ bool ValidateCombatDataReferences(const FCombatDataTableSet& Tables, TArray<FStr
 		{
 			OutProblems.Add(FString::Printf(TEXT("presentations: row '%s': field 'reaction_id' references unknown attack_reactions id '%s'"),
 				*Presentation.PresentationId.ToString(), *Presentation.ReactionId.ToString()));
+		}
+	}
+
+	// M5-037: the vehicle edges. Seats and mounts resolve their vehicle,
+	// mounts resolve their turret weapon (a mount without a weapon is
+	// refused), and every vehicle keeps at most one seat - the single-seat
+	// first version rejects multi-seat layouts explicitly.
+	for (const TPair<FName, FVehicleSeatDefinition>& Pair : Tables.VehicleSeats)
+	{
+		const FVehicleSeatDefinition& Seat = Pair.Value;
+		if (!Seat.VehicleId.IsNone() && !Tables.Vehicles.Contains(Seat.VehicleId))
+		{
+			OutProblems.Add(FString::Printf(TEXT("vehicle_seats: row '%s': field 'vehicle_id' references unknown vehicles id '%s'"),
+				*Seat.SeatId.ToString(), *Seat.VehicleId.ToString()));
+		}
+	}
+	TMap<FName, FName> FirstSeatByVehicle;
+	for (const TPair<FName, FVehicleSeatDefinition>& Pair : Tables.VehicleSeats)
+	{
+		const FVehicleSeatDefinition& Seat = Pair.Value;
+		if (Seat.VehicleId.IsNone())
+		{
+			continue;
+		}
+		if (const FName* ExistingSeatId = FirstSeatByVehicle.Find(Seat.VehicleId))
+		{
+			OutProblems.Add(FString::Printf(TEXT("vehicle_seats: row '%s': field 'vehicle_id' '%s' already has the seat '%s'; the first version supports exactly one seat per vehicle (multi-seat layouts are not supported)"),
+				*Seat.SeatId.ToString(), *Seat.VehicleId.ToString(), *ExistingSeatId->ToString()));
+			continue;
+		}
+		FirstSeatByVehicle.Add(Seat.VehicleId, Seat.SeatId);
+	}
+	for (const TPair<FName, FVehicleMountDefinition>& Pair : Tables.VehicleMounts)
+	{
+		const FVehicleMountDefinition& Mount = Pair.Value;
+		if (!Mount.VehicleId.IsNone() && !Tables.Vehicles.Contains(Mount.VehicleId))
+		{
+			OutProblems.Add(FString::Printf(TEXT("vehicle_mounts: row '%s': field 'vehicle_id' references unknown vehicles id '%s'"),
+				*Mount.MountId.ToString(), *Mount.VehicleId.ToString()));
+		}
+		if (!Mount.TurretWeaponId.IsNone() && !Tables.Weapons.Contains(Mount.TurretWeaponId))
+		{
+			OutProblems.Add(FString::Printf(TEXT("vehicle_mounts: row '%s': field 'turret_weapon_id' references unknown weapons id '%s'"),
+				*Mount.MountId.ToString(), *Mount.TurretWeaponId.ToString()));
+		}
+	}
+
+	return OutProblems.Num() == 0;
+}
+
+bool ValidateVehicleSpawnReferences(const FCombatDataTableSet& Tables, const TArray<FVehicleSpawnEntry>& Spawns, TArray<FString>& OutProblems)
+{
+	OutProblems.Reset();
+
+	for (int32 Index = 0; Index < Spawns.Num(); ++Index)
+	{
+		const FVehicleSpawnEntry& Spawn = Spawns[Index];
+
+		// The generic value rules (id present, finite in-bounds room-local
+		// location) re-run here so a hand-assembled entry cannot bypass the
+		// parser-side checks; every problem names its field.
+		FString ValidationErrors;
+		if (!ValidateVehicleSpawnEntry(Spawn, ValidationErrors))
+		{
+			OutProblems.Add(FString::Printf(TEXT("vehicle_spawns: entry %d: %s"), Index, *ValidationErrors));
+		}
+
+		// The identity edge: the vehicle id must resolve into the vehicles
+		// table - a spawn list entry for an unregistered vehicle is refused,
+		// never fabricated from a stand-in.
+		if (!Spawn.VehicleId.IsNone() && !Tables.Vehicles.Contains(Spawn.VehicleId))
+		{
+			OutProblems.Add(FString::Printf(TEXT("vehicle_spawns: entry %d: field 'vehicle_id' references unknown vehicles id '%s'"),
+				Index, *Spawn.VehicleId.ToString()));
 		}
 	}
 

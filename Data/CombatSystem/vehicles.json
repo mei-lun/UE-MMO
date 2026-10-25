@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "table": "vehicles",
+  "comment": "M5-037: the single-seat ground vehicle source table. One row describes one hull: max_health/defense reuse the shared HealthComponent pool and damage-formula units, max_speed_cm_s is the ground top speed in cm/s and acceleration_cm_s2 the throttle acceleration in cm/s^2 on the X/Y floor plane (X lateral, Y depth, Z height), mesh_path is a /Game soft reference to the hull mesh, and the camera block drives the vehicle follow camera (distance/height in cm, pitch in degrees). Only drive_type 'ground' exists: aircraft and boat drive types are refused by the parser and the validator, never silently ignored. New vehicles join by adding a row here and a manifest registration, never by script branches.",
+  "rows": [
+    {
+      "vehicle_id": "vehicle_wheeled_sample",
+      "drive_type": "ground",
+      "max_health": 250,
+      "defense": 15,
+      "max_speed_cm_s": 700,
+      "acceleration_cm_s2": 900,
+      "mesh_path": "/Game/UEMMO/Vehicles/SM_Vehicle_Wheeled_Sample.SM_Vehicle_Wheeled_Sample",
+      "camera_distance_cm": 650,
+      "camera_height_cm": 260,
+      "camera_pitch_deg": -18
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "table": "vehicle_seats",
+  "comment": "M5-037: the vehicle seat source table. One row binds one seat to one vehicle: the first version supports exactly the single 'driver' role (gunner and passenger roles of multi-seat layouts are refused), seat_location_cm and exit_offset_cm are centimeter offsets relative to the vehicle origin (X lateral, Y depth, Z height) and each vehicle may carry at most one seat - a second seat row for the same vehicle is rejected by the cross-table gate.",
+  "rows": [
+    {
+      "seat_id": "seat_wheeled_driver",
+      "vehicle_id": "vehicle_wheeled_sample",
+      "seat_role": "driver",
+      "seat_location_cm": { "x": 0, "y": -40, "z": 45 },
+      "exit_offset_cm": { "x": -180, "y": 0, "z": 0 }
+    }
+  ]
+}

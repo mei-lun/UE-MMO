@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "table": "vehicle_mounts",
+  "comment": "M5-037: the vehicle turret mount source table. One row binds one turret mount to one vehicle: turret_weapon_id must reference an existing weapons row (a mount without a weapon is refused by the validator and the cross-table gate), location_cm is the turret pivot in centimeters relative to the vehicle origin, and the pitch clamp is in degrees with pitch_min_deg <= pitch_max_deg inside +/-89 (an inverted or unbounded clamp is an illegal pitch configuration).",
+  "rows": [
+    {
+      "mount_id": "mount_wheeled_turret",
+      "vehicle_id": "vehicle_wheeled_sample",
+      "turret_weapon_id": "weapon_explosive_sample",
+      "location_cm": { "x": 0, "y": 40, "z": 120 },
+      "pitch_min_deg": -20,
+      "pitch_max_deg": 60
+    }
+  ]
+}
