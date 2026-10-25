@@ -129,19 +129,28 @@ inline bool ParseVehicleSeatRole(const FString& Text, EVehicleSeatRole& OutSeatR
 	return false;
 }
 
-/** True when every component of the vector is finite (no NaN/Inf leaked in). */
-inline bool IsFiniteVector(const FVector& Value)
+// M5-078-lesson: these two helpers live in a NAMED namespace, not the global
+// one - a global inline IsFiniteVector collides with the per-TU static
+// helpers of the same name in HitscanExecutor.cpp / ProjectileWorldService.cpp
+// (ambiguous-overload build breaks the moment any TU includes both). The
+// vehicle validators below call them QUALIFIED - a using-directive would
+// re-export the names into the global set and recreate the collision.
+namespace UE::UEMMO::Vehicles
 {
-	return FMath::IsFinite(Value.X) && FMath::IsFinite(Value.Y) && FMath::IsFinite(Value.Z);
-}
+	/** True when every component of the vector is finite (no NaN/Inf leaked in). */
+	inline bool IsFiniteVector(const FVector& Value)
+	{
+		return FMath::IsFinite(Value.X) && FMath::IsFinite(Value.Y) && FMath::IsFinite(Value.Z);
+	}
 
-/** True when every component is finite and its magnitude stays inside the bound. */
-inline bool IsBoundedVector(const FVector& Value, float MaxAbsPerAxisCm)
-{
-	return IsFiniteVector(Value)
-		&& FMath::Abs(Value.X) <= MaxAbsPerAxisCm
-		&& FMath::Abs(Value.Y) <= MaxAbsPerAxisCm
-		&& FMath::Abs(Value.Z) <= MaxAbsPerAxisCm;
+	/** True when every component is finite and its magnitude stays inside the bound. */
+	inline bool IsBoundedVector(const FVector& Value, float MaxAbsPerAxisCm)
+	{
+		return IsFiniteVector(Value)
+			&& FMath::Abs(Value.X) <= MaxAbsPerAxisCm
+			&& FMath::Abs(Value.Y) <= MaxAbsPerAxisCm
+			&& FMath::Abs(Value.Z) <= MaxAbsPerAxisCm;
+	}
 }
 
 /** Immutable description of one vehicle kind (interface contract section 1, owner 037). */
@@ -391,12 +400,12 @@ inline bool ValidateVehicleSeatDefinition(const FVehicleSeatDefinition& Seat, FS
 		Problems.Add(FString::Printf(TEXT("SeatRole must be Driver (the only implemented seat role; gunner and passenger roles of multi-seat layouts are not supported; got enum value %d)"),
 			static_cast<int32>(Seat.SeatRole)));
 	}
-	if (!IsBoundedVector(Seat.SeatLocationCm, MaxVehicleBodyOffsetCm))
+	if (!UE::UEMMO::Vehicles::IsBoundedVector(Seat.SeatLocationCm, MaxVehicleBodyOffsetCm))
 	{
 		Problems.Add(FString::Printf(TEXT("SeatLocationCm must be a finite vector with every axis within +/-%f cm (got %s)"),
 			MaxVehicleBodyOffsetCm, *Seat.SeatLocationCm.ToString()));
 	}
-	if (!IsBoundedVector(Seat.ExitOffsetCm, MaxVehicleBodyOffsetCm))
+	if (!UE::UEMMO::Vehicles::IsBoundedVector(Seat.ExitOffsetCm, MaxVehicleBodyOffsetCm))
 	{
 		Problems.Add(FString::Printf(TEXT("ExitOffsetCm must be a finite vector with every axis within +/-%f cm (got %s)"),
 			MaxVehicleBodyOffsetCm, *Seat.ExitOffsetCm.ToString()));
@@ -431,7 +440,7 @@ inline bool ValidateVehicleMountDefinition(const FVehicleMountDefinition& Mount,
 		Problems.Add(FString::Printf(TEXT("TurretWeaponId '%s' must be a non-empty weapons id (a turret mount without a weapon is refused)"),
 			*Mount.TurretWeaponId.ToString()));
 	}
-	if (!IsBoundedVector(Mount.LocationCm, MaxVehicleBodyOffsetCm))
+	if (!UE::UEMMO::Vehicles::IsBoundedVector(Mount.LocationCm, MaxVehicleBodyOffsetCm))
 	{
 		Problems.Add(FString::Printf(TEXT("LocationCm must be a finite vector with every axis within +/-%f cm (got %s)"),
 			MaxVehicleBodyOffsetCm, *Mount.LocationCm.ToString()));
@@ -474,7 +483,7 @@ inline bool ValidateVehicleSpawnEntry(const FVehicleSpawnEntry& Spawn, FString& 
 		Problems.Add(FString::Printf(TEXT("VehicleId '%s' must be 1..64 characters of a-z, 0-9 and _"),
 			*Spawn.VehicleId.ToString()));
 	}
-	if (!IsFiniteVector(Spawn.LocationCm))
+	if (!UE::UEMMO::Vehicles::IsFiniteVector(Spawn.LocationCm))
 	{
 		Problems.Add(TEXT("LocationCm must be a finite vector"));
 	}
