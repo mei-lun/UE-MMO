@@ -10,10 +10,23 @@
 #   Weapons  (M5-035) - UEMMO.Tasks.M5_035 (melee/hitscan/projectile/policy chains)
 #   Vehicles / Full - not implemented yet; the refusal is explicit
 #   (the capability arrives with the owning segment cards).
+#
+# -Stress (M5-050): after the selected section's passes (which run first and
+# unchanged), runs the UEMMO.Tasks.M5_050 projectile stress and lifecycle
+# budget suites in a rendered offscreen 1920x1080 game process (the ~60 second
+# steady load is carried by the test itself), then copies the test-exported
+# Artifacts/Tasks/M5-050/<stamp>/stress-report.json into this run's -TaskId
+# evidence folder as stress-report.json next to a hardware.json snapshot of
+# this machine's CPU/memory/GPU and the sample time. -Stress composes with any
+# implemented -Section and does NOT require -Render (the stress pass always
+# renders offscreen on its own so the frame budget numbers are measured with a
+# real RHI). Usage:
+#   powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/TestCombatSystemScenario.ps1 -Section Weapons -Render -Stress -TaskId M5-050
 param(
     [ValidateSet('Reaction', 'Weapons', 'Vehicles', 'Full')]
     [string]$Section = 'Reaction',
     [switch]$Render,
+    [switch]$Stress,
     [string]$TaskId = 'M5-018',
     [int]$TimeoutSeconds = 900
 )
@@ -122,6 +135,101 @@ if ($Render) {
         }
     }
     Write-Host "TestCombatSystemScenario: rendered captures ok."
+}
+
+# Pass 4 (optional, -Stress, M5-050): the projectile stress and lifecycle
+# budget. A rendered offscreen game process at 1920x1080 runs the
+# UEMMO.Tasks.M5_050 suites (the ~60 second steady load lives inside the
+# test); the run must exit 0 and export a fresh stress-report.json with
+# "success": true, which is copied into this run's -TaskId evidence folder
+# next to a hardware.json snapshot of the machine the numbers were measured
+# on. The stress pass never reuses a previous run's report: the copied file
+# is removed first and the picked report must be newer than this pass.
+if ($Stress) {
+    . (Join-Path $PSScriptRoot 'Common.ps1')
+    $Editor = Join-Path $EngineRoot 'Engine\Binaries\Win64\UnrealEditor-Cmd.exe'
+    $StressSourceRoot = Join-Path $ArtifactRoot (Join-Path 'Tasks' 'M5-050')
+    $TaskEvidenceDir = Join-Path $ArtifactRoot (Join-Path 'Tasks' $TaskId)
+    $CopiedReportPath = Join-Path $TaskEvidenceDir 'stress-report.json'
+    $HardwarePath = Join-Path $TaskEvidenceDir 'hardware.json'
+    if (-not (Test-Path -LiteralPath $TaskEvidenceDir)) {
+        New-Item -ItemType Directory -Path $TaskEvidenceDir -Force | Out-Null
+    }
+    foreach ($Stale in @($CopiedReportPath, $HardwarePath)) {
+        if (Test-Path -LiteralPath $Stale) { Remove-Item -LiteralPath $Stale }
+    }
+
+    Write-Host ("TestCombatSystemScenario: stress pass starting (UEMMO.Tasks.M5_050, 1920x1080, RenderOffscreen).")
+    $StressRunStarted = Get-Date
+    & $Editor $ProjectFile '-game' '-RenderOffscreen' '-ResX=1920' '-ResY=1080' '-NoVSync' `
+        '-unattended' '-nosplash' '-nosound' `
+        '-ExecCmds=Automation RunTests UEMMO.Tasks.M5_050' `
+        '-TestExit=Automation Test Queue Empty' `
+        ('-abslog=' + (Join-Path $ArtifactRoot 'Logs\m5-050-stress.log')) | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "TestCombatSystemScenario: the stress automation run failed (exit $LASTEXITCODE)."
+    }
+
+    # The test exports Artifacts/Tasks/M5-050/<stamp>/stress-report.json; pick
+    # the newest export and require it to be from this pass.
+    $StressReport = $null
+    if (Test-Path -LiteralPath $StressSourceRoot) {
+        $StressReport = Get-ChildItem -LiteralPath $StressSourceRoot -Directory | ForEach-Object {
+            $Candidate = Join-Path $_.FullName 'stress-report.json'
+            if (Test-Path -LiteralPath $Candidate) { Get-Item -LiteralPath $Candidate }
+        } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    }
+    if ($null -eq $StressReport) {
+        throw "TestCombatSystemScenario: the stress report was not exported under Artifacts/Tasks/M5-050."
+    }
+    if ($StressReport.LastWriteTime -lt $StressRunStarted) {
+        throw ("TestCombatSystemScenario: the stress report is stale (written before this pass): " + $StressReport.FullName)
+    }
+    $StressPayload = Get-Content -LiteralPath $StressReport.FullName -Raw | ConvertFrom-Json
+    if ($StressPayload.success -ne $true) {
+        throw ("TestCombatSystemScenario: the stress report holds success=false: " + $StressReport.FullName)
+    }
+    Copy-Item -LiteralPath $StressReport.FullName -Destination $CopiedReportPath -Force
+
+    # The hardware snapshot of the machine the budget numbers were measured
+    # on (AdapterRAM is a uint32 WMI field and under-reports GPUs above 4 GB;
+    # the name/driver pair stays the identifying information).
+    $Cpu = Get-CimInstance -ClassName Win32_Processor | Select-Object -First 1
+    $Gpus = @(Get-CimInstance -ClassName Win32_VideoController | Where-Object { $_.Name })
+    $MemorySticks = @(Get-CimInstance -ClassName Win32_PhysicalMemory)
+    $Os = Get-CimInstance -ClassName Win32_OperatingSystem | Select-Object -First 1
+    $TotalPhysicalBytes = ($MemorySticks | Measure-Object -Property Capacity -Sum).Sum
+    $Hardware = [ordered]@{
+        sampled_at_utc8   = (Get-Date).ToUniversalTime().AddHours(8).ToString('yyyy-MM-ddTHH:mm:ss')
+        stress_filter     = 'UEMMO.Tasks.M5_050'
+        stress_resolution = '1920x1080'
+        render_mode       = 'RenderOffscreen'
+        task_id           = $TaskId
+        cpu    = [ordered]@{
+            name                = $Cpu.Name
+            cores               = $Cpu.NumberOfCores
+            logical_processors  = $Cpu.NumberOfLogicalProcessors
+            max_clock_mhz       = $Cpu.MaxClockSpeed
+        }
+        memory = [ordered]@{
+            total_physical_mb = [math]::Round($TotalPhysicalBytes / 1MB)
+            os_visible_mb     = [math]::Round($Os.TotalVisibleMemorySize / 1KB)
+            sticks            = $MemorySticks.Count
+        }
+        gpus   = @($Gpus | ForEach-Object {
+            [ordered]@{
+                name            = $_.Name
+                driver_version  = $_.DriverVersion
+                adapter_ram_mb  = if ($_.AdapterRAM) { [math]::Round($_.AdapterRAM / 1MB) } else { $null }
+            }
+        })
+        os     = [ordered]@{
+            caption  = $Os.Caption
+            version  = $Os.Version
+        }
+    }
+    $Hardware | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $HardwarePath -Encoding UTF8
+    Write-Host ("TestCombatSystemScenario: stress evidence ok (report: " + $CopiedReportPath + ", hardware: " + $HardwarePath + ").")
 }
 
 Write-Host "TestCombatSystemScenario: section '" + $Section + "' PASSED."
