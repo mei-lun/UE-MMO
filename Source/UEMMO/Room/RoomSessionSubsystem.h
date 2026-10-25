@@ -40,6 +40,24 @@ enum class ERoomSessionState : uint8
 DECLARE_MULTICAST_DELEGATE(FOnRoomSessionRunStarted);
 
 /**
+ * M5-073: fires on every accepted clock injection, AFTER the wave progression
+ * pump ran - the injected-clock time source of the rule evaluator (it must
+ * never read a wall clock).
+ */
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnRoomClockInjected, double /*NowSeconds*/);
+
+/**
+ * M5-073: the confirmed WaveCleared fact - fires when a wave became fully
+ * born AND fully dead (PendingSpawns==0 && AliveIds==0) inside an accepted
+ * kill of the death-driven progression. Pure notification; the settlement
+ * itself (the 1 s wait, the last wave's MarkCleared) stays in the session.
+ */
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnRoomWaveCleared, int32 /*WaveIndex*/);
+
+/** M5-073: the confirmed player-death fact - fires after the death failed the run. */
+DECLARE_MULTICAST_DELEGATE(FOnRoomPlayerDied);
+
+/**
  * Fired exactly once per run, at its first terminal transition (MarkCleared
  * or FailRun). Late duplicates of the terminal request never fire it again.
  */
@@ -279,6 +297,17 @@ public:
 	/** Fires exactly once per run, at its first terminal transition. */
 	FOnRoomSessionRunEnded& OnRunEnded();
 
+	// -- M5-073 fact notifications (the rule layer subscribes; pure reads) --
+
+	/** Every accepted clock injection, after the wave pump ran. */
+	FOnRoomClockInjected& OnClockInjected() { return ClockInjectedDelegate; }
+
+	/** A wave became fully born and fully dead (the confirmed WaveCleared fact). */
+	FOnRoomWaveCleared& OnWaveCleared() { return WaveClearedDelegate; }
+
+	/** The run's player death failed the run (the confirmed PlayerDied fact). */
+	FOnRoomPlayerDied& OnPlayerDied() { return PlayerDiedDelegate; }
+
 	// -- Introspection ---------------------------------------------------------
 
 	ERoomSessionState GetState() const;
@@ -469,4 +498,7 @@ private:
 	/** Events; Deinitialize clears them so world teardown never dangles. */
 	FOnRoomSessionRunStarted RunStartedDelegate;
 	FOnRoomSessionRunEnded RunEndedDelegate;
+	FOnRoomClockInjected ClockInjectedDelegate;
+	FOnRoomWaveCleared WaveClearedDelegate;
+	FOnRoomPlayerDied PlayerDiedDelegate;
 };

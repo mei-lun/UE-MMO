@@ -119,6 +119,9 @@ void URoomSessionSubsystem::Deinitialize()
 	PlayerDiedHandle.Reset();
 	RunStartedDelegate.Clear();
 	RunEndedDelegate.Clear();
+	ClockInjectedDelegate.Clear();
+	WaveClearedDelegate.Clear();
+	PlayerDiedDelegate.Clear();
 	State = ERoomSessionState::Idle;
 	RunIdCounter = 0;
 	CurrentRunId = 0;
@@ -173,6 +176,9 @@ void URoomSessionSubsystem::SetSessionClockSeconds(double NowSeconds)
 		// births and the inter-wave wait); a session without an active
 		// progression makes the pump a no-op.
 		PumpWaveProgression();
+		// M5-073: the fact notification fires AFTER the pump so subscribers
+		// (the rule evaluator's clock) observe the post-pump session state.
+		ClockInjectedDelegate.Broadcast(SessionClockSeconds);
 	}
 }
 
@@ -679,6 +685,10 @@ void URoomSessionSubsystem::CheckWaveProgressionAfterKill()
 		// (or the wave already aborted) - never advance on a partial state.
 		return;
 	}
+	// M5-073: the confirmed WaveCleared fact - the wave is fully born and
+	// fully dead. Fired before the wait/clear decision so subscribers see the
+	// fact whatever the progression does with it next.
+	WaveClearedDelegate.Broadcast(StartedWaveCount - 1);
 	const URoomDefinition* Room = WaveRoomDefPtr.Get();
 	if (Room != nullptr && StartedWaveCount >= Room->Waves.Num())
 	{
@@ -841,6 +851,11 @@ void URoomSessionSubsystem::HandlePlayerDied()
 		TEXT("UEMMO RoomSession: RunId %llu cancelled %d spawning wave(s) and stops its enemies for the player death."),
 		CurrentRunId, CancelledSpawners);
 	StopRunEnemies();
+	// M5-073: the confirmed player-death fact fires BEFORE the terminal
+	// transition, so subscribers (the rule layer's FailRun request) still see
+	// a Running run and may land the terminal themselves - first-terminal-wins
+	// arbitrates whichever arrives first.
+	PlayerDiedDelegate.Broadcast();
 	FailRun();
 }
 

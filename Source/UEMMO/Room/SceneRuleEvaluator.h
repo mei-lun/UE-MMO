@@ -69,6 +69,13 @@ struct FRoomRuleEvent
 
 	/** The session clock at the event source (optional sync hint). */
 	double SessionClockSeconds = 0.0;
+
+	/**
+	 * M5-073: true when a trusted retry service re-published the activation
+	 * event for its fresh run (no second physical overlap happened); the
+	 * entry path publishes the same event with false.
+	 */
+	bool bFromRetry = false;
 };
 
 /**

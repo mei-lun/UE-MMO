@@ -147,6 +147,20 @@ void ARoomTrigger::BeginPlay()
 	{
 		ActivationVolume->OnComponentBeginOverlap.AddDynamic(this, &ARoomTrigger::HandleActivationBeginOverlap);
 	}
+	// M5-073: the rule path subscribes to the session's fact notifications
+	// once per actor lifetime (the handlers stay inert outside rule mode).
+	BindRuleSessionEvents();
+}
+
+void ARoomTrigger::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// M5-073: teardown of this actor must never leave session bindings or a
+	// live rule scope behind (map unload / world destroy path).
+	UnbindRuleSessionEvents();
+	RuleEvaluator.CancelRun(RuleEvaluator.GetRunId());
+	bRulePathActive = false;
+	bRetryActivationPending = false;
+	Super::EndPlay(EndPlayReason);
 }
 
 void ARoomTrigger::HandleActivationBeginOverlap(UPrimitiveComponent* /*OverlappedComponent*/, AActor* OtherActor,
@@ -205,17 +219,25 @@ void ARoomTrigger::HandleActivationBeginOverlap(UPrimitiveComponent* /*Overlappe
 	// Idempotency lives in the session: while a run is active (Running or any
 	// later state) StartRoom refuses and the running RunId is kept untouched,
 	// so repeated entries can never start a second run.
+	// M5-073: the pending flag lets the rule handler tell this trigger's own
+	// RunStarted (the entry) from a trusted retry's RunStarted.
+	if (Definition->Rules.Num() > 0)
+	{
+		bEntryStartPending = true;
+	}
 	if (Session->StartRoom(Definition))
 	{
 		UE_LOG(LogTemp, Display,
-			TEXT("UEMMO RoomTrigger: player entered the activation volume; run started (RunId %llu, room %s)."),
-			Session->GetRunId(), *Definition->RoomId.ToString());
+			TEXT("UEMMO RoomTrigger: player entered the activation volume; run started (RunId %llu, room %s, rule path %s)."),
+			Session->GetRunId(), *Definition->RoomId.ToString(),
+			Definition->Rules.Num() > 0 ? TEXT("on") : TEXT("off"));
 		// M2-016: the production chain behind an accepted start - register the
 		// pawn, start the wave progression, hand the retry context to the HUD.
 		StartProductionSession(Player, Definition, EnemyDefinition);
 	}
 	else
 	{
+		bEntryStartPending = false;
 		UE_LOG(LogTemp, Verbose,
 			TEXT("UEMMO RoomTrigger: player re-entry ignored - the session keeps its active run (RunId %llu)."),
 			Session->GetRunId());
@@ -234,6 +256,44 @@ void ARoomTrigger::StartProductionSession(APrototypeCharacter* Player, const URo
 	// player. Re-registering the same pawn is the retry-loop rebind and the
 	// SetPlayer guard keeps exactly one handler bound.
 	Session->SetPlayer(Player);
+
+	// M5-073: a definition WITH rules takes the rule path - the activation
+	// event drives the SAME BeginWaves engine through the evaluator, and the
+	// session's death-driven progression keeps owning the inter-wave starts
+	// (the adapter answers AlreadyApplied for those rule requests).
+	if (Definition->Rules.Num() > 0)
+	{
+		bRuleMode = true;
+		SetupRuleScope(Definition, EnemyDefinition);
+		PublishRuleEvent(ERoomRuleEvent::PlayerEnteredRegion, /*WaveIndex*/ -1, /*bFromRetry*/ false);
+		bEntryStartPending = false;
+
+		// The M2-012 retry context is handed over only when the waves actually
+		// started (the rule path's StartWave(0) accepted or was already
+		// applied by the engine); M5-068's failure semantics apply unchanged.
+		if (Session->GetStartedWaveCount() > 0)
+		{
+			if (APrototypeHUD* Hud = ResolveHud())
+			{
+				Hud->SetRoomRetryContext(Definition, EnemyDefinition);
+			}
+			UE_LOG(LogTemp, Display,
+				TEXT("UEMMO RoomTrigger: run %llu started through %d scene rule(s) (wave progression active)."),
+				Session->GetRunId(), Definition->Rules.Num());
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning,
+				TEXT("UEMMO RoomTrigger: run %llu rule path armed but no wave started - no retry context was handed over."),
+				Session->GetRunId());
+		}
+		return;
+	}
+
+	// Rule-less definitions keep the unchanged M2-016 direct path (the test
+	// fixtures and the training semantics depend on it).
+	bRuleMode = false;
+	bRulePathActive = false;
 
 	if (Session->BeginWaves(Definition, EnemyDefinition))
 	{
@@ -274,6 +334,200 @@ void ARoomTrigger::StartProductionSession(APrototypeCharacter* Player, const URo
 	UE_LOG(LogTemp, Warning,
 		TEXT("UEMMO RoomTrigger: run %llu of room '%s' failed at entry - BeginWaves was refused; no retry context is available for this run."),
 		Session->GetRunId(), *Definition->RoomId.ToString());
+}
+
+// -- M5-073: the rule path -----------------------------------------------------
+
+void ARoomTrigger::BindRuleSessionEvents()
+{
+	URoomSessionSubsystem* Session = ResolveSession();
+	if (Session == nullptr || bRuleEventsBound)
+	{
+		return;
+	}
+	bRuleEventsBound = true;
+	RuleRunStartedHandle = Session->OnRunStarted().AddUObject(this, &ARoomTrigger::HandleRuleRunStarted);
+	RuleRunEndedHandle = Session->OnRunEnded().AddUObject(this, &ARoomTrigger::HandleRuleRunEnded);
+	RuleClockHandle = Session->OnClockInjected().AddUObject(this, &ARoomTrigger::HandleRuleClockInjected);
+	RuleWaveClearedHandle = Session->OnWaveCleared().AddUObject(this, &ARoomTrigger::HandleRuleWaveCleared);
+	RulePlayerDiedHandle = Session->OnPlayerDied().AddUObject(this, &ARoomTrigger::HandleRulePlayerDied);
+}
+
+void ARoomTrigger::UnbindRuleSessionEvents()
+{
+	URoomSessionSubsystem* Session = SessionPtr.Get();
+	if (Session != nullptr)
+	{
+		Session->OnRunStarted().Remove(RuleRunStartedHandle);
+		Session->OnRunEnded().Remove(RuleRunEndedHandle);
+		Session->OnClockInjected().Remove(RuleClockHandle);
+		Session->OnWaveCleared().Remove(RuleWaveClearedHandle);
+		Session->OnPlayerDied().Remove(RulePlayerDiedHandle);
+	}
+	bRuleEventsBound = false;
+}
+
+void ARoomTrigger::SetupRuleScope(const URoomDefinition* Definition, UEnemyDefinition* EnemyDefinition)
+{
+	URoomSessionSubsystem* Session = ResolveSession();
+	if (Session == nullptr || Definition == nullptr || EnemyDefinition == nullptr)
+	{
+		bRulePathActive = false;
+		return;
+	}
+	const TWeakObjectPtr<URoomSessionSubsystem> WeakSession(Session);
+	const TWeakObjectPtr<const URoomDefinition> WeakDefinition(Definition);
+	const TWeakObjectPtr<UEnemyDefinition> WeakEnemy(EnemyDefinition);
+	FSceneRuleEvaluator::FCommandHandler Adapter =
+		[WeakSession, WeakDefinition, WeakEnemy](const FRoomRuleCommand& Command) -> FRoomRuleDecision
+		{
+			URoomSessionSubsystem* Session = WeakSession.Get();
+			const URoomDefinition* Definition = WeakDefinition.Get();
+			UEnemyDefinition* Enemy = WeakEnemy.Get();
+			if (Session == nullptr || Definition == nullptr || Enemy == nullptr)
+			{
+				return { ERoomRuleDecisionType::Rejected,
+					TEXT("the session or its definitions were lost before the rule effect ran") };
+			}
+			switch (Command.Effect)
+			{
+			case ERoomRuleEffect::StartWave:
+			{
+				// The rule request goes to the EXISTING session engine. Only
+				// wave 0 can be accepted here: once the progression is active,
+				// the session's death-driven advance owns every later start
+				// (the adapter reports that as AlreadyApplied, never a second
+				// start attempt).
+				if (Session->GetState() != ERoomSessionState::Running)
+				{
+					return { ERoomRuleDecisionType::AlreadyApplied,
+						TEXT("StartWave answered AlreadyApplied - the run is no longer Running (stale rule request)") };
+				}
+				if (Session->GetStartedWaveCount() > 0)
+				{
+					return { ERoomRuleDecisionType::AlreadyApplied,
+						FString::Printf(TEXT("StartWave answered AlreadyApplied - the session progression already drives the waves (current wave %d)"),
+							Session->GetCurrentWaveIndex()) };
+				}
+				if (!Session->BeginWaves(Definition, Enemy))
+				{
+					return { ERoomRuleDecisionType::Rejected,
+						TEXT("StartWave rejected - BeginWaves refused the wave start") };
+				}
+				return { ERoomRuleDecisionType::Accepted,
+					TEXT("StartWave accepted - BeginWaves started the wave progression") };
+			}
+			case ERoomRuleEffect::MarkCleared:
+				if (Session->MarkCleared())
+				{
+					return { ERoomRuleDecisionType::Accepted, TEXT("MarkCleared applied") };
+				}
+				return { ERoomRuleDecisionType::AlreadyApplied,
+					TEXT("MarkCleared answered AlreadyApplied - the outcome was already decided (first terminal wins)") };
+			case ERoomRuleEffect::FailRun:
+				if (Session->FailRun())
+				{
+					return { ERoomRuleDecisionType::Accepted, TEXT("FailRun applied") };
+				}
+				return { ERoomRuleDecisionType::AlreadyApplied,
+					TEXT("FailRun answered AlreadyApplied - the outcome was already decided (first terminal wins)") };
+			default:
+				return { ERoomRuleDecisionType::Rejected, TEXT("unknown rule effect") };
+			}
+		};
+	RuleEvaluator.ResetForRun(Session->GetRunId(), Definition->RoomId, Definition->Rules, Adapter);
+	bRulePathActive = true;
+}
+
+void ARoomTrigger::PublishRuleEvent(ERoomRuleEvent Type, int32 WaveIndex, bool bFromRetry)
+{
+	URoomSessionSubsystem* Session = ResolveSession();
+	if (Session == nullptr)
+	{
+		return;
+	}
+	FRoomRuleEvent Event;
+	Event.RunId = Session->GetRunId();
+	Event.RoomId = Session->GetRoomId();
+	Event.EventSequence = ++RuleEventSequence;
+	Event.Type = Type;
+	Event.RegionId = Type == ERoomRuleEvent::PlayerEnteredRegion ? FName(TEXT("activation")) : FName();
+	Event.WaveIndex = WaveIndex;
+	Event.SessionClockSeconds = Session->GetSessionClockSeconds();
+	Event.bFromRetry = bFromRetry;
+	RuleEvaluator.SubmitEvent(Event);
+}
+
+void ARoomTrigger::HandleRuleRunStarted()
+{
+	if (!bRuleMode)
+	{
+		return;
+	}
+	if (bEntryStartPending)
+	{
+		// This trigger's own entry run: StartProductionSession resets the
+		// scope and publishes the activation event itself.
+		return;
+	}
+	// Any other start of a run in rule mode is the trusted retry service
+	// (URoomRetryService): arm a fresh rule scope for the new run and publish
+	// the retry-marked activation on the NEXT clock injection - the retry
+	// service starts its own wave 0 first, and the deferred event then reads
+	// the honest AlreadyApplied ("progression already drives the waves").
+	const URoomDefinition* Definition = ResolveDefinition();
+	UEnemyDefinition* Enemy = ResolveEnemyDefinition();
+	if (Definition == nullptr || Enemy == nullptr || Definition->Rules.Num() == 0)
+	{
+		return;
+	}
+	SetupRuleScope(Definition, Enemy);
+	bRetryActivationPending = true;
+	UE_LOG(LogTemp, Display,
+		TEXT("UEMMO RoomTrigger: trusted retry started run %llu in rule mode - the activation event follows on the next clock injection."),
+		RuleEvaluator.GetRunId());
+}
+
+void ARoomTrigger::HandleRuleRunEnded(const FRoomResult& Result)
+{
+	if (!bRulePathActive)
+	{
+		return;
+	}
+	// The terminal drops the whole rule scope: no stale delayed callback of
+	// the settled run can ever fire afterwards.
+	RuleEvaluator.CancelRun(RuleEvaluator.GetRunId());
+	bRulePathActive = false;
+	bRetryActivationPending = false;
+}
+
+void ARoomTrigger::HandleRuleClockInjected(double NowSeconds)
+{
+	if (bRuleMode && bRetryActivationPending)
+	{
+		bRetryActivationPending = false;
+		PublishRuleEvent(ERoomRuleEvent::PlayerEnteredRegion, /*WaveIndex*/ -1, /*bFromRetry*/ true);
+	}
+	if (bRulePathActive)
+	{
+		RuleEvaluator.AdvanceClock(NowSeconds);
+	}
+}
+
+void ARoomTrigger::HandleRuleWaveCleared(int32 WaveIndex)
+{
+	if (bRulePathActive)
+	{
+		PublishRuleEvent(ERoomRuleEvent::WaveCleared, WaveIndex, /*bFromRetry*/ false);
+	}
+}
+
+void ARoomTrigger::HandleRulePlayerDied()
+{
+	if (bRulePathActive)
+	{
+		PublishRuleEvent(ERoomRuleEvent::PlayerDied, /*WaveIndex*/ -1, /*bFromRetry*/ false);
+	}
 }
 
 UEnemyDefinition* ARoomTrigger::ResolveEnemyDefinition()

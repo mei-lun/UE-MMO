@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "RoomDefinition.h"
+#include "SceneRuleEvaluator.h"
 #include "RoomTrigger.generated.h"
 
 class APrototypeCharacter;
@@ -79,6 +80,17 @@ public:
 	/** Activation volume (overlap-only query box; exposed for tests and level scripting). */
 	UBoxComponent* GetActivationVolume() const { return ActivationVolume; }
 
+	// -- M5-073: rule-path diagnostics (acceptance reads these) -----------------
+
+	/** True while the trigger drives the current run through the scene rules. */
+	bool IsRulePathActive() const { return bRulePathActive; }
+
+	/** Completed once-rules of the active rule scope; -1 when no scope is active. */
+	int32 GetRuleCompletedCount() const { return bRulePathActive ? RuleEvaluator.GetCompletedRuleCount() : -1; }
+
+	/** Events published into the rule evaluator so far (this actor lifetime). */
+	uint64 GetRuleEventSequence() const { return RuleEventSequence; }
+
 	// -- M5-068: test / level-scripting configuration of the entry sources ------
 
 	/**
@@ -111,6 +123,9 @@ public:
 protected:
 	/** Resolves the session early (GetSession is valid right after spawn) and binds the overlap handler. */
 	virtual void BeginPlay() override;
+
+	/** M5-073: drops every session binding and the rule scope on teardown. */
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
 	/**
@@ -151,10 +166,41 @@ private:
 	 * with the enemy definition the entry already validated, and hands the
 	 * retry context to the HUD only when the waves actually started. A
 	 * refused BeginWaves ends the run through FailRun (never a waveless
-	 * Running session).
+	 * Running session). M5-073: a definition WITH rules takes the rule path
+	 * instead - the activation event drives the same BeginWaves engine
+	 * through the evaluator; rule-less definitions keep the direct path.
 	 */
 	void StartProductionSession(APrototypeCharacter* Player, const URoomDefinition* Definition,
 		UEnemyDefinition* EnemyDefinition);
+
+	// -- M5-073: the rule path ---------------------------------------------------
+
+	/** Binds the session fact notifications once per actor lifetime. */
+	void BindRuleSessionEvents();
+
+	/** Removes the session fact bindings (EndPlay path). */
+	void UnbindRuleSessionEvents();
+
+	/** Resets the evaluator for the session's current run and arms the command adapter. */
+	void SetupRuleScope(const URoomDefinition* Definition, UEnemyDefinition* EnemyDefinition);
+
+	/** Publishes one trusted event into the evaluator (sequence is per-actor monotonic). */
+	void PublishRuleEvent(ERoomRuleEvent Type, int32 WaveIndex, bool bFromRetry);
+
+	/** OnRunStarted: our own entry publishes itself; any other start is the trusted retry. */
+	void HandleRuleRunStarted();
+
+	/** OnRunEnded: the terminal drops the rule scope (stale dues can never fire). */
+	void HandleRuleRunEnded(const FRoomResult& Result);
+
+	/** OnClockInjected: drives the evaluator clock; first tick after a retry publishes the deferred activation. */
+	void HandleRuleClockInjected(double NowSeconds);
+
+	/** OnWaveCleared: the confirmed wave fact becomes a rule event. */
+	void HandleRuleWaveCleared(int32 WaveIndex);
+
+	/** OnPlayerDied: the confirmed death fact becomes a rule event. */
+	void HandleRulePlayerDied();
 
 	/** Activation volume: overlap-only, fires for the player pawn. */
 	UPROPERTY(VisibleAnywhere, Category = "Room|Trigger")
@@ -209,6 +255,39 @@ private:
 
 	/** Session found through the world; re-resolved when the weak pointer expired. */
 	TWeakObjectPtr<URoomSessionSubsystem> SessionPtr;
+
+	// -- M5-073: the rule path -----------------------------------------------
+	// The evaluator is per-trigger and run-scoped through ResetForRun /
+	// CancelRun; the trigger never owns a second room state (the session
+	// stays the single owner of runs, waves and settlement).
+
+	/** The run-scoped rule evaluator of the current (or last) rule-driven run. */
+	FSceneRuleEvaluator RuleEvaluator;
+
+	/** Monotonic per-actor event sequence handed to the evaluator. */
+	uint64 RuleEventSequence = 0;
+
+	/** True while this trigger's definition carries rules (sticky per definition). */
+	bool bRuleMode = false;
+
+	/** True while the evaluator holds a live rule scope for the current run. */
+	bool bRulePathActive = false;
+
+	/** Set around this trigger's own StartRoom so its RunStarted is not mistaken for a retry. */
+	bool bEntryStartPending = false;
+
+	/** A trusted retry started a fresh run; publish its activation on the next clock injection. */
+	bool bRetryActivationPending = false;
+
+	/** Guards the one-time session fact bindings. */
+	bool bRuleEventsBound = false;
+
+	/** Session fact binding handles (removed in EndPlay). */
+	FDelegateHandle RuleRunStartedHandle;
+	FDelegateHandle RuleRunEndedHandle;
+	FDelegateHandle RuleClockHandle;
+	FDelegateHandle RuleWaveClearedHandle;
+	FDelegateHandle RulePlayerDiedHandle;
 };
 
 /**

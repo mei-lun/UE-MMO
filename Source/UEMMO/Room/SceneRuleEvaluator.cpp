@@ -147,8 +147,19 @@ FRoomRuleDecision FSceneRuleEvaluator::SubmitEvent(const FRoomRuleEvent& Event)
 	FRoomRuleDecision Aggregated{ ERoomRuleDecisionType::Rejected,
 		FString::Printf(TEXT("no armed rule matched sequence %llu"), Event.EventSequence) };
 	int32 MatchedCount = 0;
-	for (const FRoomSceneRule& Rule : Rules)
+	// Index loop over a rule-count snapshot with a per-rule COPY: a dispatched
+	// command may reenter synchronously (a terminal settlement cancels the
+	// whole scope), which must never mutate an array under a ranged-for.
+	const int32 RuleCountAtEntry = Rules.Num();
+	for (int32 RuleIndex = 0; RuleIndex < RuleCountAtEntry; ++RuleIndex)
 	{
+		if (ActiveRunId == 0 || RuleIndex >= Rules.Num())
+		{
+			// The scope was canceled or reset mid-dispatch; the matching loop
+			// ends honestly instead of touching stale storage.
+			break;
+		}
+		const FRoomSceneRule Rule = Rules[RuleIndex];
 		if (!RuleMatchesEvent(Rule, Event))
 		{
 			continue;
