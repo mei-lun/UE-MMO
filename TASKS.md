@@ -199,7 +199,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M5-067 | [房间出生与死亡记账幂等](Docs/Tasks/M5-067.md) | DONE | M5-066 | ZCode-20261024-A | 2026-10-25T19:21:49+08:00 | [report](Docs/Tasks/Reports/M5-067.md) |
 | M5-068 | [房间资源缺失与开波失败处理](Docs/Tasks/M5-068.md) | DONE | M5-067 | ZCode-20261024-A | 2026-10-25T19:33:02+08:00 | [report](Docs/Tasks/Reports/M5-068.md) |
 | M5-069 | [生产战斗房唯一源数据](Docs/Tasks/M5-069.md) | DONE | M5-068 | ZCode-20261024-A | 2026-10-25T19:41:03+08:00 | [report](Docs/Tasks/Reports/M5-069.md) |
-| M5-070 | [房间定义资产生成与生产入口接线](Docs/Tasks/M5-070.md) | TODO | M5-069 | — | — | — |
+| M5-070 | [房间定义资产生成与生产入口接线](Docs/Tasks/M5-070.md) | DONE | M5-069 | ZCode-20261024-A | 2026-10-25T19:58:22+08:00 | [report](Docs/Tasks/Reports/M5-070.md) |
 | M5-071 | [有限场景规则配置与校验](Docs/Tasks/M5-071.md) | TODO | M5-070 | — | — | — |
 | M5-072 | [单局场景规则评估器](Docs/Tasks/M5-072.md) | TODO | M5-071 | — | — | — |
 | M5-073 | [区域与波次事件接入生产房间](Docs/Tasks/M5-073.md) | TODO | M5-072 | — | — | — |
