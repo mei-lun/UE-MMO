@@ -8,10 +8,26 @@
 // population returns to baseline 0; reservations minted in an older epoch
 // can never commit. Definitions arrive as validated value snapshots - this
 // service includes no Data/ConfigParser/catalog header.
+//
+// M5-078 (option a): capacity and the live count measure ACTIVITY (the actor
+// exists and is not pending-kill), not weak-reference validity. A retired
+// body between Destroy and the next GC no longer consumes a capacity slot,
+// so sustained retirement throughput never triggers a periodic CapacityFull;
+// the stale weak records are swept by the next ReserveProjectiles call.
 
 #include "ProjectileWorldService.h"
 
 #include "Engine/World.h"
+
+bool IsProjectileRecordActive(const TWeakObjectPtr<ACombatProjectile>& Live)
+{
+	// PendingKillPending covers every retirement face of this module: the
+	// explicit Destroy of the policy/pawn sweep, the LifeSpan timer destroy
+	// and an epoch rebuild - each sets the flag synchronously, so the slot
+	// frees at the retirement itself, never at the GC.
+	const ACombatProjectile* Actor = Live.Get();
+	return Actor != nullptr && !Actor->IsPendingKillPending();
+}
 
 namespace UE::UEMMO::Tasks::M5_027
 {
@@ -120,10 +136,11 @@ FProjectileReserveOutcome FProjectileWorldService::ReserveProjectiles(const FSho
 		return Outcome;
 	}
 
-	// Hard capacity: the live population (valid records only) plus the whole
-	// new volley must fit; a full service refuses explicitly, never silently
-	// truncates a volley.
-	LiveProjectiles.RemoveAll([](const TWeakObjectPtr<ACombatProjectile>& Live) { return !Live.IsValid(); });
+	// Hard capacity: the live population (ACTIVE records only - M5-078 option
+	// a: a pending-kill body has left the population) plus the whole new
+	// volley must fit; a full service refuses explicitly, never silently
+	// truncates a volley. The sweep also drops the stale records.
+	LiveProjectiles.RemoveAll([](const TWeakObjectPtr<ACombatProjectile>& Live) { return !IsProjectileRecordActive(Live); });
 	if (LiveProjectiles.Num() + Pellets.Num() > MaxLiveProjectiles)
 	{
 		Outcome.Reject = EProjectileReserveReject::CapacityFull;
@@ -213,10 +230,12 @@ void FProjectileWorldService::CancelReservation(FProjectileSpawnReservation& Res
 
 int32 FProjectileWorldService::GetNumLiveProjectiles() const
 {
+	// M5-078: the population measures ACTIVITY (see the file header) - a
+	// retired body stopped counting at its Destroy, not at the GC.
 	int32 Count = 0;
 	for (const TWeakObjectPtr<ACombatProjectile>& Live : LiveProjectiles)
 	{
-		if (Live.IsValid())
+		if (IsProjectileRecordActive(Live))
 		{
 			++Count;
 		}

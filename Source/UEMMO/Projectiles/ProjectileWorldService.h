@@ -169,6 +169,18 @@ struct FProjectileReserveOutcome
 constexpr int32 MaxLiveProjectiles = 256;
 
 /**
+ * M5-078 (option a): the ACTIVITY test of one tracked pellet record. A record
+ * stops counting against MaxLiveProjectiles the moment its actor is
+ * pending-kill (retired: lifetime expired, policy finished, destroyed by the
+ * pawn's sweep or an epoch rebuild) - the stale window between Destroy and
+ * the next GC no longer consumes capacity, so sustained retirement throughput
+ * never triggers a periodic CapacityFull. The stale weak record itself is
+ * dropped by the next ReserveProjectiles sweep (and IsValid() finally turns
+ * false at the GC).
+ */
+bool IsProjectileRecordActive(const TWeakObjectPtr<ACombatProjectile>& Live);
+
+/**
  * The World-lifetime projectile service. One instance per World (ownership
  * ladder section 0.5); plain logic, never a UObject.
  */
