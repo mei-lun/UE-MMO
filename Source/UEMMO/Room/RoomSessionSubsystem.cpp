@@ -9,6 +9,13 @@
 // The session orchestrates one fresh UWaveSpawner per wave (BeginWaves), the
 // injected session clock drives births and the 1.0 s inter-wave wait, and an
 // accepted kill of a current-run spawned enemy advances the progression.
+//
+// M5-067: the public accounting entries are idempotent per run.
+// NotifyEnemySpawned accepts only a NEW non-empty instance id of the running
+// run (empty, duplicate and re-registered ids are refused with no side
+// effects), and NotifyEnemyKilled accepts only an id currently in this run's
+// alive set (unknown, duplicate, definition-level and old-run ids are refused
+// without touching KilledCount or the progression).
 
 #include "RoomSessionSubsystem.h"
 
@@ -139,6 +146,7 @@ void URoomSessionSubsystem::ResetWaveOrchestration()
 	// (plus the alive-id guard below) keeps late deaths of their enemies from
 	// ever touching a new run.
 	CurrentRunAliveEnemyIds.Empty();
+	CurrentRunRegisteredEnemyIds.Empty();
 	// M2-010: the run-scoped enemy actor list is per-run bookkeeping too - it
 	// is dropped here WITHOUT destroying the actors (the session itself never
 	// destroys actors; URoomRetryService destroys through
@@ -389,17 +397,22 @@ bool URoomSessionSubsystem::NotifyEnemyKilled(FName EnemyId)
 			*EnemyId.ToString(), static_cast<int32>(State));
 		return false;
 	}
-	// M2-008 idempotency guard: only a death of an enemy this run actually
-	// spawned (NotifyEnemySpawned) may advance the wave progression. Unknown,
-	// stale or duplicate notifications keep the M2-006 counting semantics but
-	// never settle or skip a wave.
-	const bool bRunSpawnedThisId = CurrentRunAliveEnemyIds.Contains(EnemyId);
-	if (bRunSpawnedThisId)
+	// M5-067 public-entry guard: only a death of an id currently in this run's
+	// alive set may count or move anything. Unknown ids (never spawned, or
+	// spawned by an older run), duplicate deaths (the id already left the set),
+	// and definition-level ids misused as instance ids are all refused with no
+	// side effects - the count, the alive set and the wave progression stay
+	// exactly as they were. The spawner's own run-id/duplicate filters remain
+	// the first line of defense; this guard makes the public entry
+	// independently safe.
+	if (!CurrentRunAliveEnemyIds.Contains(EnemyId))
 	{
-		// Each spawned id leaves the alive set exactly once, so a duplicate
-		// death notification of the same enemy can never double-advance.
-		CurrentRunAliveEnemyIds.Remove(EnemyId);
+		UE_LOG(LogTemp, Warning,
+			TEXT("UEMMO RoomSession: kill notification of %s refused - the id is not in RunId %llu's alive set (unknown, duplicate or old-run id)."),
+			*EnemyId.ToString(), CurrentRunId);
+		return false;
 	}
+	CurrentRunAliveEnemyIds.Remove(EnemyId);
 	++KilledCount;
 	UE_LOG(LogTemp, Verbose,
 		TEXT("UEMMO RoomSession: RunId %llu counted a kill of %s (total %d)."),
@@ -408,7 +421,7 @@ bool URoomSessionSubsystem::NotifyEnemyKilled(FName EnemyId)
 	M3_023_LogRoom(*this, /*bResponse*/ false, FString::Printf(
 		TEXT("Room EnemyKilled: run=%llu enemy=%s killed=%d"),
 		CurrentRunId, *EnemyId.ToString(), KilledCount));
-	if (bWaveOrchestrationActive && bRunSpawnedThisId)
+	if (bWaveOrchestrationActive)
 	{
 		CheckWaveProgressionAfterKill();
 	}
@@ -454,8 +467,28 @@ bool URoomSessionSubsystem::NotifyEnemySpawned(FName EnemyId)
 			*EnemyId.ToString(), static_cast<int32>(State));
 		return false;
 	}
+	// M5-067 public-entry guards: an instance id must be non-empty and new to
+	// THIS run. An empty id carries no instance identity at all, and an id
+	// already registered this run - whether still alive or already dead - is a
+	// duplicate/re-reported birth, refused with no side effects so the spawn
+	// count and both id sets stay exact.
+	if (EnemyId.IsNone())
+	{
+		UE_LOG(LogTemp, Warning,
+			TEXT("UEMMO RoomSession: spawn notification refused - the id is empty (RunId %llu)."),
+			CurrentRunId);
+		return false;
+	}
+	if (CurrentRunRegisteredEnemyIds.Contains(EnemyId))
+	{
+		UE_LOG(LogTemp, Warning,
+			TEXT("UEMMO RoomSession: spawn notification of %s refused - the id was already registered in RunId %llu (duplicate birth)."),
+			*EnemyId.ToString(), CurrentRunId);
+		return false;
+	}
 	// M2-008: record the alive id for the progression's idempotency guard -
 	// only deaths of ids this run actually spawned may advance the waves.
+	CurrentRunRegisteredEnemyIds.Add(EnemyId);
 	CurrentRunAliveEnemyIds.Add(EnemyId);
 	++SpawnedEnemyCount;
 	UE_LOG(LogTemp, Verbose,

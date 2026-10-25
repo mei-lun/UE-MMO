@@ -169,9 +169,14 @@ public:
 
 	/**
 	 * Counts one enemy killed for the current run. Accepted only while
-	 * Running; notifications from an already ended/exited run (stale
-	 * callbacks, the interface contract's idempotency rule) return false and
-	 * change nothing.
+	 * Running AND only for an id currently in this run's alive set (an
+	 * instance id this run registered through NotifyEnemySpawned that has not
+	 * died yet). Unknown ids, duplicate deaths, definition-level ids (e.g.
+	 * "melee_grunt" instead of "melee_grunt_w0_s0"), old-run callbacks and
+	 * every notification outside Running return false and change nothing -
+	 * neither KilledCount, nor the alive set, nor the wave progression
+	 * (M5-067 public-entry idempotency; the spawner's own filters stay the
+	 * first line of defense).
 	 */
 	bool NotifyEnemyKilled(FName EnemyId);
 
@@ -190,10 +195,13 @@ public:
 
 	/**
 	 * M2-007: registers one enemy successfully spawned for the running run.
-	 * Accepted only while Running; false outside Running (a spawn callback of
-	 * an already ended or exited run is ignored, same idempotency rule as
-	 * kill notifications). The caller owns the alive/dead tracking; the
-	 * session only counts registrations.
+	 * Accepted only while Running and only for a NEW non-empty instance id of
+	 * this run: an empty id, an id already registered this run (whether still
+	 * alive or already dead) and a spawn callback outside Running are all
+	 * rejected with no side effects - one instance id is registered at most
+	 * once per run (M5-067 public-entry idempotency). Instance ids carry the
+	 * wave and birth slot (e.g. "melee_grunt_w0_s0"); an enemy definition id
+	 * is never a valid instance id.
 	 */
 	bool NotifyEnemySpawned(FName EnemyId);
 
@@ -407,12 +415,17 @@ private:
 	 * M2-008 per-run wave progression; reset by StartRoom / ResetToIdle /
 	 * Deinitialize like the rest of the per-run fields. AliveEnemyIdSet is the
 	 * idempotency guard of the progression: only a kill of an id this run
-	 * actually spawned (NotifyEnemySpawned) may advance the waves, while the
-	 * M2-006 kill-counting semantics stay untouched. RunWaveSpawners holds one
-	 * fresh UWaveSpawner per started wave, so every wave's pending/alive
-	 * bookkeeping starts from zero (per-instance isolation).
+	 * actually spawned (NotifyEnemySpawned) may advance the waves.
+	 * RegisteredEnemyIdSet (M5-067) is the birth-dedup guard of the public
+	 * entry: it keeps EVERY id this run ever registered (dead ones included),
+	 * so an instance id can never be re-registered within one run, while the
+	 * alive set only holds the not-yet-dead ones and gates the death entry.
+	 * RunWaveSpawners holds one fresh UWaveSpawner per started wave, so every
+	 * wave's pending/alive bookkeeping starts from zero (per-instance
+	 * isolation).
 	 */
 	TSet<FName> CurrentRunAliveEnemyIds;
+	TSet<FName> CurrentRunRegisteredEnemyIds;
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UWaveSpawner>> RunWaveSpawners;
 	int32 StartedWaveCount = 0;

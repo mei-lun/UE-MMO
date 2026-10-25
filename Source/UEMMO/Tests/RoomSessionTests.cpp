@@ -208,8 +208,12 @@ bool FUEMMOTasksM2_006MarkClearedEmitsOnRunEndedOnceAndRejectsFail::RunTest(cons
 	const uint64 RunId = Session->GetRunId();
 	const uint64 SettlementId = Session->GetSettlementId();
 	const int32 Seed = Session->GetSeed();
-	TestTrue(TEXT("a mid-run kill is accepted"), Session->NotifyEnemyKilled(FName(TEXT("melee_grunt"))));
-	TestTrue(TEXT("a second mid-run kill is accepted"), Session->NotifyEnemyKilled(FName(TEXT("melee_grunt"))));
+	// M5-067 contract: a counted kill needs a registered birth first, and each
+	// instance id counts at most once (distinct wave/slot instance ids).
+	TestTrue(TEXT("the first spawned enemy registers"), Session->NotifyEnemySpawned(FName(TEXT("melee_grunt_w0_s0"))));
+	TestTrue(TEXT("the second spawned enemy registers"), Session->NotifyEnemySpawned(FName(TEXT("melee_grunt_w0_s1"))));
+	TestTrue(TEXT("a mid-run kill is accepted"), Session->NotifyEnemyKilled(FName(TEXT("melee_grunt_w0_s0"))));
+	TestTrue(TEXT("a second mid-run kill is accepted"), Session->NotifyEnemyKilled(FName(TEXT("melee_grunt_w0_s1"))));
 
 	Session->SetSessionClockSeconds(32.5);
 	if (!TestTrue(TEXT("MarkCleared from Running is accepted"), Session->MarkCleared()))
@@ -361,7 +365,9 @@ bool FUEMMOTasksM2_006NewRunAfterResetGetsNewRunIdAndNewSettlementId::RunTest(co
 }
 
 // 6. Kill notifications accumulate KilledCount while Running and are
-//    ignored outside Running (stale callbacks of ended runs).
+//    ignored outside Running (stale callbacks of ended runs). M5-067: only
+//    deaths of instance ids this run registered (NotifyEnemySpawned) count;
+//    unknown, duplicate and definition-level ids are refused everywhere.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FUEMMOTasksM2_006NotifyEnemyKilledCountsOnlyDuringRunning,
 	"UEMMO.Tasks.M2_006.NotifyEnemyKilledCountsOnlyDuringRunning",
@@ -386,12 +392,25 @@ bool FUEMMOTasksM2_006NotifyEnemyKilledCountsOnlyDuringRunning::RunTest(const FS
 	{
 		return true;
 	}
+	// M5-067 contract: a counted kill needs a registered birth first; unknown
+	// ids (including the definition-level id) never count.
+	TestFalse(TEXT("a kill notification without any birth is refused"),
+		Session->NotifyEnemyKilled(FName(TEXT("melee_grunt_w0_s0"))));
+	TestEqual(TEXT("the refused unknown notification counted nothing"), Session->GetKilledCount(), 0);
 	for (int32 Index = 0; Index < 3; ++Index)
 	{
+		const FName InstanceId(*FString::Printf(TEXT("melee_grunt_w0_s%d"), Index));
+		TestTrue(TEXT("a mid-run spawn registration is accepted"),
+			Session->NotifyEnemySpawned(InstanceId));
 		TestTrue(TEXT("a mid-run kill notification is accepted"),
-			Session->NotifyEnemyKilled(FName(TEXT("melee_grunt"))));
+			Session->NotifyEnemyKilled(InstanceId));
 	}
 	TestEqual(TEXT("three accepted kills accumulated"), Session->GetKilledCount(), 3);
+	TestFalse(TEXT("a duplicate death notification of a counted id is refused"),
+		Session->NotifyEnemyKilled(FName(TEXT("melee_grunt_w0_s0"))));
+	TestFalse(TEXT("a definition-level id is not an instance id and is refused"),
+		Session->NotifyEnemyKilled(FName(TEXT("melee_grunt"))));
+	TestEqual(TEXT("the refused notifications did not change the count"), Session->GetKilledCount(), 3);
 
 	if (!TestTrue(TEXT("the run is cleared"), Session->MarkCleared()))
 	{
@@ -497,7 +516,10 @@ bool FUEMMOTasksM2_006BeginExitTransitionsIntoExitingFromAnyOtherState::RunTest(
 		return true;
 	}
 	const uint64 RunId = Session->GetRunId();
-	if (!TestTrue(TEXT("a kill is counted before the exit"), Session->NotifyEnemyKilled(FName(TEXT("melee_grunt")))))
+	// M5-067 contract: the pre-exit kill needs its registered birth first.
+	TestTrue(TEXT("a spawned enemy registers before the exit"),
+		Session->NotifyEnemySpawned(FName(TEXT("melee_grunt_w0_s0"))));
+	if (!TestTrue(TEXT("a kill is counted before the exit"), Session->NotifyEnemyKilled(FName(TEXT("melee_grunt_w0_s0")))))
 	{
 		return true;
 	}

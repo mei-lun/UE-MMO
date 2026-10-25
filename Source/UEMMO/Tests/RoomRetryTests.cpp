@@ -749,8 +749,9 @@ bool FUEMMOTasksM2_010FiveConsecutiveRetriesKeepWaveCountsExact::RunTest(const F
 }
 
 // 5. Acceptance: old-run events never pollute the new run. A stale kill
-//    notification carrying an old-run enemy id is counted (M2-006 counting
-//    semantics) but never advances, settles or fails the new run, and a far
+//    notification carrying an old-run enemy id is refused outright (M5-067
+//    public-entry idempotency - the id is not in the new run's alive set), so
+//    it never counts, advances, settles or fails the new run, and a far
 //    future clock injection (a leaked old wave wait would fire here) leaves
 //    the new run on its own schedule. The new run then completes normally.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -800,10 +801,11 @@ bool FUEMMOTasksM2_010OldRunEventsDoNotPolluteNewRun::RunTest(const FString& Par
 
 	// A stale old-run death event arriving during the new run (an id of the
 	// old run's wave 1 that the new run's current wave never spawned): the
-	// M2-006 counting semantics accept it, the progression must not move.
-	TestTrue(TEXT("the stale old-run kill notification is accepted (M2-006 counting)"),
-		Scene.Session->NotifyEnemyKilled(FName(TEXT("melee_grunt_w1_s2"))));
-	TestEqual(TEXT("the stale notification was counted once"), Scene.Session->GetKilledCount(), 1);
+	// M5-067 public-entry guard refuses it with no side effects - the id is
+	// not in the new run's alive set, so it counts nothing and moves nothing.
+	TestTrue(TEXT("the stale old-run kill notification is refused (M5-067 contract)"),
+		!Scene.Session->NotifyEnemyKilled(FName(TEXT("melee_grunt_w1_s2"))));
+	TestEqual(TEXT("the stale notification counted nothing"), Scene.Session->GetKilledCount(), 0);
 	TestTrue(TEXT("the stale notification left the new run Running"),
 		Scene.Session->GetState() == ERoomSessionState::Running);
 	TestEqual(TEXT("the stale notification started no wave"), Scene.Session->GetCurrentWaveIndex(), 0);
@@ -823,8 +825,8 @@ bool FUEMMOTasksM2_010OldRunEventsDoNotPolluteNewRun::RunTest(const FString& Par
 	TestTrue(TEXT("the new run is still Running"), Scene.Session->GetState() == ERoomSessionState::Running);
 	TestEqual(TEXT("still exactly one end event (the old run's failure)"), Scene.EndedCount, 1);
 
-	// The new run completes its own 2+3 progression normally: the stale count
-	// rides along but never advances a wave.
+	// The new run completes its own 2+3 progression normally: the refused
+	// stale event never rode along in the count.
 	if (!M2_010_KillEnemy(*this, M2_010_FindAliveEnemyAt(*Scene.World, Room->Waves[0].SpawnLocations[0]),
 			TEXT("the new run's first wave-0 enemy was found"))
 		|| !M2_010_KillEnemy(*this, M2_010_FindAliveEnemyAt(*Scene.World, Room->Waves[0].SpawnLocations[1]),
@@ -853,8 +855,8 @@ bool FUEMMOTasksM2_010OldRunEventsDoNotPolluteNewRun::RunTest(const FString& Par
 		TestTrue(TEXT("the new run's result is Cleared"), Scene.EndedResults[1].bCleared);
 		TestEqual(TEXT("the new run's result carries the new run id"),
 			Scene.EndedResults[1].RunId, NewRunId);
-		TestEqual(TEXT("the new run's result counts the stale plus its five real deaths"),
-			Scene.EndedResults[1].KilledCount, 6);
+		TestEqual(TEXT("the new run's result counts exactly its five real deaths"),
+			Scene.EndedResults[1].KilledCount, 5);
 	}
 	return true;
 }

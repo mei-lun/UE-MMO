@@ -1090,12 +1090,12 @@ bool FUEMMOTasksM2_008ForeignKillNotificationDoesNotAdvanceWaves::RunTest(const 
 	Scene.Session->SetSessionClockSeconds(0.3);
 	TestEqual(TEXT("both wave-0 enemies were birthed"), Scene.Session->GetSpawnedEnemyCount(), 2);
 
-	// Direct session-level notification with a never-spawned id: the M2-006
-	// counting semantics stay untouched (accepted while Running), but the
-	// progression must not move.
-	TestTrue(TEXT("a direct kill notification while Running is still accepted (M2-006 semantics)"),
-		Scene.Session->NotifyEnemyKilled(FName(TEXT("stale_enemy_from_an_old_run"))));
-	TestEqual(TEXT("the foreign notification was counted (M2-006 semantics)"), Scene.Session->GetKilledCount(), 1);
+	// Direct session-level notification with a never-spawned id: the M5-067
+	// public-entry guard refuses it with no side effects, and the progression
+	// cannot move on it.
+	TestTrue(TEXT("a direct kill notification of an unknown id is refused (M5-067 contract)"),
+		!Scene.Session->NotifyEnemyKilled(FName(TEXT("stale_enemy_from_an_old_run"))));
+	TestEqual(TEXT("the foreign notification counted nothing (M5-067 contract)"), Scene.Session->GetKilledCount(), 0);
 	TestEqual(TEXT("the foreign notification started no wave"), Scene.Session->GetCurrentWaveIndex(), 0);
 	TestEqual(TEXT("the foreign notification fired no end event"), Events.EndedCount, 0);
 	Scene.Session->SetSessionClockSeconds(1.0);
@@ -1110,7 +1110,7 @@ bool FUEMMOTasksM2_008ForeignKillNotificationDoesNotAdvanceWaves::RunTest(const 
 	{
 		return true;
 	}
-	TestEqual(TEXT("the first real death was counted on top of the foreign one"), Scene.Session->GetKilledCount(), 2);
+	TestEqual(TEXT("the first real death was counted"), Scene.Session->GetKilledCount(), 1);
 	Scene.Session->SetSessionClockSeconds(5.5);
 	TestEqual(TEXT("one alive enemy still blocks after the foreign notification"), Scene.Session->GetCurrentWaveIndex(), 0);
 	AMeleeEnemy* EnemyB = M2_008_FindAliveEnemyAt(*Scene.World, LocW0B);

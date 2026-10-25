@@ -118,7 +118,9 @@ bool FUEMMOTasksM2_013SameRunResultQueriedTwiceKeepsIdAndSeed::RunTest(const FSt
 		return true;
 	}
 	const uint64 RunId = Session->GetRunId();
-	TestTrue(TEXT("a mid-run kill is accepted"), Session->NotifyEnemyKilled(FName(TEXT("melee_grunt"))));
+	// M5-067 contract: the counted kill is the death of a registered instance id.
+	TestTrue(TEXT("a spawned enemy registers"), Session->NotifyEnemySpawned(FName(TEXT("melee_grunt_w0_s0"))));
+	TestTrue(TEXT("a mid-run kill is accepted"), Session->NotifyEnemyKilled(FName(TEXT("melee_grunt_w0_s0"))));
 	Session->SetSessionClockSeconds(17.5);
 	if (!TestTrue(TEXT("the run clears"), Session->MarkCleared()))
 	{
@@ -326,7 +328,9 @@ bool FUEMMOTasksM2_013RunResultCopyIsValueSemantics::RunTest(const FString& Para
 		return true;
 	}
 	const uint64 RunId = Session->GetRunId();
-	TestTrue(TEXT("a mid-run kill is accepted"), Session->NotifyEnemyKilled(FName(TEXT("melee_grunt"))));
+	// M5-067 contract: the counted kill is the death of a registered instance id.
+	TestTrue(TEXT("a spawned enemy registers"), Session->NotifyEnemySpawned(FName(TEXT("melee_grunt_w0_s0"))));
+	TestTrue(TEXT("a mid-run kill is accepted"), Session->NotifyEnemyKilled(FName(TEXT("melee_grunt_w0_s0"))));
 	if (!TestTrue(TEXT("the run clears"), Session->MarkCleared()))
 	{
 		return true;
@@ -465,8 +469,12 @@ bool FUEMMOTasksM2_013M2_006ResultSemanticsSurviveResultHeaderMigration::RunTest
 	const uint64 FirstRunId = Session->GetRunId();
 	const uint64 FirstSettlementId = Session->GetSettlementId();
 	const int32 FirstSeed = Session->GetSeed();
-	TestTrue(TEXT("a mid-run kill is accepted"), Session->NotifyEnemyKilled(FName(TEXT("melee_grunt"))));
-	TestTrue(TEXT("a second mid-run kill is accepted"), Session->NotifyEnemyKilled(FName(TEXT("melee_grunt"))));
+	// M5-067 contract: each counted kill is the death of its own registered
+	// instance id (distinct wave/slot ids, one kill per id).
+	TestTrue(TEXT("the first spawned enemy registers"), Session->NotifyEnemySpawned(FName(TEXT("melee_grunt_w0_s0"))));
+	TestTrue(TEXT("the second spawned enemy registers"), Session->NotifyEnemySpawned(FName(TEXT("melee_grunt_w0_s1"))));
+	TestTrue(TEXT("a mid-run kill is accepted"), Session->NotifyEnemyKilled(FName(TEXT("melee_grunt_w0_s0"))));
+	TestTrue(TEXT("a second mid-run kill is accepted"), Session->NotifyEnemyKilled(FName(TEXT("melee_grunt_w0_s1"))));
 	Session->SetSessionClockSeconds(32.5);
 	if (!TestTrue(TEXT("the first run clears"), Session->MarkCleared()))
 	{
