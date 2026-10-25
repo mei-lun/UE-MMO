@@ -3,6 +3,9 @@
 # verify the saved asset and the map wiring in a second fresh UE process.
 # ASCII only: PowerShell 5.1 parses BOM-less UTF-8 as GBK.
 param(
+    # Evidence task directory under Artifacts/Tasks (M5-070 owns the script,
+    # M5-071+ reuse it for schema/regeneration evidence).
+    [string]$TaskId = 'M5-070',
     # Optional path override for the source JSON (red-line failure-path test).
     [string]$SampleJson = ''
 )
@@ -21,7 +24,7 @@ if ($SampleJson -ne '') {
 }
 
 $Stamp = [DateTimeOffset]::Now.ToString('yyyy-MM-ddTHH-mm-sszzz').Replace(':', '')
-$EvidenceDir = Join-Path $ArtifactRoot (Join-Path 'Tasks' (Join-Path 'M5-070' $Stamp))
+$EvidenceDir = Join-Path $ArtifactRoot (Join-Path 'Tasks' (Join-Path $TaskId $Stamp))
 New-Item -ItemType Directory -Path $EvidenceDir -Force | Out-Null
 
 foreach ($Report in @($GenerateReport, $VerifyReport)) {

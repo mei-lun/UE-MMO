@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "rooms": [
     {
       "room_id": "room_training_01",
@@ -9,6 +9,7 @@
       "bounds_center_cm": { "x": 0, "y": 0, "z": 90 },
       "bounds_size_cm": { "x": 2400, "y": 1000, "z": 180 },
       "reward_table_id": "starter",
+      "rules": [],
       "waves": [
         {
           "enemy_id": "melee_grunt",
@@ -37,6 +38,12 @@
       "bounds_center_cm": { "x": 0, "y": 0, "z": 90 },
       "bounds_size_cm": { "x": 2400, "y": 1000, "z": 180 },
       "reward_table_id": "starter",
+      "rules": [
+        { "rule_id": "enter_start_wave_0", "event": "PlayerEnteredRegion", "region_id": "activation", "effect": "StartWave", "next_wave_index": 0, "delay_s": 0.0, "once": true },
+        { "rule_id": "wave_0_start_wave_1", "event": "WaveCleared", "wave_index": 0, "effect": "StartWave", "next_wave_index": 1, "delay_s": 1.0, "once": true },
+        { "rule_id": "wave_1_clear", "event": "WaveCleared", "wave_index": 1, "effect": "MarkCleared", "once": true },
+        { "rule_id": "player_dead_fail", "event": "PlayerDied", "effect": "FailRun", "once": true }
+      ],
       "waves": [
         {
           "enemy_id": "melee_grunt",

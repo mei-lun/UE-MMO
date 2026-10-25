@@ -10,8 +10,8 @@
 /**
  * One wave of a room: which enemy kind to spawn, how many and where.
  * Pure data. Units are explicit: SpawnLocations are world-space positions in
- * centimeters (UE convention) and the JSON source spells them out in the field
- * name (spawn_locations_cm). Wave execution and spawning belong to the later
+ * centimeters (UE convention) and the JSON source spells them out in the
+ * field name (spawn_locations_cm). Wave execution and spawning belong to the later
  * room session tasks, never to this definition.
  */
 USTRUCT(BlueprintType)
@@ -33,6 +33,85 @@ struct FRoomWaveDefinition
 	/** Spawn positions in centimeters (world space); SpawnLocations.Num() must equal Count. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Room|Wave")
 	TArray<FVector> SpawnLocations;
+};
+
+/**
+ * M5-071: the finite scene-rule event whitelist. PlayerEnteredRegion fires
+ * when the player enters the room's activation region (the ARoomTrigger box,
+ * M5-073); WaveCleared fires when a wave is fully born and fully dead (the
+ * session's progression facts); PlayerDied fires from the confirmed player
+ * death lifecycle. Nothing else may become a scene event (no per-hit events).
+ */
+UENUM(BlueprintType)
+enum class ERoomRuleEvent : uint8
+{
+	PlayerEnteredRegion,
+	WaveCleared,
+	PlayerDied
+};
+
+/**
+ * M5-071: the finite scene-rule effect whitelist. StartWave requests one
+ * wave start (NextWaveIndex) after DelaySeconds on the injected session
+ * clock; MarkCleared / FailRun request the terminal transitions (the session
+ * applies first-terminal-wins, never the rule layer). No spawning, damage,
+ * reward or exit effects exist on purpose.
+ */
+UENUM(BlueprintType)
+enum class ERoomRuleEffect : uint8
+{
+	StartWave,
+	MarkCleared,
+	FailRun
+};
+
+/**
+ * M5-071: one finite scene rule of a room (schema 2 rows of Data/rooms.json).
+ * Pure data - the M5-072 evaluator owns execution, this struct owns nothing.
+ * RegionId is only meaningful for PlayerEnteredRegion (the one defined
+ * region of this stage is "activation", the trigger volume); WaveIndex is
+ * only meaningful for WaveCleared; NextWaveIndex is only meaningful for
+ * StartWave. Unused members stay at their none/0 defaults; -1 is the "no
+ * index" sentinel of both index fields. DelaySeconds rides the injected
+ * session clock (finite, >= 0; the 1.0 s inter-wave gap of the default
+ * battle); bOnce marks one-shot rules (the dedup belongs to the evaluator).
+ */
+USTRUCT(BlueprintType)
+struct FRoomSceneRule
+{
+	GENERATED_BODY()
+
+	/** Stable identifier of this rule inside its room (unique, e.g. "enter_start_wave_0"). */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Room|Rule")
+	FName RuleId;
+
+	/** The whitelisted event that arms the rule. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Room|Rule")
+	ERoomRuleEvent Event = ERoomRuleEvent::PlayerEnteredRegion;
+
+	/** Region reference of a PlayerEnteredRegion rule ("activation"; NAME_None elsewhere). */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Room|Rule")
+	FName RegionId;
+
+	/** Wave reference of a WaveCleared rule (-1 = not set). */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Room|Rule")
+	int32 WaveIndex = -1;
+
+	/** The whitelisted effect the rule requests. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Room|Rule")
+	ERoomRuleEffect Effect = ERoomRuleEffect::StartWave;
+
+	/** The wave a StartWave rule starts ([0, Waves.Num()-1]; -1 = not set). */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Room|Rule")
+	int32 NextWaveIndex = -1;
+
+	/** Delay before the effect, on the injected session clock (finite, >= 0). */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Room|Rule")
+	float DelaySeconds = 0.0f;
+
+	/** True when the rule may fire at most once per run (evaluator-side dedup). */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Room|Rule")
+	bool bOnce = true;
 };
 
 /**
@@ -81,6 +160,14 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Room|Waves")
 	TArray<FRoomWaveDefinition> Waves;
 
+	/**
+	 * M5-071: the room's finite scene rules (schema 2). Empty means the room
+	 * runs no rule-driven flow (the training room keeps its non-combat
+	 * semantics on purpose). Rule execution belongs to the M5-072 evaluator.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Room|Rules")
+	TArray<FRoomSceneRule> Rules;
+
 	/** Reward table id used by later settlement tasks (e.g. "starter"); string only in this card. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Room|Reward")
 	FName RewardTableId;
@@ -105,6 +192,35 @@ public:
  * Pure check: it never loads the map, spawns actors or touches a clock.
  */
 bool ValidateRoomDefinition(const URoomDefinition& Room, const TSet<FName>& KnownEnemyIds, FText& OutErrors);
+
+/**
+ * M5-071: validates the room's finite scene rules (schema 2). Every problem
+ * names the room-independent rule path "Rules[i].Field" plus the rule id, so
+ * the report reads room/rule/field. Checked: unique non-empty RuleId, the
+ * event/effect field pairing (PlayerEnteredRegion needs RegionId
+ * "activation" - the one defined region of this stage - and no wave index;
+ * WaveCleared needs an in-range WaveIndex and no region; PlayerDied carries
+ * neither; StartWave needs an in-range NextWaveIndex while MarkCleared /
+ * FailRun must not carry one), finite non-negative DelaySeconds, and the
+ * rule-graph shape: a room that starts waves needs a PlayerEnteredRegion
+ * entry, every started wave needs its WaveCleared continuation, the started
+ * indices strictly increase along every chain (no cycles, no same-wave
+ * restart), and at least one chain from the entry reaches MarkCleared. An
+ * empty rule list is legal (the training room). Pure check.
+ */
+bool ValidateRoomRules(const URoomDefinition& Room, FText& OutErrors);
+
+/**
+ * M5-071: the EXPLICIT migration of a legacy schema 1 room (waves only, no
+ * rules) to the schema 2 default battle rules: enter_start_wave_0
+ * (PlayerEnteredRegion/activation -> StartWave 0 after 0 s), wave i ->
+ * StartWave i+1 after 1.0 s for every adjacent pair, wave_last -> MarkCleared
+ * and player_dead_fail (PlayerDied -> FailRun), all once. Deterministic -
+ * the same waves always migrate to the same rules; fails (OutRules empty,
+ * false) for an empty wave list. This is the documented schema 1 -> 2
+ * mapping, never a silent fallback for data that claims a newer schema.
+ */
+bool BuildLegacySchemaOneDefaultRules(const TArray<FRoomWaveDefinition>& Waves, TArray<FRoomSceneRule>& OutRules);
 
 /**
  * M5-069: catalog-level validation across every room row of one source (the

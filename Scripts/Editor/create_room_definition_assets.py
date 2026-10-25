@@ -46,6 +46,12 @@ COMBAT_MAP = '/Game/UEMMO/Maps/L_CombatRoom01'
 GENERATE_REPORT = ROOT / 'Artifacts' / 'Logs' / 'room-definition-assets-report.json'
 VERIFY_REPORT = ROOT / 'Artifacts' / 'Logs' / 'room-definition-assets-verify.json'
 FLOAT_TOLERANCE = 1e-6
+SCHEMA_VERSION = 2
+RULE_EVENTS = ('PlayerEnteredRegion', 'WaveCleared', 'PlayerDied')
+RULE_EFFECTS = ('StartWave', 'MarkCleared', 'FailRun')
+RULE_FIELDS = ('rule_id', 'event', 'region_id', 'wave_index', 'effect',
+               'next_wave_index', 'delay_s', 'once')
+ACTIVATION_REGION = 'activation'
 
 actors = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
 levels = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
@@ -104,13 +110,81 @@ def read_vector(object_value, label, problems):
     return result
 
 
+def validate_rule(rule, wave_count, label, problems):
+    """Structural check of one schema 2 rule row; returns the parsed dict or None."""
+    if not isinstance(rule, dict):
+        problems.append('FAIL ' + label + ': entry is not a JSON object.')
+        return None
+    for key in rule:
+        if key not in RULE_FIELDS:
+            problems.append('FAIL ' + label + " field '" + str(key)
+                            + "': unknown rule field (allowed: " + ', '.join(RULE_FIELDS) + ').')
+    rule_id = rule.get('rule_id')
+    if not isinstance(rule_id, str) or not rule_id:
+        problems.append('FAIL ' + label + " field 'rule_id': required non-empty string.")
+        return None
+    label = label + " '" + rule_id + "'"
+    event = rule.get('event')
+    if event not in RULE_EVENTS:
+        problems.append('FAIL ' + label + " field 'event': unknown event '" + str(event)
+                        + "' (allowed: " + ', '.join(RULE_EVENTS) + ').')
+        return None
+    effect = rule.get('effect')
+    if effect not in RULE_EFFECTS:
+        problems.append('FAIL ' + label + " field 'effect': unknown effect '" + str(effect)
+                        + "' (allowed: " + ', '.join(RULE_EFFECTS) + ').')
+        return None
+    parsed = {'rule_id': rule_id, 'event': event, 'effect': effect, 'region_id': '',
+              'wave_index': -1, 'next_wave_index': -1, 'delay_s': 0.0, 'once': True}
+    if event == 'PlayerEnteredRegion':
+        region = rule.get('region_id')
+        if region != ACTIVATION_REGION:
+            problems.append('FAIL ' + label + " field 'region_id': '" + str(region)
+                            + "' is not a defined region (defined: " + ACTIVATION_REGION + ').')
+        else:
+            parsed['region_id'] = region
+    if event == 'WaveCleared':
+        wave_index = rule.get('wave_index')
+        if not is_number(wave_index) or int(wave_index) != wave_index or not (0 <= int(wave_index) < wave_count):
+            problems.append('FAIL ' + label + " field 'wave_index': required whole index in [0, "
+                            + str(wave_count - 1) + '] (got ' + str(wave_index) + ').')
+        else:
+            parsed['wave_index'] = int(wave_index)
+    if effect == 'StartWave':
+        next_wave = rule.get('next_wave_index')
+        if not is_number(next_wave) or int(next_wave) != next_wave or not (0 <= int(next_wave) < wave_count):
+            problems.append('FAIL ' + label + " field 'next_wave_index': required whole index in [0, "
+                            + str(wave_count - 1) + '] (got ' + str(next_wave) + ').')
+        else:
+            parsed['next_wave_index'] = int(next_wave)
+    delay = rule.get('delay_s', 0.0)
+    if not is_number(delay) or delay < 0:
+        problems.append('FAIL ' + label + " field 'delay_s': required finite number >= 0 (got "
+                        + str(delay) + ').')
+    else:
+        parsed['delay_s'] = float(delay)
+    once = rule.get('once', True)
+    if not isinstance(once, bool):
+        problems.append('FAIL ' + label + " field 'once': required boolean.")
+    else:
+        parsed['once'] = once
+    return parsed
+
+
 def validate_document(doc, source_path):
-    """Structural check of Data/rooms.json; returns the room_combat_01 row."""
+    """Structural check of Data/rooms.json (schema 2 with finite rules);
+    returns the room_combat_01 row with parsed rules."""
     problems = []
     if not isinstance(doc, dict):
         raise RuntimeError(source_path + ': the document is not a JSON object.')
-    if doc.get('schema_version') != 1:
-        problems.append("FAIL schema_version: expected 1.")
+    version = doc.get('schema_version')
+    if version == 1:
+        problems.append("FAIL schema_version: 1 is the legacy no-rules schema - migrate the"
+                        " source to schema 2 (BuildLegacySchemaOneDefaultRules documents the"
+                        " explicit schema 1 -> 2 mapping); nothing was generated.")
+    elif version != SCHEMA_VERSION:
+        problems.append('FAIL schema_version: expected ' + str(SCHEMA_VERSION) + ' (got '
+                        + str(version) + ').')
     rows = doc.get('rooms')
     if not isinstance(rows, list) or not rows:
         raise RuntimeError(source_path + ": 'rooms' is missing or empty; nothing to generate.")
@@ -163,6 +237,25 @@ def validate_document(doc, source_path):
                 else:
                     for loc_index, location in enumerate(locations):
                         read_vector(location, wave_label + ' spawn_locations_cm[' + str(loc_index) + ']', problems)
+        rules = entry.get('rules', [])
+        if not isinstance(rules, list):
+            problems.append('FAIL ' + label + " field 'rules': required array (empty = no rule flow).")
+            entry['parsed_rules'] = []
+        else:
+            parsed_rules = []
+            rule_ids = set()
+            wave_count = len(waves) if isinstance(waves, list) else 0
+            for rule_index, rule in enumerate(rules):
+                parsed_rule = validate_rule(rule, wave_count,
+                                            label + ' rules[' + str(rule_index) + ']', problems)
+                if parsed_rule is not None:
+                    if parsed_rule['rule_id'] in rule_ids:
+                        problems.append('FAIL ' + label + ' rules[' + str(rule_index)
+                                        + "] field 'rule_id': duplicate '" + parsed_rule['rule_id'] + "'.")
+                    else:
+                        rule_ids.add(parsed_rule['rule_id'])
+                    parsed_rules.append(parsed_rule)
+            entry['parsed_rules'] = parsed_rules
         if room_id == COMBAT_ROOM_ID:
             combat_row = entry
     if problems:
@@ -198,6 +291,66 @@ def soft_path_string(value):
     return str(value)
 
 
+def rule_event_enum(name):
+    """JSON event name -> unreal.RoomRuleEvent value (robust member lookup)."""
+    token = {'PlayerEnteredRegion': 'PLAYER_ENTERED_REGION',
+             'WaveCleared': 'WAVE_CLEARED',
+             'PlayerDied': 'PLAYER_DIED'}[name]
+    value = getattr(unreal.RoomRuleEvent, token,
+                    getattr(unreal.RoomRuleEvent, name, None))
+    if value is None:
+        raise RuntimeError('unreal.RoomRuleEvent has no member for event ' + name)
+    return value
+
+
+def rule_effect_enum(name):
+    """JSON effect name -> unreal.RoomRuleEffect value (robust member lookup)."""
+    token = {'StartWave': 'START_WAVE',
+             'MarkCleared': 'MARK_CLEARED',
+             'FailRun': 'FAIL_RUN'}[name]
+    value = getattr(unreal.RoomRuleEffect, token,
+                    getattr(unreal.RoomRuleEffect, name, None))
+    if value is None:
+        raise RuntimeError('unreal.RoomRuleEffect has no member for effect ' + name)
+    return value
+
+
+def rule_event_json_name(value):
+    """Enum value -> JSON event name (compares the enum objects themselves, so
+    the editor's str() rendering of enum values cannot break the check)."""
+    for name in ('PlayerEnteredRegion', 'WaveCleared', 'PlayerDied'):
+        if value == rule_event_enum(name):
+            return name
+    return str(value)
+
+
+def rule_effect_json_name(value):
+    """Enum value -> JSON effect name (object comparison, see above)."""
+    for name in ('StartWave', 'MarkCleared', 'FailRun'):
+        if value == rule_effect_enum(name):
+            return name
+    return str(value)
+
+
+def rule_structs(parsed_rules):
+    structs = []
+    for parsed in parsed_rules:
+        struct = unreal.RoomSceneRule()
+        struct.set_editor_property('rule_id', parsed['rule_id'])
+        struct.set_editor_property('event', rule_event_enum(parsed['event']))
+        if parsed['region_id']:
+            struct.set_editor_property('region_id', parsed['region_id'])
+        if parsed['wave_index'] >= 0:
+            struct.set_editor_property('wave_index', parsed['wave_index'])
+        struct.set_editor_property('effect', rule_effect_enum(parsed['effect']))
+        if parsed['next_wave_index'] >= 0:
+            struct.set_editor_property('next_wave_index', parsed['next_wave_index'])
+        struct.set_editor_property('delay_seconds', parsed['delay_s'])
+        struct.set_editor_property('once', parsed['once'])
+        structs.append(struct)
+    return structs
+
+
 def apply_fields(asset, row):
     """Writes every URoomDefinition field of the room_combat_01 row."""
     asset.set_editor_property('room_id', str(row['room_id']))
@@ -222,6 +375,7 @@ def apply_fields(asset, row):
                               unreal.Vector(float(size['x']), float(size['y']), float(size['z'])))
     asset.set_editor_property('reward_table_id', str(row['reward_table_id']))
     asset.set_editor_property('waves', wave_structs(row))
+    asset.set_editor_property('rules', rule_structs(row.get('parsed_rules', [])))
 
 
 def vectors_close(a, b):
@@ -276,6 +430,32 @@ def asset_matches(asset, row):
                             float(json_location['x']), float(json_location['y']), float(json_location['z']))):
                         problems.append('wave ' + str(wave_index) + ' spawn_locations['
                                         + str(loc_index) + '] mismatch')
+    asset_rules = asset.get_editor_property('rules')
+    json_rules = row.get('parsed_rules', [])
+    if len(asset_rules) != len(json_rules):
+        problems.append('rules: asset holds ' + str(len(asset_rules)) + ' rules, json holds '
+                        + str(len(json_rules)))
+    else:
+        for rule_index, (asset_rule, json_rule) in enumerate(zip(asset_rules, json_rules)):
+            if str(asset_rule.get_editor_property('rule_id')) != str(json_rule['rule_id']):
+                problems.append('rule ' + str(rule_index) + ' rule_id mismatch')
+            if rule_event_json_name(asset_rule.get_editor_property('event')) != json_rule['event']:
+                problems.append('rule ' + str(rule_index) + ' event mismatch')
+            if rule_effect_json_name(asset_rule.get_editor_property('effect')) != json_rule['effect']:
+                problems.append('rule ' + str(rule_index) + ' effect mismatch')
+            asset_region = str(asset_rule.get_editor_property('region_id'))
+            if asset_region == 'None':
+                asset_region = ''
+            if asset_region != str(json_rule['region_id']):
+                problems.append('rule ' + str(rule_index) + ' region_id mismatch')
+            if int(asset_rule.get_editor_property('wave_index')) != int(json_rule['wave_index']):
+                problems.append('rule ' + str(rule_index) + ' wave_index mismatch')
+            if int(asset_rule.get_editor_property('next_wave_index')) != int(json_rule['next_wave_index']):
+                problems.append('rule ' + str(rule_index) + ' next_wave_index mismatch')
+            if abs(float(asset_rule.get_editor_property('delay_seconds')) - float(json_rule['delay_s'])) > FLOAT_TOLERANCE:
+                problems.append('rule ' + str(rule_index) + ' delay_s mismatch')
+            if bool(asset_rule.get_editor_property('once')) != bool(json_rule['once']):
+                problems.append('rule ' + str(rule_index) + ' once mismatch')
     return problems
 
 

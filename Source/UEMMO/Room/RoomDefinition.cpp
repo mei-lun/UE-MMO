@@ -168,6 +168,246 @@ bool ValidateRoomDefinition(const URoomDefinition& Room, const TSet<FName>& Know
 	return Problems.Num() == 0;
 }
 
+// -- M5-071: finite scene rules (schema 2) ------------------------------------
+
+namespace
+{
+	/** The one defined region of this stage: the ARoomTrigger activation box (M5-073 wires it). */
+	const FName M5_071_ActivationRegionId(TEXT("activation"));
+}
+
+bool ValidateRoomRules(const URoomDefinition& Room, FText& OutErrors)
+{
+	TArray<FString> Problems;
+	const FString RoomPrefix = FString::Printf(TEXT("room '%s'"), *Room.RoomId.ToString());
+
+	// Per-rule checks; every message carries the rule index, the rule id and
+	// the offending field so the report reads room/rule/field.
+	TSet<FName> SeenRuleIds;
+	bool bHasStartWaveRule = false;
+	bool bHasEntryRule = false;
+	for (int32 RuleIndex = 0; RuleIndex < Room.Rules.Num(); ++RuleIndex)
+	{
+		const FRoomSceneRule& Rule = Room.Rules[RuleIndex];
+		const FString Prefix = FString::Printf(TEXT("%s Rules[%d] '%s'"),
+			*RoomPrefix, RuleIndex, *Rule.RuleId.ToString());
+
+		if (Rule.RuleId.IsNone())
+		{
+			AddRoomProblem(Problems, Prefix + TEXT(".RuleId must be a non-empty identifier (got None)"));
+		}
+		else if (SeenRuleIds.Contains(Rule.RuleId))
+		{
+			AddRoomProblem(Problems, Prefix + FString::Printf(
+				TEXT(".RuleId duplicates an earlier rule ('%s' used twice)"), *Rule.RuleId.ToString()));
+		}
+		else
+		{
+			SeenRuleIds.Add(Rule.RuleId);
+		}
+
+		// Event field pairing.
+		if (Rule.Event == ERoomRuleEvent::PlayerEnteredRegion)
+		{
+			bHasEntryRule = true;
+			if (Rule.RegionId != M5_071_ActivationRegionId)
+			{
+				AddRoomProblem(Problems, Prefix + FString::Printf(
+					TEXT(".RegionId '%s' is not a defined region of this room (defined: activation)"),
+					*Rule.RegionId.ToString()));
+			}
+			if (Rule.WaveIndex != -1)
+			{
+				AddRoomProblem(Problems, Prefix + TEXT(".WaveIndex must stay unset for PlayerEnteredRegion (got ") + FString::FromInt(Rule.WaveIndex) + TEXT(")"));
+			}
+		}
+		else if (Rule.Event == ERoomRuleEvent::WaveCleared)
+		{
+			if (!Room.Waves.IsValidIndex(Rule.WaveIndex))
+			{
+				AddRoomProblem(Problems, FString::Printf(
+					TEXT("%s.WaveIndex %d is out of range (the room carries %d waves)"),
+					*Prefix, Rule.WaveIndex, Room.Waves.Num()));
+			}
+			if (!Rule.RegionId.IsNone())
+			{
+				AddRoomProblem(Problems, Prefix + TEXT(".RegionId must stay unset for WaveCleared"));
+			}
+		}
+		else if (Rule.Event == ERoomRuleEvent::PlayerDied)
+		{
+			if (!Rule.RegionId.IsNone())
+			{
+				AddRoomProblem(Problems, Prefix + TEXT(".RegionId must stay unset for PlayerDied"));
+			}
+			if (Rule.WaveIndex != -1)
+			{
+				AddRoomProblem(Problems, Prefix + TEXT(".WaveIndex must stay unset for PlayerDied"));
+			}
+		}
+
+		// Effect field pairing + delay bounds.
+		if (Rule.Effect == ERoomRuleEffect::StartWave)
+		{
+			bHasStartWaveRule = true;
+			if (!Room.Waves.IsValidIndex(Rule.NextWaveIndex))
+			{
+				AddRoomProblem(Problems, FString::Printf(
+					TEXT("%s.NextWaveIndex %d is out of range (the room carries %d waves)"),
+					*Prefix, Rule.NextWaveIndex, Room.Waves.Num()));
+			}
+		}
+		else if (Rule.NextWaveIndex != -1)
+		{
+			AddRoomProblem(Problems, Prefix + TEXT(".NextWaveIndex is only valid for the StartWave effect"));
+		}
+		if (!FMath::IsFinite(Rule.DelaySeconds) || Rule.DelaySeconds < 0.0f)
+		{
+			AddRoomProblem(Problems, FString::Printf(
+				TEXT("%s.DelaySeconds must be finite and >= 0 (got %f)"), *Prefix, Rule.DelaySeconds));
+		}
+	}
+
+	// Graph shape: only meaningful when the room actually starts waves.
+	if (bHasStartWaveRule && !bHasEntryRule)
+	{
+		AddRoomProblem(Problems, RoomPrefix
+			+ TEXT(" starts waves through its rules but carries no PlayerEnteredRegion entry rule"));
+	}
+
+	// Walk every chain from the entry rules: started indices must strictly
+	// increase (no cycles, no same-wave restart), every started wave needs its
+	// WaveCleared continuation, and at least one chain must reach MarkCleared.
+	if (bHasEntryRule)
+	{
+		bool bAnyTerminalReached = false;
+		for (const FRoomSceneRule& Rule : Room.Rules)
+		{
+			if (Rule.Event != ERoomRuleEvent::PlayerEnteredRegion
+				|| Rule.Effect != ERoomRuleEffect::StartWave
+				|| !Room.Waves.IsValidIndex(Rule.NextWaveIndex))
+			{
+				continue;
+			}
+			int32 StartedWave = Rule.NextWaveIndex;
+			TSet<int32> VisitedWaves;
+			const FString EntryPrefix = FString::Printf(TEXT("%s Rules '%s'"),
+				*RoomPrefix, *Rule.RuleId.ToString());
+			for (;;)
+			{
+				if (VisitedWaves.Contains(StartedWave))
+				{
+					AddRoomProblem(Problems, FString::Printf(
+						TEXT("%s chains into a rule cycle at wave %d"), *EntryPrefix, StartedWave));
+					break;
+				}
+				VisitedWaves.Add(StartedWave);
+				const FRoomSceneRule* Continuation = nullptr;
+				bool bChainTerminal = false;
+				for (const FRoomSceneRule& Candidate : Room.Rules)
+				{
+					if (Candidate.Event != ERoomRuleEvent::WaveCleared
+						|| Candidate.WaveIndex != StartedWave
+						|| !Room.Waves.IsValidIndex(Candidate.WaveIndex))
+					{
+						continue;
+					}
+					if (Candidate.Effect == ERoomRuleEffect::MarkCleared)
+					{
+						bChainTerminal = true;
+						bAnyTerminalReached = true;
+						continue;
+					}
+					if (Candidate.Effect == ERoomRuleEffect::StartWave)
+					{
+						if (Continuation != nullptr)
+						{
+							AddRoomProblem(Problems, FString::Printf(
+								TEXT("%s: wave %d carries more than one StartWave continuation ('%s' and '%s')"),
+								*EntryPrefix, StartedWave, *Continuation->RuleId.ToString(), *Candidate.RuleId.ToString()));
+							continue;
+						}
+						Continuation = &Candidate;
+					}
+				}
+				if (bChainTerminal || Continuation == nullptr)
+				{
+					if (!bChainTerminal)
+					{
+						AddRoomProblem(Problems, FString::Printf(
+							TEXT("%s: started wave %d has no WaveCleared continuation (no terminal path)"),
+							*EntryPrefix, StartedWave));
+					}
+					break;
+				}
+				if (Continuation->NextWaveIndex <= StartedWave)
+				{
+					AddRoomProblem(Problems, FString::Printf(
+						TEXT("%s: rule '%s' restarts an earlier or same wave (%d -> %d); started waves must strictly increase"),
+						*EntryPrefix, *Continuation->RuleId.ToString(), StartedWave, Continuation->NextWaveIndex));
+					break;
+				}
+				StartedWave = Continuation->NextWaveIndex;
+			}
+		}
+		if (!bAnyTerminalReached)
+		{
+			AddRoomProblem(Problems, RoomPrefix
+				+ TEXT(" carries entry rules but no chain reaches a MarkCleared terminal"));
+		}
+	}
+
+	OutErrors = FText::FromString(FString::Join(Problems, TEXT("; ")));
+	return Problems.Num() == 0;
+}
+
+bool BuildLegacySchemaOneDefaultRules(const TArray<FRoomWaveDefinition>& Waves, TArray<FRoomSceneRule>& OutRules)
+{
+	OutRules.Reset();
+	if (Waves.Num() <= 0)
+	{
+		return false;
+	}
+	FRoomSceneRule Enter;
+	Enter.RuleId = TEXT("enter_start_wave_0");
+	Enter.Event = ERoomRuleEvent::PlayerEnteredRegion;
+	Enter.RegionId = TEXT("activation");
+	Enter.Effect = ERoomRuleEffect::StartWave;
+	Enter.NextWaveIndex = 0;
+	Enter.DelaySeconds = 0.0f;
+	Enter.bOnce = true;
+	OutRules.Add(Enter);
+
+	for (int32 WaveIndex = 0; WaveIndex + 1 < Waves.Num(); ++WaveIndex)
+	{
+		FRoomSceneRule Advance;
+		Advance.RuleId = FName(*FString::Printf(TEXT("wave_%d_start_wave_%d"), WaveIndex, WaveIndex + 1));
+		Advance.Event = ERoomRuleEvent::WaveCleared;
+		Advance.WaveIndex = WaveIndex;
+		Advance.Effect = ERoomRuleEffect::StartWave;
+		Advance.NextWaveIndex = WaveIndex + 1;
+		Advance.DelaySeconds = 1.0f;
+		Advance.bOnce = true;
+		OutRules.Add(Advance);
+	}
+
+	FRoomSceneRule Final;
+	Final.RuleId = FName(*FString::Printf(TEXT("wave_%d_clear"), Waves.Num() - 1));
+	Final.Event = ERoomRuleEvent::WaveCleared;
+	Final.WaveIndex = Waves.Num() - 1;
+	Final.Effect = ERoomRuleEffect::MarkCleared;
+	Final.bOnce = true;
+	OutRules.Add(Final);
+
+	FRoomSceneRule Death;
+	Death.RuleId = TEXT("player_dead_fail");
+	Death.Event = ERoomRuleEvent::PlayerDied;
+	Death.Effect = ERoomRuleEffect::FailRun;
+	Death.bOnce = true;
+	OutRules.Add(Death);
+	return true;
+}
+
 bool ValidateRoomCatalog(const TArray<const URoomDefinition*>& Rooms, FText& OutErrors)
 {
 	// M5-069: the one cross-row rule of the catalog - every RoomId must be

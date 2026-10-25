@@ -769,7 +769,8 @@ bool FUEMMOTasksM2_005RoomTraining01LoadsAndPassesValidation::RunTest(const FStr
 	const TSharedPtr<FRoomJsonValue>* SchemaVersion = FindTyped(Root, TEXT("schema_version"), FRoomJsonValue::EKind::Number);
 	if (SchemaVersion)
 	{
-		TestTrue(TEXT("schema_version is 1"), NearlyEqual((*SchemaVersion)->Number, 1.0));
+		TestTrue(TEXT("schema_version is 2 (M5-071 upgraded the file to the typed rules schema)"),
+			NearlyEqual((*SchemaVersion)->Number, 2.0));
 	}
 	else
 	{
@@ -1187,7 +1188,8 @@ bool FUEMMOTasksM5_069CombatRoom01RowParsesValidatesAndStaysDistinct::RunTest(co
 	const TSharedPtr<FRoomJsonValue>* SchemaVersion = FindTyped(Root, TEXT("schema_version"), FRoomJsonValue::EKind::Number);
 	if (SchemaVersion)
 	{
-		TestTrue(TEXT("schema_version stays 1 (no rule fields added in M5-069)"), NearlyEqual((*SchemaVersion)->Number, 1.0));
+		TestTrue(TEXT("schema_version is 2 (M5-071 added the typed rules schema on top of the M5-069 rows)"),
+			NearlyEqual((*SchemaVersion)->Number, 2.0));
 	}
 	else
 	{
@@ -1391,6 +1393,421 @@ bool FUEMMOTasksM5_069RejectsDuplicateIdsAndBrokenProductionRowFields::RunTest(c
 	TestTrue(TEXT("wave count mismatch error names SpawnLocations and Count"),
 		WrongWaveCountErrors.ToString().Contains(TEXT("Waves[0].SpawnLocations"))
 			&& WrongWaveCountErrors.ToString().Contains(TEXT("Count=")));
+	return true;
+}
+
+// -- M5-071: schema 2 finite scene rules (data + validation + migration) -------
+
+namespace UE::UEMMO::Tasks::M5_071
+{
+	/** The allowed keys of one rule row (anything else is rejected by name). */
+	const TCHAR* const M5_071_AllowedRuleFields[] = {
+		TEXT("rule_id"), TEXT("event"), TEXT("region_id"), TEXT("wave_index"),
+		TEXT("effect"), TEXT("next_wave_index"), TEXT("delay_s"), TEXT("once") };
+
+	/** Reads one whitelisted enum; a miss appends a problem naming value + field. */
+	static bool M5_071_ReadEvent(const FString& Value, ERoomRuleEvent& Out, TArray<FString>& Problems, const FString& Prefix)
+	{
+		if (Value == TEXT("PlayerEnteredRegion")) { Out = ERoomRuleEvent::PlayerEnteredRegion; return true; }
+		if (Value == TEXT("WaveCleared")) { Out = ERoomRuleEvent::WaveCleared; return true; }
+		if (Value == TEXT("PlayerDied")) { Out = ERoomRuleEvent::PlayerDied; return true; }
+		Problems.Add(Prefix + TEXT(".event: unknown event '") + Value + TEXT("' (allowed: PlayerEnteredRegion, WaveCleared, PlayerDied)"));
+		return false;
+	}
+
+	static bool M5_071_ReadEffect(const FString& Value, ERoomRuleEffect& Out, TArray<FString>& Problems, const FString& Prefix)
+	{
+		if (Value == TEXT("StartWave")) { Out = ERoomRuleEffect::StartWave; return true; }
+		if (Value == TEXT("MarkCleared")) { Out = ERoomRuleEffect::MarkCleared; return true; }
+		if (Value == TEXT("FailRun")) { Out = ERoomRuleEffect::FailRun; return true; }
+		Problems.Add(Prefix + TEXT(".effect: unknown effect '") + Value + TEXT("' (allowed: StartWave, MarkCleared, FailRun)"));
+		return false;
+	}
+
+	/**
+	 * Test-side schema 2 rule reader (the production model lives in
+	 * RoomDefinition.h; the python generator is the production JSON gate).
+	 * Unknown fields, unknown enums, duplicate ids and broken indices/delays
+	 * append problems of the form "room 'x' rules[i] '<id>': <field>: ...".
+	 */
+	static bool M5_071_ReadRules(FAutomationTestBase& Test, const TSharedPtr<FRoomJsonValue>& Entry,
+		int32 WaveCount, TArray<FRoomSceneRule>& OutRules, TArray<FString>& Problems)
+	{
+		OutRules.Reset();
+		const FString RoomLabel = FString::Printf(TEXT("room '%s'"), *RoomEntryName(Entry));
+		const TSharedPtr<FRoomJsonValue>* Rules = FindTyped(Entry, TEXT("rules"), FRoomJsonValue::EKind::Array);
+		if (!Rules)
+		{
+			Problems.Add(RoomLabel + TEXT(": missing or mistyped array 'rules'"));
+			return false;
+		}
+		bool bOk = true;
+		TSet<FString> SeenIds;
+		int32 RuleIndex = 0;
+		for (const TSharedPtr<FRoomJsonValue>& RuleValue : (*Rules)->Array)
+		{
+			const FString Prefix = FString::Printf(TEXT("%s rules[%d]"), *RoomLabel, RuleIndex);
+			++RuleIndex;
+			if (!RuleValue.IsValid() || RuleValue->Kind != FRoomJsonValue::EKind::Object)
+			{
+				Problems.Add(Prefix + TEXT(": entry is not a JSON object"));
+				bOk = false;
+				continue;
+			}
+			// Unknown-field gate: compare against the allowed key list.
+			for (auto Iter = RuleValue->Object.CreateConstIterator(); Iter; ++Iter)
+			{
+				bool bAllowed = false;
+				for (const TCHAR* Field : M5_071_AllowedRuleFields)
+				{
+					if (Iter->Key == Field)
+					{
+						bAllowed = true;
+						break;
+					}
+				}
+				if (!bAllowed)
+				{
+					Problems.Add(Prefix + TEXT(": unknown rule field '") + Iter->Key + TEXT("'"));
+					bOk = false;
+				}
+			}
+			FRoomSceneRule Rule;
+			FString RuleId;
+			if (!GetStringOrReport(Test, RuleValue, TEXT("rule_id"), Prefix, RuleId))
+			{
+				bOk = false;
+				continue;
+			}
+			if (SeenIds.Contains(RuleId))
+			{
+				Problems.Add(Prefix + TEXT(" rule_id: duplicate '") + RuleId + TEXT("'"));
+				bOk = false;
+			}
+			SeenIds.Add(RuleId);
+			Rule.RuleId = FName(*RuleId);
+			const FString IdPrefix = Prefix + TEXT(" '") + RuleId + TEXT("'");
+			FString EventName;
+			FString EffectName;
+			if (!GetStringOrReport(Test, RuleValue, TEXT("event"), IdPrefix, EventName)
+				|| !GetStringOrReport(Test, RuleValue, TEXT("effect"), IdPrefix, EffectName)
+				|| !M5_071_ReadEvent(EventName, Rule.Event, Problems, IdPrefix)
+				|| !M5_071_ReadEffect(EffectName, Rule.Effect, Problems, IdPrefix))
+			{
+				bOk = false;
+				continue;
+			}
+			if (const TSharedPtr<FRoomJsonValue>* Region = FindTyped(RuleValue, TEXT("region_id"), FRoomJsonValue::EKind::String))
+			{
+				Rule.RegionId = FName(*(*Region)->String);
+			}
+			if (const TSharedPtr<FRoomJsonValue>* WaveIndex = FindTyped(RuleValue, TEXT("wave_index"), FRoomJsonValue::EKind::Number))
+			{
+				Rule.WaveIndex = static_cast<int32>((*WaveIndex)->Number);
+			}
+			if (const TSharedPtr<FRoomJsonValue>* NextWave = FindTyped(RuleValue, TEXT("next_wave_index"), FRoomJsonValue::EKind::Number))
+			{
+				Rule.NextWaveIndex = static_cast<int32>((*NextWave)->Number);
+			}
+			if (const TSharedPtr<FRoomJsonValue>* Delay = FindTyped(RuleValue, TEXT("delay_s"), FRoomJsonValue::EKind::Number))
+			{
+				Rule.DelaySeconds = static_cast<float>((*Delay)->Number);
+			}
+			if (const TSharedPtr<FRoomJsonValue>* Once = FindTyped(RuleValue, TEXT("once"), FRoomJsonValue::EKind::Boolean))
+			{
+				Rule.bOnce = (*Once)->Boolean;
+			}
+			OutRules.Add(Rule);
+		}
+		return bOk;
+	}
+
+	/** Hand-built combat-shaped room (2+3 waves) for the rule mutations. */
+	static URoomDefinition* M5_071_MakeCombatRoom()
+	{
+		URoomDefinition* Room = NewObject<URoomDefinition>();
+		Room->RoomId = TEXT("room_combat_01");
+		Room->MapPath = TSoftObjectPtr<UWorld>(FSoftObjectPath(TEXT("/Game/UEMMO/Maps/L_CombatRoom01.L_CombatRoom01")));
+		Room->PlayerSpawnLocation = FVector(-400.0, 0.0, 100.0);
+		Room->BoundsCenter = FVector(0.0, 0.0, 90.0);
+		Room->BoundsSize = FVector(2400.0, 1000.0, 180.0);
+		Room->RewardTableId = TEXT("starter");
+		FRoomWaveDefinition Wave0;
+		Wave0.EnemyId = TEXT("melee_grunt");
+		Wave0.Count = 2;
+		Wave0.SpawnLocations.Add(FVector(300.0, 0.0, 88.0));
+		Wave0.SpawnLocations.Add(FVector(450.0, -150.0, 88.0));
+		Room->Waves.Add(Wave0);
+		FRoomWaveDefinition Wave1;
+		Wave1.EnemyId = TEXT("melee_grunt");
+		Wave1.Count = 3;
+		Wave1.SpawnLocations.Add(FVector(600.0, 100.0, 88.0));
+		Wave1.SpawnLocations.Add(FVector(750.0, -100.0, 88.0));
+		Wave1.SpawnLocations.Add(FVector(0.0, 300.0, 88.0));
+		Room->Waves.Add(Wave1);
+		return Room;
+	}
+}
+
+using namespace UE::UEMMO::Tasks::M5_071;
+
+// 1. Acceptance: the schema 2 production data parses cleanly, the combat
+//    room's rules are EXACTLY the documented legacy migration output (2+3
+//    waves, 1 s inter-wave delay, player-death failure), the training room
+//    carries no rules (no auto-start), the migration is deterministic, and
+//    the regenerated DA asset carries the same rules.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FUEMMOTasksM5_071CombatRulesParseValidateAndLegacyMigrationIsExplicit,
+	"UEMMO.Tasks.M5_071.CombatRulesParseValidateAndLegacyMigrationIsExplicit",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+
+bool FUEMMOTasksM5_071CombatRulesParseValidateAndLegacyMigrationIsExplicit::RunTest(const FString& Parameters)
+{
+	FString LoadError;
+	TSharedPtr<FRoomJsonValue> Root;
+	if (!LoadJsonRoot(GetRoomsJsonPath(), LoadError, Root))
+	{
+		AddError(LoadError);
+		return true;
+	}
+
+	TSharedPtr<FRoomJsonValue> CombatEntry;
+	TSharedPtr<FRoomJsonValue> TrainingEntry;
+	if (!TestTrue(TEXT("the room_combat_01 entry exists"), FindRoomEntryById(Root, TEXT("room_combat_01"), CombatEntry))
+		|| !TestTrue(TEXT("the room_training_01 entry exists"), FindRoomEntryById(Root, TEXT("room_training_01"), TrainingEntry)))
+	{
+		return true;
+	}
+
+	// Combat rules parse without problems and equal the explicit schema 1
+	// migration output rule by rule.
+	TArray<FRoomSceneRule> CombatRules;
+	TArray<FString> RuleProblems;
+	if (!TestTrue(TEXT("the combat row's rules parse without problems"),
+		M5_071_ReadRules(*this, CombatEntry, 2, CombatRules, RuleProblems)))
+	{
+		for (const FString& Problem : RuleProblems)
+		{
+			AddError(Problem);
+		}
+		return true;
+	}
+	TArray<FRoomSceneRule> Migrated;
+	URoomDefinition* LegacyRoom = M5_071_MakeCombatRoom();
+	TestTrue(TEXT("the legacy migration builds rules for the 2+3 waves"),
+		BuildLegacySchemaOneDefaultRules(LegacyRoom->Waves, Migrated));
+	TestEqual(TEXT("the migration yields exactly 4 rules"), Migrated.Num(), 4);
+	TestEqual(TEXT("the parsed combat rules equal the migration output"), CombatRules.Num(), Migrated.Num());
+	if (CombatRules.Num() == Migrated.Num())
+	{
+		for (int32 Index = 0; Index < Migrated.Num(); ++Index)
+		{
+			TestEqual(FString::Printf(TEXT("rule %d id matches the migration"), Index),
+				CombatRules[Index].RuleId, Migrated[Index].RuleId);
+			TestEqual(FString::Printf(TEXT("rule %d event matches"), Index),
+				static_cast<uint8>(CombatRules[Index].Event), static_cast<uint8>(Migrated[Index].Event));
+			TestEqual(FString::Printf(TEXT("rule %d effect matches"), Index),
+				static_cast<uint8>(CombatRules[Index].Effect), static_cast<uint8>(Migrated[Index].Effect));
+			TestEqual(FString::Printf(TEXT("rule %d next wave matches"), Index),
+				CombatRules[Index].NextWaveIndex, Migrated[Index].NextWaveIndex);
+			TestEqual(FString::Printf(TEXT("rule %d delay matches"), Index),
+				CombatRules[Index].DelaySeconds, Migrated[Index].DelaySeconds);
+		}
+	}
+	// The production facts the rules must express: entry at wave 0 with no
+	// delay, wave 0 -> wave 1 after exactly 1 s, wave 1 clears, death fails.
+	TestEqual(TEXT("enter rule starts wave 0"), CombatRules[0].NextWaveIndex, 0);
+	TestEqual(TEXT("enter rule region is activation"), CombatRules[0].RegionId, FName(TEXT("activation")));
+	TestEqual(TEXT("enter rule has no delay"), CombatRules[0].DelaySeconds, 0.0f);
+	TestEqual(TEXT("wave 0 rule delays exactly 1 s"), CombatRules[1].DelaySeconds, 1.0f);
+	TestEqual(TEXT("wave 0 rule starts wave 1"), CombatRules[1].NextWaveIndex, 1);
+	TestEqual(TEXT("wave 1 rule clears"), CombatRules[2].Effect, ERoomRuleEffect::MarkCleared);
+	TestEqual(TEXT("death rule fails the run"), CombatRules[3].Effect, ERoomRuleEffect::FailRun);
+
+	// The assembled combat room passes rule validation.
+	URoomDefinition* CombatRoom = M5_071_MakeCombatRoom();
+	CombatRoom->Rules = CombatRules;
+	FText RuleErrors;
+	TestTrue(TEXT("the combat room passes ValidateRoomRules"), ValidateRoomRules(*CombatRoom, RuleErrors));
+	TestTrue(TEXT("the combat room reports no rule problems"), RuleErrors.IsEmpty());
+
+	// The training row carries NO rules (no auto-start) and stays valid.
+	TArray<FRoomSceneRule> TrainingRules;
+	TArray<FString> TrainingProblems;
+	TestTrue(TEXT("the training row's rules parse"), M5_071_ReadRules(*this, TrainingEntry, 2, TrainingRules, TrainingProblems));
+	TestEqual(TEXT("the training room carries no rules"), TrainingRules.Num(), 0);
+	URoomDefinition* TrainingRoom = MakeValidTrainingRoom();
+	TrainingRoom->Rules = TrainingRules;
+	FText TrainingRuleErrors;
+	TestTrue(TEXT("the rule-less training room passes ValidateRoomRules"),
+		ValidateRoomRules(*TrainingRoom, TrainingRuleErrors));
+
+	// Migration determinism + the empty-waves refusal.
+	TArray<FRoomSceneRule> MigratedAgain;
+	BuildLegacySchemaOneDefaultRules(LegacyRoom->Waves, MigratedAgain);
+	TestEqual(TEXT("a second migration yields the same rule count"), MigratedAgain.Num(), Migrated.Num());
+	TArray<FRoomSceneRule> NoWaveRules;
+	TestFalse(TEXT("an empty wave list refuses to migrate"),
+		BuildLegacySchemaOneDefaultRules(TArray<FRoomWaveDefinition>(), NoWaveRules));
+	TestEqual(TEXT("the refused migration produced no rules"), NoWaveRules.Num(), 0);
+
+	// The regenerated production asset carries the same rules and validates.
+	URoomDefinition* Asset = LoadObject<URoomDefinition>(nullptr, TEXT("/Game/UEMMO/Rooms/DA_room_combat_01.DA_room_combat_01"));
+	if (!TestNotNull(TEXT("DA_room_combat_01 loads"), Asset))
+	{
+		AddError(TEXT("DA_room_combat_01 is missing - run Scripts/PrepareRooms.ps1 first."));
+		return true;
+	}
+	TestEqual(TEXT("the asset carries the four production rules"), Asset->Rules.Num(), 4);
+	FText AssetRuleErrors;
+	TestTrue(TEXT("the asset passes ValidateRoomRules"), ValidateRoomRules(*Asset, AssetRuleErrors));
+	TestTrue(TEXT("the asset reports no rule problems"), AssetRuleErrors.IsEmpty());
+	if (Asset->Rules.Num() == CombatRules.Num())
+	{
+		for (int32 Index = 0; Index < CombatRules.Num(); ++Index)
+		{
+			TestEqual(FString::Printf(TEXT("asset rule %d id equals the JSON rule"), Index),
+				Asset->Rules[Index].RuleId, CombatRules[Index].RuleId);
+			TestEqual(FString::Printf(TEXT("asset rule %d effect equals the JSON rule"), Index),
+				static_cast<uint8>(Asset->Rules[Index].Effect), static_cast<uint8>(CombatRules[Index].Effect));
+		}
+	}
+	return true;
+}
+
+// 2. Acceptance: broken rules are rejected with room/rule/field names -
+//    duplicate ids, out-of-range or negative/non-finite delays, rule cycles,
+//    terminal-less chains, invalid region references, missing entry rules,
+//    unknown enums/fields (JSON-level), and a schema 3 document.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FUEMMOTasksM5_071RejectsBrokenRulesWithRoomRuleFieldNames,
+	"UEMMO.Tasks.M5_071.RejectsBrokenRulesWithRoomRuleFieldNames",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+
+bool FUEMMOTasksM5_071RejectsBrokenRulesWithRoomRuleFieldNames::RunTest(const FString& Parameters)
+{
+	// -- In-memory mutations against ValidateRoomRules -------------------------
+	URoomDefinition* Base = M5_071_MakeCombatRoom();
+	BuildLegacySchemaOneDefaultRules(Base->Waves, Base->Rules);
+	FText BaseErrors;
+	TestTrue(TEXT("the unmutated default rules pass"), ValidateRoomRules(*Base, BaseErrors));
+
+	URoomDefinition* DupId = M5_071_MakeCombatRoom();
+	BuildLegacySchemaOneDefaultRules(DupId->Waves, DupId->Rules);
+	DupId->Rules[3].RuleId = DupId->Rules[2].RuleId;
+	FText DupErrors;
+	TestFalse(TEXT("a duplicate rule id is rejected"), ValidateRoomRules(*DupId, DupErrors));
+	TestTrue(TEXT("the duplicate error names Rules[] and RuleId"),
+		DupErrors.ToString().Contains(TEXT("Rules[3]")) && DupErrors.ToString().Contains(TEXT("RuleId duplicates")));
+
+	URoomDefinition* OutOfRange = M5_071_MakeCombatRoom();
+	BuildLegacySchemaOneDefaultRules(OutOfRange->Waves, OutOfRange->Rules);
+	OutOfRange->Rules[0].NextWaveIndex = 5;
+	FText OutOfRangeErrors;
+	TestFalse(TEXT("an out-of-range StartWave index is rejected"), ValidateRoomRules(*OutOfRange, OutOfRangeErrors));
+	TestTrue(TEXT("the out-of-range error names Rules[0] and NextWaveIndex"),
+		OutOfRangeErrors.ToString().Contains(TEXT("Rules[0]")) && OutOfRangeErrors.ToString().Contains(TEXT("NextWaveIndex 5 is out of range")));
+
+	URoomDefinition* NegativeDelay = M5_071_MakeCombatRoom();
+	BuildLegacySchemaOneDefaultRules(NegativeDelay->Waves, NegativeDelay->Rules);
+	NegativeDelay->Rules[1].DelaySeconds = -0.5f;
+	FText NegativeDelayErrors;
+	TestFalse(TEXT("a negative delay is rejected"), ValidateRoomRules(*NegativeDelay, NegativeDelayErrors));
+	TestTrue(TEXT("the negative delay error names DelaySeconds"),
+		NegativeDelayErrors.ToString().Contains(TEXT("DelaySeconds must be finite and >= 0")));
+
+	URoomDefinition* NanDelay = M5_071_MakeCombatRoom();
+	BuildLegacySchemaOneDefaultRules(NanDelay->Waves, NanDelay->Rules);
+	NanDelay->Rules[1].DelaySeconds = std::numeric_limits<float>::quiet_NaN();
+	FText NanDelayErrors;
+	TestFalse(TEXT("a non-finite delay is rejected"), ValidateRoomRules(*NanDelay, NanDelayErrors));
+	TestTrue(TEXT("the non-finite delay error names DelaySeconds"),
+		NanDelayErrors.ToString().Contains(TEXT("DelaySeconds must be finite and >= 0")));
+
+	URoomDefinition* Cycle = M5_071_MakeCombatRoom();
+	BuildLegacySchemaOneDefaultRules(Cycle->Waves, Cycle->Rules);
+	Cycle->Rules[1].NextWaveIndex = 0;
+	FText CycleErrors;
+	TestFalse(TEXT("a wave-restart cycle is rejected"), ValidateRoomRules(*Cycle, CycleErrors));
+	TestTrue(TEXT("the cycle error demands strictly increasing waves"),
+		CycleErrors.ToString().Contains(TEXT("strictly increase")));
+
+	URoomDefinition* NoTerminal = M5_071_MakeCombatRoom();
+	BuildLegacySchemaOneDefaultRules(NoTerminal->Waves, NoTerminal->Rules);
+	NoTerminal->Rules.RemoveAt(2);
+	FText NoTerminalErrors;
+	TestFalse(TEXT("a chain without a MarkCleared terminal is rejected"), ValidateRoomRules(*NoTerminal, NoTerminalErrors));
+	TestTrue(TEXT("the terminal-less chain error names the dangling wave"),
+		NoTerminalErrors.ToString().Contains(TEXT("no WaveCleared continuation")));
+
+	URoomDefinition* BadRegion = M5_071_MakeCombatRoom();
+	BuildLegacySchemaOneDefaultRules(BadRegion->Waves, BadRegion->Rules);
+	BadRegion->Rules[0].RegionId = TEXT("side_door");
+	FText BadRegionErrors;
+	TestFalse(TEXT("an undefined region reference is rejected"), ValidateRoomRules(*BadRegion, BadRegionErrors));
+	TestTrue(TEXT("the region error names RegionId and the defined region"),
+		BadRegionErrors.ToString().Contains(TEXT("RegionId 'side_door' is not a defined region")));
+
+	URoomDefinition* NoEntry = M5_071_MakeCombatRoom();
+	BuildLegacySchemaOneDefaultRules(NoEntry->Waves, NoEntry->Rules);
+	NoEntry->Rules.RemoveAt(0);
+	FText NoEntryErrors;
+	TestFalse(TEXT("wave rules without an entry rule are rejected"), ValidateRoomRules(*NoEntry, NoEntryErrors));
+	TestTrue(TEXT("the missing entry error names PlayerEnteredRegion"),
+		NoEntryErrors.ToString().Contains(TEXT("PlayerEnteredRegion")));
+
+	// -- JSON-level rejections through the schema 2 rule reader ----------------
+	const TCHAR* BrokenDoc = TEXT("{"
+		"\"schema_version\":2,"
+		"\"rooms\":[{"
+		"\"room_id\":\"room_break_01\",\"map_path\":\"/Game/UEMMO/Maps/L_CombatRoom01\","
+		"\"reward_table_id\":\"starter\","
+		"\"player_spawn_location_cm\":{\"x\":-400,\"y\":0,\"z\":100},"
+		"\"player_spawn_yaw_degrees\":0,"
+		"\"bounds_center_cm\":{\"x\":0,\"y\":0,\"z\":90},"
+		"\"bounds_size_cm\":{\"x\":2400,\"y\":1000,\"z\":180},"
+		"\"rules\":["
+		"{\"rule_id\":\"r1\",\"event\":\"EnemyKilled\",\"effect\":\"StartWave\",\"next_wave_index\":0},"
+		"{\"rule_id\":\"r2\",\"event\":\"PlayerEnteredRegion\",\"region_id\":\"activation\",\"effect\":\"SpawnBoss\"},"
+		"{\"rule_id\":\"r2\",\"event\":\"PlayerDied\",\"effect\":\"FailRun\",\"probability\":0.5}"
+		"],"
+		"\"waves\":[{\"enemy_id\":\"melee_grunt\",\"count\":1,"
+		"\"spawn_locations_cm\":[{\"x\":300,\"y\":0,\"z\":88}]}]"
+		"}]}");
+	TSharedPtr<FRoomJsonValue> BrokenRoot;
+	FString ParseError;
+	if (!TestTrue(TEXT("the broken document parses as JSON"),
+		FRoomJsonParser::Parse(BrokenDoc, BrokenRoot, ParseError)))
+	{
+		return true;
+	}
+	TSharedPtr<FRoomJsonValue> BreakEntry;
+	TArray<FRoomSceneRule> BrokenRules;
+	TArray<FString> BrokenProblems;
+	if (FindRoomEntryById(BrokenRoot, TEXT("room_break_01"), BreakEntry))
+	{
+		M5_071_ReadRules(*this, BreakEntry, 1, BrokenRules, BrokenProblems);
+	}
+	const FString Joined = FString::Join(BrokenProblems, TEXT("\n"));
+	TestTrue(TEXT("the unknown event is rejected by name"),
+		Joined.Contains(TEXT("unknown event 'EnemyKilled'")));
+	TestTrue(TEXT("the unknown effect is rejected by name"),
+		Joined.Contains(TEXT("unknown effect 'SpawnBoss'")));
+	TestTrue(TEXT("the duplicate rule id is rejected by name"),
+		Joined.Contains(TEXT("duplicate 'r2'")));
+	TestTrue(TEXT("the unknown rule field is rejected by name"),
+		Joined.Contains(TEXT("unknown rule field 'probability'")));
+
+	// Schema 3 is refused outright (no silent guessing of a newer contract).
+	const TCHAR* SchemaThreeDoc = TEXT("{\"schema_version\":3,\"rooms\":[]}");
+	TSharedPtr<FRoomJsonValue> SchemaThreeRoot;
+	if (TestTrue(TEXT("the schema 3 document parses as JSON"),
+		FRoomJsonParser::Parse(SchemaThreeDoc, SchemaThreeRoot, ParseError)))
+	{
+		const TSharedPtr<FRoomJsonValue>* Version = FindTyped(SchemaThreeRoot, TEXT("schema_version"), FRoomJsonValue::EKind::Number);
+		TestTrue(TEXT("schema 3 is not the supported version 2"),
+			Version != nullptr && !NearlyEqual((*Version)->Number, 2.0));
+	}
 	return true;
 }
 
