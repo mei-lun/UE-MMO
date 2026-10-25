@@ -102,3 +102,15 @@ public:
  * Pure check: it never loads the map, spawns actors or touches a clock.
  */
 bool ValidateRoomDefinition(const URoomDefinition& Room, const TSet<FName>& KnownEnemyIds, FText& OutErrors);
+
+/**
+ * M5-069: catalog-level validation across every room row of one source (the
+ * later asset builder hands exactly this list in). RoomIds must be unique:
+ * a duplicated id names the id and both row indices in OutErrors, because a
+ * repeated row would make the room unaddressable for the run/session and the
+ * asset generation ambiguous. Per-row field validation (map path, reward id,
+ * enemy references, geometry) stays in ValidateRoomDefinition - this check is
+ * only the cross-row rule. Null entries are reported by index. Pure check:
+ * no loads, no spawns, no clocks.
+ */
+bool ValidateRoomCatalog(const TArray<const URoomDefinition*>& Rooms, FText& OutErrors);

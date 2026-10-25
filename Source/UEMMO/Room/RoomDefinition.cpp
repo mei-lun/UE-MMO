@@ -167,3 +167,35 @@ bool ValidateRoomDefinition(const URoomDefinition& Room, const TSet<FName>& Know
 	OutErrors = FText::FromString(FString::Join(Problems, TEXT("; ")));
 	return Problems.Num() == 0;
 }
+
+bool ValidateRoomCatalog(const TArray<const URoomDefinition*>& Rooms, FText& OutErrors)
+{
+	// M5-069: the one cross-row rule of the catalog - every RoomId must be
+	// unique. The first occurrence is remembered by index so the error names
+	// the duplicated id AND both rows (a row the asset builder could not
+	// address unambiguously otherwise).
+	TArray<FString> Problems;
+	TMap<FName, int32> FirstRowIndex;
+	for (int32 RowIndex = 0; RowIndex < Rooms.Num(); ++RowIndex)
+	{
+		const URoomDefinition* Room = Rooms[RowIndex];
+		if (Room == nullptr)
+		{
+			AddRoomProblem(Problems, FString::Printf(TEXT("rooms[%d] is null"), RowIndex));
+			continue;
+		}
+		const int32* FirstIndex = FirstRowIndex.Find(Room->RoomId);
+		if (FirstIndex != nullptr)
+		{
+			AddRoomProblem(Problems, FString::Printf(
+				TEXT("rooms[%d].RoomId '%s' duplicates rooms[%d] - room ids must be unique"),
+				RowIndex, *Room->RoomId.ToString(), *FirstIndex));
+		}
+		else
+		{
+			FirstRowIndex.Add(Room->RoomId, RowIndex);
+		}
+	}
+	OutErrors = FText::FromString(FString::Join(Problems, TEXT("; ")));
+	return Problems.Num() == 0;
+}

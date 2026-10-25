@@ -445,6 +445,53 @@ namespace UE::UEMMO::Tasks::M2_005
 		return (Id && !(*Id)->String.IsEmpty()) ? (*Id)->String : FString(TEXT("<unnamed room>"));
 	}
 
+	/**
+	 * M5-069: the first rooms[] entry whose room_id equals the given id (the
+	 * file now carries more than one row, so tests address rows by id, never
+	 * by array position).
+	 */
+	static bool FindRoomEntryById(const TSharedPtr<FRoomJsonValue>& Root, const TCHAR* RoomId,
+		TSharedPtr<FRoomJsonValue>& OutEntry)
+	{
+		const TSharedPtr<FRoomJsonValue>* Rooms = FindTyped(Root, TEXT("rooms"), FRoomJsonValue::EKind::Array);
+		if (!Rooms)
+		{
+			return false;
+		}
+		for (const TSharedPtr<FRoomJsonValue>& Entry : (*Rooms)->Array)
+		{
+			if (!Entry.IsValid() || Entry->Kind != FRoomJsonValue::EKind::Object)
+			{
+				continue;
+			}
+			const TSharedPtr<FRoomJsonValue>* Id = FindTyped(Entry, TEXT("room_id"), FRoomJsonValue::EKind::String);
+			if (Id && (*Id)->String == RoomId)
+			{
+				OutEntry = Entry;
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** M5-069: a field-by-field in-memory copy of a parsed room (mutation base). */
+	static URoomDefinition* CloneRoom(const URoomDefinition* Source)
+	{
+		URoomDefinition* Room = NewObject<URoomDefinition>();
+		if (Source != nullptr)
+		{
+			Room->RoomId = Source->RoomId;
+			Room->MapPath = Source->MapPath;
+			Room->PlayerSpawnLocation = Source->PlayerSpawnLocation;
+			Room->PlayerSpawnYawDegrees = Source->PlayerSpawnYawDegrees;
+			Room->BoundsCenter = Source->BoundsCenter;
+			Room->BoundsSize = Source->BoundsSize;
+			Room->RewardTableId = Source->RewardTableId;
+			Room->Waves = Source->Waves;
+		}
+		return Room;
+	}
+
 	static bool GetStringOrReport(FAutomationTestBase& Test, const TSharedPtr<FRoomJsonValue>& Entry,
 		const TCHAR* Name, const FString& Context, FString& OutValue)
 	{
@@ -735,16 +782,13 @@ bool FUEMMOTasksM2_005RoomTraining01LoadsAndPassesValidation::RunTest(const FStr
 		AddError(TEXT("missing required top-level array 'rooms'"));
 		return true;
 	}
-	TestEqual(TEXT("rooms holds exactly 1 entry"), (*Rooms)->Array.Num(), 1);
-	if ((*Rooms)->Array.Num() != 1)
+	// M5-069: the file now carries two rows (room_training_01 plus the
+	// production room_combat_01); the training room is addressed by id.
+	TestEqual(TEXT("rooms holds exactly 2 entries (M5-069 added the combat row)"), (*Rooms)->Array.Num(), 2);
+	TSharedPtr<FRoomJsonValue> Entry;
+	if (!TestTrue(TEXT("the room_training_01 entry is found by its id"),
+		FindRoomEntryById(Root, TEXT("room_training_01"), Entry)) || !Entry.IsValid())
 	{
-		return true;
-	}
-
-	const TSharedPtr<FRoomJsonValue> Entry = (*Rooms)->Array[0];
-	if (!Entry.IsValid() || Entry->Kind != FRoomJsonValue::EKind::Object)
-	{
-		AddError(TEXT("rooms[0] is not a JSON object"));
 		return true;
 	}
 	TestEqual(TEXT("room_id is room_training_01"), RoomEntryName(Entry), FString(TEXT("room_training_01")));
@@ -858,14 +902,19 @@ bool FUEMMOTasksM2_005RoomTraining01WavePlanIsFixedAndReproducible::RunTest(cons
 
 	const TSharedPtr<FRoomJsonValue>* FirstRooms = FindTyped(FirstRoot, TEXT("rooms"), FRoomJsonValue::EKind::Array);
 	const TSharedPtr<FRoomJsonValue>* SecondRooms = FindTyped(SecondRoot, TEXT("rooms"), FRoomJsonValue::EKind::Array);
-	if (!FirstRooms || !SecondRooms || (*FirstRooms)->Array.Num() != 1 || (*SecondRooms)->Array.Num() != 1)
+	// M5-069: both parses address the training row by id (the file carries two rows now).
+	TSharedPtr<FRoomJsonValue> FirstEntry;
+	TSharedPtr<FRoomJsonValue> SecondEntry;
+	if (!FirstRooms || !SecondRooms
+		|| !FindRoomEntryById(FirstRoot, TEXT("room_training_01"), FirstEntry)
+		|| !FindRoomEntryById(SecondRoot, TEXT("room_training_01"), SecondEntry))
 	{
-		AddError(TEXT("both parses must expose exactly one room entry"));
+		AddError(TEXT("both parses must expose the room_training_01 entry"));
 		return true;
 	}
 
-	URoomDefinition* First = MakeRoomFromJson(*this, (*FirstRooms)->Array[0]);
-	URoomDefinition* Second = MakeRoomFromJson(*this, (*SecondRooms)->Array[0]);
+	URoomDefinition* First = MakeRoomFromJson(*this, FirstEntry);
+	URoomDefinition* Second = MakeRoomFromJson(*this, SecondEntry);
 	if (!First || !Second)
 	{
 		return true;
@@ -926,12 +975,14 @@ bool FUEMMOTasksM2_005MapPathSoftReferenceResolvesToExistingMap::RunTest(const F
 		return true;
 	}
 	const TSharedPtr<FRoomJsonValue>* Rooms = FindTyped(Root, TEXT("rooms"), FRoomJsonValue::EKind::Array);
-	if (!Rooms || (*Rooms)->Array.Num() != 1)
+	// M5-069: the training row is addressed by id (the file carries two rows now).
+	TSharedPtr<FRoomJsonValue> Entry;
+	if (!Rooms || !FindRoomEntryById(Root, TEXT("room_training_01"), Entry))
 	{
-		AddError(TEXT("rooms must hold exactly 1 entry for this check"));
+		AddError(TEXT("the room_training_01 entry must exist for this check"));
 		return true;
 	}
-	URoomDefinition* Room = MakeRoomFromJson(*this, (*Rooms)->Array[0]);
+	URoomDefinition* Room = MakeRoomFromJson(*this, Entry);
 	if (!Room)
 	{
 		return true;
@@ -1103,6 +1154,243 @@ bool FUEMMOTasksM2_005RejectsInvalidDefinitionsWithFieldNames::RunTest(const FSt
 	TestTrue(TEXT("Count problem is included"), BrokenErrors.ToString().Contains(TEXT("Count")));
 	TestTrue(TEXT("EnemyId problem is included"), BrokenErrors.ToString().Contains(TEXT("EnemyId")));
 	TestTrue(TEXT("problems are joined with \"; \""), BrokenErrors.ToString().Contains(TEXT("; ")));
+	return true;
+}
+
+// -- M5-069: the production combat room row and the catalog-level rules -------
+//
+// Data/rooms.json now carries TWO rows: room_training_01 (the historical
+// test room) and room_combat_01 (the production combat room the trigger and
+// the game flow name). They are different identities on purpose - similar
+// names never merge them - and the whole catalog must keep every room_id
+// unique while each row stays a valid room.
+
+// 1. Acceptance: the room_combat_01 row parses, carries the L_CombatRoom01
+//    map / starter reward / the trigger's exact 2+3 wave plan and spawn
+//    coordinates, passes ValidateRoomDefinition against the enemies catalog,
+//    resolves to a loadable map package, and stays a distinct identity from
+//    room_training_01; both rows together pass the catalog uniqueness check.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FUEMMOTasksM5_069CombatRoom01RowParsesValidatesAndStaysDistinct,
+	"UEMMO.Tasks.M5_069.CombatRoom01RowParsesValidatesAndStaysDistinct",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+
+bool FUEMMOTasksM5_069CombatRoom01RowParsesValidatesAndStaysDistinct::RunTest(const FString& Parameters)
+{
+	FString LoadError;
+	TSharedPtr<FRoomJsonValue> Root;
+	if (!LoadJsonRoot(GetRoomsJsonPath(), LoadError, Root))
+	{
+		AddError(LoadError);
+		return true;
+	}
+	const TSharedPtr<FRoomJsonValue>* SchemaVersion = FindTyped(Root, TEXT("schema_version"), FRoomJsonValue::EKind::Number);
+	if (SchemaVersion)
+	{
+		TestTrue(TEXT("schema_version stays 1 (no rule fields added in M5-069)"), NearlyEqual((*SchemaVersion)->Number, 1.0));
+	}
+	else
+	{
+		AddError(TEXT("missing or mistyped top-level number 'schema_version'"));
+	}
+
+	TSharedPtr<FRoomJsonValue> CombatEntry;
+	TSharedPtr<FRoomJsonValue> TrainingEntry;
+	if (!TestTrue(TEXT("the room_combat_01 entry exists"), FindRoomEntryById(Root, TEXT("room_combat_01"), CombatEntry))
+		|| !TestTrue(TEXT("the room_training_01 entry still exists"), FindRoomEntryById(Root, TEXT("room_training_01"), TrainingEntry)))
+	{
+		return true;
+	}
+
+	// Distinct identities: same wave shape, but different ids AND different
+	// map packages - name similarity never merges the two rows.
+	FString CombatMapPath;
+	FString TrainingMapPath;
+	const bool bPathsRead =
+		GetStringOrReport(*this, CombatEntry, TEXT("map_path"), TEXT("room_combat_01"), CombatMapPath) &&
+		GetStringOrReport(*this, TrainingEntry, TEXT("map_path"), TEXT("room_training_01"), TrainingMapPath);
+	if (bPathsRead)
+	{
+		TestEqual(TEXT("room_combat_01 names the L_CombatRoom01 package"),
+			CombatMapPath, FString(TEXT("/Game/UEMMO/Maps/L_CombatRoom01")));
+		TestEqual(TEXT("room_training_01 keeps the L_TrainingArena package"),
+			TrainingMapPath, FString(TEXT("/Game/UEMMO/Maps/L_TrainingArena")));
+		TestTrue(TEXT("the production and training rooms are distinct identities"),
+			CombatMapPath != TrainingMapPath);
+	}
+
+	URoomDefinition* Combat = MakeRoomFromJson(*this, CombatEntry);
+	URoomDefinition* Training = MakeRoomFromJson(*this, TrainingEntry);
+	if (!Combat || !Training)
+	{
+		return true;
+	}
+	TestEqual(TEXT("the parsed production room id is room_combat_01"), Combat->RoomId, FName(TEXT("room_combat_01")));
+	TestEqual(TEXT("the parsed production reward is starter"), Combat->RewardTableId, FName(TEXT("starter")));
+
+	TSet<FName> KnownEnemyIds;
+	if (!BuildKnownEnemyIds(*this, KnownEnemyIds))
+	{
+		return true;
+	}
+	FText CombatErrors;
+	TestTrue(TEXT("the loaded room_combat_01 passes ValidateRoomDefinition"),
+		ValidateRoomDefinition(*Combat, KnownEnemyIds, CombatErrors));
+	TestTrue(TEXT("the loaded room_combat_01 reports no validation errors"), CombatErrors.IsEmpty());
+	FText TrainingErrors;
+	TestTrue(TEXT("the loaded room_training_01 still passes ValidateRoomDefinition"),
+		ValidateRoomDefinition(*Training, KnownEnemyIds, TrainingErrors));
+
+	// Wave plan: the exact 2+3 melee_grunt schedule and spawn coordinates the
+	// ARoomTrigger fallback has been running (M2-016 defaults) - the row is
+	// now the single source of that plan.
+	TestEqual(TEXT("room_combat_01 holds exactly 2 waves"), Combat->Waves.Num(), 2);
+	if (Combat->Waves.Num() == 2)
+	{
+		TestEqual(TEXT("wave 1 count is 2"), Combat->Waves[0].Count, 2);
+		TestEqual(TEXT("wave 2 count is 3"), Combat->Waves[1].Count, 3);
+		TestEqual(TEXT("wave 1 enemy is melee_grunt"), Combat->Waves[0].EnemyId, FName(TEXT("melee_grunt")));
+		TestEqual(TEXT("wave 2 enemy is melee_grunt"), Combat->Waves[1].EnemyId, FName(TEXT("melee_grunt")));
+		if (Combat->Waves[0].SpawnLocations.Num() == 2)
+		{
+			TestVectorNear(*this, TEXT("room_combat_01 wave 1 spawn 1"), Combat->Waves[0].SpawnLocations[0], 300.0, 0.0, 88.0);
+			TestVectorNear(*this, TEXT("room_combat_01 wave 1 spawn 2"), Combat->Waves[0].SpawnLocations[1], 450.0, -150.0, 88.0);
+		}
+		if (Combat->Waves[1].SpawnLocations.Num() == 3)
+		{
+			TestVectorNear(*this, TEXT("room_combat_01 wave 2 spawn 1"), Combat->Waves[1].SpawnLocations[0], 600.0, 100.0, 88.0);
+			TestVectorNear(*this, TEXT("room_combat_01 wave 2 spawn 2"), Combat->Waves[1].SpawnLocations[1], 750.0, -100.0, 88.0);
+			TestVectorNear(*this, TEXT("room_combat_01 wave 2 spawn 3"), Combat->Waves[1].SpawnLocations[2], 0.0, 300.0, 88.0);
+		}
+	}
+
+	// The named map package really loads (the M2-005 map-reference precedent).
+	const FString MapPathString = Combat->MapPath.ToSoftObjectPath().ToString();
+	FString ObjectPath = MapPathString;
+	if (!ObjectPath.Contains(TEXT(".")))
+	{
+		ObjectPath += TEXT(".") + FPaths::GetBaseFilename(MapPathString);
+	}
+	UWorld* World = LoadObject<UWorld>(nullptr, *ObjectPath);
+	TestTrue(TEXT("MapPath resolves to a loadable L_CombatRoom01 UWorld in the -game process"), World != nullptr);
+
+	// Catalog rule: the real two-row catalog keeps its ids unique.
+	TArray<const URoomDefinition*> Catalog;
+	Catalog.Add(Training);
+	Catalog.Add(Combat);
+	FText CatalogErrors;
+	TestTrue(TEXT("the real two-row catalog passes ValidateRoomCatalog"),
+		ValidateRoomCatalog(Catalog, CatalogErrors));
+	TestTrue(TEXT("the real catalog reports no uniqueness problems"), CatalogErrors.IsEmpty());
+	return true;
+}
+
+// 2. Acceptance: the catalog-level duplicate rule rejects a repeated room_id
+//    naming the id and both rows; the per-row rejections (unknown enemy,
+//    out-of-bounds spawn on X or the Y depth axis, empty map/reward, a wave
+//    count disagreeing with its locations) also fire on the parsed
+//    room_combat_01 shape and name their fields.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FUEMMOTasksM5_069RejectsDuplicateIdsAndBrokenProductionRowFields,
+	"UEMMO.Tasks.M5_069.RejectsDuplicateIdsAndBrokenProductionRowFields",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+
+bool FUEMMOTasksM5_069RejectsDuplicateIdsAndBrokenProductionRowFields::RunTest(const FString& Parameters)
+{
+	FString LoadError;
+	TSharedPtr<FRoomJsonValue> Root;
+	if (!LoadJsonRoot(GetRoomsJsonPath(), LoadError, Root))
+	{
+		AddError(LoadError);
+		return true;
+	}
+	TSharedPtr<FRoomJsonValue> CombatEntry;
+	if (!TestTrue(TEXT("the room_combat_01 entry exists"), FindRoomEntryById(Root, TEXT("room_combat_01"), CombatEntry)))
+	{
+		return true;
+	}
+	URoomDefinition* Combat = MakeRoomFromJson(*this, CombatEntry);
+	if (!Combat)
+	{
+		return true;
+	}
+	TSet<FName> KnownEnemyIds;
+	if (!BuildKnownEnemyIds(*this, KnownEnemyIds))
+	{
+		return true;
+	}
+
+	// Duplicate room_id across rows: the error names the id and BOTH rows.
+	URoomDefinition* FirstDup = CloneRoom(nullptr);
+	FirstDup->RoomId = TEXT("room_dup");
+	URoomDefinition* SecondDup = CloneRoom(Combat);
+	SecondDup->RoomId = TEXT("room_dup");
+	TArray<const URoomDefinition*> DuplicatedCatalog;
+	DuplicatedCatalog.Add(FirstDup);
+	DuplicatedCatalog.Add(SecondDup);
+	FText DuplicateErrors;
+	TestFalse(TEXT("a duplicated room_id is rejected by the catalog check"),
+		ValidateRoomCatalog(DuplicatedCatalog, DuplicateErrors));
+	TestTrue(TEXT("the duplicate error names the duplicated id"),
+		DuplicateErrors.ToString().Contains(TEXT("room_dup")));
+	TestTrue(TEXT("the duplicate error names the first row"), DuplicateErrors.ToString().Contains(TEXT("rooms[0]")));
+	TestTrue(TEXT("the duplicate error names the second row"), DuplicateErrors.ToString().Contains(TEXT("rooms[1]")));
+
+	// A null row is reported by index.
+	TArray<const URoomDefinition*> NullCatalog;
+	NullCatalog.Add(Combat);
+	NullCatalog.Add(nullptr);
+	FText NullErrors;
+	TestFalse(TEXT("a null catalog row is rejected"), ValidateRoomCatalog(NullCatalog, NullErrors));
+	TestTrue(TEXT("the null row error names its index"), NullErrors.ToString().Contains(TEXT("rooms[1]")));
+
+	// Per-row rejections on the parsed production shape, each naming its field.
+	URoomDefinition* UnknownEnemy = CloneRoom(Combat);
+	UnknownEnemy->Waves[0].EnemyId = TEXT("unknown_brute");
+	FText UnknownEnemyErrors;
+	TestFalse(TEXT("an unknown enemy_id is rejected on the production row"),
+		ValidateRoomDefinition(*UnknownEnemy, KnownEnemyIds, UnknownEnemyErrors));
+	TestTrue(TEXT("unknown enemy error names Waves[0].EnemyId"),
+		UnknownEnemyErrors.ToString().Contains(TEXT("Waves[0].EnemyId")));
+
+	URoomDefinition* SpawnBeyondX = CloneRoom(Combat);
+	SpawnBeyondX->Waves[0].SpawnLocations[0] = FVector(1300.0, 0.0, 88.0);
+	FText SpawnBeyondXErrors;
+	TestFalse(TEXT("a spawn beyond the X bounds is rejected on the production row"),
+		ValidateRoomDefinition(*SpawnBeyondX, KnownEnemyIds, SpawnBeyondXErrors));
+	TestTrue(TEXT("spawn beyond X error names SpawnLocations[0]"),
+		SpawnBeyondXErrors.ToString().Contains(TEXT("Waves[0].SpawnLocations[0]")));
+
+	URoomDefinition* SpawnBeyondY = CloneRoom(Combat);
+	SpawnBeyondY->Waves[1].SpawnLocations[2] = FVector(0.0, 550.0, 88.0);
+	FText SpawnBeyondYErrors;
+	TestFalse(TEXT("a spawn beyond the Y depth bounds is rejected on the production row"),
+		ValidateRoomDefinition(*SpawnBeyondY, KnownEnemyIds, SpawnBeyondYErrors));
+	TestTrue(TEXT("spawn beyond Y depth error names Waves[1].SpawnLocations[2]"),
+		SpawnBeyondYErrors.ToString().Contains(TEXT("Waves[1].SpawnLocations[2]")));
+
+	URoomDefinition* EmptyMap = CloneRoom(Combat);
+	EmptyMap->MapPath = TSoftObjectPtr<UWorld>();
+	FText EmptyMapErrors;
+	TestFalse(TEXT("an empty map path is rejected on the production row"),
+		ValidateRoomDefinition(*EmptyMap, KnownEnemyIds, EmptyMapErrors));
+	TestTrue(TEXT("empty map error names MapPath"), EmptyMapErrors.ToString().Contains(TEXT("MapPath")));
+
+	URoomDefinition* EmptyReward = CloneRoom(Combat);
+	EmptyReward->RewardTableId = NAME_None;
+	FText EmptyRewardErrors;
+	TestFalse(TEXT("an empty reward id is rejected on the production row"),
+		ValidateRoomDefinition(*EmptyReward, KnownEnemyIds, EmptyRewardErrors));
+	TestTrue(TEXT("empty reward error names RewardTableId"), EmptyRewardErrors.ToString().Contains(TEXT("RewardTableId")));
+
+	URoomDefinition* WrongWaveCount = CloneRoom(Combat);
+	WrongWaveCount->Waves[0].Count = 3;
+	FText WrongWaveCountErrors;
+	TestFalse(TEXT("a wave count disagreeing with its locations is rejected on the production row"),
+		ValidateRoomDefinition(*WrongWaveCount, KnownEnemyIds, WrongWaveCountErrors));
+	TestTrue(TEXT("wave count mismatch error names SpawnLocations and Count"),
+		WrongWaveCountErrors.ToString().Contains(TEXT("Waves[0].SpawnLocations"))
+			&& WrongWaveCountErrors.ToString().Contains(TEXT("Count=")));
 	return true;
 }
 
