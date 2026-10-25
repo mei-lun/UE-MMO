@@ -20,15 +20,18 @@ struct FRoomWaveDefinition
 	GENERATED_BODY()
 
 	/** Enemy kind of this wave, an enemy_id of Data/enemies.json (e.g. "melee_grunt"). */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Room|Wave")
+	// EditAnywhere (M5-070): the wave structs are authored as instances inside
+	// the room data assets by the editor generation script; DefaultsOnly made
+	// the Python property writes reject struct instances.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Room|Wave")
 	FName EnemyId;
 
 	/** How many enemies this wave spawns; must be > 0 and match SpawnLocations.Num(). */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Room|Wave")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Room|Wave")
 	int32 Count = 0;
 
 	/** Spawn positions in centimeters (world space); SpawnLocations.Num() must equal Count. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Room|Wave")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Room|Wave")
 	TArray<FVector> SpawnLocations;
 };
 

@@ -82,6 +82,13 @@ public:
 	// -- M5-068: test / level-scripting configuration of the entry sources ------
 
 	/**
+	 * M5-070: the current room definition asset source (the production
+	 * L_CombatRoom01 trigger carries DA_room_combat_01 here; tests read the
+	 * wiring back through this accessor).
+	 */
+	const TSoftObjectPtr<URoomDefinition>& GetRoomDefinitionSource() const { return RoomDefinitionAsset; }
+
+	/**
 	 * Replaces the optional room definition asset source; the next
 	 * ResolveDefinition rebuilds (asset first, then the transient fallback
 	 * from RoomId + FallbackWaves).
