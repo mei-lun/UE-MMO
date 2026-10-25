@@ -378,7 +378,9 @@ bool FUEMMOTasksM3_013NonEmptyProfileRoundTripsCompletely::RunTest(const FString
 
 	// -- The saved data mirrors the inputs -------------------------------------
 	TestEqual(TEXT("save stamps the current schema version"), Save->SchemaVersion, UProfileSaveGame::CurrentSchemaVersion);
-	TestEqual(TEXT("saved SchemaVersion is 1"), Save->SchemaVersion, 1);
+	// M5-046: the literal-1 pin went symbolic - 2 is the current version now,
+	// and the next schema bump must not rot this assertion again.
+	TestEqual(TEXT("saved SchemaVersion equals CurrentSchemaVersion"), Save->SchemaVersion, UProfileSaveGame::CurrentSchemaVersion);
 	TestTrue(TEXT("save carries the character id"), Save->CharacterId == Fixture.Snapshot.CharacterId);
 	TestEqual(TEXT("save carries the level"), Save->Level, 3);
 	TestEqual(TEXT("save carries the xp"), Save->XP, 45);
@@ -507,9 +509,10 @@ bool FUEMMOTasksM3_013FutureSchemaVersionRejectedAndDataPreserved::RunTest(const
 	}
 	const FString FirstSnapshot = Save->InventoryInstanceSnapshots[0];
 
-	// A version 2 file was written by a NEWER build: refuse to load AND leave
-	// the save object (and by extension the underlying file) untouched.
-	Save->SchemaVersion = 2;
+	// A version file written by a NEWER build (one past the current schema,
+	// the M5-046 symbolic form) is refused AND leaves the save object (and by
+	// extension the underlying file) untouched.
+	Save->SchemaVersion = UProfileSaveGame::CurrentSchemaVersion + 1;
 	if (!M3_013_ExpectRejectedLoad(*this, Save, EProfileLoadError::UnsupportedSchema, TEXT("schema_version"), TEXT("version=2")))
 	{
 		return true;
@@ -517,7 +520,7 @@ bool FUEMMOTasksM3_013FutureSchemaVersionRejectedAndDataPreserved::RunTest(const
 
 	// Original data is not lost: every field the serializer wrote is still
 	// exactly what was written (the rejection never mutated the save).
-	TestEqual(TEXT("the rejected save keeps its schema_version=2"), Save->SchemaVersion, 2);
+	TestEqual(TEXT("the rejected save keeps its future schema version"), Save->SchemaVersion, UProfileSaveGame::CurrentSchemaVersion + 1);
 	TestTrue(TEXT("the rejected save keeps its CharacterId"), Save->CharacterId == Fixture.Snapshot.CharacterId);
 	TestEqual(TEXT("the rejected save keeps its Level"), Save->Level, 3);
 	TestTrue(TEXT("the rejected save keeps its inventory snapshots"),

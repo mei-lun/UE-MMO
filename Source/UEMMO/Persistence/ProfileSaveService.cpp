@@ -20,6 +20,16 @@
 //   an explicit failure (FailedNoData when truly nothing is stored, else
 //   FailedCorrupt) with no partially restored data.
 //
+// M5-046 (v2 migration card) touches this file in exactly two places: the
+// payload digest above now covers the v2 weapon-state fields (conditionally,
+// so older v1 slots still verify), and the serializer gates the load path -
+// a schema_version 1 slot restores through the explicit v1 -> v2 migration
+// inside FProfileSerializer::FromSaveGame, so the transaction order below
+// (write INACTIVE slot -> read back and verify -> commit index) is what the
+// M5-046 acceptance pins: the new generation is readable before the index
+// moves, and every failure short of the index commit leaves the old active
+// save untouched and loadable.
+//
 // Reentrancy note: ProcessPendingSave consumes the in-progress guard at its
 // start and works on a local copy of the snapshot, so a (theoretical,
 // storage-callback-driven) reentrant BeginSave during the transaction would
@@ -184,6 +194,32 @@ uint32 UProfileSaveService::M3_014_ComputePayloadDigest(const UProfileSaveGame& 
 	for (const uint64 AppliedId : Save.AppliedSettlementIds)
 	{
 		Canonical += FString::Printf(TEXT("applied=%llu|"), AppliedId);
+	}
+	// M5-046: the v2 weapon-state fields join the canonical form only when
+	// they carry content. A v1 payload (empty containers, marker false, no
+	// revision) therefore hashes to EXACTLY the pre-M5-046 canonical string,
+	// so a slot written by an older build still verifies its stored digest
+	// here - the version gate that routes v1 saves into the migration must
+	// never be preceded by a false "integrity failed" classification (and a
+	// future build reading a v2 slot keeps the same property for THIS form).
+	for (const FWeaponMagazineSaveEntry& Magazine : Save.WeaponMagazines)
+	{
+		Canonical += FString::Printf(TEXT("mag=%s:%s:%d:%d|"),
+			*Magazine.InstanceId.ToString(), *Magazine.AmmoId.ToString(),
+			Magazine.Capacity, Magazine.LoadedRounds);
+	}
+	for (const FAmmoReserveSaveEntry& Pool : Save.ReserveAmmoPools)
+	{
+		Canonical += FString::Printf(TEXT("pool=%s:%d:%d|"),
+			*Pool.AmmoId.ToString(), Pool.MaxReserve, Pool.Rounds);
+	}
+	if (Save.bWeaponStateInitialized)
+	{
+		Canonical += TEXT("winit=1|");
+	}
+	if (!Save.ConfigRevision.IsEmpty())
+	{
+		Canonical += FString::Printf(TEXT("rev=%s|"), *Save.ConfigRevision);
 	}
 	return FCrc::StrCrc32(*Canonical);
 }
