@@ -16,6 +16,14 @@
 // clock itself is injected by APrototypeCharacter::Tick (the game frame
 // driver), so the wave pump advances with the real game frames.
 //
+// M5-068: the entry validates its configuration BEFORE StartRoom - the room
+// definition resolves and carries waves, the enemy definition asset loads.
+// A missing/broken configuration refuses the entry (session stays Idle, the
+// trigger stays re-fireable, one locatable diagnostic; no default enemy is
+// fabricated). A refused BeginWaves after an accepted start ends the run
+// through FailRun - never a waveless Running session - and hands the HUD
+// retry context over only for a run whose waves actually started.
+//
 // ARoomExit: the door state is driven exclusively by the session events
 // (OnRunStarted relocks, OnRunEnded unlocks for a Cleared result only) plus
 // one BeginPlay state sync; there is no timer and no win guessing. The lock
@@ -154,12 +162,43 @@ void ARoomTrigger::HandleActivationBeginOverlap(UPrimitiveComponent* /*Overlappe
 		return;
 	}
 	URoomSessionSubsystem* Session = ResolveSession();
-	const URoomDefinition* Definition = ResolveDefinition();
-	if (Session == nullptr || Definition == nullptr)
+	if (Session == nullptr)
 	{
 		UE_LOG(LogTemp, Warning,
-			TEXT("UEMMO RoomTrigger: player entry ignored - no room session or no room definition available (this=%s)."),
+			TEXT("UEMMO RoomTrigger: player entry ignored - no room session available (this=%s)."),
 			*GetName());
+		return;
+	}
+	const URoomDefinition* Definition = ResolveDefinition();
+	if (Definition == nullptr)
+	{
+		// M5-068: a broken/missing room definition source refuses the entry
+		// BEFORE any run exists - the session stays Idle and re-fireable.
+		UE_LOG(LogTemp, Warning,
+			TEXT("UEMMO RoomTrigger: player entry refused - the room definition did not resolve (asset '%s', RoomId %s, this=%s)."),
+			*RoomDefinitionAsset.ToString(), *RoomId.ToString(), *GetName());
+		return;
+	}
+	// M5-068: a run needs at least one wave; an empty wave table is a broken
+	// configuration, not a waveless run.
+	if (Definition->Waves.Num() == 0)
+	{
+		UE_LOG(LogTemp, Warning,
+			TEXT("UEMMO RoomTrigger: player entry refused - the room definition '%s' carries no waves (this=%s)."),
+			*Definition->RoomId.ToString(), *GetName());
+		return;
+	}
+	// M5-068: the enemy definition is part of the entry contract - without it
+	// BeginWaves could never run, so the entry is refused instead of starting
+	// a waveless run. ResolveEnemyDefinition retries a failed load on every
+	// entry, so a restored asset is picked up here without recreating the
+	// actor; no default enemy is ever fabricated.
+	UEnemyDefinition* EnemyDefinition = ResolveEnemyDefinition();
+	if (EnemyDefinition == nullptr)
+	{
+		UE_LOG(LogTemp, Warning,
+			TEXT("UEMMO RoomTrigger: player entry refused - the enemy definition '%s' did not resolve (room '%s', this=%s)."),
+			*EnemyDefinitionPath.ToString(), *Definition->RoomId.ToString(), *GetName());
 		return;
 	}
 
@@ -173,7 +212,7 @@ void ARoomTrigger::HandleActivationBeginOverlap(UPrimitiveComponent* /*Overlappe
 			Session->GetRunId(), *Definition->RoomId.ToString());
 		// M2-016: the production chain behind an accepted start - register the
 		// pawn, start the wave progression, hand the retry context to the HUD.
-		StartProductionSession(Player, Definition);
+		StartProductionSession(Player, Definition, EnemyDefinition);
 	}
 	else
 	{
@@ -183,10 +222,11 @@ void ARoomTrigger::HandleActivationBeginOverlap(UPrimitiveComponent* /*Overlappe
 	}
 }
 
-void ARoomTrigger::StartProductionSession(APrototypeCharacter* Player, const URoomDefinition* Definition)
+void ARoomTrigger::StartProductionSession(APrototypeCharacter* Player, const URoomDefinition* Definition,
+	UEnemyDefinition* EnemyDefinition)
 {
 	URoomSessionSubsystem* Session = ResolveSession();
-	if (Session == nullptr || Player == nullptr || Definition == nullptr)
+	if (Session == nullptr || Player == nullptr || Definition == nullptr || EnemyDefinition == nullptr)
 	{
 		return;
 	}
@@ -195,38 +235,45 @@ void ARoomTrigger::StartProductionSession(APrototypeCharacter* Player, const URo
 	// SetPlayer guard keeps exactly one handler bound.
 	Session->SetPlayer(Player);
 
-	// The wave progression (M2-008) needs an enemy definition; without one the
-	// run stays StartRoom-only with exactly one diagnostic (no waves, no
-	// retries of the load inside the same actor lifetime).
-	UEnemyDefinition* EnemyDefinition = ResolveEnemyDefinition();
-	if (EnemyDefinition == nullptr)
-	{
-		UE_LOG(LogTemp, Warning,
-			TEXT("UEMMO RoomTrigger: run %llu started without waves - the enemy definition '%s' did not resolve."),
-			Session->GetRunId(), *EnemyDefinitionPath.ToString());
-		return;
-	}
 	if (Session->BeginWaves(Definition, EnemyDefinition))
 	{
 		UE_LOG(LogTemp, Display,
 			TEXT("UEMMO RoomTrigger: run %llu wave progression started (%d wave(s), enemy %s)."),
 			Session->GetRunId(), Definition->Waves.Num(), *EnemyDefinition->EnemyId.ToString());
-	}
-	// A refused BeginWaves (no waves on the definition, already active, ...)
-	// keeps the M2-009 StartRoom-only semantics; the session logged the reason.
 
-	// The M2-012 retry context: the HUD's retry button executes the real
-	// URoomRetryService flow with exactly these definitions (the HUD path was
-	// chosen over extending the session's public interface).
-	if (APrototypeHUD* Hud = ResolveHud())
-	{
-		Hud->SetRoomRetryContext(Definition, EnemyDefinition);
+		// The M2-012 retry context: the HUD's retry button executes the real
+		// URoomRetryService flow with exactly these definitions (the HUD path
+		// was chosen over extending the session's public interface). M5-068:
+		// only a run whose waves actually started provides the context.
+		if (APrototypeHUD* Hud = ResolveHud())
+		{
+			Hud->SetRoomRetryContext(Definition, EnemyDefinition);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Verbose,
+				TEXT("UEMMO RoomTrigger: no prototype HUD in this world; the retry context was not handed over."));
+		}
+		return;
 	}
-	else
+
+	// M5-068: a refused BeginWaves must never leave the run in a waveless
+	// Running state. FailRun ends it as Failed (no Cleared, no reward, no
+	// residual births - a refused StartWave spawned and queued nothing); it
+	// is a safe no-op when the session's own StartWave refusal path already
+	// failed the run (first-terminal-wins). The HUD retry context is
+	// deliberately NOT handed over for this run: a retry would replay the
+	// same broken pair, so the HUD's own guard answers the button with its
+	// "retry unavailable" diagnostic and the result screen stays up.
+	if (!Session->FailRun())
 	{
 		UE_LOG(LogTemp, Verbose,
-			TEXT("UEMMO RoomTrigger: no prototype HUD in this world; the retry context was not handed over."));
+			TEXT("UEMMO RoomTrigger: the session had already ended run %llu (its own refusal path failed it first)."),
+			Session->GetRunId());
 	}
+	UE_LOG(LogTemp, Warning,
+		TEXT("UEMMO RoomTrigger: run %llu of room '%s' failed at entry - BeginWaves was refused; no retry context is available for this run."),
+		Session->GetRunId(), *Definition->RoomId.ToString());
 }
 
 UEnemyDefinition* ARoomTrigger::ResolveEnemyDefinition()
@@ -250,6 +297,33 @@ UEnemyDefinition* ARoomTrigger::ResolveEnemyDefinition()
 			*EnemyDefinitionPath.ToString());
 	}
 	return CachedEnemyDefinition;
+}
+
+void ARoomTrigger::SetRoomDefinitionSource(const TSoftObjectPtr<URoomDefinition>& NewPath)
+{
+	// M5-068 test/level-scripting entry: swap the definition source and drop
+	// the cached transient fallback so the next resolve rebuilds from the
+	// current state (asset first, fallback second).
+	RoomDefinitionAsset = NewPath;
+	FallbackDefinition = nullptr;
+}
+
+void ARoomTrigger::SetEnemyDefinitionSource(const TSoftObjectPtr<UEnemyDefinition>& NewPath)
+{
+	// M5-068 test/level-scripting entry: swap the enemy source, drop the
+	// cached load and re-arm the one-shot diagnostic so the new source
+	// reports (and loads) freshly on the next entry.
+	EnemyDefinitionPath = NewPath;
+	CachedEnemyDefinition = nullptr;
+	bEnemyDefinitionFailureLogged = false;
+}
+
+void ARoomTrigger::SetFallbackWaves(const TArray<FRoomWaveDefinition>& NewWaves)
+{
+	// M5-068 test/level-scripting entry: swap the fallback wave table and
+	// drop the cached transient definition so the next resolve rebuilds.
+	FallbackWaves = NewWaves;
+	FallbackDefinition = nullptr;
 }
 
 APrototypeHUD* ARoomTrigger::ResolveHud()

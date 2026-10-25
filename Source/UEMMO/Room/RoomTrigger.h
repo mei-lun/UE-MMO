@@ -37,13 +37,27 @@ struct FRoomResult;
  * trigger (1) registers the entering pawn through Session->SetPlayer (the
  * M2-010 death-failure binding; the retry-loop rebind is idempotent there),
  * (2) loads the enemy definition asset from EnemyDefinitionPath
- * (LoadSynchronous; a failure keeps the run StartRoom-only with one
- * diagnostic - no waves without a definition), (3) calls
+ * (LoadSynchronous; cached per actor), (3) calls
  * Session->BeginWaves(Definition, EnemyDef) so the M2-008 progression runs,
  * and (4) hands the resolved definitions to the PrototypeHUD through
  * SetRoomRetryContext, so the M2-012 retry button has a production context
  * (HUD path chosen over a Session extension on purpose: the session's public
  * interface stays untouched).
+ *
+ * M5-068: the entry validates BEFORE StartRoom - the room definition must
+ * resolve AND carry at least one wave, and the enemy definition asset must
+ * load. A missing/broken configuration refuses the entry with one locatable
+ * diagnostic (asset path / room id) and leaves the session Idle, so the
+ * trigger stays re-fireable and a restored resource is picked up by the next
+ * player entry (no default enemy is ever fabricated). When an already
+ * accepted run then has its BeginWaves refused, the trigger ends the run
+ * through FailRun - a waveless Running session can never happen; FailRun is
+ * a safe no-op when the session's own StartWave refusal already failed the
+ * run (first-terminal-wins). The HUD retry context is handed over only for
+ * a run whose waves actually started: an entry-refused or wave-refused run
+ * provides no retry context (a retry would replay the same broken pair), so
+ * the HUD's own guard answers the retry button with its "retry unavailable"
+ * diagnostic and the result screen stays up.
  *
  * The session is located through the owning world at first use and held
  * weakly, so world teardown can never leave a dangling pointer.
@@ -64,6 +78,28 @@ public:
 
 	/** Activation volume (overlap-only query box; exposed for tests and level scripting). */
 	UBoxComponent* GetActivationVolume() const { return ActivationVolume; }
+
+	// -- M5-068: test / level-scripting configuration of the entry sources ------
+
+	/**
+	 * Replaces the optional room definition asset source; the next
+	 * ResolveDefinition rebuilds (asset first, then the transient fallback
+	 * from RoomId + FallbackWaves).
+	 */
+	void SetRoomDefinitionSource(const TSoftObjectPtr<URoomDefinition>& NewPath);
+
+	/**
+	 * Replaces the enemy definition asset source; drops the cached load and
+	 * re-arms the one-shot load diagnostic so the new source reports freshly
+	 * (a restored valid path loads on the next entry).
+	 */
+	void SetEnemyDefinitionSource(const TSoftObjectPtr<UEnemyDefinition>& NewPath);
+
+	/**
+	 * Replaces the transient fallback wave table (used while no definition
+	 * asset is assigned); the next ResolveDefinition rebuilds from it.
+	 */
+	void SetFallbackWaves(const TArray<FRoomWaveDefinition>& NewWaves);
 
 protected:
 	/** Resolves the session early (GetSession is valid right after spawn) and binds the overlap handler. */
@@ -103,11 +139,15 @@ private:
 	APrototypeHUD* ResolveHud();
 
 	/**
-	 * M2-016: the post-StartRoom production chain: registers the entering
-	 * pawn (SetPlayer), starts the wave progression (BeginWaves) when the
-	 * enemy definition resolved, and hands the retry context to the HUD.
+	 * M2-016/M5-068: the post-StartRoom production chain: registers the
+	 * entering pawn (SetPlayer), starts the wave progression (BeginWaves)
+	 * with the enemy definition the entry already validated, and hands the
+	 * retry context to the HUD only when the waves actually started. A
+	 * refused BeginWaves ends the run through FailRun (never a waveless
+	 * Running session).
 	 */
-	void StartProductionSession(APrototypeCharacter* Player, const URoomDefinition* Definition);
+	void StartProductionSession(APrototypeCharacter* Player, const URoomDefinition* Definition,
+		UEnemyDefinition* EnemyDefinition);
 
 	/** Activation volume: overlap-only, fires for the player pawn. */
 	UPROPERTY(VisibleAnywhere, Category = "Room|Trigger")
@@ -127,10 +167,12 @@ private:
 
 	/**
 	 * M2-016: the enemy definition asset the wave progression is started with
-	 * (BeginWaves needs one; the M2-001 catalog is the source). Defaults to
+	 * (BeginWaves needs one; the M5-001 catalog is the source). Defaults to
 	 * the melee_grunt asset generated from Data/enemies.json by
-	 * Scripts/Editor/create_enemy_assets.py. Empty disables wave spawning for
-	 * this trigger (StartRoom-only behavior).
+	 * Scripts/Editor/create_enemy_assets.py. M5-068: a null/failed source
+	 * REFUSES the room entry (the session stays Idle and re-fireable); it
+	 * never yields a waveless Running run and never fabricates a default
+	 * enemy.
 	 */
 	UPROPERTY(EditAnywhere, Category = "Room|Trigger")
 	TSoftObjectPtr<UEnemyDefinition> EnemyDefinitionPath;
@@ -141,7 +183,8 @@ private:
 	 * Data/rooms.json room_training_01 wave shape (2 + 3 melee_grunt at the
 	 * catalog spawn locations), so a trigger placed with class defaults - as
 	 * the M2-009 map placement is - spawns the catalog waves without any map
-	 * edit. Clear the array to get the plain M2-009 StartRoom-only behavior.
+	 * edit. M5-068: an EMPTY table refuses the room entry (a run needs at
+	 * least one startable wave).
 	 */
 	UPROPERTY(EditAnywhere, Category = "Room|Trigger")
 	TArray<FRoomWaveDefinition> FallbackWaves;
