@@ -1,19 +1,24 @@
 #include "CombatCatalog.h"
 
 /**
- * M5-007 implementation notes:
+ * M5-007 implementation notes (extended by M5-038):
  *
- * - The catalog never re-validates row values (M5-005/006 own that); it only
- *   guards what would break its own lookup surface: a positive schema
+ * - The catalog never re-validates row values (M5-005/006/037 own that); it
+ *   only guards what would break its own lookup surface: a positive schema
  *   version, non-empty ids and one definition per id per table.
  * - Revision digest: FNV-1a over a canonical byte stream - a domain tag, the
  *   schema version, then per table (fixed table order, rows sorted by id
  *   text) the row count and every field in a fixed order. Floats hash their
  *   IEEE-754 bits with negative zero normalized to positive zero, so the
  *   digest is value-based, not text-based: reordering rows or re-encoding a
- *   number keeps the revision, changing any value changes it.
+ *   number keeps the revision, changing any value changes it. The M5-038
+ *   vehicle tables hash in fixed order after the projectile table; their
+ *   centimeter offsets are FVector (double) components and hash their
+ *   IEEE-754 double bits through the same negative-zero normalization.
  * - Nothing here touches a World, a timer, an asset or a file; the whole
- *   class is plain value container code.
+ *   class is plain value container code. The vehicle data asset UCLASSes
+ *   declared in the header are inert mirrors (M5-038); the catalog class
+ *   itself never references them.
  */
 
 namespace
@@ -65,6 +70,33 @@ namespace
 		uint32 Bits = 0;
 		FMemory::Memcpy(&Bits, &Value, sizeof(Bits));
 		return RevisionHashBytes(Hash, reinterpret_cast<const uint8*>(&Bits), sizeof(Bits));
+	}
+
+	/**
+	 * Hashes a double's IEEE-754 bits with the same negative-zero
+	 * normalization as the float variant. The vehicle segment's centimeter
+	 * offsets are FVector (double) components, so the digest keeps
+	 * distinguishing value changes that a float truncation would swallow.
+	 */
+	uint64 RevisionHashDouble(uint64 Hash, double Value)
+	{
+		if (Value == 0.0)
+		{
+			Value = 0.0; // collapse -0.0 onto +0.0
+		}
+		static_assert(sizeof(double) == sizeof(uint64), "the revision digest assumes 64-bit IEEE-754 doubles");
+		uint64 Bits = 0;
+		FMemory::Memcpy(&Bits, &Value, sizeof(Bits));
+		return RevisionHashBytes(Hash, reinterpret_cast<const uint8*>(&Bits), sizeof(Bits));
+	}
+
+	/** Hashes a vector's X, Y, Z components in that fixed order. */
+	uint64 RevisionHashFVector(uint64 Hash, const FVector& Value)
+	{
+		Hash = RevisionHashDouble(Hash, static_cast<double>(Value.X));
+		Hash = RevisionHashDouble(Hash, static_cast<double>(Value.Y));
+		Hash = RevisionHashDouble(Hash, static_cast<double>(Value.Z));
+		return Hash;
 	}
 
 	uint64 RevisionHashFName(uint64 Hash, FName Value)
@@ -169,6 +201,45 @@ namespace
 		return Hash;
 	}
 
+	/** M5-038: every field of one vehicle definition in a fixed order. */
+	uint64 RevisionHashVehicle(uint64 Hash, const FVehicleDefinition& Vehicle)
+	{
+		Hash = RevisionHashFName(Hash, Vehicle.VehicleId);
+		Hash = RevisionHashInt(Hash, static_cast<int32>(Vehicle.DriveType));
+		Hash = RevisionHashFloat(Hash, Vehicle.MaxHealth);
+		Hash = RevisionHashFloat(Hash, Vehicle.Defense);
+		Hash = RevisionHashFloat(Hash, Vehicle.MaxSpeedCmS);
+		Hash = RevisionHashFloat(Hash, Vehicle.AccelerationCmS2);
+		Hash = RevisionHashText(Hash, Vehicle.MeshPath);
+		Hash = RevisionHashFloat(Hash, Vehicle.CameraDistanceCm);
+		Hash = RevisionHashFloat(Hash, Vehicle.CameraHeightCm);
+		Hash = RevisionHashFloat(Hash, Vehicle.CameraPitchDeg);
+		return Hash;
+	}
+
+	/** M5-038: every field of one vehicle seat in a fixed order. */
+	uint64 RevisionHashVehicleSeat(uint64 Hash, const FVehicleSeatDefinition& Seat)
+	{
+		Hash = RevisionHashFName(Hash, Seat.SeatId);
+		Hash = RevisionHashFName(Hash, Seat.VehicleId);
+		Hash = RevisionHashInt(Hash, static_cast<int32>(Seat.SeatRole));
+		Hash = RevisionHashFVector(Hash, Seat.SeatLocationCm);
+		Hash = RevisionHashFVector(Hash, Seat.ExitOffsetCm);
+		return Hash;
+	}
+
+	/** M5-038: every field of one vehicle turret mount in a fixed order. */
+	uint64 RevisionHashVehicleMount(uint64 Hash, const FVehicleMountDefinition& Mount)
+	{
+		Hash = RevisionHashFName(Hash, Mount.MountId);
+		Hash = RevisionHashFName(Hash, Mount.VehicleId);
+		Hash = RevisionHashFName(Hash, Mount.TurretWeaponId);
+		Hash = RevisionHashFVector(Hash, Mount.LocationCm);
+		Hash = RevisionHashFloat(Hash, Mount.MinPitchDegrees);
+		Hash = RevisionHashFloat(Hash, Mount.MaxPitchDegrees);
+		return Hash;
+	}
+
 	/**
 	 * Fills one catalog table from candidate rows, refusing empty ids and
 	 * duplicate ids with an error naming the table, the id and the row
@@ -235,7 +306,10 @@ bool FCombatCatalog::BuildFromParsed(const FParsedCombatConfig& Parsed, FCombatC
 		!FillCatalogTable(Parsed.TargetReactions, TEXT("target_reactions"), &FTargetReaction::PolicyId, Built.TargetReactions, OutErrors) ||
 		!FillCatalogTable(Parsed.Weapons, TEXT("weapons"), &FWeaponDefinition::WeaponId, Built.Weapons, OutErrors) ||
 		!FillCatalogTable(Parsed.AmmoTypes, TEXT("ammo_types"), &FAmmoType::AmmoId, Built.AmmoTypes, OutErrors) ||
-		!FillCatalogTable(Parsed.Projectiles, TEXT("projectiles"), &FProjectileDefinition::ProjectileId, Built.Projectiles, OutErrors))
+		!FillCatalogTable(Parsed.Projectiles, TEXT("projectiles"), &FProjectileDefinition::ProjectileId, Built.Projectiles, OutErrors) ||
+		!FillCatalogTable(Parsed.Vehicles, TEXT("vehicles"), &FVehicleDefinition::VehicleId, Built.Vehicles, OutErrors) ||
+		!FillCatalogTable(Parsed.VehicleSeats, TEXT("vehicle_seats"), &FVehicleSeatDefinition::SeatId, Built.VehicleSeats, OutErrors) ||
+		!FillCatalogTable(Parsed.VehicleMounts, TEXT("vehicle_mounts"), &FVehicleMountDefinition::MountId, Built.VehicleMounts, OutErrors))
 	{
 		return false; // OutCatalog untouched: nothing was published
 	}
@@ -275,6 +349,21 @@ const FProjectileDefinition* FCombatCatalog::FindProjectile(FName Id) const
 	return Projectiles.Find(Id);
 }
 
+const FVehicleDefinition* FCombatCatalog::FindVehicle(FName Id) const
+{
+	return Vehicles.Find(Id);
+}
+
+const FVehicleSeatDefinition* FCombatCatalog::FindVehicleSeat(FName Id) const
+{
+	return VehicleSeats.Find(Id);
+}
+
+const FVehicleMountDefinition* FCombatCatalog::FindVehicleMount(FName Id) const
+{
+	return VehicleMounts.Find(Id);
+}
+
 FString FCombatCatalog::GetConfigRevision() const
 {
 	return ConfigRevision;
@@ -310,6 +399,21 @@ int32 FCombatCatalog::NumProjectiles() const
 	return Projectiles.Num();
 }
 
+int32 FCombatCatalog::NumVehicles() const
+{
+	return Vehicles.Num();
+}
+
+int32 FCombatCatalog::NumVehicleSeats() const
+{
+	return VehicleSeats.Num();
+}
+
+int32 FCombatCatalog::NumVehicleMounts() const
+{
+	return VehicleMounts.Num();
+}
+
 FString FCombatCatalog::ComputeConfigRevision(int32 SchemaVersion, const FCombatCatalog& Catalog)
 {
 	// Domain tag keeps digests from other subsystems (or later catalog format
@@ -342,6 +446,23 @@ FString FCombatCatalog::ComputeConfigRevision(int32 SchemaVersion, const FCombat
 	for (const FProjectileDefinition* Row : SortedRowsById(Catalog.Projectiles, &FProjectileDefinition::ProjectileId))
 	{
 		Hash = RevisionHashProjectile(Hash, *Row);
+	}
+	// M5-038: the vehicle segment joins the digest in fixed order after the
+	// projectiles, so the revision mirrors the whole source directory. A
+	// config without vehicle rows hashes three empty tables here - the six
+	// A/B consumers keep one shared revision among themselves, and a
+	// vehicle-inclusive build differs from it by exactly this segment.
+	for (const FVehicleDefinition* Row : SortedRowsById(Catalog.Vehicles, &FVehicleDefinition::VehicleId))
+	{
+		Hash = RevisionHashVehicle(Hash, *Row);
+	}
+	for (const FVehicleSeatDefinition* Row : SortedRowsById(Catalog.VehicleSeats, &FVehicleSeatDefinition::SeatId))
+	{
+		Hash = RevisionHashVehicleSeat(Hash, *Row);
+	}
+	for (const FVehicleMountDefinition* Row : SortedRowsById(Catalog.VehicleMounts, &FVehicleMountDefinition::MountId))
+	{
+		Hash = RevisionHashVehicleMount(Hash, *Row);
 	}
 
 	// Lowercase 16-digit hex, built digit by digit (no printf size-modifier
