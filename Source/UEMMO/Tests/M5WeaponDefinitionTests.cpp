@@ -711,7 +711,12 @@ bool FUEMMOTasksM5_004WeaponDefinitionValidation::RunTest(const FString& Paramet
 		TestTrue(TEXT("the missing WeaponId error names WeaponId"), Errors.Contains(TEXT("WeaponId")));
 
 		FWeaponDefinition UppercaseId = MakeHitscanWeaponDefinition();
-		UppercaseId.WeaponId = TEXT("Weapon_Hitscan");
+		// M5-076: the probe is a SYNTHETIC uppercase id that no cooked asset or
+		// config can pre-pool. FName pools display names case-insensitively, so
+		// a probe like "Weapon_Hitscan" round-trips as the pooled lowercase
+		// "weapon_hitscan" in the packaged process and the rejection under test
+		// never happens there.
+		UppercaseId.WeaponId = TEXT("WPN_M5_076_UPPER_PROBE_7Q4Z");
 		TestFalse(TEXT("an uppercase WeaponId is rejected"), ValidateWeaponDefinition(UppercaseId, Errors));
 		TestTrue(TEXT("the uppercase WeaponId error names WeaponId"), Errors.Contains(TEXT("WeaponId")));
 
@@ -988,7 +993,9 @@ bool FUEMMOTasksM5_004AmmoTypeValidation::RunTest(const FString& Parameters)
 	}
 	{
 		FAmmoType UppercaseId = MakeValidAmmoType();
-		UppercaseId.AmmoId = TEXT("AMMO_CELL");
+		// M5-076: synthetic unpooled probe (see the WeaponId note above) -
+		// "AMMO_CELL" round-trips as the cooked "ammo_cell" in the package.
+		UppercaseId.AmmoId = TEXT("AMMO_M5_076_UPPER_PROBE_7Q4Z");
 		TestFalse(TEXT("an uppercase AmmoId is rejected"), ValidateAmmoType(UppercaseId, Errors));
 		TestTrue(TEXT("the uppercase AmmoId error names AmmoId"), Errors.Contains(TEXT("AmmoId")));
 	}
@@ -1095,7 +1102,8 @@ bool FUEMMOTasksM5_004ProjectileDefinitionValidation::RunTest(const FString& Par
 		TestTrue(TEXT("the missing ProjectileId error names ProjectileId"), Errors.Contains(TEXT("ProjectileId")));
 
 		FProjectileDefinition UppercaseId = MakeStraightProjectileDefinition();
-		UppercaseId.ProjectileId = TEXT("Bullet_Linear");
+		// M5-076: synthetic unpooled probe (see the WeaponId note above).
+		UppercaseId.ProjectileId = TEXT("BULLET_M5_076_UPPER_PROBE_7Q4Z");
 		TestFalse(TEXT("an uppercase ProjectileId is rejected"), ValidateProjectileDefinition(UppercaseId, Errors));
 	}
 

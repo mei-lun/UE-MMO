@@ -432,6 +432,15 @@ namespace UE::UEMMO::Tasks::M5_009
 
 	bool FUEMMOTasksM5_009SavedAssetsLoadFromDiskInFreshProcess::RunTest(const FString& Parameters)
 	{
+		// M5-076: this validator pins the repo working tree's saved .uasset
+		// files ON DISK; the packaged game keeps its content inside the pak, so
+		// in that environment the check skips by name (the cooked-asset
+		// contract itself is covered by the in-package suites).
+		if (!FPaths::DirectoryExists(FPaths::ProjectContentDir() / TEXT("UEMMO/Combat/Data")))
+		{
+			AddInfo(TEXT("Skipped in the packaged build: the repo working tree's saved .uasset files are dev-only."));
+			return true;
+		}
 		FParsedCombatConfig Config;
 		if (!MakeAlignedShippedConfig(*this, Config))
 		{
