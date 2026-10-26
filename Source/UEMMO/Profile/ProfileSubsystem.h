@@ -6,6 +6,9 @@
 
 #include "../Items/InventoryModel.h"
 #include "../Items/ItemDefinition.h"
+// M5-047: the v2 weapon-state save rows (the pushed session state's type);
+// a leaf persistence header with no gameplay includes behind it.
+#include "../Persistence/ProfileSaveGame.h"
 
 #include "ExperienceCurve.h"
 #include "../Items/StatCalculator.h"
@@ -226,6 +229,25 @@ public:
 	 */
 	bool IsSettlementApplied(uint64 SettlementId) const;
 
+	// -- M5-047: the session weapon-state snapshot (GameInstance level) --------
+
+	/**
+	 * Pushes the CURRENT session weapon state (magazines + reserve pools +
+	 * config revision stamp) into the profile's M5-046 v2 fields. Called by
+	 * the gameplay layer at the persistence points it owns (equipment changes,
+	 * the menu return); the next save request carries the pushed state and the
+	 * startup restore hands it back to the rebind (RestoreWeaponState).
+	 * Plain member copies - no World/Actor dependency survives here.
+	 */
+	void PushWeaponState(const TArray<FWeaponMagazineSaveEntry>& WeaponMagazines,
+		const TArray<FAmmoReserveSaveEntry>& ReserveAmmoPools, const FString& InConfigRevision);
+
+	/** Read-only access to the pushed v2 weapon state (the save request and the rebind read it). */
+	const TArray<FWeaponMagazineSaveEntry>& GetWeaponMagazines() const;
+	const TArray<FAmmoReserveSaveEntry>& GetReserveAmmoPools() const;
+	bool IsWeaponStateInitialized() const;
+	const FString& GetWeaponConfigRevision() const;
+
 	/**
 	 * M3-009: records the settlement id as claimed - the XP-once guard of the
 	 * claim flow (the first claim attempt marks the id, every later attempt
@@ -253,6 +275,20 @@ public:
 	bool RestoreFromSave(const FProfileSnapshot& Snapshot, const FInventoryModel& InInventory,
 		const TArray<FPendingReward>& InPendingRewards, const TSet<uint64>& InAppliedSettlementIds,
 		const TMap<EItemSlot, FGuid>& InEquippedMap);
+
+	/**
+	 * M5-047: the v2 restore - everything the five-argument form restores plus
+	 * the loaded weapon state (magazines/reserve pools/initialized flag/
+	 * config revision) pushed into the profile's v2 fields, so the gameplay
+	 * rebind (the pawn's AmmoModel) reads the SAVED values instead of mounted
+	 * defaults. Same all-or-nothing guarantee.
+	 */
+	bool RestoreFromSave(const FProfileSnapshot& Snapshot, const FInventoryModel& InInventory,
+		const TArray<FPendingReward>& InPendingRewards, const TSet<uint64>& InAppliedSettlementIds,
+		const TMap<EItemSlot, FGuid>& InEquippedMap,
+		const TArray<FWeaponMagazineSaveEntry>& InWeaponMagazines,
+		const TArray<FAmmoReserveSaveEntry>& InReserveAmmoPools,
+		bool bInWeaponStateInitialized, const FString& InWeaponConfigRevision);
 
 	// -- Read-only snapshot --------------------------------------------------------
 
@@ -332,6 +368,20 @@ private:
 	 * (the double-claim idempotency guard). Empty this card.
 	 */
 	TSet<uint64> AppliedSettlementIds;
+
+	// -- M5-047: the pushed session weapon state (v2 save fields) --------------
+
+	/** Per-instance magazines pushed by the gameplay layer (empty = never pushed). */
+	TArray<FWeaponMagazineSaveEntry> WeaponMagazines;
+
+	/** Shared reserve pools pushed by the gameplay layer. */
+	TArray<FAmmoReserveSaveEntry> ReserveAmmoPools;
+
+	/** True once a session pushed an initialized weapon state. */
+	bool bWeaponStateInitialized = false;
+
+	/** The combat-config revision the pushing session mounted (traceability). */
+	FString WeaponConfigRevision;
 
 	/**
 	 * Card-listed placeholder ("AliveIds") with no consumer inside this card's

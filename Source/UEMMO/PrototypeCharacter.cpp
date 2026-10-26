@@ -732,6 +732,19 @@ bool APrototypeCharacter::RefreshWeaponMountFromEquipment()
         UE_LOG(LogTemp, Display, TEXT("UEMMO M5-020: weapon mount applied (bound=%d, revision=%s, generation=%llu)."),
             Outcome.bWeaponBound ? 1 : 0, *Mount->GetMountedRevision(), Mount->GetBindingGeneration());
     }
+
+    // M5-047: every successful equipment change pushes the CURRENT session
+    // weapon state into the profile, so the next save request (claim flow,
+    // menu return) carries the fresh magazines/pools. A failed apply leaves
+    // the previously pushed state (the mount was not changed either).
+    if (Outcome.bSucceeded && Profile != nullptr)
+    {
+        FWeaponMagazineSaveEntry MagazineSeed;
+        TArray<FWeaponMagazineSaveEntry> Magazines;
+        TArray<FAmmoReserveSaveEntry> Pools;
+        Mount->GetAmmoModel().ExportSaveRows(MagazineSeed, Magazines, Pools);
+        Profile->PushWeaponState(Magazines, Pools, Mount->GetMountedRevision());
+    }
     return Outcome.bSucceeded;
 }
 
@@ -1219,6 +1232,26 @@ void APrototypeCharacter::ApplyWeaponBindWiring()
     {
         // Melee stays legacy: firing is never authorized for a melee bind.
         Mount->SetFirePolicy(nullptr);
+    }
+
+    // M5-047: after every successful bind apply, restore the SAVED weapon
+    // state onto the session's ammo model - the profile's pushed v2 fields
+    // (boot restore or the last equipment change) override the mount's
+    // defaults by identity; rows whose instance/kind is not mounted now are
+    // skipped inside the model (the config-changed case). This is the rebind
+    // that keeps ItemId/magazines/pools stable across restart and map travel
+    // ("不再靠卸下再穿恢复加成"的弹药面). A fresh profile (never pushed)
+    // restores nothing - the mounted defaults stand.
+    if (UProfileSubsystem* Profile = ProfilePtr.Get())
+    {
+        if (Profile->IsWeaponStateInitialized())
+        {
+            const TPair<int32, int32> Applied = Mount->GetAmmoModel().RestoreSaveRows(
+                Profile->GetWeaponMagazines(), Profile->GetReserveAmmoPools());
+            UE_LOG(LogTemp, Verbose,
+                TEXT("UEMMO M5-047: the bind apply restored the saved weapon state (%d magazine row(s), %d pool row(s) applied; revision %s)."),
+                Applied.Key, Applied.Value, *Profile->GetWeaponConfigRevision());
+        }
     }
 }
 

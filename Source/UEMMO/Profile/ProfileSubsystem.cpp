@@ -240,7 +240,64 @@ bool UProfileSubsystem::RestoreFromSave(const FProfileSnapshot& Snapshot, const 
 	// AliveIds is not part of the save schema (no consumer yet): the restored
 	// state starts from the same empty placeholder as a fresh profile.
 	AliveIds.Reset();
+	// M5-047: RestoreFromSave's five-argument form carries no weapon state;
+	// the pushed v2 fields are only overwritten by the twelve-argument form
+	// (the GameFlow restore passes the loaded v2 rows through). Here: leave
+	// whatever the caller pushed untouched.
 	return true;
+}
+
+bool UProfileSubsystem::RestoreFromSave(const FProfileSnapshot& Snapshot, const FInventoryModel& InInventory,
+	const TArray<FPendingReward>& InPendingRewards, const TSet<uint64>& InAppliedSettlementIds,
+	const TMap<EItemSlot, FGuid>& InEquippedMap,
+	const TArray<FWeaponMagazineSaveEntry>& InWeaponMagazines,
+	const TArray<FAmmoReserveSaveEntry>& InReserveAmmoPools,
+	bool bInWeaponStateInitialized, const FString& InWeaponConfigRevision)
+{
+	// The v2 form restores the same base state first (the five-argument body),
+	// then pushes the loaded weapon state on top - all-or-nothing propagates
+	// (a base refusal changes nothing here either).
+	if (!RestoreFromSave(Snapshot, InInventory, InPendingRewards, InAppliedSettlementIds, InEquippedMap))
+	{
+		return false;
+	}
+	WeaponMagazines = InWeaponMagazines;
+	ReserveAmmoPools = InReserveAmmoPools;
+	bWeaponStateInitialized = bInWeaponStateInitialized;
+	WeaponConfigRevision = InWeaponConfigRevision;
+	return true;
+}
+
+void UProfileSubsystem::PushWeaponState(const TArray<FWeaponMagazineSaveEntry>& InWeaponMagazines,
+	const TArray<FAmmoReserveSaveEntry>& InReserveAmmoPools, const FString& InConfigRevision)
+{
+	// M5-047: the gameplay layer's push point - plain member copies, no
+	// World/Actor dependency. The next save request carries this state and
+	// the startup restore hands it to the rebind.
+	WeaponMagazines = InWeaponMagazines;
+	ReserveAmmoPools = InReserveAmmoPools;
+	bWeaponStateInitialized = true;
+	WeaponConfigRevision = InConfigRevision;
+}
+
+const TArray<FWeaponMagazineSaveEntry>& UProfileSubsystem::GetWeaponMagazines() const
+{
+	return WeaponMagazines;
+}
+
+const TArray<FAmmoReserveSaveEntry>& UProfileSubsystem::GetReserveAmmoPools() const
+{
+	return ReserveAmmoPools;
+}
+
+bool UProfileSubsystem::IsWeaponStateInitialized() const
+{
+	return bWeaponStateInitialized;
+}
+
+const FString& UProfileSubsystem::GetWeaponConfigRevision() const
+{
+	return WeaponConfigRevision;
 }
 
 FProfileSnapshot UProfileSubsystem::GetProfileSnapshot() const
@@ -295,6 +352,12 @@ void UProfileSubsystem::ApplyFreshProfileState(bool bGenerateNewCharacterId)
 	PendingRewards.Reset();
 	AppliedSettlementIds.Reset();
 	AliveIds.Reset();
+	// M5-047: a fresh profile starts with no pushed weapon state (the session
+	// pushes its own at its persistence points).
+	WeaponMagazines.Reset();
+	ReserveAmmoPools.Reset();
+	bWeaponStateInitialized = false;
+	WeaponConfigRevision.Reset();
 }
 
 void UProfileSubsystem::SetEquippedStatBonus(const FItemStats& Bonus)

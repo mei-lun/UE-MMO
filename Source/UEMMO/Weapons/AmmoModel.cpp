@@ -313,3 +313,82 @@ void FAmmoModel::Reset()
 	ActiveReloads.Reset();
 	ReservePools.Reset();
 }
+
+// -- M5-047: the save/restore face ---------------------------------------------
+// The persistence header is included HERE (not in AmmoModel.h) so the ammo
+// consumers never drag the profile chain in; the save-row structs are plain
+// reflected values copied by member.
+
+#include "../Persistence/ProfileSaveGame.h"
+
+void FAmmoModel::ExportSaveRows(struct FWeaponMagazineSaveEntry& OutMagazineRowSeed,
+	TArray<struct FWeaponMagazineSaveEntry>& OutMagazines,
+	TArray<struct FAmmoReserveSaveEntry>& OutReservePools) const
+{
+	OutMagazines.Reset();
+	OutMagazines.Reserve(Magazines.Num());
+	for (const TPair<FGuid, FMagazineState>& Pair : Magazines)
+	{
+		FWeaponMagazineSaveEntry Row;
+		Row.InstanceId = Pair.Value.InstanceId;
+		Row.AmmoId = Pair.Value.AmmoId;
+		Row.Capacity = Pair.Value.Capacity;
+		Row.LoadedRounds = Pair.Value.LoadedRounds;
+		OutMagazines.Add(Row);
+	}
+	OutReservePools.Reset();
+	OutReservePools.Reserve(ReservePools.Num());
+	for (const TPair<FName, FAmmoReservePool>& Pair : ReservePools)
+	{
+		FAmmoReserveSaveEntry Row;
+		Row.AmmoId = Pair.Key;
+		Row.MaxReserve = Pair.Value.MaxReserve;
+		Row.Rounds = Pair.Value.Rounds;
+		OutReservePools.Add(Row);
+	}
+	// The seed row documents the CURRENT config shape of the first magazine
+	// (used by the save request to stamp the compatibility gate); zeroed when
+	// no magazine exists.
+	OutMagazineRowSeed = FWeaponMagazineSaveEntry();
+	if (Magazines.Num() > 0)
+	{
+		OutMagazineRowSeed.InstanceId = Magazines.begin()->Value.InstanceId;
+		OutMagazineRowSeed.AmmoId = Magazines.begin()->Value.AmmoId;
+		OutMagazineRowSeed.Capacity = Magazines.begin()->Value.Capacity;
+		OutMagazineRowSeed.LoadedRounds = Magazines.begin()->Value.LoadedRounds;
+	}
+}
+
+TPair<int32, int32> FAmmoModel::RestoreSaveRows(const TArray<struct FWeaponMagazineSaveEntry>& MagazineRows,
+	const TArray<struct FAmmoReserveSaveEntry>& ReservePoolRows)
+{
+	int32 AppliedMagazines = 0;
+	for (const FWeaponMagazineSaveEntry& Row : MagazineRows)
+	{
+		// Identity-gated: a row whose instance is not currently mounted is
+		// skipped (the config may have changed between sessions); rows never
+		// mint capacity beyond what the mount provisioned, and negative or
+		// beyond-capacity loads are clamped to the mounted shape.
+		FMagazineState* Existing = Magazines.Find(Row.InstanceId);
+		if (Existing == nullptr)
+		{
+			continue;
+		}
+		Existing->LoadedRounds = FMath::Clamp(Row.LoadedRounds, 0, Existing->Capacity);
+		++AppliedMagazines;
+	}
+
+	int32 AppliedPools = 0;
+	for (const FAmmoReserveSaveEntry& Row : ReservePoolRows)
+	{
+		FAmmoReservePool* Existing = ReservePools.Find(Row.AmmoId);
+		if (Existing == nullptr)
+		{
+			continue;
+		}
+		Existing->MaxReserve = FMath::Clamp(Row.MaxReserve, 0, MaxAmmoReserve);
+		Existing->Rounds = FMath::Clamp(Row.Rounds, 0, Existing->MaxReserve);
+		++AppliedPools;
+	}
+	return TPair<int32, int32>(AppliedMagazines, AppliedPools);
+}

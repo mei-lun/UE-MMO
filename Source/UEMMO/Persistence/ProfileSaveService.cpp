@@ -226,8 +226,13 @@ uint32 UProfileSaveService::M3_014_ComputePayloadDigest(const UProfileSaveGame& 
 
 UProfileSlotSaveGame* UProfileSaveService::M3_014_BuildSlotSave(const FProfileSaveRequest& Request, int32 Generation)
 {
+	// M5-047: the request carries the session weapon state, so the v2 payload
+	// fields 046 added actually travel to disk (the optional tails default to
+	// the pre-047 empty/uninitialized shape for requests assembled without one).
 	UProfileSaveGame* Payload = FProfileSerializer::ToSaveGame(Request.Snapshot, Request.Inventory,
-		Request.PendingRewards, Request.AppliedSettlementIds, Request.EquippedMap);
+		Request.PendingRewards, Request.AppliedSettlementIds, Request.EquippedMap,
+		Request.WeaponMagazines, Request.ReserveAmmoPools, Request.bWeaponStateInitialized,
+		Request.ConfigRevision);
 	if (!Payload)
 	{
 		return nullptr;
@@ -817,6 +822,11 @@ FStartupLoadOutcome UProfileSaveService::M3_023_StartupLoadBody()
 		Outcome.AppliedSettlementIds = Source.AppliedSettlementIds;
 		Outcome.EquippedMap = Source.EquippedMap;
 		Outcome.Generation = Source.Generation;
+		// M5-047: the v2 weapon state travels with the restored data.
+		Outcome.WeaponMagazines = Source.WeaponMagazines;
+		Outcome.ReserveAmmoPools = Source.ReserveAmmoPools;
+		Outcome.bWeaponStateInitialized = Source.bWeaponStateInitialized;
+		Outcome.WeaponConfigRevision = Source.WeaponConfigRevision;
 	};
 
 	// 1) The index names a real active slot: try it, then the other one.
@@ -960,13 +970,23 @@ void UProfileSaveService::M3_015_ClassifySlot(int32 SlotIndex, FM3_015_SlotRead&
 
 	// Full serializer gate: restores into the report's data fields on success
 	// and rejects every field-level corruption the envelope cannot see.
+	// M5-047: the weapon-state out param also pulls the v2 rows into the slot
+	// read (empty/false on a v1 slot), and the config compatibility gate is
+	// deliberately NOT armed here - the startup restore hands the rows to the
+	// profile; the rebind decides (the live-config gate needs the mounted
+	// catalog, a service-level object).
 	FProfileLoadError Error;
+	FProfileWeaponStateOut WeaponState;
 	if (!FProfileSerializer::FromSaveGame(Slot, OutRead.Snapshot, OutRead.Inventory, OutRead.PendingRewards,
-		OutRead.AppliedSettlementIds, OutRead.EquippedMap, Error))
+		OutRead.AppliedSettlementIds, OutRead.EquippedMap, Error, nullptr, nullptr, &WeaponState))
 	{
 		OutRead.Problem = FString::Printf(TEXT("the save of '%s' failed the serializer validation: %s"), *SlotNames[SlotIndex], *Error.Message);
 		return;
 	}
+	OutRead.WeaponMagazines = WeaponState.WeaponMagazines;
+	OutRead.ReserveAmmoPools = WeaponState.ReserveAmmoPools;
+	OutRead.bWeaponStateInitialized = WeaponState.bWeaponStateInitialized;
+	OutRead.WeaponConfigRevision = WeaponState.ConfigRevision;
 	OutRead.bLoaded = true;
 	OutRead.Generation = Slot->SlotGeneration;
 }

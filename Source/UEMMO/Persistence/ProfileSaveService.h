@@ -156,6 +156,20 @@ struct FProfileSaveRequest
 
 	/** Equipment slot bindings at capture time (value copy). */
 	TMap<EItemSlot, FGuid> EquippedMap;
+
+	// -- M5-047: the session weapon state rides the same consistent snapshot --
+
+	/** Per-instance magazines at capture time (M5-046 v2 field; empty = not initialized). */
+	TArray<FWeaponMagazineSaveEntry> WeaponMagazines;
+
+	/** Shared reserve pools at capture time (M5-046 v2 field). */
+	TArray<FAmmoReserveSaveEntry> ReserveAmmoPools;
+
+	/** True once the session's weapon containers were initialized (guards re-minting). */
+	bool bWeaponStateInitialized = false;
+
+	/** The combat-config revision the session mounted (traceability stamp). */
+	FString ConfigRevision;
 };
 
 /**
@@ -338,6 +352,12 @@ struct FStartupLoadOutcome
 	TArray<FPendingReward> PendingRewards;
 	TSet<uint64> AppliedSettlementIds;
 	TMap<EItemSlot, FGuid> EquippedMap;
+
+	// M5-047: the restored slot's v2 weapon state (empty/false on v1 slots).
+	TArray<FWeaponMagazineSaveEntry> WeaponMagazines;
+	TArray<FAmmoReserveSaveEntry> ReserveAmmoPools;
+	bool bWeaponStateInitialized = false;
+	FString WeaponConfigRevision;
 };
 
 /**
@@ -560,6 +580,12 @@ private:
 		TArray<FPendingReward> PendingRewards;
 		TSet<uint64> AppliedSettlementIds;
 		TMap<EItemSlot, FGuid> EquippedMap;
+
+		// M5-047: the slot's v2 weapon state (default empty/false on v1 slots).
+		TArray<FWeaponMagazineSaveEntry> WeaponMagazines;
+		TArray<FAmmoReserveSaveEntry> ReserveAmmoPools;
+		bool bWeaponStateInitialized = false;
+		FString WeaponConfigRevision;
 	};
 
 	/** Fills OutRead for SlotNames[SlotIndex] per the classification order above. */

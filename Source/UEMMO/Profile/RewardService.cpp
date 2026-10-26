@@ -157,6 +157,13 @@ namespace
 		Request.PendingRewards = Profile.GetPendingRewards();
 		Request.AppliedSettlementIds = CarriedAppliedIds;
 		Request.EquippedMap = CarriedEquippedMap;
+		// M5-047: the pushed session weapon state rides every claim-flow save
+		// (the claim is a persistence point; the pushed state is the freshest
+		// the gameplay layer has pushed via PushWeaponState).
+		Request.WeaponMagazines = Profile.GetWeaponMagazines();
+		Request.ReserveAmmoPools = Profile.GetReserveAmmoPools();
+		Request.bWeaponStateInitialized = Profile.IsWeaponStateInitialized();
+		Request.ConfigRevision = Profile.GetWeaponConfigRevision();
 		return Request;
 	}
 }

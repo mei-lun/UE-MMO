@@ -211,6 +211,35 @@ public:
 	/** Number of registered reserve pool kinds. */
 	int32 NumAmmoTypes() const;
 
+	// -- M5-047: the save/restore face ----------------------------------------
+
+	// The M5-046 save row types are only FORWARD DECLARED here (struct
+	// FWeaponMagazineSaveEntry / FAmmoReserveSaveEntry in
+	// Persistence/ProfileSaveGame.h): including that header from a Weapons
+	// header would drag the profile chain into every ammo consumer. The
+	// definitions live in AmmoModel.cpp, which includes the persistence header.
+
+	/**
+	 * Exporting the weapon state for the profile save (M5-046 v2 fields): the
+	 * magazines and reserve pools as flat save rows. Pure read - the model
+	 * keeps owning its state, the save request only carries copies.
+	 */
+	void ExportSaveRows(struct FWeaponMagazineSaveEntry& OutMagazineRowSeed,
+		TArray<struct FWeaponMagazineSaveEntry>& OutMagazines,
+		TArray<struct FAmmoReserveSaveEntry>& OutReservePools) const;
+
+	/**
+	 * Restoring the weapon state from a loaded save (M5-047 rebind): every
+	 * existing magazine/pool row is applied by identity - a row whose
+	 * instance/ammo kind is NOT currently mounted/registered is skipped (the
+	 * config may have changed between sessions; the compatibility gate is the
+	 * caller's), rows never mint ammunition beyond the row's own values, and
+	 * untouched rows keep their mounted defaults. Returns how many magazine
+	 * rows and pool rows were applied.
+	 */
+	TPair<int32, int32> RestoreSaveRows(const TArray<struct FWeaponMagazineSaveEntry>& Magazines,
+		const TArray<struct FAmmoReserveSaveEntry>& ReservePools);
+
 	/** Drops every magazine, window and pool (session teardown / test isolation). */
 	void Reset();
 

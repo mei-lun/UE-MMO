@@ -99,13 +99,19 @@ void UGameFlowSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		{
 			// RestoreFromSave is all-or-nothing: a refusal keeps the "no
 			// profile" state and never falls back to a reset (the M3-015
-			// rule: a failed load never silently starts over).
+			// rule: a failed load never silently starts over). M5-047: the
+			// v2 form also pushes the restored weapon state so the pawn's
+			// rebind reads the SAVED magazines/pools instead of defaults.
 			bStartupProfileRestored = Profile->RestoreFromSave(
 				StartupOutcome.Snapshot,
 				StartupOutcome.Inventory,
 				StartupOutcome.PendingRewards,
 				StartupOutcome.AppliedSettlementIds,
-				StartupOutcome.EquippedMap);
+				StartupOutcome.EquippedMap,
+				StartupOutcome.WeaponMagazines,
+				StartupOutcome.ReserveAmmoPools,
+				StartupOutcome.bWeaponStateInitialized,
+				StartupOutcome.WeaponConfigRevision);
 			if (!bStartupProfileRestored)
 			{
 				UE_LOG(LogTemp, Error, TEXT("UEMMO M3-017: the startup snapshot was refused by RestoreFromSave; the profile stays empty and the outcome stays queryable."));
