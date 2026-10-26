@@ -168,7 +168,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M5-036 | [M5-036](Docs/Tasks/M5-036.md) | DONE | M5-035 | GLM-5.3-Flash-20261009-B | 2026-10-09T16:05:00+08:00 | [report](Docs/Tasks/Reports/M5-036.md) |
 | M5-037 | [M5-037](Docs/Tasks/M5-037.md) | DONE | M5-H02,M5-006 | ZCode-20261024-A | 2026-10-26T03:27:09+08:00 | [report](Docs/Tasks/Reports/M5-037.md) |
 | M5-038 | [M5-038](Docs/Tasks/M5-038.md) | DONE | M5-037,M5-008 | ZCode-20261024-A | 2026-10-26T04:20:41+08:00 | [report](Docs/Tasks/Reports/M5-038.md) |
-| M5-039 | [M5-039](Docs/Tasks/M5-039.md) | TODO | M5-038,M5-012 | — | — | — |
+| M5-039 | [M5-039](Docs/Tasks/M5-039.md) | DONE | M5-038,M5-012 | ZCode-20261024-A | 2026-10-27T02:48:08+08:00 | [report](Docs/Tasks/Reports/M5-039.md) |
 | M5-040 | [M5-040](Docs/Tasks/M5-040.md) | DONE | M5-037 | ZCode-20261024-A | 2026-10-26T04:17:04+08:00 | [report](Docs/Tasks/Reports/M5-040.md) |
 | M5-041 | [M5-041](Docs/Tasks/M5-041.md) | TODO | M5-039,M5-040 | — | — | — |
 | M5-042 | [M5-042](Docs/Tasks/M5-042.md) | TODO | M5-041 | — | — | — |
@@ -177,7 +177,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M5-045 | [M5-045](Docs/Tasks/M5-045.md) | TODO | M5-044 | — | — | — |
 | M5-046 | [M5-046](Docs/Tasks/M5-046.md) | DONE | M5-H02,M5-019,M5-021 | ZCode-20261024-A | 2026-10-26T03:34:23+08:00 | [report](Docs/Tasks/Reports/M5-046.md) |
 | M5-047 | [M5-047](Docs/Tasks/M5-047.md) | DONE | M5-046,M5-020 | ZCode-20261024-A | 2026-10-27T00:43:27+08:00 | [report](Docs/Tasks/Reports/M5-047.md) |
-| M5-048 | [M5-048](Docs/Tasks/M5-048.md) | TODO | M5-047,M5-035 | — | — | — |
+| M5-048 | [M5-048](Docs/Tasks/M5-048.md) | IN_PROGRESS | M5-047,M5-035 | ZCode-20261024-A | 2026-10-27T02:48:13+08:00 | [report](Docs/Tasks/Reports/M5-048.md) |
 | M5-049 | [M5-049](Docs/Tasks/M5-049.md) | TODO | M5-H03,M5-038 | — | — | — |
 | M5-050 | [M5-050](Docs/Tasks/M5-050.md) | DONE | M5-035 | ZCode-20261024-A | 2026-10-26T01:09:50+08:00 | [report](Docs/Tasks/Reports/M5-050.md) |
 | M5-051 | [M5-051](Docs/Tasks/M5-051.md) | TODO | M5-044 | — | — | — |
