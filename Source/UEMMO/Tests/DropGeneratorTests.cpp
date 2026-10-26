@@ -454,6 +454,8 @@ namespace UE::UEMMO::Tasks::M3_007
 		Catalog.AddDefinition(MakeTrainingDefinition(TEXT("weapon_training"), EItemSlot::Weapon, 5.0f, 0.0f, 0.0f), nullptr);
 		Catalog.AddDefinition(MakeTrainingDefinition(TEXT("armor_training"), EItemSlot::Armor, 0.0f, 3.0f, 0.0f), nullptr);
 		Catalog.AddDefinition(MakeTrainingDefinition(TEXT("charm_training"), EItemSlot::Accessory, 0.0f, 0.0f, 20.0f), nullptr);
+		// M5-048: the data-only scatter is the fourth starter entry.
+		Catalog.AddDefinition(MakeTrainingDefinition(TEXT("item_scatter_training"), EItemSlot::Weapon, 5.0f, 0.0f, 0.0f), nullptr);
 		return Catalog;
 	}
 
@@ -541,11 +543,12 @@ bool FUEMMOTasksM3_007SameRewardSeedAndSettlementAreDeterministic::RunTest(const
 			OtherSettlement.Instance.DefinitionId, First.Instance.DefinitionId);
 	}
 
-	// The picked definition must be one of the three starter entries.
+	// The picked definition must be one of the four starter entries (M5-048
+	// added the data-only scatter).
 	const FName Picked = First.Instance.DefinitionId;
-	TestTrue(TEXT("the picked DefinitionId is weapon_training, armor_training or charm_training"),
+	TestTrue(TEXT("the picked DefinitionId is one of the starter definitions"),
 		Picked == FName(TEXT("weapon_training")) || Picked == FName(TEXT("armor_training")) ||
-		Picked == FName(TEXT("charm_training")));
+		Picked == FName(TEXT("charm_training")) || Picked == FName(TEXT("item_scatter_training")));
 	return true;
 }
 
@@ -808,19 +811,20 @@ bool FUEMMOTasksM3_007DropsJsonMatchesItemsCatalogAndDrivesGeneration::RunTest(c
 		AddError(TEXT("drops.json: missing required top-level array 'entries'"));
 		return true;
 	}
-	TestEqual(TEXT("drops.json entries holds exactly 3 entries"), (*Entries)->Array.Num(), 3);
-	if ((*Entries)->Array.Num() != 3)
+	// M5-048: the data-only scatter added the fourth weighted entry.
+	TestEqual(TEXT("drops.json entries holds exactly 4 entries"), (*Entries)->Array.Num(), 4);
+	if ((*Entries)->Array.Num() != 4)
 	{
 		return true;
 	}
 
 	// Pinned design values: order and weights are part of the contract.
-	const TCHAR* ExpectedIds[3] = { TEXT("weapon_training"), TEXT("armor_training"), TEXT("charm_training") };
-	const double ExpectedWeights[3] = { 50.0, 30.0, 20.0 };
+	const TCHAR* ExpectedIds[4] = { TEXT("weapon_training"), TEXT("armor_training"), TEXT("charm_training"), TEXT("item_scatter_training") };
+	const double ExpectedWeights[4] = { 50.0, 30.0, 20.0, 20.0 };
 
 	FDropTable Loaded;
 	Loaded.TableId = TEXT("starter");
-	for (int32 Index = 0; Index < 3; ++Index)
+	for (int32 Index = 0; Index < 4; ++Index)
 	{
 		const TSharedPtr<FDropJsonValue>& Entry = (*Entries)->Array[Index];
 		if (!Entry.IsValid() || Entry->Kind != FDropJsonValue::EKind::Object)
@@ -880,10 +884,11 @@ bool FUEMMOTasksM3_007DropsJsonMatchesItemsCatalogAndDrivesGeneration::RunTest(c
 		}
 		ItemIds.Add((*Id)->String);
 	}
-	// M5-056: the shipped items source grew to ten rows (eight mapped weapons
-	// plus armor and charm); the drops ids must still all be registered.
-	TestEqual(TEXT("items.json registers exactly 10 definition ids"), ItemIds.Num(), 10);
-	for (int32 Index = 0; Index < 3; ++Index)
+	// M5-056: the shipped items source grew to eleven rows (nine mapped
+	// weapons plus armor and charm — the M5-048 data-only scatter added the
+	// ninth); the drops ids must still all be registered.
+	TestEqual(TEXT("items.json registers exactly 11 definition ids"), ItemIds.Num(), 11);
+	for (int32 Index = 0; Index < 4; ++Index)
 	{
 		TestTrue(FString::Printf(TEXT("items.json contains the drops entry '%s'"), ExpectedIds[Index]),
 			ItemIds.Contains(FString(ExpectedIds[Index])));
@@ -897,9 +902,9 @@ bool FUEMMOTasksM3_007DropsJsonMatchesItemsCatalogAndDrivesGeneration::RunTest(c
 	{
 		TestTrue(TEXT("the loaded-table reward has a valid InstanceId"), Reward.Instance.InstanceId.IsValid());
 		const FName Picked = Reward.Instance.DefinitionId;
-		TestTrue(TEXT("the loaded-table reward picks one of the three starter definitions"),
+		TestTrue(TEXT("the loaded-table reward picks one of the starter definitions"),
 			Picked == FName(TEXT("weapon_training")) || Picked == FName(TEXT("armor_training")) ||
-			Picked == FName(TEXT("charm_training")));
+			Picked == FName(TEXT("charm_training")) || Picked == FName(TEXT("item_scatter_training")));
 	}
 	return true;
 }

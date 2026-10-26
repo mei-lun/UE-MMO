@@ -682,7 +682,7 @@ bool FUEMMOTasksM5_005DirectoryLoadPositive::RunTest(const FString& Parameters)
 	TestEqual(TEXT("attack_reactions holds 4 rows"), Tables.AttackReactions.Num(), 4);
 	TestEqual(TEXT("target_reactions holds 3 rows"), Tables.TargetReactions.Num(), 3);
 	TestEqual(TEXT("presentations holds 4 rows"), Tables.Presentations.Num(), 4);
-	TestEqual(TEXT("weapons holds 8 rows"), Tables.Weapons.Num(), 8);
+	TestEqual(TEXT("weapons holds 9 rows (M5-048 added the data-only scatter)"), Tables.Weapons.Num(), 9);
 	TestEqual(TEXT("ammo_types holds 5 rows"), Tables.AmmoTypes.Num(), 5);
 	TestEqual(TEXT("projectiles holds 5 rows"), Tables.Projectiles.Num(), 5);
 

@@ -105,8 +105,9 @@ inline bool ValidateDropTable(const FDropTable& Table, FString& OutErrors)
 
 /**
  * The pinned starter clear-reward table: one guaranteed equipment drop per
- * room clear with the design weights 50/30/20 (weapon_training first,
- * armor_training second, charm_training third). Mirrors Data/drops.json
+ * room clear with the design weights 50/30/20/20 (weapon_training first,
+ * armor_training second, charm_training third, item_scatter_training fourth
+ * - the M5-048 "data-only new weapon" proof). Mirrors Data/drops.json
  * (schema_version=1, table_id="starter"); keep both in sync.
  */
 inline FDropTable MakeStarterDropTable()
@@ -116,5 +117,6 @@ inline FDropTable MakeStarterDropTable()
 	Table.Entries.Add(FDropEntry{ FName(TEXT("weapon_training")), 50 });
 	Table.Entries.Add(FDropEntry{ FName(TEXT("armor_training")), 30 });
 	Table.Entries.Add(FDropEntry{ FName(TEXT("charm_training")), 20 });
+	Table.Entries.Add(FDropEntry{ FName(TEXT("item_scatter_training")), 20 });
 	return Table;
 }

@@ -44,7 +44,9 @@ bool FUEMMOTasksM5_020AProductionReadersParseTheShippedTables::RunTest(const FSt
 			AddError(Error);
 			return true;
 		}
-		TestEqual("the shipped table carries the ten rows", Rows.Num(), 10);
+		// M5-048: the shipped table carries eleven rows (the data-only
+		// scatter_training proof added the eleventh).
+		TestEqual("the shipped table carries the eleven rows", Rows.Num(), 11);
 		TestEqual("the sword id resolves", Rows[0].DefinitionId, FName(TEXT("weapon_training")));
 		TestEqual("the sword attack comes from the table", Rows[0].Attack, 5.0f);
 		// M5-056: the sword row maps its weapon definition; the seven ranged
@@ -59,7 +61,7 @@ bool FUEMMOTasksM5_020AProductionReadersParseTheShippedTables::RunTest(const FSt
 				++MappedWeaponRows;
 			}
 		}
-		TestEqual("every weapon row maps a weapon definition", MappedWeaponRows, 8);
+		TestEqual("every weapon row maps a weapon definition", MappedWeaponRows, 9);
 		TestEqual("the armor defense comes from the table", Rows[8].Defense, 3.0f);
 		TestEqual("the charm max hp comes from the table", Rows[9].MaxHP, 20.0f);
 		TestEqual("the charm id is the authority charm_training (the alias target)",
@@ -77,10 +79,12 @@ bool FUEMMOTasksM5_020AProductionReadersParseTheShippedTables::RunTest(const FSt
 			return true;
 		}
 		TestEqual("the pool id is starter", Pool.TableId, FName(TEXT("starter")));
-		TestEqual("the pool carries the three weighted entries", Pool.Entries.Num(), 3);
+		// M5-048: the data-only new weapon added the fourth weighted entry.
+		TestEqual("the pool carries the four weighted entries", Pool.Entries.Num(), 4);
 		TestEqual("the weapon weight is the design 50", Pool.Entries[0].Weight, 50);
 		TestEqual("the armor weight is the design 30", Pool.Entries[1].Weight, 30);
 		TestEqual("the charm weight is the design 20", Pool.Entries[2].Weight, 20);
+		TestEqual("the scatter weight is the design 20", Pool.Entries[3].Weight, 20);
 	}
 
 	// 3. Malformed shapes refuse with field-naming errors.

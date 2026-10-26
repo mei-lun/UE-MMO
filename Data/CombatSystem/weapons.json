@@ -113,6 +113,20 @@
       "range_cm": 0,
       "projectile_id": "rocket_explosive",
       "melee_attack_ids": []
+    },
+    {
+      "weapon_id": "scatter_training",
+      "mode": "projectile",
+      "damage_profile_id": "",
+      "ammo_id": "ammo_cell",
+      "magazine_size": 6,
+      "fire_rate_rpm": 75,
+      "burst_count": 1,
+      "pellet_count": 4,
+      "spread_degrees_deg": 10.0,
+      "range_cm": 0,
+      "projectile_id": "bullet_linear",
+      "melee_attack_ids": []
     }
   ]
 }

@@ -238,11 +238,12 @@ namespace UE::UEMMO::Tasks::M3_012
 			{
 				return nullptr;
 			}
-			// M5-056: the starter grant walks the whole items table (eight
-			// mapped weapons plus armor and charm), so the presented list grew
-			// from three rows to ten.
-			Test.TestEqual(TEXT("the staged starter inventory presents ten rows"),
-				Widget->PeekRowCount(), 10);
+			// M5-056: the starter grant walks the whole items table (nine
+			// mapped weapons plus armor and charm - the M5-048 data-only
+			// scatter added the ninth), so the presented list grew from three
+			// rows to eleven.
+			Test.TestEqual(TEXT("the staged starter inventory presents eleven rows"),
+				Widget->PeekRowCount(), 11);
 			return Widget;
 		}
 
@@ -971,8 +972,9 @@ bool FUEMMOTasksM3_012SlotReplacementKeepsReplacedItemStored::RunTest(const FStr
 	TestEqual(TEXT("the stronger weapon is stored"),
 		Scene.Profile->GetInventory().TryAdd(Stronger), EInventoryAddResult::Added);
 	Scene.Hud->RefreshInventoryScreen();
-	// M5-056: ten staged rows plus the stronger weapon.
-	TestEqual(TEXT("the refreshed list shows eleven rows"), Widget->PeekRowCount(), 11);
+	// M5-056: eleven staged rows plus the stronger weapon (the M5-048 ninth
+	// mapped weapon grew the staging by one).
+	TestEqual(TEXT("the refreshed list shows twelve rows"), Widget->PeekRowCount(), 12);
 	const int32 StrongerRow = Scene.RowIndexOf(Stronger.InstanceId);
 	if (!TestTrue(TEXT("the stronger weapon row resolves in the list"), StrongerRow != INDEX_NONE))
 	{
@@ -1003,8 +1005,9 @@ bool FUEMMOTasksM3_012SlotReplacementKeepsReplacedItemStored::RunTest(const FStr
 	}
 	TestTrue(TEXT("the replaced weapon stays stored in the inventory"), bStagedStillStored);
 	TestTrue(TEXT("the newly equipped weapon is stored too"), bStrongerStored);
+	// M5-048: the staged grant grew by the data-only scatter (twelve rows).
 	TestEqual(TEXT("the inventory count is unchanged by the replacement"),
-		Scene.Profile->GetInventory().Count(), 11);
+		Scene.Profile->GetInventory().Count(), 12);
 
 	// The snapshot sums ONLY the equipped item now (Atk 7), and the markers
 	// moved in the refreshed list.
@@ -1062,8 +1065,8 @@ bool FUEMMOTasksM5_057TravelRestoresBootWeaponEquip::RunTest(const FString& Para
 	// The boot world staged the ten production items and equipped a weapon
 	// through the real model. The travel keeps the profile (the inventory and
 	// the pushed bonus row) but kills the HUD and its equipment model.
-	TestEqual(TEXT("the staged inventory holds the ten production items"),
-		Scene.Profile->GetInventory().Count(), 10);
+	TestEqual(TEXT("the staged inventory holds the eleven production items (M5-048 added the data-only scatter)"),
+		Scene.Profile->GetInventory().Count(), 11);
 	if (!TestTrue(TEXT("the boot world equipped a weapon through the real model"),
 		Scene.Hud->PeekInventoryEquipment().IsSlotEquipped(EItemSlot::Weapon)))
 	{
@@ -1081,7 +1084,7 @@ bool FUEMMOTasksM5_057TravelRestoresBootWeaponEquip::RunTest(const FString& Para
 	TestFalse(TEXT("the fresh HUD's equipment model starts empty (the v4 bound=0 root cause)"),
 		FreshHud->PeekInventoryEquipment().IsSlotEquipped(EItemSlot::Weapon));
 	TestEqual(TEXT("the profile inventory survives the travel"),
-		Scene.Profile->GetInventory().Count(), 10);
+		Scene.Profile->GetInventory().Count(), 11);
 
 	// The restore re-arms the equip on the fresh model.
 	TestTrue(TEXT("the boot weapon equip restore re-arms the fresh model"),

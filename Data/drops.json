@@ -4,6 +4,7 @@
   "entries": [
     { "definition_id": "weapon_training", "weight": 50 },
     { "definition_id": "armor_training", "weight": 30 },
-    { "definition_id": "charm_training", "weight": 20 }
+    { "definition_id": "charm_training", "weight": 20 },
+    { "definition_id": "item_scatter_training", "weight": 20 }
   ]
 }

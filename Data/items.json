@@ -88,6 +88,15 @@
       "base_stats": { "attack": 0, "defense": 0, "max_hp": 20 },
       "icon_path": "",
       "rarity": 1
+    },
+    {
+      "definition_id": "item_scatter_training",
+      "display_name": "Training Scatter",
+      "slot": "Weapon",
+      "weapon_definition_id": "scatter_training",
+      "base_stats": { "attack": 5, "defense": 0, "max_hp": 0 },
+      "icon_path": "",
+      "rarity": 1
     }
   ]
 }

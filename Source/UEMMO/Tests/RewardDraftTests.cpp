@@ -159,6 +159,19 @@ namespace UE::UEMMO::Tasks::M3_008
 		Charm.Rarity = EItemRarity::Normal;
 		Catalog.AddDefinition(Charm, nullptr);
 
+		// M5-048: the data-only scatter is the fourth starter entry (the
+		// reward pool references it, so the fixture must register it).
+		FItemDefinition Scatter;
+		Scatter.DefinitionId = FName(TEXT("item_scatter_training"));
+		Scatter.DisplayName = TEXT("item_scatter_training");
+		Scatter.Slot = EItemSlot::Weapon;
+		Scatter.BaseStats.Attack = 5.0f;
+		Scatter.BaseStats.Defense = 0.0f;
+		Scatter.BaseStats.MaxHP = 0.0f;
+		Scatter.IconPath = TEXT("");
+		Scatter.Rarity = EItemRarity::Normal;
+		Catalog.AddDefinition(Scatter, nullptr);
+
 		return Catalog;
 	}
 
@@ -181,7 +194,8 @@ namespace UE::UEMMO::Tasks::M3_008
 	{
 		return DefinitionId == FName(TEXT("weapon_training")) ||
 			DefinitionId == FName(TEXT("armor_training")) ||
-			DefinitionId == FName(TEXT("charm_training"));
+			DefinitionId == FName(TEXT("charm_training")) ||
+			DefinitionId == FName(TEXT("item_scatter_training"));
 	}
 
 	/** Field-for-field draft equality (instance identity, roll seed, stats, level). */

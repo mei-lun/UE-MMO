@@ -1481,7 +1481,7 @@ bool FUEMMOTasksM5_004WeaponsJsonLoadsAndValidates::RunTest(const FString& Param
 		AddError(TEXT("weapons.json: missing required top-level array 'rows'"));
 		return true;
 	}
-	TestEqual(TEXT("weapons.json holds exactly 8 rows"), (*Rows)->Array.Num(), 8);
+	TestEqual(TEXT("weapons.json holds exactly 9 rows (M5-048 added the data-only scatter)"), (*Rows)->Array.Num(), 9);
 
 	TMap<FName, FWeaponDefinition> Loaded;
 	for (const TSharedPtr<FConfigJsonValue>& Entry : (*Rows)->Array)
@@ -1510,7 +1510,7 @@ bool FUEMMOTasksM5_004WeaponsJsonLoadsAndValidates::RunTest(const FString& Param
 			Loaded.Add(Definition.WeaponId, Definition);
 		}
 	}
-	TestEqual(TEXT("all 8 weapon rows loaded with unique ids"), Loaded.Num(), 8);
+	TestEqual(TEXT("all 9 weapon rows loaded with unique ids"), Loaded.Num(), 9);
 
 	// Pinned sample: the melee training sword carries exactly the legacy four
 	// attacks and no ranged field.
