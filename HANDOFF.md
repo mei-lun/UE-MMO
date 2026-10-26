@@ -1,15 +1,14 @@
-# 最近一轮交接：第八批（M5-040/M5-038/M5-047 三卡并行完成）
+# 最近一轮交接：第九批（M5-039/M5-048 双卡并行完成）
 
-- Owner：ZCode-20261024-A；2026-10-26T03:49+08:00 至 2026-10-27T00:46+08:00（用户要求最大并行：2 子 agent 在飞 + 协调者亲自实现第三卡）。
-- 本轮新增 DONE **3 项：M5-040、M5-038、M5-047**；任务板 **174/190 DONE、0 IN_PROGRESS、valid=true**。分支 `main` 领先远程 46 提交，未推送。
-- 提交：040 `64293eb`/`5eb1be5`；038 `e916717`/`89711c5`；047 `350bd20`（**用户代为提交**，报告结案 `bf28372`）；资产 resave `7b1fcde`。
+- Owner：ZCode-20261024-A；2026-10-27T01:22+08:00 至 01:10+08:00（跨日按卡历）。
+- 本轮新增 DONE **2 项：M5-039、M5-048**；任务板 **176/190 DONE、0 IN_PROGRESS、valid=true**。分支 `main` 领先远程 43 提交，未推送。
+- 提交：039 实现 `e4bb293`/文档 `83f567f`；048 实现 `833f22b`/文档 `f69e310`（047 的用户代提交 `350bd20` 在上一交接后）。
 
 ## 本轮实际内容
 
-- **M5-040 座位占用模型**（Agent C2 实现）：`FSeatOccupancyModel` 纯逻辑双索引（FName 车辆/座位 + FGuid 占用者）、原子 Enter/幂等 Leave/ClearVehicle/Reset、三注入门（距离/车辆有效/权限→041 接线点）、固定拒绝顺序+原因枚举；8 用例。协调者修：FName hash 的 ADL（NameTypes 类内 friend）、M5-037 埋的全局 `IsFiniteVector` 跨 TU 歧义（移入 `UE::UEMMO::Vehicles` 命名空间+限定调用）、cleanup 幂等断言顺序。
-- **M5-038 载具资产+Catalog**（Agent E2 实现）：CombatCatalog 三表镜像 UCLASS+revision digest（`RevisionHashVehicle/Seat/Mount`）+Find*；生成脚本载具段（validate-first/幂等/verify 双进程）；三 DA 落盘 `Content/UEMMO/CombatSystem/Vehicles/`；5 用例。生成 pass1 created=3、pass2 verify true、M5_009 回归吸收 revision 重盖章。**mesh 无实际网格资产**（限制在案）。
-- **M5-047 弹药重启恢复**（协调者亲自实现——首个子代理撞并发配额）：`FProfileSaveRequest`+`SlotRead`+`StartupLoadOutcome` 全链携带 v2 武器状态；`ProfileSubsystem.PushWeaponState`/12 参 `RestoreFromSave`；Character 推送（装备变更成功尾）+重绑（bind-apply 尾身份门恢复）；RewardService claim 流装配；`AmmoModel.ExportSaveRows/RestoreSaveRows`（Persistence 头仅 cpp include）；3 用例。全量 **835/835**。
+- **M5-039 载具耐久/阵营/单次销毁**（Agent G 实现 / `e4bb293`）：`ACombatVehicle : APawn` 复用 HealthComponent+统一入口（无第二套扣血）、阵营注册、hull 控制免疫策略、致死序列（清座位→注销→单事件广播，首终态幂等）；7 用例。**协调者两处关键修复**：①测试世界缺初始化（引擎对未初始化世界跳过 PostInitializeComponents，且 `RouteEndPlay` 门控 `bActorInitialized && ActorHasBegunPlay`——Destroy() 不路由 EndPlay）→ 场景补 GameInstance+world context+`InitializeActorsForPlay+BeginPlay`，并把 OnDied 绑定从 PostInitializeComponents 移入 `SetVehicleDefinition`（任何世界状态都成立）；②周期 id 公式（计数器不回卷，M5-050 先例 2/3/4）。
+- **M5-048 只改表新增武器**（Agent H 数据 / `833f22b`）：`scatter_training` 三 json 加行（pellet 4 复用直线弹丸）、starter 池第四入口、生成工具重生成（`DA_Weapon_scatter_training` 在盘+verify 两遍）、**生产 C++/生成工具零改动**（git diff 实证）；测试钉更新（items 11/映射 9/drops 4/UI 11+12/六处奖励 fixture+DropTable.h 镜像）；全量 **842/842**。
 
 ## 下一步
 
-`Ready: M5-039（载具 Actor 生成）、M5-048（奖励/结算入口）`——按同模式继续多 agent 并行；之后 041（039+040 齐）、042/043 逐步解锁，向 M5-H03 逼近。审核索引待补 037/038/040/046/047 五行（下次批次一并）。
+`Ready: M5-041（前置 039+040 已 DONE）、M5-043`——继续同模式双线并行；之后 042（041 齐）→ 045（042+043）→ M5-H03 人工关。审核索引待补 037-048 各行（下批一并）。包体刷新（含 039/048）留下一批一并做（Package 一次覆盖）。
