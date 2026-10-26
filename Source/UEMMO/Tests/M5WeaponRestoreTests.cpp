@@ -154,7 +154,10 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FUEMMOTasksM5_047SaveCarriesPushedWeaponStateAndRestoreReturnsIt::RunTest(const FString& Parameters)
 {
-	UProfileSubsystem* Profile = NewObject<UProfileSubsystem>();
+	UGameInstance* M5_047_Owner = NewObject<UGameInstance>(GEngine);
+	if (M5_047_Owner) { M5_047_Owner->AddToRoot(); }
+	UProfileSubsystem* Profile = NewObject<UProfileSubsystem>(M5_047_Owner);
+	if (Profile) { Profile->AddToRoot(); }
 	Profile->NewProfile();
 
 	// A firearm instance in the inventory (the magazine's identity anchor).
@@ -210,7 +213,8 @@ bool FUEMMOTasksM5_047SaveCarriesPushedWeaponStateAndRestoreReturnsIt::RunTest(c
 		Load.WeaponConfigRevision, FString(TEXT("rev-m5-047")));
 
 	// The v2 profile restore pushes them into the (fresh) profile.
-	UProfileSubsystem* Restored = NewObject<UProfileSubsystem>();
+	UProfileSubsystem* Restored = NewObject<UProfileSubsystem>(M5_047_Owner);
+	if (Restored) { Restored->AddToRoot(); }
 	TestTrue(TEXT("the v2 restore succeeds"),
 		Restored->RestoreFromSave(Load.Snapshot, Load.Inventory, Load.PendingRewards,
 			Load.AppliedSettlementIds, Load.EquippedMap,
@@ -304,7 +308,10 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FUEMMOTasksM5_047SaveFailureNeverReportsSuccess::RunTest(const FString& Parameters)
 {
-	UProfileSubsystem* Profile = NewObject<UProfileSubsystem>();
+	UGameInstance* M5_047_Owner = NewObject<UGameInstance>(GEngine);
+	if (M5_047_Owner) { M5_047_Owner->AddToRoot(); }
+	UProfileSubsystem* Profile = NewObject<UProfileSubsystem>(M5_047_Owner);
+	if (Profile) { Profile->AddToRoot(); }
 	Profile->NewProfile();
 	UProfileSaveService* Service = NewObject<UProfileSaveService>(GetTransientPackage());
 	FM5_047_MemoryStorage Storage;
