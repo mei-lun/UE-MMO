@@ -1,14 +1,24 @@
-# 最近一轮交接：第九批（M5-039/M5-048 双卡并行完成）
+# 最近一轮交接：第十一批（M5-042/M5-044/M5-053 载具链收口）
 
-- Owner：ZCode-20261024-A；2026-10-27T01:22+08:00 至 01:10+08:00（跨日按卡历）。
-- 本轮新增 DONE **2 项：M5-039、M5-048**；任务板 **176/190 DONE、0 IN_PROGRESS、valid=true**。分支 `main` 领先远程 43 提交，未推送。
-- 提交：039 实现 `e4bb293`/文档 `83f567f`；048 实现 `833f22b`/文档 `f69e310`（047 的用户代提交 `350bd20` 在上一交接后）。
+> 详细版：[2026-10-28-ZCode-20261024-A-Batch11](Docs/Tasks/Handoffs/2026-10-28-ZCode-20261024-A-Batch11.md)。第十批（M5-041/M5-043 双线并行完成，提交 d2ce486/d2fdd84/3d19941）因子代理中断审计后并入本批交接记录；历史批次见 Docs/Tasks/Handoffs/。
+
+- Owner：ZCode-20261024-A；2026-10-28T02:58+08:00 至 05:20+08:00。
+- 本轮新增 DONE **3 项：M5-042、M5-044、M5-053**（连同第十批的 M5-041/M5-043，载具链 037..044+053 全部闭环）；任务板 **181/190 DONE、0 IN_PROGRESS、valid=true**；Ready: M5-045、M5-051；未自动推送。
+- 提交：042 `56b6abf`/`8ab2573`；044 `8a9cefe`/`38036c5`；053 `5d97ce6`/`1604027`；043 记账修复 `533e9e6`/`5da8e91`（实现文件曾漏入库，报告 SHA 更正）；板面乱码修复 `7c981f4`。
 
 ## 本轮实际内容
 
-- **M5-039 载具耐久/阵营/单次销毁**（Agent G 实现 / `e4bb293`）：`ACombatVehicle : APawn` 复用 HealthComponent+统一入口（无第二套扣血）、阵营注册、hull 控制免疫策略、致死序列（清座位→注销→单事件广播，首终态幂等）；7 用例。**协调者两处关键修复**：①测试世界缺初始化（引擎对未初始化世界跳过 PostInitializeComponents，且 `RouteEndPlay` 门控 `bActorInitialized && ActorHasBegunPlay`——Destroy() 不路由 EndPlay）→ 场景补 GameInstance+world context+`InitializeActorsForPlay+BeginPlay`，并把 OnDied 绑定从 PostInitializeComponents 移入 `SetVehicleDefinition`（任何世界状态都成立）；②周期 id 公式（计数器不回卷，M5-050 先例 2/3/4）。
-- **M5-048 只改表新增武器**（Agent H 数据 / `833f22b`）：`scatter_training` 三 json 加行（pellet 4 复用直线弹丸）、starter 池第四入口、生成工具重生成（`DA_Weapon_scatter_training` 在盘+verify 两遍）、**生产 C++/生成工具零改动**（git diff 实证）；测试钉更新（items 11/映射 9/drops 4/UI 11+12/六处奖励 fixture+DropTable.h 镜像）；全量 **842/842**。
+- **M5-042 载具驱动+镜头桥**（Agent J 实现四文件后死亡，协调者接管测试/验证）：`UVehicleMovementComponent`（配置化驱动、斜向归一化、扫掠墙/地、权限注入面——拒绝即清油门）+ `UVehicleCameraBridge`（重挂/精确逆还原/销毁自还原）。定向 **9/9**；渲染采集 3 PNG 实看（boot 菜单 socket 冻结伪影已记录）。
+- **M5-044 载具完整生产链集成**（协调者亲自，热点文件单写者）：`EnsureProductionRigging` 真实表武装、`UVehicleTurretDeliveryComponent` 炮塔交付尾（统一入口命中+车辆自有账本）、交互组件四面输入路由+销毁 mount Finalize、pawn 输入分流+生产轴记录缝、HUD `UEMMODebugVehicle` 试验入口、场景脚本 **Vehicles 段**注册。定向 **3/3**（火箭 40 伤经统一入口）；`-Section Vehicles -Render` **PASSED**。
+- **M5-053 统一事件链日志**（Agent K 实现+协调者编译收敛与两处夹具修复）：阶段链/去重/采样/保留策略/文本摘要 + ApplyUnifiedHit/WeaponComponent 纯观测接线。定向 **5/5**；**全量 873/873 全绿**。
+
+## 验证与限制
+
+- 证据：`Artifacts/Tasks/M5-042|M5-043记账|M5-044|M5-053/` 各时间戳目录；全量 `M5-053-FullSuite/2026-10-28T05-17-21+0800/`。
+- 限制：车体无网格（M5-038）；`vehicle_spawns` 房间驱动未实现（HUD 试验入口顶替）；炮塔 hitscan 具名拒绝；boot 菜单采集 socket 冻结伪影（报告同源记录）。固定包待 045 刷新。
 
 ## 下一步
 
-`Ready: M5-041（前置 039+040 已 DONE）、M5-043`——继续同模式双线并行；之后 042（041 齐）→ 045（042+043）→ M5-H03 人工关。审核索引待补 037-048 各行（下批一并）。包体刷新（含 039/048）留下一批一并做（Package 一次覆盖）。
+- 可领取：**M5-045**（包内载具试玩包）→ **M5-H03**（人工试玩关）；**M5-051** 可并行。
+- 用户事项：M5-H03 签收（045 交付后）；M5-H04 为最终人工关。
+- 审核索引已补载具链 041/042/043/044/053 行。
