@@ -99,6 +99,13 @@ param(
     # is exempted: this pass runs the gate with an EMPTY allowed-failure
     # list (the dev-source-JSON validators are not in this filter).
     [switch]$IncludeWeaponScenario,
+    # M5-045: the C-segment packaged vehicle trial pass (the same shape as
+    # the M5-036 pass): the package carries its own Data/CombatSystem config
+    # and Data/items.json, the in-package UEMMO.Tasks.M5_045 suites prove the
+    # shipped vehicle rows + the production rigging chain with the
+    # zero-exemption gate, and the rendered capture companion stages the
+    # enter/drive trial in the real game world.
+    [switch]$IncludeVehicleScenario,
     [string]$PackageRoot = '',
     [string]$TaskId = 'M5-063',
     [string]$CombatFilter = 'UEMMO.Tasks',
@@ -720,4 +727,86 @@ if($IncludeWeaponScenario) {
     if (-not $VisibleParsed.Ok -or $VisibleParsed.Matched -ne 1) { throw ('Visible bullet verification failed: ' + $VisibleParsed.Error) }
     [ordered]@{ success=$true; pass='package-visible-bullets'; matched=$VisibleParsed.Matched; passed=$VisibleParsed.Passed; failed=$VisibleParsed.Failed; report=$VisibleIndex } | ConvertTo-Json
     & "$PSScriptRoot\TestWeaponGameplay.ps1" -PackageRoot $PackageRoot -TaskId $TaskId
+}
+
+# M5-045: -IncludeVehicleScenario adds the C-segment packaged vehicle-trial
+# passes after the M0 smoke (the M5-036 pass shape):
+#   1. in-package vehicle automation: UEMMO.Tasks.M5_045.* (the shipped
+#      vehicle rows carry; the production rigging chain - enter, drive, fire,
+#      damage, exit - operates against the package's own tables). The gate
+#      runs with an EMPTY allowed-failure list - no M5 failure is exempted.
+#   2. rendered trial capture: the packaged exe with -RenderOffscreen runs
+#      UEMMO.Tasks.M5_045.VehicleTrialCapture (the staged hull beside the
+#      game pawn, the production enter through the interaction component);
+#      the PNGs are verified and copied out.
+if($IncludeVehicleScenario) {
+    $PackageCombatDataDir = Join-Path $PackageProject 'Data\CombatSystem'
+    if(-not (Test-Path -LiteralPath (Join-Path $PackageCombatDataDir 'vehicles.json'))) { throw 'The package does not carry the Data/CombatSystem vehicle tables; rebuild with the M5-036 Package.ps1 carry.' }
+    if(-not (Test-Path -LiteralPath (Join-Path $PackageProject 'Data\items.json'))) { throw 'The package does not carry Data/items.json; rebuild with the M5-056 Package.ps1 carry.' }
+
+    $VehicleStamp = [DateTimeOffset]::Now.ToString('yyyy-MM-ddTHH-mm-sszzz').Replace(':', '')
+    $VehicleReportDir = Join-Path $PackageProject "Artifacts\Tasks\M5-045\$VehicleStamp"
+    New-Item -ItemType Directory -Path $VehicleReportDir -Force | Out-Null
+    Invoke-UEProcess $Executable @(
+        '-game', '-unattended', '-nosplash', '-nosound', '-nullrhi',
+        "-ExecCmds=Automation RunTests UEMMO.Tasks.M5_045",
+        '-TestExit=Automation Test Queue Empty',
+        "-ReportExportPath=$VehicleReportDir",
+        "-abslog=$ArtifactRoot\Logs\package-vehicle-automation.log"
+    ) 'package-vehicle-automation' 900
+    $VehicleIndex = Join-Path $VehicleReportDir 'index.json'
+    if(-not (Test-Path -LiteralPath $VehicleIndex)) { throw 'Packaged vehicle automation did not produce a report.' }
+    $VehicleParsed = ConvertFrom-AutomationReportJson -ReportJson (Get-Content -LiteralPath $VehicleIndex -Raw) -Filter 'UEMMO.Tasks.M5_045'
+    if(-not $VehicleParsed.Ok) { throw 'Packaged vehicle automation gate failed: ' + $VehicleParsed.Error }
+    if($VehicleParsed.Failed -ne 0 -or $VehicleParsed.Incomplete -ne 0) { throw 'Packaged vehicle automation gate failed: a trial suite failed or went incomplete (no M5 exemption applies).' }
+    Copy-Item -LiteralPath $VehicleIndex -Destination (Join-Path $ArtifactRoot 'package-vehicle-automation-index.json') -Force
+    [ordered]@{
+        success = $true
+        pass = 'package-vehicle-automation'
+        test = 'UEMMO.Tasks.M5_045'
+        matched = $VehicleParsed.Matched
+        passed = $VehicleParsed.Passed
+        failed = $VehicleParsed.Failed
+        incomplete = $VehicleParsed.Incomplete
+        allowed_failures = @()
+    } | ConvertTo-Json
+
+    $VehicleCaptureDir = Join-Path $PackageProject "Artifacts\Tasks\M5-045\scenario-json\render"
+    $VehicleCaptureNames = @('capture-trial-staged.png','capture-trial-seated.png')
+    foreach ($Name in $VehicleCaptureNames) {
+        $OldCapture = Join-Path $VehicleCaptureDir $Name
+        if (Test-Path -LiteralPath $OldCapture) { Remove-Item -LiteralPath $OldCapture -Force }
+    }
+    $VehicleCaptureReportDir = Join-Path $VehicleReportDir 'render'
+    New-Item -ItemType Directory -Path $VehicleCaptureReportDir -Force | Out-Null
+    $VehicleCaptureStartedUtc = [DateTime]::UtcNow
+    Invoke-UEProcess $Executable @(
+        '-game', '-unattended', '-nosplash', '-nosound', '-RenderOffscreen',
+        '-ResX=1280', '-ResY=720',
+        "-ExecCmds=Automation RunTests UEMMO.Tasks.M5_045.VehicleTrialCapture",
+        '-TestExit=Automation Test Queue Empty',
+        "-ReportExportPath=$VehicleCaptureReportDir",
+        "-abslog=$ArtifactRoot\Logs\package-vehicle-capture.log"
+    ) 'package-vehicle-capture' 900
+    $VehicleCaptureIndex = Join-Path $VehicleCaptureReportDir 'index.json'
+    if (-not (Test-Path -LiteralPath $VehicleCaptureIndex)) { throw 'Vehicle capture did not export its automation report.' }
+    $VehicleCaptureParsed = ConvertFrom-AutomationReportJson -ReportJson (Get-Content -LiteralPath $VehicleCaptureIndex -Raw) -Filter 'UEMMO.Tasks.M5_045.VehicleTrialCapture'
+    if (-not $VehicleCaptureParsed.Ok) { throw ('Vehicle capture failed: ' + $VehicleCaptureParsed.Error) }
+    foreach($SourceName in $VehicleCaptureNames) {
+        $SourceFile = Join-Path $VehicleCaptureDir $SourceName
+        if(-not (Test-Path -LiteralPath $SourceFile)) {
+            # The engine flushes the screenshot during shutdown; poll briefly.
+            $Waited = 0
+            while(-not (Test-Path -LiteralPath $SourceFile) -and $Waited -lt 15) {
+                Start-Sleep -Milliseconds 500
+                $Waited += 1
+            }
+        }
+        if(-not (Test-Path -LiteralPath $SourceFile)) { throw "Packaged vehicle capture screenshot missing: $SourceName" }
+        if ((Get-Item -LiteralPath $SourceFile).LastWriteTimeUtc -lt $VehicleCaptureStartedUtc) { throw "Stale vehicle capture: $SourceName" }
+        $CaptureBytes = [IO.File]::ReadAllBytes($SourceFile)
+        if($CaptureBytes.Length -lt 1024 -or [BitConverter]::ToString($CaptureBytes,0,8) -ne '89-50-4E-47-0D-0A-1A-0A') { throw "Packaged vehicle capture screenshot $SourceName is not a valid PNG." }
+        Copy-Item -LiteralPath $SourceFile -Destination (Join-Path $ArtifactRoot ('package-' + $SourceName)) -Force
+    }
+    [ordered]@{ success=$true; pass='package-vehicle-capture'; captures=$VehicleCaptureNames } | ConvertTo-Json
 }
