@@ -182,7 +182,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M5-050 | [M5-050](Docs/Tasks/M5-050.md) | DONE | M5-035 | ZCode-20261024-A | 2026-10-26T01:09:50+08:00 | [report](Docs/Tasks/Reports/M5-050.md) |
 | M5-051 | [M5-051](Docs/Tasks/M5-051.md) | TODO | M5-044 | — | — | — |
 | M5-052 | [M5-052](Docs/Tasks/M5-052.md) | DONE | M5-012 | ZCode-20260925-A | 2026-10-06T21:46:47+08:00 | [report](Docs/Tasks/Reports/M5-052.md) |
-| M5-053 | [M5-053](Docs/Tasks/M5-053.md) | TODO | M5-035,M5-044 | — | — | — |
+| M5-053 | [M5-053](Docs/Tasks/M5-053.md) | DONE | M5-035,M5-044 | ZCode-20261024-A | 2026-10-28T05:20:00+08:00 | [report](Docs/Tasks/Reports/M5-053.md) |
 | M5-054 | [M5-054](Docs/Tasks/M5-054.md) | TODO | M5-048,M5-049,M5-050,M5-051,M5-052,M5-053 | — | — | — |
 | M5-055 | [M5-055](Docs/Tasks/M5-055.md) | TODO | M5-054 | — | — | — |
 | M5-056 | [M5-056](Docs/Tasks/M5-056.md) | DONE | M5-020 | GLM-5.3-Flash-20261009-B | 2026-10-10T09:55:00+08:00 | [report](Docs/Tasks/Reports/M5-056.md) |
