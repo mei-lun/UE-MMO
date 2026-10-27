@@ -164,8 +164,8 @@ bool FUEMMOTasksM1_040CombatAndMovementKeysMatchDnfLayout::RunTest(const FString
 
 	// Total guard: 2 (MoveX) + 2 (MoveY) + 2 (Jump) + 1 (Reset) + 1 (Light)
 	// + 1 (Launcher) + 1 (F1) + 8 (skill slots) + 1 (T reload, M5-033)
-	// + 1 (I inventory toggle, M5-034); no stale key can hide.
-	TestEqual(TEXT("the mapping context carries exactly the DNF layout"), Mapping->GetMappings().Num(), 20);
+	// + 1 (I inventory toggle, M5-034) + 1 (V vehicle interact, M5-041); no stale key can hide.
+	TestEqual(TEXT("the mapping context carries exactly the DNF layout"), Mapping->GetMappings().Num(), 21); // 20 DNF keys + the M5-041 V key.
 	return true;
 }
 

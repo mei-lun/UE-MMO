@@ -82,7 +82,7 @@ namespace UE::UEMMO::Tasks::M2_004
 	// (arrows 4, X, Z, C, Space, F2, F1, the eight skill slots, the M5-033
 	// T reload key and the M5-034 I inventory-toggle key); the
 	// mapping-duplication guard compares against this fixed total.
-	constexpr int32 M2_004_ExpectedMappingCount = 20;
+	constexpr int32 M2_004_ExpectedMappingCount = 21; // 20 DNF keys + the M5-041 V vehicle-interact key.
 
 	// World-static blocking box (floor and walls share the builder).
 	static AActor* M2_004_SpawnBoxActor(UWorld& World, const FVector& Center, const FVector& HalfExtent, const TCHAR* Name)

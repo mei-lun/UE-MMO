@@ -50,6 +50,10 @@
 #include "Weapons/FirePolicies/AutomaticFirePolicy.h"
 #include "Weapons/FirePolicies/BurstFirePolicy.h"
 #include "Weapons/ShotPattern.h"
+// M5-041: the vehicle enter/exit component (created as an instance component
+// in BeginPlay; the V key routing and the pause gates resolve it through
+// FindComponentByClass, so this shared hot file needs no new header member).
+#include "Vehicles/VehicleInteractionComponent.h"
 
 using namespace UE::UEMMO::Tasks::M1_029;
 
@@ -93,6 +97,44 @@ namespace
     }
 
     /**
+     * M5-041: the vehicle interaction component lookup. The component is
+     * created as an instance component (BeginPlay's ensure below), so the
+     * pause gates resolve it per call - a world-less or bare pawn has none
+     * and every gate reads false (the pre-M5-041 semantics unchanged).
+     */
+    bool M5_041_IsVehicleControlPaused(const APrototypeCharacter& Character)
+    {
+        const UVehicleInteractionComponent* Interaction = Character.FindComponentByClass<UVehicleInteractionComponent>();
+        return Interaction != nullptr && Interaction->IsPawnControlPaused();
+    }
+
+    /**
+     * M5-041: creates-or-returns the interaction component exactly once per
+     * pawn (an instance component, so PrototypeCharacter.h - the shared hot
+     * file - needs no member). Registering on an actor that already began
+     * play dispatches the component lifecycle synchronously.
+     */
+    UVehicleInteractionComponent* M5_041_EnsureVehicleInteraction(APrototypeCharacter& Character)
+    {
+        if (UVehicleInteractionComponent* Existing = Character.FindComponentByClass<UVehicleInteractionComponent>())
+        {
+            return Existing;
+        }
+        UVehicleInteractionComponent* Created = NewObject<UVehicleInteractionComponent>(&Character);
+        Character.AddInstanceComponent(Created);
+        // RegisterComponent ensures the owner's world (ActorComponent.cpp
+        // MyOwnerWorld) — a direct-setup pawn (NewObject, never spawned; the
+        // M1-012 shape) has none and would fire the ensure. An unregistered
+        // component still serves the model/action surface; the world-side
+        // registration happens with the pawn's own spawn lifecycle.
+        if (Character.GetWorld() != nullptr)
+        {
+            Created->RegisterComponent();
+        }
+        return Created;
+    }
+
+    /**
      * Single choke point for all planar movement: every frame the accumulated
      * axis state is converted into movement input and facing here. M1-013: the
      * combat gate plugs in exactly here (CanAcceptMovement/CanTurn via
@@ -103,6 +145,16 @@ namespace
      */
     void ApplyPlanarMovement(APrototypeCharacter& Character, const FPlanarAxisState& Axes)
     {
+        // M5-041: while the driver controls are parked in a vehicle seat, the
+        // character's planar walk face is suspended at this single choke
+        // point (the component owns the pause flag; M5-042 owns the actual
+        // vehicle driving input). The movement component itself is never
+        // disabled, so external impulses still apply - the same shape as the
+        // M1-013 combat gate below.
+        if (M5_041_IsVehicleControlPaused(Character))
+        {
+            return;
+        }
         if (UE::UEMMO::Tasks::M1_013::ComputeAllowedMoveScale(Character.GetCombat()) > 0.0f)
         {
             const FVector PlanarVelocity = ComputePlanarVelocity(Axes);
@@ -476,6 +528,15 @@ void APrototypeCharacter::BeginPlay()
         {
             OpLog->RegisterPlayer(this);
         }
+    }
+    // M5-041: the vehicle enter/exit component (an instance component - the
+    // shared header stays untouched). The operator faction rides the same
+    // constant the weapon fire source registers with: contract section 8
+    // filters friendly fire on the OPERATOR faction while the driver sits in
+    // the seat, so the component records it for the M5-044 shot contexts.
+    if (UVehicleInteractionComponent* VehicleInteraction = M5_041_EnsureVehicleInteraction(*this))
+    {
+        VehicleInteraction->SetOperatorFaction(M5_033_PlayerFaction);
     }
     UE_LOG(LogTemp, Display, TEXT("UEMMO: prototype character ready; X/Y movement enabled."));
 }
@@ -861,6 +922,15 @@ void APrototypeCharacter::EnsureCombatInputActions()
     // with no other mapping in the M1-040 DNF layout.
     InventoryToggleAction = NewObject<UInputAction>(this, TEXT("InventoryToggle"));
     Mapping->MapKey(InventoryToggleAction, EKeys::I);
+    // M5-041: V enters/exits the nearest legal vehicle seat through the
+    // interaction component. The action object lives on the component (this
+    // shared hot file stays untouched); the Mapping guard above keeps the
+    // mapping single even on a re-setup. V collides with no other mapping in
+    // the M1-040 DNF layout.
+    if (UVehicleInteractionComponent* VehicleInteraction = M5_041_EnsureVehicleInteraction(*this))
+    {
+        Mapping->MapKey(VehicleInteraction->EnsureVehicleInteractAction(), EKeys::V);
+    }
 }
 
 void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -870,8 +940,14 @@ void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
     // M1-012 duplicate-binding guard: EnhancedInput stacks a delegate per
     // BindAction call, so re-running setup against the same component would
     // double-trigger. Clearing this pawn's bindings first makes the bind block
-    // below idempotent.
+    // below idempotent. M5-041: the V lambda binds the interaction component's
+    // action with no pawn object, so the component's own bindings are cleared
+    // the same way (a stacked V lambda would toggle enter+exit per press).
     Input->ClearBindingsForObject(this);
+    if (UVehicleInteractionComponent* VehicleInteractionForClear = FindComponentByClass<UVehicleInteractionComponent>())
+    {
+        Input->ClearBindingsForObject(VehicleInteractionForClear);
+    }
     EnsureCombatInputActions();
     Input->BindAction(HorizontalAction, ETriggerEvent::Triggered, this, &APrototypeCharacter::MoveHorizontal);
     Input->BindAction(HorizontalAction, ETriggerEvent::Completed, this, &APrototypeCharacter::MoveHorizontal);
@@ -906,6 +982,17 @@ void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
     // M5-034: I routes into the inventory toggle (Started only: one press is
     // exactly one open or close).
     Input->BindAction(InventoryToggleAction, ETriggerEvent::Started, this, &APrototypeCharacter::OnInventoryTogglePressed);
+    // M5-041: V routes into the interaction component's toggle (enter when
+    // walking, exit when seated). M5-047-lesson: the bind targets the
+    // COMPONENT object (a UFUNCTION entry) — the pawn's
+    // ClearBindingsForObject re-setup guard covers object-bound delegates,
+    // so a repeated setup never stacks a second V trigger (a bare lambda is
+    // not covered and would toggle enter+exit per press).
+    if (UVehicleInteractionComponent* VehicleInteraction = FindComponentByClass<UVehicleInteractionComponent>())
+    {
+        Input->BindAction(VehicleInteraction->EnsureVehicleInteractAction(), ETriggerEvent::Started,
+            VehicleInteraction, &UVehicleInteractionComponent::HandleVehicleInteractTriggered);
+    }
     if (APlayerController* PC = Cast<APlayerController>(Controller))
     {
         if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
@@ -1076,6 +1163,14 @@ double APrototypeCharacter::ResolveWeaponInputClockSeconds() const
 
 void APrototypeCharacter::OnFireInputPressed()
 {
+    // M5-041: while the driver controls are parked in a vehicle seat, the
+    // character-side fire trigger is suspended at the input edge (no trigger,
+    // and no skill-slot fallback either - the seat owns the input handover;
+    // the vehicle's actual fire routing is M5-044's input face).
+    if (M5_041_IsVehicleControlPaused(*this))
+    {
+        return;
+    }
     UWeaponComponent* Mount = GetWeaponMount();
     if (Mount != nullptr && Mount->IsFireAuthorized())
     {
@@ -1120,6 +1215,12 @@ void APrototypeCharacter::OnFireInputReleased()
 
 void APrototypeCharacter::OnReloadInputPressed()
 {
+    // M5-041: a parked driver opens no character-side reload window (the
+    // vehicle's own reload semantics belong to M5-044).
+    if (M5_041_IsVehicleControlPaused(*this))
+    {
+        return;
+    }
     UWeaponComponent* Mount = GetWeaponMount();
     if (Mount == nullptr || !Mount->IsFireAuthorized() || bWeaponReloadPending)
     {
@@ -1315,6 +1416,15 @@ void APrototypeCharacter::PollWeaponFire()
 {
     UWeaponComponent* Mount = GetWeaponMount();
     if (Mount == nullptr)
+    {
+        return;
+    }
+    // M5-041: the character-side fire stream is suspended while parked - a
+    // trigger held across the enter moment was dropped by the enter tail
+    // (OnFireInputReleased) and a started burst stops streaming here (it
+    // resumes on exit; the M5-024 "a started burst runs to its end" rule
+    // yields to the seat handover).
+    if (M5_041_IsVehicleControlPaused(*this))
     {
         return;
     }
@@ -1818,6 +1928,15 @@ void APrototypeCharacter::SubmitCombatInput(ECombatInput Action)
 }
 void APrototypeCharacter::SubmitCombatInput(ECombatInput Action, double PressedAt)
 {
+    // M5-041: while parked in a seat the character's combat intents (X/Z/C)
+    // are dropped at this single choke point BEFORE the M3-023 input row and
+    // the buffer push - a seated driver keeps no character-side combat queue
+    // (the vehicle's own input routing is M5-044's). Reads only the pause
+    // flag: idempotent, no state touched.
+    if (M5_041_IsVehicleControlPaused(*this))
+    {
+        return;
+    }
     // M3-023: one discrete input row per submitted combat intent (the bound
     // key and the intent it carries). This is the single choke point shared by
     // the X/Z/C input bindings and the automation entries, so a press can
@@ -1894,6 +2013,14 @@ void APrototypeCharacter::ResetPosition()
 
 void APrototypeCharacter::ApplyTrainingRoomReset()
 {
+    // M5-041: the retry face of the seat cleanup (contract section 8: Retry
+    // clears the occupation). The reset restores the pawn's spawn state, so a
+    // seated driver leaves the seat and its control suspension here; without
+    // the component (bare scaffolding) this is a no-op.
+    if (UVehicleInteractionComponent* VehicleInteraction = FindComponentByClass<UVehicleInteractionComponent>())
+    {
+        VehicleInteraction->NotifyOwnerReset();
+    }
     ClearWeaponProjectiles();
     // M1-027: the physics half of the unified reset, mirroring the enemy-side
     // ResetEnemy physics: zero every velocity source (including any launch or
