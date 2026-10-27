@@ -1,8 +1,10 @@
 #include "WeaponComponent.h"
 
 #include "../Items/ItemDefinition.h"
+#include "../Logging/OperationLogSubsystem.h"
 
 #include "FirePolicies/SingleFirePolicy.h"
+#include "GameFramework/Actor.h"
 
 namespace
 {
@@ -524,6 +526,18 @@ FFireOutcome UWeaponComponent::TryFire(const FFireIntent& Intent)
 	++CommittedShotCount;
 	NextFireTimeSeconds = Now + 60.0 / FMath::Max(Definition->FireRateRpm, 1.0f);
 	ActivePolicy->CommitShot(Candidate);
+	// M5-053: pure observation - open the shot's event chain before the
+	// delivery broadcast, so every downstream stage (admission, hit, damage,
+	// death) lands on the same (Epoch, Source, Shot) chain. A context without
+	// a game instance (the pure-logic tests) resolves no log and skips. The
+	// owner-actor name is the best-effort driver snapshot at this layer (the
+	// vehicle seat occupant split belongs to the vehicle mount integration).
+	if (UOperationLogSubsystem* OpLog = UOperationLogSubsystem::FindForContext(this))
+	{
+		const AActor* OwnerActor = GetOwner();
+		OpLog->BeginShotChain(Candidate, MountedRevision,
+			OwnerActor != nullptr ? OwnerActor->GetName() : FString(), FString());
+	}
 	OnShotCommitted.Broadcast(Candidate);
 
 	Outcome.bFired = true;
@@ -536,6 +550,14 @@ void UWeaponComponent::ReleaseFire()
 	if (bShotInFlight)
 	{
 		bShotInFlight = false;
+		// M5-053: pure observation - close the shot's event chain when the
+		// in-flight window ends; the completed chain stays queryable inside
+		// the retention window. Teardown paths (death/equipment switch) leave
+		// their open chain to the active-chain LRU cap by design.
+		if (UOperationLogSubsystem* OpLog = UOperationLogSubsystem::FindForContext(this))
+		{
+			OpLog->EndShotChain(LastShotContext.Epoch, LastShotContext.SourceEntityId, LastShotContext.ShotId);
+		}
 		ActivePolicy->NotifyShotReleased(LastShotContext);
 	}
 }

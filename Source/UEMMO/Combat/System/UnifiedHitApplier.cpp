@@ -5,6 +5,9 @@
 #include "../CombatComponent.h"
 #include "../CombatHitTypes.h"
 #include "../HealthComponent.h"
+#include "../../Logging/OperationLogSubsystem.h"
+
+#include "GameFramework/Actor.h"
 
 /**
  * M5-012: implementation of the unified hit application entry. See the
@@ -50,7 +53,36 @@ const IUnifiedHitDamageCalculator& GetDefaultUnifiedHitCalculator()
 	return Default;
 }
 
-FUnifiedHitOutcome ApplyUnifiedHit(const FUnifiedHitRequest& Request, FHitLedger& Ledger,
+/**
+ * M5-053: pure observation of the entry's outcome. The subsystem resolves
+ * through the hit's context actor (the target, or the registered attacker
+ * when the target reference is the stale one being refused) with the M3-023
+ * FindForContext pattern; a context without a game instance (the pure-logic
+ * unit tests, CDOs) answers null and the call is a no-op, so the entry's
+ * behavior and return value never change.
+ */
+static void M5_053_LogUnifiedHitOutcome(const FUnifiedHitRequest& Request,
+	const FUnifiedHitOutcome& Outcome, const FHitLedger& Ledger)
+{
+	const AActor* ContextActor = Request.TargetActor.Get();
+	if (ContextActor == nullptr)
+	{
+		if (const FCombatEntityRegistry* Registry = Ledger.GetBoundRegistry())
+		{
+			ContextActor = Registry->ResolveEntity(Request.AttackerEntityId).Get();
+		}
+	}
+	if (UOperationLogSubsystem* OpLog = UOperationLogSubsystem::FindForContext(ContextActor))
+	{
+		OpLog->LogUnifiedHitOutcome(Request, Outcome);
+	}
+}
+
+/**
+ * M5-053: the observable entry body (the M5-012 implementation verbatim,
+ * renamed so the public ApplyUnifiedHit stays the one wire the log taps).
+ */
+static FUnifiedHitOutcome M5_053_ApplyUnifiedHitInternal(const FUnifiedHitRequest& Request, FHitLedger& Ledger,
 	const IUnifiedHitDamageCalculator& Calculator)
 {
 	FUnifiedHitOutcome Outcome;
@@ -250,6 +282,16 @@ FUnifiedHitOutcome ApplyUnifiedHit(const FUnifiedHitRequest& Request, FHitLedger
 	}
 
 	Outcome.Decision = EHitDecision::Apply;
+	return Outcome;
+}
+
+FUnifiedHitOutcome ApplyUnifiedHit(const FUnifiedHitRequest& Request, FHitLedger& Ledger,
+	const IUnifiedHitDamageCalculator& Calculator)
+{
+	// M5-053: the entry body is unchanged; the only addition is the pure
+	// observation tap below (a no-op wherever no operation log resolves).
+	FUnifiedHitOutcome Outcome = M5_053_ApplyUnifiedHitInternal(Request, Ledger, Calculator);
+	M5_053_LogUnifiedHitOutcome(Request, Outcome, Ledger);
 	return Outcome;
 }
 
