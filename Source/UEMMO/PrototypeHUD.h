@@ -184,6 +184,20 @@ public:
     void UEMMODebugInventory(int32 Mode = 1);
 
     /**
+     * M5-044: the vehicle trial entry (the HUD-side test point of the vehicle
+     * segment; debug staging only - gameplay never calls this). Mode 1 spawns
+     * the shipped sample vehicle (wheeled, turret-armed on first enter)
+     * several meters ahead of the local player and registers it into the
+     * pawn's interaction component through the production seat occupancy
+     * model OWNED HERE (the World-wiring owner the M5-041 contract reserves;
+     * the model lives on the HUD because the HUD owns the game-flow context).
+     * Mode 2 destroys the debug-spawned hulls. The V key then runs the
+     * production enter/drive/fire/exit chain.
+     */
+    UFUNCTION(Exec)
+    void UEMMODebugVehicle(int32 Mode = 1);
+
+    /**
      * M3-011: the HUD-side refresh entry the later change points (reward
      * claim, equip UI) call when the profile inventory changed. No-op while
      * the screen is not presented; throttled (fingerprint-gated) otherwise,

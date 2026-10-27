@@ -212,6 +212,15 @@ public:
     void OnReloadInputPressed();
 
     /**
+     * M5-044: the production move-axis recording seam - the same entry the
+     * Enhanced Input handlers (MoveHorizontal/MoveDepth) feed. Automation and
+     * future input sources record axes here; the values live in the pawn's
+     * central PlanarAxes and apply centrally per Tick (the walk face while
+     * unseated, the seated hull's drive routing while seated).
+     */
+    void RecordPlanarMoveInput(float AxisX, float AxisY);
+
+    /**
      * M5-033: the input-layer weapon wiring pass - selects the fire policy
      * from the active binding's weapon definition (delivery policy for
      * projectile weapons, burst policy for multi-round hitscan bursts,

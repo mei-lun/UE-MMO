@@ -8,7 +8,8 @@
 # Sections (the card's extension interface - later segments register their own):
 #   Reaction (M5-018) - UEMMO.Tasks.M5_018.Reaction
 #   Weapons  (M5-035) - UEMMO.Tasks.M5_035 (melee/hitscan/projectile/policy chains)
-#   Vehicles / Full - not implemented yet; the refusal is explicit
+#   Vehicles (M5-044) - UEMMO.Tasks.M5_044 (the enter/drive/fire/exit production chain)
+#   Full - not implemented yet; the refusal is explicit
 #   (the capability arrives with the owning segment cards).
 #
 # -Stress (M5-050): after the selected section's passes (which run first and
@@ -58,6 +59,13 @@ $SectionConfigs = @{
             'weapons-death-retry.json', 'weapons-config-change.json')
         'CaptureSuffix' = '.WeaponScenarioCapture'
         'Screenshots' = @('capture-targets.png', 'capture-flight.png', 'capture-blast.png')
+    }
+    'Vehicles' = @{
+        'Filter' = 'UEMMO.Tasks.M5_044'
+        'ArtifactTask' = 'M5-044'
+        'ExpectedFiles' = @('vehicle-scenario.json', 'vehicle-cleanup.json')
+        'CaptureSuffix' = '.VehicleScenarioCapture'
+        'Screenshots' = @('capture-vehicle.png', 'capture-driving.png')
     }
 }
 $Config = $SectionConfigs[$Section]

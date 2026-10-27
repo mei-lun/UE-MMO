@@ -6,6 +6,11 @@
 
 #include "../Combat/System/CombatEventTypes.h"
 #include "../Combat/System/ReactionTypes.h"
+#include "../Combat/System/HitLedger.h"
+#include "../Combat/Data/CombatCatalog.h"
+#include "../Items/ItemDefinition.h"
+#include "../Projectiles/LinearProjectilePolicy.h"
+#include "../Projectiles/ProjectileWorldService.h"
 #include "SeatModel.h"
 #include "VehicleTypes.h"
 
@@ -188,6 +193,23 @@ public:
 	 */
 	bool FinalizeDestruction();
 
+	/**
+	 * M5-044: the production rigging entry (the vehicle-segment integration).
+	 * Ensures the ground drive (M5-042) and the turret weapon + mount
+	 * (M5-043) exist from the PRODUCTION sources - the same Data/CombatSystem
+	 * tables and items.json loaders the pawn's weapon mount uses - and wires
+	 * the operator seam: the injected FSeatOccupancyModel + driver seat id
+	 * (the M5-040 model the interaction wiring owns), the operator faction
+	 * (contract section 8: the friendly-fire filter reads the operator while
+	 * seated) and the vehicle fire-source registration. Idempotent: an
+	 * already-rigged hull refreshes the operator wiring in place. Refuses
+	 * (false + OutError) on a terminal hull or an unavailable/invalid
+	 * production source; a hull whose vehicle id has NO mount row stays
+	 * drivable but unarmed (true - a turret is optional rigging; the note is
+	 * logged, never faked).
+	 */
+	bool EnsureProductionRigging(FSeatOccupancyModel* Seats, FName DriverSeatId, FName OperatorFaction, FString* OutError = nullptr);
+
 	/** The one-shot destroy event of the death sequence (contract section 8). */
 	FOnVehicleDestroyed OnVehicleDestroyed;
 
@@ -242,6 +264,16 @@ private:
 	bool bHasDefinition = false;
 
 	/**
+	 * M5-044: the production rigging's own catalogs (owned VALUES). The
+	 * turret weapon component holds NON-OWNING pointers into them (the same
+	 * shape as the pawn's WeaponCatalogValue session pair), so they must live
+	 * as long as the rigging exists - stack locals would dangle the first
+	 * fire. World/session state, never a save value.
+	 */
+	FCombatCatalog RiggingCatalog;
+	FItemDefinitionCatalog RiggingItems;
+
+	/**
 	 * The world entity identity: the registry is NOT owned (the world wiring
 	 * owns registry and vehicles together, like the ledger's bound-registry
 	 * precedent); ids/epoch are value snapshots of the registration.
@@ -255,4 +287,87 @@ private:
 
 	/** The injected seat/mount vacate seam (see SetSeatVacateCallback). */
 	TFunction<void(FName VehicleId)> SeatVacate;
+};
+
+/** One in-flight turret pellet of the vehicle delivery (value entry; the pawn's FLiveWeaponProjectile shape, vehicle-owned). */
+struct FVehicleLiveTurretPellet
+{
+	TWeakObjectPtr<ACombatProjectile> Actor;
+	TUniquePtr<IProjectileMotionPolicy> Policy;
+	FCombatEpoch ShotEpoch = InvalidCombatEpoch;
+	FEntityId ShotSource = InvalidCombatEntityId;
+	FShotId ShotId = InvalidCombatShotId;
+};
+
+/**
+ * M5-044: the turret delivery component - the vehicle-side tail of the shared
+ * fire pipeline. The mount commits the shot (gates, ammo, attribution), THIS
+ * component delivers it: the shot plan from the mount pivot (the physical
+ * turret socket this card owns) along the hull facing, the projectile
+ * reservation + spawn through the world service, one motion policy per pellet
+ * (the production dispatch - straight/ballistic/homing/pierce exactly like the
+ * pawn), and the per-frame advance/hit/retire loop (the pawn advances its own
+ * pellets from its tick; the vehicle actor cannot tick, so the delivery
+ * carries its own). Every hit lands through the M5-012 unified entry via the
+ * policy's hit context - no second damage stack. The M5-077 ledger face is
+ * the vehicle's own FHitLedger bound to the turret weapon's fire registry;
+ * a shot ends exactly once when its last pellet retires. A hitscan-mode
+ * turret weapon is refused with a named log line (the shipped tables carry
+ * no such row; the hitscan delivery face would mirror the pawn's when one
+ * arrives).
+ */
+UCLASS(ClassGroup = (Vehicles), meta = (BlueprintSpawnableComponent))
+class UEMMO_API UVehicleTurretDeliveryComponent : public UActorComponent, public IHitscanTargetIdentity
+{
+	GENERATED_BODY()
+
+public:
+	UVehicleTurretDeliveryComponent();
+
+	// The per-frame advance/retire loop (the vehicle actor itself cannot tick).
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
+	// The teardown face: the live list clears; held shots' ledger ends run here.
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+	/**
+	 * Binds the turret weapon: subscribes its commit broadcast and binds the
+	 * delivery's ledger to the weapon's fire registry. Idempotent (a re-bind
+	 * detaches the previous subscription first).
+	 */
+	void BindTurretWeapon(UWeaponComponent& Weapon);
+
+	// The IHitscanTargetIdentity seam: the hit actor's registered entity id
+	// (walls and health-less bodies stay unregistered environment).
+	virtual FEntityId ResolveTargetEntityId(const AActor& HitActor) const override;
+
+private:
+	/** The commit tail: plan -> reserve -> spawn -> bind policies. */
+	void HandleShotCommitted(const FShotContext& Shot);
+
+	/** The shared retirement helper (a destroyed body still counts against its shot). */
+	void RetirePellet(int32 LiveIndex);
+
+	/** The bound turret weapon (the commit broadcast source; the registry owner). */
+	TWeakObjectPtr<UWeaponComponent> BoundTurretWeapon;
+
+	/** The delivery's own world service + spawner + ledger (the pawn's delivery trio, vehicle-owned). */
+	TUniquePtr<FProjectileWorldService> ProjectileService;
+	TUniquePtr<IProjectileSpawner> ProjectileSpawner;
+	FHitLedger TurretLedger;
+
+	TArray<FVehicleLiveTurretPellet> LivePellets;
+
+	/** The M5-077 shot-end tracking (the last pellet's retirement releases the shot). */
+	struct FVehiclePendingShotEnd
+	{
+		FCombatEpoch Epoch = InvalidCombatEpoch;
+		FEntityId Source = InvalidCombatEntityId;
+		FShotId Shot = InvalidCombatShotId;
+		int32 LivePellets = 0;
+	};
+	TArray<FVehiclePendingShotEnd> PendingShotEnds;
+
+	/** The lazy target registration cache (the pawn's ShotTargetEntityIds shape). */
+	mutable TMap<const AActor*, FEntityId> TargetEntityIds;
 };

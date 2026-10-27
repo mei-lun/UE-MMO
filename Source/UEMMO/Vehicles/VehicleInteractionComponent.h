@@ -11,6 +11,7 @@
 
 class ACombatVehicle;
 class UInputAction;
+class UVehicleCameraBridge;
 
 /**
  * Why the component itself refused an enter attempt - the layer ABOVE the
@@ -264,6 +265,48 @@ public:
 	 * maps and binds it.
 	 */
 	UInputAction* EnsureVehicleInteractAction();
+
+	// -- M5-044: production input routing (the seat authority's faces) ------
+
+	/**
+	 * Routes one planar drive sample to the seated hull's ground drive (the
+	 * seat-authority face the pawn's paused walk gate calls). Not seated =
+	 * false (the pawn walks on); seated = the seated hull's
+	 * UVehicleMovementComponent::SetDriveInput (a hull without a drive
+	 * component swallows the sample - a seated driver never walks, contract
+	 * section 8). The movement component's own authority gate re-checks the
+	 * driver/suspension state on every application.
+	 */
+	bool RouteDriveInput(float X, float Y);
+
+	/**
+	 * Routes a fire press to the seated hull's turret mount (the production
+	 * input face; the pawn's own fire face stays suspended while seated).
+	 * Not seated = false no-op. The aim rides the vehicle body (yaw 0 =
+	 * hull facing, pitch 0): the M5-037 schema has no yaw field and the
+	 * prototype has no free-look turret input - a schema/aim card would
+	 * replace this. The trigger is held: the caller routes the release to
+	 * RouteVehicleFireReleased so the pacing cooldown alone gates the next
+	 * round (the mount's own trigger semantics).
+	 */
+	bool RouteVehicleFirePressed(FString* OutRefusal = nullptr);
+
+	/** Routes the fire release (ends the committed shot's in-flight window). */
+	void RouteVehicleFireReleased();
+
+	/**
+	 * Routes a reload press to the seated hull's turret weapon (the M5-033
+	 * T semantics on the vehicle; the completion is lazily drained by the
+	 * next fire route). Not seated = false no-op.
+	 */
+	bool RouteVehicleReloadPressed(FString* OutRefusal = nullptr);
+
+	/**
+	 * Ensures the pawn-side camera bridge (M5-042) exists on the owner pawn
+	 * (created once as an instance component) and returns it (null without an
+	 * owner - never a dangling face).
+	 */
+	UVehicleCameraBridge* EnsureCameraBridge();
 
 	/**
 	 * How many destroy events the component's subscription received. The

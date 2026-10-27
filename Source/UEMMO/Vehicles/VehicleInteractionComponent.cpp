@@ -11,6 +11,9 @@
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "InputAction.h"
+#include "VehicleCameraBridge.h"
+#include "VehicleMovementComponent.h"
+#include "VehicleWeaponMountComponent.h"
 
 /**
  * M5-041: implementation of the enter/exit interaction. Rules live in the
@@ -365,6 +368,32 @@ FVehicleEnterAttempt UVehicleInteractionComponent::TryEnterNearestVehicle()
 	Attempt.VehicleId = Request.VehicleId;
 	Attempt.SeatId = Request.SeatId;
 
+	// M5-044: the production rigging (drive + turret from the real source
+	// tables, operator seam wired) is ensured on the first enter of the hull
+	// and refreshed in place afterwards - the unarmed/driveless degradation
+	// is a named refusal logged at the rigging, never a silent one.
+	FString RiggingError;
+	if (!Hull->EnsureProductionRigging(BoundSeatModel, Request.SeatId, OperatorFaction, &RiggingError))
+	{
+		UE_LOG(LogUEMMOVehicleInteraction, Warning,
+			TEXT("UEMMO M5-044: vehicle '%s' production rigging refused: %s"), *Request.VehicleId.ToString(), *RiggingError);
+	}
+	// The driver presence + the camera bridge (M5-042): the seat now gates the
+	// drive authority and the rig follows the hull ground anchor.
+	if (UVehicleMovementComponent* Drive = Hull->FindComponentByClass<UVehicleMovementComponent>())
+	{
+		Drive->SetDriverPresent(true);
+	}
+	if (UVehicleCameraBridge* Bridge = EnsureCameraBridge())
+	{
+		FString BridgeError;
+		if (!Bridge->BridgeToVehicle(*Hull, &BridgeError))
+		{
+			UE_LOG(LogUEMMOVehicleInteraction, Warning,
+				TEXT("UEMMO M5-044: the camera bridge refused: %s"), *BridgeError);
+		}
+	}
+
 	// The pause face starts clean: a trigger held across the enter moment is
 	// dropped (the M5-033 release entry early-outs when nothing is held). The
 	// vehicle's own fire routing is M5-044's input face.
@@ -495,7 +524,32 @@ void UVehicleInteractionComponent::RestoreDriverAfterForcedCleanup(const TCHAR* 
 	{
 		Model->LeaveSeat(OccupantId);
 	}
-	// 2. The bookkeeping and the control face (both idempotent flags): the
+	// 2. M5-044: the vehicle-side faces of the driver loss - the held drive
+	// input drops (the drive authority re-checks the presence anyway), the
+	// in-flight turret shot releases and the camera hands back to the
+	// character anchor - all weak-safe (a dying hull still answers; a
+	// collected one is skipped).
+	if (ACombatVehicle* Hull = SeatedVehicle.Get())
+	{
+		if (UVehicleMovementComponent* Drive = Hull->FindComponentByClass<UVehicleMovementComponent>())
+		{
+			Drive->SetDriveInput(0.0f, 0.0f);
+			Drive->SetDriverPresent(false);
+		}
+		if (UVehicleWeaponMountComponent* Mount = Hull->FindComponentByClass<UVehicleWeaponMountComponent>())
+		{
+			Mount->ReleaseMountShot();
+			Mount->NotifyOperatorChanged();
+		}
+	}
+	if (APrototypeCharacter* OwnerPawn = Cast<APrototypeCharacter>(GetOwner()))
+	{
+		if (UVehicleCameraBridge* Bridge = OwnerPawn->FindComponentByClass<UVehicleCameraBridge>())
+		{
+			Bridge->RestoreCharacterAnchor();
+		}
+	}
+	// 3. The bookkeeping and the control face (both idempotent flags): the
 	// character-side control face reopens. No possession change, no teleport -
 	// the surviving driver keeps its PlayerController and input context (the
 	// physical placement is M5-042's face; the pawn stands where it entered).
@@ -504,7 +558,7 @@ void UVehicleInteractionComponent::RestoreDriverAfterForcedCleanup(const TCHAR* 
 	SeatedSeatId = NAME_None;
 	SeatedVehicle = nullptr;
 	bDriverControlsPaused = false;
-	// 3. The subscription and the vacate seam detach while the hull is still
+	// 4. The subscription and the vacate seam detach while the hull is still
 	// addressable (weak + pending-kill-safe: after a GC the weak reference is
 	// null and the delegate object is gone with the hull anyway).
 	if (ACombatVehicle* Bound = BoundDestroySource.Get())
@@ -535,6 +589,21 @@ void UVehicleInteractionComponent::HandleVehicleDestroyed(const FVehicleDestroye
 	// AddUObject impossible; this counter would expose one if that ever
 	// drifted (the 039 scene's event-counting precedent).
 	++VehicleDestroyedNotifications;
+	// M5-044: the destroyed hull's turret mount finalizes here - the mount
+	// itself subscribes nothing (the one-shot destroy sequence's mount face is
+	// the wiring's duty). A mount exists only on a rigged (entered) hull, and
+	// an enter binds this subscription, so every mount sees its hull's
+	// destroy exactly once.
+	if (const ACombatVehicle* DestroyedHull = Event.Vehicle.Get())
+	{
+		// The event hands a read-only snapshot; the mount teardown mutates the
+		// mount component only (the hull itself stays read-only here).
+		ACombatVehicle* MutableHull = const_cast<ACombatVehicle*>(DestroyedHull);
+		if (UVehicleWeaponMountComponent* Mount = MutableHull->FindComponentByClass<UVehicleWeaponMountComponent>())
+		{
+			Mount->Finalize();
+		}
+	}
 	if (!bSeated || Event.VehicleId != SeatedVehicleId)
 	{
 		return;
@@ -624,6 +693,143 @@ UInputAction* UVehicleInteractionComponent::EnsureVehicleInteractAction()
 	// (created in code, key mapped by the pawn's setup).
 	VehicleInteractAction = NewObject<UInputAction>(this, TEXT("M5_041_VehicleInteract"));
 	return VehicleInteractAction.Get();
+}
+
+bool UVehicleInteractionComponent::RouteDriveInput(float X, float Y)
+{
+	// Not seated: not consumed - the pawn's walk face handles the sample.
+	if (!bSeated)
+	{
+		return false;
+	}
+	ACombatVehicle* Hull = SeatedVehicle.Get();
+	if (Hull == nullptr)
+	{
+		// Seated with a gone hull (the destroy event has not landed yet):
+		// swallow the sample - a seated driver never walks (contract 8).
+		return true;
+	}
+	if (UVehicleMovementComponent* Drive = Hull->FindComponentByClass<UVehicleMovementComponent>())
+	{
+		Drive->SetDriveInput(X, Y);
+	}
+	// Without a drive component the sample is still consumed: the walk face
+	// stays suspended while seated regardless.
+	return true;
+}
+
+bool UVehicleInteractionComponent::RouteVehicleFirePressed(FString* OutRefusal)
+{
+	const auto Refuse = [OutRefusal](const FString& Why)
+	{
+		if (OutRefusal != nullptr)
+		{
+			*OutRefusal = Why;
+		}
+		return false;
+	};
+
+	if (!bSeated)
+	{
+		return Refuse(TEXT("not seated: the vehicle fire route is the no-op"));
+	}
+	ACombatVehicle* Hull = SeatedVehicle.Get();
+	UVehicleWeaponMountComponent* Mount = Hull != nullptr ? Hull->FindComponentByClass<UVehicleWeaponMountComponent>() : nullptr;
+	if (Mount == nullptr)
+	{
+		return Refuse(TEXT("the seated hull carries no turret mount: the fire route is refused (an unarmed hull never fakes a shot)"));
+	}
+	// The lazy reload completion: the turret has no tick of its own, so a
+	// window whose duration elapsed closes right here (CompleteReload is the
+	// named no-op refusal without an open window - zero side effects).
+	if (UWeaponComponent* TurretWeapon = Mount->GetTurretWeapon())
+	{
+		TurretWeapon->CompleteReload();
+	}
+	// The aim rides the vehicle body (yaw 0 = hull facing, pitch 0 - inside
+	// every configured clamp; the M5-037 schema has no yaw field).
+	const FVehicleMountFireOutcome Outcome = Mount->TryFire(FVehicleMountAim());
+	if (!Outcome.bFired)
+	{
+		if (OutRefusal != nullptr)
+		{
+			*OutRefusal = FString::Printf(TEXT("the turret refused (%d): %s"),
+				static_cast<int32>(Outcome.Reject), *Outcome.RejectDetail);
+		}
+		return false;
+	}
+	return true;
+}
+
+void UVehicleInteractionComponent::RouteVehicleFireReleased()
+{
+	if (ACombatVehicle* Hull = SeatedVehicle.Get())
+	{
+		if (UVehicleWeaponMountComponent* Mount = Hull->FindComponentByClass<UVehicleWeaponMountComponent>())
+		{
+			Mount->ReleaseMountShot();
+		}
+	}
+}
+
+bool UVehicleInteractionComponent::RouteVehicleReloadPressed(FString* OutRefusal)
+{
+	const auto Refuse = [OutRefusal](const FString& Why)
+	{
+		if (OutRefusal != nullptr)
+		{
+			*OutRefusal = Why;
+		}
+		return false;
+	};
+
+	if (!bSeated)
+	{
+		return Refuse(TEXT("not seated: the vehicle reload route is the no-op"));
+	}
+	ACombatVehicle* Hull = SeatedVehicle.Get();
+	UVehicleWeaponMountComponent* Mount = Hull != nullptr ? Hull->FindComponentByClass<UVehicleWeaponMountComponent>() : nullptr;
+	UWeaponComponent* TurretWeapon = Mount != nullptr ? Mount->GetTurretWeapon() : nullptr;
+	if (TurretWeapon == nullptr)
+	{
+		return Refuse(TEXT("the seated hull carries no turret weapon: the reload route is refused"));
+	}
+	const double Now = Hull->GetWorld() != nullptr ? Hull->GetWorld()->GetTimeSeconds() : 0.0;
+	// The M5-033 T semantics on the vehicle: a pending window is closed first
+	// (the lazy completion), then the press opens a fresh one when the mount
+	// is idle. The duration is the input-layer constant (no schema field).
+	if (TurretWeapon->GetRemainingReloadSeconds(Now) > 0.0)
+	{
+		return Refuse(TEXT("the turret reload window is already open"));
+	}
+	const FAmmoReloadOutcome Outcome = TurretWeapon->BeginReload(Now, 2.0);
+	if (!Outcome.bSuccess)
+	{
+		if (OutRefusal != nullptr)
+		{
+			*OutRefusal = FString::Printf(TEXT("the turret reload refused (%d): %s"),
+				static_cast<int32>(Outcome.Error), *Outcome.ErrorDetail);
+		}
+		return false;
+	}
+	return true;
+}
+
+UVehicleCameraBridge* UVehicleInteractionComponent::EnsureCameraBridge()
+{
+	APrototypeCharacter* OwnerPawn = Cast<APrototypeCharacter>(GetOwner());
+	if (OwnerPawn == nullptr)
+	{
+		return nullptr;
+	}
+	UVehicleCameraBridge* Bridge = OwnerPawn->FindComponentByClass<UVehicleCameraBridge>();
+	if (Bridge == nullptr)
+	{
+		Bridge = NewObject<UVehicleCameraBridge>(OwnerPawn, TEXT("M5_044_VehicleCameraBridge"));
+		OwnerPawn->AddInstanceComponent(Bridge);
+		Bridge->RegisterComponent();
+	}
+	return Bridge;
 }
 
 FGuid& UVehicleInteractionComponent::GetOrCreateOccupantId()

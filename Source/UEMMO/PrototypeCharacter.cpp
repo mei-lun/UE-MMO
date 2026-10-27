@@ -147,12 +147,15 @@ namespace
     {
         // M5-041: while the driver controls are parked in a vehicle seat, the
         // character's planar walk face is suspended at this single choke
-        // point (the component owns the pause flag; M5-042 owns the actual
-        // vehicle driving input). The movement component itself is never
-        // disabled, so external impulses still apply - the same shape as the
-        // M1-013 combat gate below.
+        // point - and M5-044 routes the sample to the seated hull's ground
+        // drive instead (the seat authority consumes it; a hull without a
+        // drive component swallows it, a seated driver never walks).
         if (M5_041_IsVehicleControlPaused(Character))
         {
+            if (UVehicleInteractionComponent* SeatedInteraction = Character.FindComponentByClass<UVehicleInteractionComponent>())
+            {
+                SeatedInteraction->RouteDriveInput(Axes.AxisX, Axes.AxisY);
+            }
             return;
         }
         if (UE::UEMMO::Tasks::M1_013::ComputeAllowedMoveScale(Character.GetCombat()) > 0.0f)
@@ -1165,10 +1168,15 @@ void APrototypeCharacter::OnFireInputPressed()
 {
     // M5-041: while the driver controls are parked in a vehicle seat, the
     // character-side fire trigger is suspended at the input edge (no trigger,
-    // and no skill-slot fallback either - the seat owns the input handover;
-    // the vehicle's actual fire routing is M5-044's input face).
+    // and no skill-slot fallback either - the seat owns the input handover).
+    // M5-044: the press routes to the seated hull's turret mount instead.
     if (M5_041_IsVehicleControlPaused(*this))
     {
+        if (UVehicleInteractionComponent* SeatedInteraction = FindComponentByClass<UVehicleInteractionComponent>())
+        {
+            FString VehicleFireRefusal;
+            SeatedInteraction->RouteVehicleFirePressed(&VehicleFireRefusal);
+        }
         return;
     }
     UWeaponComponent* Mount = GetWeaponMount();
@@ -1200,6 +1208,17 @@ void APrototypeCharacter::OnFireInputPressed()
 
 void APrototypeCharacter::OnFireInputReleased()
 {
+    // M5-044: the seated trigger release routes to the turret mount (ends the
+    // committed shot's in-flight window); the character-side release below
+    // stays inert while parked (bWeaponFireHeld was cleared at the enter).
+    if (M5_041_IsVehicleControlPaused(*this))
+    {
+        if (UVehicleInteractionComponent* SeatedInteraction = FindComponentByClass<UVehicleInteractionComponent>())
+        {
+            SeatedInteraction->RouteVehicleFireReleased();
+        }
+        return;
+    }
     if (!bWeaponFireHeld)
     {
         return;
@@ -1213,12 +1232,28 @@ void APrototypeCharacter::OnFireInputReleased()
     }
 }
 
+void APrototypeCharacter::RecordPlanarMoveInput(float AxisX, float AxisY)
+{
+    // The M5-044 recording seam: identical to the Enhanced Input handlers'
+    // recording (MoveHorizontal/MoveDepth) minus the per-change input log -
+    // the automation cadence is not a user input event.
+    PlanarAxes.SetAxisX(AxisX);
+    PlanarAxes.SetAxisY(AxisY);
+}
+
 void APrototypeCharacter::OnReloadInputPressed()
 {
-    // M5-041: a parked driver opens no character-side reload window (the
-    // vehicle's own reload semantics belong to M5-044).
+    // M5-041: a parked driver opens no character-side reload window.
+    // M5-044: the press routes to the seated hull's turret weapon instead
+    // (the M5-033 T semantics on the vehicle; the window completes lazily on
+    // the next fire route).
     if (M5_041_IsVehicleControlPaused(*this))
     {
+        if (UVehicleInteractionComponent* SeatedInteraction = FindComponentByClass<UVehicleInteractionComponent>())
+        {
+            FString VehicleReloadRefusal;
+            SeatedInteraction->RouteVehicleReloadPressed(&VehicleReloadRefusal);
+        }
         return;
     }
     UWeaponComponent* Mount = GetWeaponMount();

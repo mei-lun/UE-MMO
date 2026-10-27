@@ -6,6 +6,9 @@
 #include "Combat/CombatGeometry.h"
 #include "Combat/HealthComponent.h"
 #include "Combat/System/TestRoomConfigDriver.h"
+#include "Combat/Data/CombatDataTableParser.h"
+#include "Vehicles/CombatVehicle.h"
+#include "Vehicles/VehicleInteractionComponent.h"
 #include "Enemy/EnemyDefinition.h"
 #include "Enemy/TrainingEnemy.h"
 #include "Engine/GameInstance.h"
@@ -106,6 +109,10 @@ void APrototypeHUD::DrawHUD()
     // Z launcher, C jump (Space stays a jump alias), F2 resets, QWERASDF are
     // the reserved skill slots (no skill effect yet), F1 the debug overlay.
     DrawText(TEXT("Arrows: move  X: attack  Z: launcher  C: jump  F2: reset  QWERASDF: skills (reserved)  F1: debug"), FLinearColor(0.6f, 0.85f, 1.f), 32, 53);
+    // M5-044: the vehicle trial point. The hull stages through the HUD debug
+    // entry; near it V enters/exits, arrows drive, Q fires the turret, T
+    // reloads it (the walk faces stay suspended while seated).
+    DrawText(TEXT("Console: UEMMODebugVehicle 1 (stage car)  V: enter/exit  while seated Arrows drive, Q fire, T reload"), FLinearColor(0.6f, 0.95f, 0.7f), 32, 101);
     // M2-017: the stage note reflects the implemented M1 combat + M2 wave
     // room instead of the stale "M2 planned" text.
     DrawText(TEXT("Single-player. M1 combat + M2 wave room + M3 progression implemented; M4 server integration not started."), FLinearColor(0.9f, 0.8f, 0.45f), 32, 77);
@@ -1413,6 +1420,129 @@ void APrototypeHUD::RefreshMenuPresentation()
 }
 
 // ----- M3-011: read-only inventory list screen --------------------------------
+
+namespace
+{
+	// M5-044: the production seat occupancy model of the vehicle trial entry
+	// (the World-wiring owner the M5-041 contract reserves). File-local: the
+	// HUD is the game-flow owner and the single production instance; the
+	// model is World/session state that never reaches a save.
+	FSeatOccupancyModel M5_044_DebugVehicleSeatModel;
+
+	// M5-044: the hulls the debug entry spawned (mode 2 tears them down).
+	TArray<TWeakObjectPtr<ACombatVehicle>> M5_044_DebugVehicles;
+}
+
+void APrototypeHUD::UEMMODebugVehicle(int32 Mode)
+{
+	UE_LOG(LogTemp, Display, TEXT("UEMMO M5-044: vehicle exec mode %d"), Mode);
+	UWorld* World = GetWorld();
+	if (World == nullptr)
+	{
+		return;
+	}
+
+	if (Mode == 2)
+	{
+		// The debug teardown: destroy the hulls this entry spawned (weak
+		// references skip the already-gone ones).
+		int32 Destroyed = 0;
+		for (const TWeakObjectPtr<ACombatVehicle>& WeakHull : M5_044_DebugVehicles)
+		{
+			if (ACombatVehicle* Hull = WeakHull.Get())
+			{
+				Hull->Destroy();
+				++Destroyed;
+			}
+		}
+		M5_044_DebugVehicles.RemoveAllSwap([](const TWeakObjectPtr<ACombatVehicle>& Weak)
+		{
+			return !Weak.IsValid();
+		});
+		UE_LOG(LogTemp, Display, TEXT("UEMMO M5-044: destroyed %d debug vehicle(s)."), Destroyed);
+		return;
+	}
+
+	// Mode 1 (default): spawn the shipped sample vehicle ahead of the local
+	// player and register it into the pawn's interaction component.
+	APlayerController* Controller = GetOwningPlayerController();
+	APrototypeCharacter* Player = Controller != nullptr ? Cast<APrototypeCharacter>(Controller->GetPawn()) : nullptr;
+	if (Player == nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UEMMO M5-044: no local prototype pawn; the vehicle spawn is skipped."));
+		return;
+	}
+	UVehicleInteractionComponent* Interaction = Player->FindComponentByClass<UVehicleInteractionComponent>();
+	if (Interaction == nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UEMMO M5-044: the pawn carries no interaction component; the vehicle spawn is skipped."));
+		return;
+	}
+
+	// The production sources (the same loaders the pawn and the vehicle
+	// rigging use): the vehicle row feeds SetVehicleDefinition, the seat row
+	// feeds RegisterVehicle.
+	FCombatDataTableSet Tables;
+	TArray<FString> LoadProblems;
+	if (!LoadCombatDataDirectory(FPaths::ProjectDir() / TEXT("Data") / TEXT("CombatSystem"), Tables, LoadProblems))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UEMMO M5-044: the combat source tables are unavailable (%s)."),
+			*FString::Join(LoadProblems, TEXT(" | ")));
+		return;
+	}
+	const FName SampleVehicleId(TEXT("vehicle_wheeled_sample"));
+	const FVehicleDefinition* VehicleRow = Tables.Vehicles.Find(SampleVehicleId);
+	const FVehicleSeatDefinition* SeatRow = nullptr;
+	for (const TPair<FName, FVehicleSeatDefinition>& Row : Tables.VehicleSeats)
+	{
+		if (Row.Value.VehicleId == SampleVehicleId)
+		{
+			SeatRow = &Row.Value;
+			break;
+		}
+	}
+	if (VehicleRow == nullptr || SeatRow == nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UEMMO M5-044: the shipped vehicle/seat rows did not resolve; the spawn is skipped."));
+		return;
+	}
+
+	// Ahead of the pawn along its facing (+X or mirrored -X), resting height
+	// for the 80cm half-extent box on the local floor.
+	const float FacingSign = Player->GetActorRotation().Yaw < 0.0f ? -1.0f : 1.0f;
+	const FVector SpawnLocation = Player->GetActorLocation() + FVector(FacingSign * 550.0f, 0.0f, 0.0f);
+	FActorSpawnParameters Params;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+	ACombatVehicle* Hull = World->SpawnActor<ACombatVehicle>(ACombatVehicle::StaticClass(), SpawnLocation, FRotator::ZeroRotator, Params);
+	if (Hull == nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UEMMO M5-044: the vehicle hull spawn failed."));
+		return;
+	}
+	FString DefinitionErrors;
+	if (!Hull->SetVehicleDefinition(*VehicleRow, &DefinitionErrors))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UEMMO M5-044: the vehicle definition refused: %s"), *DefinitionErrors);
+		Hull->Destroy();
+		return;
+	}
+
+	// The World-wiring faces (the M5-041 contract): the HUD-owned seat model
+	// binds once (idempotent overwrite) and the hull registers into it. The
+	// operator faction is the same constant the weapon fire source uses.
+	Interaction->BindSeatModel(M5_044_DebugVehicleSeatModel);
+	Interaction->SetOperatorFaction(TEXT("player"));
+	FString RegisterError;
+	if (!Interaction->RegisterVehicle(*Hull, *SeatRow, &RegisterError))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UEMMO M5-044: the vehicle registration refused: %s"), *RegisterError);
+		Hull->Destroy();
+		return;
+	}
+	M5_044_DebugVehicles.Add(Hull);
+	UE_LOG(LogTemp, Display, TEXT("UEMMO M5-044: vehicle '%s' staged near the player; walk close and press V to enter."),
+		*SampleVehicleId.ToString());
+}
 
 void APrototypeHUD::UEMMODebugInventory(int32 Mode)
 {
