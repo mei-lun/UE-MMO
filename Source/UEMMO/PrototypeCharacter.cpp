@@ -99,13 +99,16 @@ namespace
     /**
      * M5-041: the vehicle interaction component lookup. The component is
      * created as an instance component (BeginPlay's ensure below), so the
-     * pause gates resolve it per call - a world-less or bare pawn has none
+     * riding gates resolve it per call - a world-less or bare pawn has none
      * and every gate reads false (the pre-M5-041 semantics unchanged).
+     * M5-H03 audit: "riding" reroutes ONLY the fire/reload edges into the
+     * ridden hull's turret - movement and combat intents keep their faces
+     * (the car follows the person, the control object never swaps).
      */
-    bool M5_041_IsVehicleControlPaused(const APrototypeCharacter& Character)
+    bool M5_041_IsVehicleRiding(const APrototypeCharacter& Character)
     {
         const UVehicleInteractionComponent* Interaction = Character.FindComponentByClass<UVehicleInteractionComponent>();
-        return Interaction != nullptr && Interaction->IsPawnControlPaused();
+        return Interaction != nullptr && Interaction->IsSeated();
     }
 
     /**
@@ -145,19 +148,8 @@ namespace
      */
     void ApplyPlanarMovement(APrototypeCharacter& Character, const FPlanarAxisState& Axes)
     {
-        // M5-041: while the driver controls are parked in a vehicle seat, the
-        // character's planar walk face is suspended at this single choke
-        // point - and M5-044 routes the sample to the seated hull's ground
-        // drive instead (the seat authority consumes it; a hull without a
-        // drive component swallows it, a seated driver never walks).
-        if (M5_041_IsVehicleControlPaused(Character))
-        {
-            if (UVehicleInteractionComponent* SeatedInteraction = Character.FindComponentByClass<UVehicleInteractionComponent>())
-            {
-                SeatedInteraction->RouteDriveInput(Axes.AxisX, Axes.AxisY);
-            }
-            return;
-        }
+        // M5-H03 audit: the rider keeps walking control (the hull rides the
+        // person) - the walk face has no seated gate at all.
         if (UE::UEMMO::Tasks::M1_013::ComputeAllowedMoveScale(Character.GetCombat()) > 0.0f)
         {
             const FVector PlanarVelocity = ComputePlanarVelocity(Axes);
@@ -1177,7 +1169,7 @@ void APrototypeCharacter::OnFireInputPressed()
     // character-side fire trigger is suspended at the input edge (no trigger,
     // and no skill-slot fallback either - the seat owns the input handover).
     // M5-044: the press routes to the seated hull's turret mount instead.
-    if (M5_041_IsVehicleControlPaused(*this))
+    if (M5_041_IsVehicleRiding(*this))
     {
         if (UVehicleInteractionComponent* SeatedInteraction = FindComponentByClass<UVehicleInteractionComponent>())
         {
@@ -1218,7 +1210,7 @@ void APrototypeCharacter::OnFireInputReleased()
     // M5-044: the seated trigger release routes to the turret mount (ends the
     // committed shot's in-flight window); the character-side release below
     // stays inert while parked (bWeaponFireHeld was cleared at the enter).
-    if (M5_041_IsVehicleControlPaused(*this))
+    if (M5_041_IsVehicleRiding(*this))
     {
         if (UVehicleInteractionComponent* SeatedInteraction = FindComponentByClass<UVehicleInteractionComponent>())
         {
@@ -1248,35 +1240,13 @@ void APrototypeCharacter::RecordPlanarMoveInput(float AxisX, float AxisY)
     PlanarAxes.SetAxisY(AxisY);
 }
 
-void APrototypeCharacter::SetDriverBodyActive(bool bActive)
-{
-    // M5-H03: the seated-body face. Hidden = the mesh invisible + the capsule
-    // non-colliding (the driver rides INSIDE the hull - the query box is the
-    // hittable body; a live capsule would block shots and stand visibly at
-    // the enter spot). Restored on every exit/cleanup face. The tick stays
-    // on: the seated routing and the weapon polls read it.
-    if (USkeletalMeshComponent* BodyMesh = GetMesh())
-    {
-        BodyMesh->SetVisibility(bActive, /*bPropagateToChildren*/ true);
-    }
-    if (UCapsuleComponent* Capsule = GetCapsuleComponent())
-    {
-        Capsule->SetCollisionEnabled(bActive ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
-    }
-    if (!bActive)
-    {
-        // Drop any residual walk velocity so the hidden body never drifts.
-        GetCharacterMovement()->StopMovementImmediately();
-    }
-}
-
 void APrototypeCharacter::OnReloadInputPressed()
 {
     // M5-041: a parked driver opens no character-side reload window.
     // M5-044: the press routes to the seated hull's turret weapon instead
     // (the M5-033 T semantics on the vehicle; the window completes lazily on
     // the next fire route).
-    if (M5_041_IsVehicleControlPaused(*this))
+    if (M5_041_IsVehicleRiding(*this))
     {
         if (UVehicleInteractionComponent* SeatedInteraction = FindComponentByClass<UVehicleInteractionComponent>())
         {
@@ -1488,7 +1458,7 @@ void APrototypeCharacter::PollWeaponFire()
     // (OnFireInputReleased) and a started burst stops streaming here (it
     // resumes on exit; the M5-024 "a started burst runs to its end" rule
     // yields to the seat handover).
-    if (M5_041_IsVehicleControlPaused(*this))
+    if (M5_041_IsVehicleRiding(*this))
     {
         return;
     }
@@ -1997,7 +1967,7 @@ void APrototypeCharacter::SubmitCombatInput(ECombatInput Action, double PressedA
     // the buffer push - a seated driver keeps no character-side combat queue
     // (the vehicle's own input routing is M5-044's). Reads only the pause
     // flag: idempotent, no state touched.
-    if (M5_041_IsVehicleControlPaused(*this))
+    if (M5_041_IsVehicleRiding(*this))
     {
         return;
     }

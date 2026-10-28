@@ -11,7 +11,6 @@
 
 class ACombatVehicle;
 class UInputAction;
-class UVehicleCameraBridge;
 
 /**
  * Why the component itself refused an enter attempt - the layer ABOVE the
@@ -123,20 +122,16 @@ struct FVehicleSeatEntry
  * - Enter (the V toggle, routed through PrototypeCharacter's input setup):
  *   death and UI-capture refusals run component-side first (contract section
  *   4 order), then the nearest registered candidate feeds the model. On
- *   acceptance the driver's character-side control face pauses (see
- *   IsPawnControlPaused) and the operator faction is recorded (contract
- *   section 8 filters friendly fire on the OPERATOR faction; M5-044 reads it
- *   for its shot contexts). The pawn is not possessed into the vehicle and
- *   not teleported here - the physical seat placement is M5-042's face.
- * - Exit: the seated seat's ExitOffsetCm is validated by a capsule ground
- *   sweep (the hull being left is ignored); every candidate blocked refuses
- *   the exit and the driver stays seated (no wall clipping). On success the
- *   character drops at the exit spot, the control face restores and the
- *   LeaveSeat ends the occupation.
+ *   acceptance the HULL attaches to the pawn as its child (M5-H03 audit: the
+ *   car rides the person - the rider keeps walking control, no control swap)
+ *   and the operator faction is recorded (contract section 8 filters
+ *   friendly fire on the OPERATOR faction; the turret routes read it).
+ * - Exit: the hull DETACHES beside the rider (the rider never stopped
+ *   walking, so there is no drop spot to sweep or block).
  * - Forced cleanup (contract section 8: destroy/LeaveRoom/Retry/EndPlay):
  *   the hull's one-shot destroy event, the owner's death, the unified reset
  *   and the component's own EndPlay all funnel into one idempotent restore -
- *   the seat frees, the control face restores, the controller/possession is
+ *   the seat frees, the hull detaches, the controller/possession is
  *   never touched (a surviving driver keeps its PlayerController and input
  *   context).
  *
@@ -203,18 +198,18 @@ public:
 	 * Enters the nearest registered seat: component refusals first (no model,
 	 * dead owner, captured UI), then a seated re-entry rides the model's
 	 * AlreadyInThisSeat path, then the nearest resolved candidate runs the
-	 * model's atomic TryEnterSeat (gates included). On acceptance the driver
-	 * control face pauses and the hull's vacate seam + destroy subscription
-	 * are bound. The attempt report always names its layer.
+	 * model's atomic TryEnterSeat (gates included). On acceptance the HULL
+	 * attaches to the pawn as its child (M5-H03 audit: the car rides the
+	 * person - the rider keeps walking control, no control swap, no body
+	 * hiding), the production rigging arms and the hull's vacate seam +
+	 * destroy subscription bind. The attempt report always names its layer.
 	 */
 	FVehicleEnterAttempt TryEnterNearestVehicle();
 
 	/**
-	 * Leaves the seat: the seated seat's ExitOffsetCm is validated by a
-	 * capsule ground sweep (the hull ignored); every candidate blocked refuses
-	 * (false + OutRefusal) and the driver stays seated. On success the
-	 * character drops at the exit spot, the control face restores and the
-	 * LeaveSeat ends the occupation. Idempotent: not seated = the false no-op.
+	 * Leaves the seat: the hull DETACHES back to world space right beside the
+	 * rider (the rider never stopped walking, so there is no drop spot and
+	 * nothing to be blocked by). Idempotent: not seated = the false no-op.
 	 */
 	bool TryExitVehicle(FString* OutRefusal = nullptr);
 
@@ -237,12 +232,11 @@ public:
 	// -- Queries ----------------------------------------------------------------
 
 	/**
-	 * True while the driver's character-side control face is suspended
-	 * (movement input, combat intents, character fire/reload). The pause flag
-	 * of the PrototypeCharacter gating; 042/044 own the vehicle-side input
-	 * that replaces it.
+	 * True while the occupant holds a seat AND the turret routes are live
+	 * (fire/reload press edges route into the ridden hull's mount; movement
+	 * never changes - the rider keeps walking control, M5-H03 audit).
 	 */
-	bool IsPawnControlPaused() const { return bDriverControlsPaused; }
+	bool IsRiding() const { return bSeated; }
 
 	/** True while the occupant holds a seat (bookkeeping, not the model's state). */
 	bool IsSeated() const { return bSeated; }
@@ -281,28 +275,16 @@ public:
 	UFUNCTION()
 	void HandleVehicleStagingTriggered();
 
-	// -- M5-044: production input routing (the seat authority's faces) ------
+	// -- M5-044: riding fire routing (the seat authority's faces) ------------
 
 	/**
-	 * Routes one planar drive sample to the seated hull's ground drive (the
-	 * seat-authority face the pawn's paused walk gate calls). Not seated =
-	 * false (the pawn walks on); seated = the seated hull's
-	 * UVehicleMovementComponent::SetDriveInput (a hull without a drive
-	 * component swallows the sample - a seated driver never walks, contract
-	 * section 8). The movement component's own authority gate re-checks the
-	 * driver/suspension state on every application.
-	 */
-	bool RouteDriveInput(float X, float Y);
-
-	/**
-	 * Routes a fire press to the seated hull's turret mount (the production
-	 * input face; the pawn's own fire face stays suspended while seated).
-	 * Not seated = false no-op. The aim rides the vehicle body (yaw 0 =
-	 * hull facing, pitch 0): the M5-037 schema has no yaw field and the
-	 * prototype has no free-look turret input - a schema/aim card would
-	 * replace this. The trigger is held: the caller routes the release to
+	 * Routes a fire press to the ridden hull's turret mount. Not seated =
+	 * false no-op. The aim rides the vehicle body (yaw 0 = hull facing, pitch
+	 * 0): the M5-037 schema has no yaw field and the prototype has no
+	 * free-look turret input - a schema/aim card would replace this. The
+	 * trigger is held: the caller routes the release to
 	 * RouteVehicleFireReleased so the pacing cooldown alone gates the next
-	 * round (the mount's own trigger semantics).
+	 * round.
 	 */
 	bool RouteVehicleFirePressed(FString* OutRefusal = nullptr);
 
@@ -315,13 +297,6 @@ public:
 	 * next fire route). Not seated = false no-op.
 	 */
 	bool RouteVehicleReloadPressed(FString* OutRefusal = nullptr);
-
-	/**
-	 * Ensures the pawn-side camera bridge (M5-042) exists on the owner pawn
-	 * (created once as an instance component) and returns it (null without an
-	 * owner - never a dangling face).
-	 */
-	UVehicleCameraBridge* EnsureCameraBridge();
 
 	/**
 	 * How many destroy events the component's subscription received. The
@@ -384,9 +359,6 @@ private:
 
 	/** The driver-side operator faction (contract section 8; unset = unaligned). */
 	FName OperatorFaction = NAME_None;
-
-	/** The suspended character-side control face (the pawn gating reads this). */
-	bool bDriverControlsPaused = false;
 
 	/** The UI-capture gate (empty = not yet defaulted; see SetUICapturePredicate). */
 	TFunction<bool()> UICapturePredicate;

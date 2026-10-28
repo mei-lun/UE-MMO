@@ -442,9 +442,9 @@ bool FUEMMOTasksM5_038VehicleCatalogMirrorsSourceRows::RunTest(const FString& Pa
 	{
 		TestEqual(TEXT("the mount's vehicle mirrors the table"), Mount->VehicleId, FName(TEXT("vehicle_wheeled_sample")));
 		TestEqual(TEXT("the turret weapon mirrors the table"), Mount->TurretWeaponId, FName(TEXT("weapon_explosive_sample")));
-		TestEqual(TEXT("the pivot x mirrors the table"), Mount->LocationCm.X, 0.0);
+		TestEqual(TEXT("the pivot x mirrors the table"), Mount->LocationCm.X, 120.0);
 		TestEqual(TEXT("the pivot y mirrors the table"), Mount->LocationCm.Y, 40.0);
-		TestEqual(TEXT("the pivot z mirrors the table"), Mount->LocationCm.Z, 120.0);
+		TestEqual(TEXT("the pivot z mirrors the table"), Mount->LocationCm.Z, 40.0);
 		TestEqual(TEXT("the pitch minimum mirrors the table"), Mount->MinPitchDegrees, -20.0f);
 		TestEqual(TEXT("the pitch maximum mirrors the table"), Mount->MaxPitchDegrees, 60.0f);
 	}

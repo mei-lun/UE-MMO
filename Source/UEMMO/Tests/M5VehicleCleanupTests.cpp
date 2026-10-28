@@ -223,12 +223,14 @@ namespace UE::UEMMO::Tasks::M5_051
 				++OutProjectiles;
 			}
 			// The mount census runs over ALL instances (components are not
-			// actors); the class default object and pending-kill stragglers
-			// (GC-lagged) are skipped - a ghost is a LIVE mount.
+			// actors); the class default object, pending-kill stragglers
+			// (GC-lagged) and OTHER SUITES' still-alive worlds are skipped -
+			// a ghost is a LIVE mount of THIS world.
 			for (TObjectIterator<UVehicleWeaponMountComponent> It; It; ++It)
 			{
 				if (It->HasAllFlags(RF_ClassDefaultObject) || It->GetOwner() == nullptr
-					|| It->GetOwner()->IsPendingKillPending())
+					|| It->GetOwner()->IsPendingKillPending()
+					|| It->GetOwner()->GetWorld() != GetWorldForCensus())
 				{
 					continue;
 				}
@@ -300,18 +302,12 @@ namespace UE::UEMMO::Tasks::M5_051
 				return false;
 			}
 
-			// The same drive intent routed through the production cadence:
-			// one frame of held input yields exactly the single-step velocity
-			// (never a stacked sample), then the intent releases.
-			Scene.Player->RecordPlanarMoveInput(1.0f, 0.0f);
-			Scene.TickFrames(1);
-			if (!TestTrue(FString::Printf(TEXT("round %d: one drive step routed once"), Round),
-					FMath::IsNearlyEqual(Drive->GetPlanarVelocity().X, 15.0f, 0.05f)))
+			// M5-H03 audit: the hull rides the pawn while seated.
+			if (!TestTrue(FString::Printf(TEXT("round %d: the hull rides the rider"), Round),
+					Hull->GetRootComponent()->GetAttachParent() == Scene.Player->GetRootComponent()))
 			{
 				return false;
 			}
-			Scene.Player->RecordPlanarMoveInput(0.0f, 0.0f);
-			Scene.TickFrames(1);
 
 			// The fire press commits exactly one shot per fresh hull; the
 			// rocket's 4-second lifetime means the live census is bounded by
@@ -369,18 +365,16 @@ namespace UE::UEMMO::Tasks::M5_051
 				Scene.Player->ApplyTrainingRoomReset();
 			}
 
-			// The per-round invariants: the seat is free, the control face is
-			// open, the model holds one registration and zero occupations.
+			// The per-round invariants: the seat is free, the hull detached,
+			// the model holds one registration and zero occupations.
 			if (!TestEqual(FString::Printf(TEXT("round %d: no ghost occupation"), Round),
 					Scene.Seats.GetNumOccupiedSeats(), 0) ||
-				!TestFalse(FString::Printf(TEXT("round %d: the control face restored"), Round),
-					Scene.Interaction->IsPawnControlPaused()) ||
-				!TestFalse(FString::Printf(TEXT("round %d: no seated state"), Round),
+				!TestFalse(FString::Printf(TEXT("round %d: the seat is free"), Round),
 					Scene.Interaction->IsSeated()) ||
+				!TestTrue(FString::Printf(TEXT("round %d: the hull detached"), Round),
+					Hull->GetRootComponent()->GetAttachParent() == nullptr) ||
 				!TestEqual(FString::Printf(TEXT("round %d: exactly one registered seat"), Round),
-					Scene.Seats.GetNumRegisteredSeats(), 1) ||
-				!TestTrue(FString::Printf(TEXT("round %d: the drive input cleared"), Round),
-					Drive->GetDriveInput().IsNearlyZero()))
+					Scene.Seats.GetNumRegisteredSeats(), 1))
 			{
 				return false;
 			}

@@ -576,7 +576,7 @@ namespace UE::UEMMO::Tasks::M5_043
 		TestTrue(TEXT("the shipped mount row configured"), Mount->IsConfigured());
 		TestEqual(TEXT("the mount id is the shipped one"), Mount->GetMountedDefinition().MountId, MountIdShipped);
 		TestEqual(TEXT("the turret weapon id is the shipped one"), Mount->GetMountedDefinition().TurretWeaponId, WeaponExplosiveSample);
-		TestTrue(TEXT("the pivot offset is the shipped (0, 40, 120) cm"),
+		TestTrue(TEXT("the pivot offset is the fixture (0, 40, 120) cm"),
 			Mount->GetMountedDefinition().LocationCm.Equals(FVector(0.0, 40.0, 120.0)));
 		TestEqual(TEXT("the min pitch is the shipped -20 degrees"), Mount->GetMountedDefinition().MinPitchDegrees, -20.0f);
 		TestEqual(TEXT("the max pitch is the shipped 60 degrees"), Mount->GetMountedDefinition().MaxPitchDegrees, 60.0f);

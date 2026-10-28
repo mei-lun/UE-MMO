@@ -24,6 +24,7 @@
 
 #include "../Combat/Data/CombatDataTableParser.h"
 #include "../Combat/HealthComponent.h"
+#include "../Projectiles/CombatProjectile.h"
 #include "../Vehicles/CombatVehicle.h"
 #include "../Vehicles/SeatModel.h"
 #include "../Vehicles/VehicleCameraBridge.h"
@@ -37,6 +38,7 @@
 #include "Engine/CollisionProfile.h"
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "EngineUtils.h"
 #include "Kismet/GameplayStatics.h"
 #include "UnrealClient.h"
 
@@ -270,7 +272,6 @@ namespace UE::UEMMO::Tasks::M5_044
 
 		// THE ENTER (production face): the first enter arms the rigging from
 		// the real source tables.
-		const FVector BeforeEnter = Scene.Vehicle->GetActorLocation();
 		const FVehicleEnterAttempt Enter = Scene.Interaction->TryEnterNearestVehicle();
 		TestTrue(TEXT("the production enter accepts"), Enter.bEntered);
 		++Exporter.DriverEnters;
@@ -278,12 +279,11 @@ namespace UE::UEMMO::Tasks::M5_044
 			*Enter.VehicleId.ToString(), *Enter.SeatId.ToString()));
 
 		// The rigging: the drive exists and is configured from the shipped
-		// row; the turret is bound and configured; the fire source is the
-		// VEHICLE; the camera bridge follows the hull.
+		// row (idle in the riding model - movement is the rider's walk); the
+		// turret is bound and configured; the fire source is the VEHICLE.
 		UVehicleMovementComponent* Drive = Scene.Vehicle->FindComponentByClass<UVehicleMovementComponent>();
 		TestNotNull(TEXT("the production drive exists after the enter"), Drive);
 		TestTrue(TEXT("the drive is configured"), Drive != nullptr && Drive->IsConfigured());
-		TestTrue(TEXT("the drive holds the driver presence"), Drive != nullptr && Drive->IsDriveInputAccepted());
 		UVehicleWeaponMountComponent* Mount = Scene.Vehicle->FindComponentByClass<UVehicleWeaponMountComponent>();
 		TestNotNull(TEXT("the production mount exists after the enter"), Mount);
 		TestTrue(TEXT("the mount is configured"), Mount != nullptr && Mount->IsConfigured());
@@ -291,51 +291,72 @@ namespace UE::UEMMO::Tasks::M5_044
 			Mount != nullptr && Mount->GetVehicleFireSourceEntityId() != InvalidCombatEntityId);
 		UWeaponComponent* Turret = Mount != nullptr ? Mount->GetTurretWeapon() : nullptr;
 		TestNotNull(TEXT("the turret weapon exists"), Turret);
-		UVehicleCameraBridge* Bridge = Scene.Player->FindComponentByClass<UVehicleCameraBridge>();
-		TestNotNull(TEXT("the camera bridge exists after the enter"), Bridge);
-		TestTrue(TEXT("the camera bridge follows the hull"), Bridge != nullptr && Bridge->IsBridged());
 
-		// THE DRIVE (the production input chain, real world ticks): the
-		// Triggered events re-record the axes every frame while held, the
-		// pawn's central Tick routes them through the seat authority into the
-		// ground drive. The test reproduces that cadence through the SAME
-		// seam the Enhanced Input handlers feed.
+		// M5-H03 audit: the HULL RIDES THE PAWN - attached as the pawn's
+		// child, it follows every walk step while the rider keeps control.
+		TestTrue(TEXT("the hull rides the pawn (attached child)"),
+			Scene.Vehicle->GetRootComponent()->GetAttachParent() == Scene.Player->GetRootComponent());
+
+		// THE RIDE (the production input chain, real world ticks): the rider
+		// walks; the hull follows through the attachment (it snapped onto the
+		// pawn at the enter, so at any instant the hull coincides with the
+		// rider).
 		Scene.Player->RecordPlanarMoveInput(1.0f, 0.0f);
 		Scene.TickFrames(60);
-		const float DrivenDistance = Scene.Vehicle->GetActorLocation().X - BeforeEnter.X;
-		// 60 frames of throttle: the clamped acceleration integral ~433.6 cm.
-		TestTrue(TEXT("the routed drive input moved the hull (the clamped acceleration integral)"),
-			DrivenDistance >= 430.0f && DrivenDistance <= 437.0f);
-		// The release: the brake bleeds the rest (700^2 / (2*900) = 272.2 cm),
-		// then the hull rests.
 		Scene.Player->RecordPlanarMoveInput(0.0f, 0.0f);
 		Scene.TickFrames(90);
-		const float TotalDistance = Scene.Vehicle->GetActorLocation().X - BeforeEnter.X;
-		AddInfo(FString::Printf(TEXT("M5_044 drive phase: driven=%f total=%f planar=%s grounded=%d"),
-			DrivenDistance, TotalDistance,
-			Drive != nullptr ? *Drive->GetPlanarVelocity().ToString() : TEXT("null"),
-			Drive != nullptr && Drive->IsGrounded() ? 1 : 0));
-		TestTrue(TEXT("the braked hull covered the drive plus the brake integral"),
-			TotalDistance >= 695.0f && TotalDistance <= 716.0f);
-		Exporter.Add(FString::Printf(TEXT("{ \"type\": \"drive_sample\", \"dx_cm\": %f }"), DrivenDistance));
+		const float WalkedDistance = Scene.Player->GetActorLocation().X - M5_044_SceneBase.X - 250.0f;
+		AddInfo(FString::Printf(TEXT("M5_044 ride phase: walked=%f rider=%s hull=%s"),
+			WalkedDistance,
+			*Scene.Player->GetActorLocation().ToCompactString(),
+			*Scene.Vehicle->GetActorLocation().ToCompactString()));
+		TestTrue(TEXT("the rider walked forward while riding"), WalkedDistance >= 300.0f);
+		// The hull rides the rider's X/Y through the attachment while its own
+		// drive hover keeps its Z ground-locked (the car sits on the ground
+		// around the person - the M5-H03 audit model).
+		TestTrue(TEXT("the hull rides the rider on the plane (X/Y coincide)"),
+			Scene.Vehicle->GetActorLocation().Equals(
+				FVector(Scene.Player->GetActorLocation().X, Scene.Player->GetActorLocation().Y, Scene.Vehicle->GetActorLocation().Z), 1.0f));
+		Exporter.Add(FString::Printf(TEXT("{ \"type\": \"ride_sample\", \"dx_cm\": %f }"), WalkedDistance));
 
 		// THE TARGET + THE FIRE (production routing through the mount): the
 		// shot attributes to the vehicle, the projectile flies and the damage
-		// lands through the unified entry (the pool drop is the proof).
-		AMeleeEnemy* Target = nullptr;
+		// lands through the unified entry (the pool drop is the proof). The
+		// target is a STATIC health box staged on the muzzle line (the rider
+		// wears the car, so the muzzle rides at pawn + mount pivot; an AI
+		// enemy would walk off the fixed flight line).
+		const FVector MuzzleWorld = Scene.Vehicle->GetActorLocation()
+			+ FVector(120.0, 40.0, 40.0);
+		AActor* Target = nullptr;
+		UHealthComponent* TargetHealth = nullptr;
 		{
 			FActorSpawnParameters Params;
-			Target = Scene.Wrapper.GetTestWorld()->SpawnActor<AMeleeEnemy>(
-				AMeleeEnemy::StaticClass(), M5_044_SceneBase + FVector(1900.0, 0.0, 120.0), FRotator::ZeroRotator, Params);
+			Target = Scene.Wrapper.GetTestWorld()->SpawnActor<AActor>(AActor::StaticClass(),
+				MuzzleWorld + FVector(1000.0, 0.0, 0.0), FRotator::ZeroRotator, Params);
+			if (Target != nullptr)
+			{
+				UBoxComponent* Body = NewObject<UBoxComponent>(Target, TEXT("M5_044_Target"));
+				Target->SetRootComponent(Body);
+				Body->SetMobility(EComponentMobility::Movable);
+				Body->SetBoxExtent(FVector(60.0f, 60.0f, 120.0f));
+				Body->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
+				Body->RegisterComponent();
+				Body->SetWorldLocation(MuzzleWorld + FVector(1000.0, 0.0, 0.0));
+				TargetHealth = NewObject<UHealthComponent>(Target, TEXT("M5_044_TargetHealth"));
+				TargetHealth->RegisterComponent();
+				TargetHealth->SetMaxHealth(100.0f);
+				TargetHealth->ResetHealth();
+			}
 		}
-		if (!TestNotNull(TEXT("the staging target spawns"), Target))
+		if (!TestNotNull(TEXT("the staging target spawns"), Target) ||
+			!TestNotNull(TEXT("the staging target carries health"), TargetHealth))
 		{
 			return false;
 		}
 		// The collision tree is built before the projectile flight (the
 		// M5-035 rig precedent - fresh worlds sweep incomplete trees).
 		Scene.Wrapper.GetTestWorld()->EnsureCollisionTreeIsBuilt();
-		const float TargetHealthBefore = Target->GetHealthComponent()->GetHealth();
+		const float TargetHealthBefore = TargetHealth->GetHealth();
 		// THE FIRE: the production Q edge routes through the pawn's seated
 		// gate into the turret mount (the same OnFireInputPressed the input
 		// binding calls).
@@ -364,16 +385,40 @@ namespace UE::UEMMO::Tasks::M5_044
 		for (int32 Frame = 0; Frame < 240 && !bDamageLanded; ++Frame)
 		{
 			Scene.TickFrames(1);
-			TargetHealthAfter = Target->GetHealthComponent()->GetHealth();
-			if (TargetHealthAfter < TargetHealthBefore || !Target->GetHealthComponent()->IsAlive())
+			TargetHealthAfter = TargetHealth->GetHealth();
+			if (TargetHealthAfter < TargetHealthBefore || !TargetHealth->IsAlive())
 			{
 				bDamageLanded = true;
 			}
+			if (Frame == 20 || Frame == 60)
+			{
+				int32 LiveRockets = 0;
+				FVector RocketSpot = FVector::ZeroVector;
+				for (TActorIterator<ACombatProjectile> It(Scene.Wrapper.GetTestWorld()); It; ++It)
+				{
+					++LiveRockets;
+					RocketSpot = It->GetActorLocation();
+				}
+				AddInfo(FString::Printf(TEXT("M5_044 flight tick %d: liveRockets=%d rocket=%s"),
+					Frame, LiveRockets, *RocketSpot.ToCompactString()));
+			}
 		}
 		TestTrue(TEXT("the turret shot damaged the target through the unified entry"), bDamageLanded);
-		AddInfo(FString::Printf(TEXT("M5_044 fire phase: hpBefore=%f hpAfter=%f alive=%d"),
-			TargetHealthBefore, TargetHealthAfter,
-			Target->GetHealthComponent()->IsAlive() ? 1 : 0));
+		{
+			int32 LiveRockets = 0;
+			FVector RocketSpot = FVector::ZeroVector;
+			for (TActorIterator<ACombatProjectile> It(Scene.Wrapper.GetTestWorld()); It; ++It)
+			{
+				++LiveRockets;
+				RocketSpot = It->GetActorLocation();
+			}
+			AddInfo(FString::Printf(TEXT("M5_044 fire phase: hpBefore=%f hpAfter=%f alive=%d liveRockets=%d rocket=%s target=%s rider=%s"),
+				TargetHealthBefore, TargetHealthAfter,
+				(TargetHealth != nullptr && TargetHealth->IsAlive()) ? 1 : 0,
+				LiveRockets, *RocketSpot.ToCompactString(),
+				*Target->GetActorLocation().ToCompactString(),
+				*Scene.Player->GetActorLocation().ToCompactString()));
+		}
 		if (bDamageLanded)
 		{
 			++Exporter.DamageEvents;
@@ -381,21 +426,21 @@ namespace UE::UEMMO::Tasks::M5_044
 				*Target->GetName(), TargetHealthBefore, TargetHealthAfter));
 		}
 
-		// THE EXIT (production face): the driver drops at the exit offset, the
-		// camera restores, the drive input is cleared.
-		const FVector VehicleOrigin = Scene.Vehicle->GetActorLocation();
+		// THE EXIT (production face): the hull detaches right beside the rider
+		// (the rider never moved; there is no drop teleport).
+		const FVector RiderSpotAtExit = Scene.Player->GetActorLocation();
+		const FVector HullSpotAtExit = Scene.Vehicle->GetActorLocation();
 		FString ExitRefusal;
 		const bool bExited = Scene.Interaction->TryExitVehicle(&ExitRefusal);
 		AddInfo(FString::Printf(TEXT("M5_044 exit: accepted=%d refusal=%s hull=%s pawn=%s"),
-			bExited, *ExitRefusal, *VehicleOrigin.ToCompactString(), *Scene.Player->GetActorLocation().ToCompactString()));
+			bExited, *ExitRefusal, *HullSpotAtExit.ToCompactString(), *Scene.Player->GetActorLocation().ToCompactString()));
 		TestTrue(TEXT("the production exit accepts"), bExited);
 		++Exporter.DriverExits;
 		Exporter.Add(TEXT("{ \"type\": \"driver_exit\" }"));
-		const FVector ExitExpected(VehicleOrigin.X + 250.0f, VehicleOrigin.Y, M5_044_SceneBase.Z + 96.0f);
-		TestTrue(TEXT("the character drops at the exit offset"),
-			Scene.Player->GetActorLocation().Equals(ExitExpected, 0.5f));
-		TestFalse(TEXT("the bridge restored on exit"), Bridge != nullptr && Bridge->IsBridged());
-		TestTrue(TEXT("the drive input cleared on exit"), Drive != nullptr && Drive->GetDriveInput().IsNearlyZero());
+		TestTrue(TEXT("the hull detached beside the rider"),
+			Scene.Vehicle->GetRootComponent()->GetAttachParent() == nullptr
+			&& Scene.Vehicle->GetActorLocation().Equals(HullSpotAtExit, 0.5f)
+			&& Scene.Player->GetActorLocation().Equals(RiderSpotAtExit, 0.5f));
 
 		Exporter.Export(*this, TEXT("vehicle-scenario.json"));
 		return true;
@@ -420,19 +465,16 @@ namespace UE::UEMMO::Tasks::M5_044
 
 		TestTrue(TEXT("the enter accepts"), Scene.Interaction->TryEnterNearestVehicle().bEntered);
 		++Exporter.DriverEnters;
-		UVehicleMovementComponent* Drive = Scene.Vehicle->FindComponentByClass<UVehicleMovementComponent>();
 		UVehicleWeaponMountComponent* Mount = Scene.Vehicle->FindComponentByClass<UVehicleWeaponMountComponent>();
-		UVehicleCameraBridge* Bridge = Scene.Player->FindComponentByClass<UVehicleCameraBridge>();
-		TestNotNull(TEXT("the rigging exists while seated"), Drive);
+		TestTrue(TEXT("the rigging exists while seated"),
+			Scene.Vehicle->GetRootComponent()->GetAttachParent() == Scene.Player->GetRootComponent());
 
-		// Held drive input + a fired shot at the destroy moment: the cleanup
-		// must leave no seat/input/attack residue (contract section 8). The
-		// input rides the production cadence (the pawn's stored axes).
-		Scene.Player->RecordPlanarMoveInput(1.0f, 0.0f);
+		// A fired shot at the destroy moment: the cleanup must leave no
+		// seat/input/attack residue (contract section 8).
 		Scene.Player->OnFireInputPressed();
 		Scene.Player->OnFireInputReleased();
 
-		// THE DESTROY: the hull's death sequence restores the driver.
+		// THE DESTROY: the hull's death sequence frees the rider.
 		Scene.Vehicle->GetHealthComponent()->ApplyDamage(99999.0f);
 		TestTrue(TEXT("the hull finalized its destruction"), Scene.Vehicle->IsDestroyFinalized());
 		++Exporter.VehicleDestroyed;
@@ -440,13 +482,10 @@ namespace UE::UEMMO::Tasks::M5_044
 		Exporter.Add(FString::Printf(TEXT("{ \"type\": \"vehicle_destroyed\", \"vehicle\": \"%s\" }"),
 			*Scene.Interaction->GetSeatedVehicleId().ToString()));
 		TestEqual(TEXT("the destroy freed the seat"), Scene.Seats.GetNumOccupiedSeats(), 0);
-		TestFalse(TEXT("the control face restored"), Scene.Interaction->IsPawnControlPaused());
-		TestFalse(TEXT("the bridge self-restored"), Bridge != nullptr && Bridge->IsBridged());
+		TestFalse(TEXT("the rider is free after the destroy"), Scene.Interaction->IsSeated());
 		TestTrue(TEXT("the mount finalized (a destroyed vehicle never fires again)"),
 			Mount != nullptr && Mount->IsFinalized());
 		TestEqual(TEXT("exactly one destroy notification"), Scene.Interaction->GetVehicleDestroyedNotificationCount(), 1);
-		// The drive component died with the hull's components; the pawn stands
-		// where it entered (no teleport residue).
 		TestFalse(TEXT("the pawn is no longer reported seated"), Scene.Interaction->IsSeated());
 
 		// The death face: the driver dies inside the NEXT hull's seat - the
@@ -478,7 +517,7 @@ namespace UE::UEMMO::Tasks::M5_044
 		Scene.Player->GetHealth()->ApplyDamage(99999.0f);
 		TestFalse(TEXT("the driver is dead"), Scene.Player->GetHealth()->IsAlive());
 		TestEqual(TEXT("the death freed the seat"), Scene.Seats.GetNumOccupiedSeats(), 0);
-		TestFalse(TEXT("the death restored the control face"), Scene.Interaction->IsPawnControlPaused());
+		TestFalse(TEXT("the death restored the control face"), Scene.Interaction->IsSeated());
 		Exporter.Add(TEXT("{ \"type\": \"driver_died_in_seat\" }"));
 
 		// The retry face: the unified reset with no seat is the idempotent

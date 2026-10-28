@@ -768,7 +768,6 @@ void UVehicleTurretDeliveryComponent::HandleShotCommitted(const FShotContext& Sh
 		UE_LOG(LogUEMMOVehicle, Warning, TEXT("UEMMO M5-044: the hull carries no mount; the shot delivered nothing."));
 		return;
 	}
-	const FVector MuzzlePivot = Hull->GetActorTransform().TransformPosition(Mount->GetMountedDefinition().LocationCm);
 	FShotPatternRequest Request;
 	Request.PelletCount = Shot.PelletCount;
 	Request.SpreadDegrees = Shot.SpreadDegrees;
@@ -776,9 +775,15 @@ void UVehicleTurretDeliveryComponent::HandleShotCommitted(const FShotContext& Sh
 		^ static_cast<uint32>(Shot.LocalShotSequence);
 	Request.AvailablePelletSlots = Shot.PelletCount;
 	Request.FeetWorldLocation = Hull->GetActorLocation();
+	// The muzzle rides at the mount pivot (the M5-037 row), expressed as the
+	// feet-relative offset so the plan mirrors it by facing: with the hull
+	// riding the person, the pellet must spawn OUTSIDE the rider's capsule
+	// and the hull front - a zero offset would spawn inside the rider and
+	// the first sweep would hit the rider (registered hostile) instead of
+	// the target.
+	Request.Origin.FeetOffsetCm = Mount->GetMountedDefinition().LocationCm;
 	const float HullYaw = Hull->GetActorRotation().Yaw;
 	Request.Facing = (HullYaw > -90.0f && HullYaw < 90.0f) ? 1.0f : -1.0f;
-	Request.MuzzleSocketWorldLocation = &MuzzlePivot;
 	const FShotPatternPlan Plan = PlanShotPattern(Request);
 	if (!Plan.bPlanned)
 	{
@@ -875,8 +880,18 @@ void UVehicleTurretDeliveryComponent::TickComponent(float DeltaTime, ELevelTick 
 		ACombatProjectile* Actor = Entry.Actor.Get();
 		if (Actor == nullptr)
 		{
+			UE_LOG(LogUEMMOVehicle, Log,
+				TEXT("UEMMO M5-044: the delivery tick found its pellet gone (shot=%llu)."), Entry.ShotId);
 			RetirePellet(Index);
 			continue;
+		}
+		static int32 DebugFlights = 0;
+		if (DebugFlights < 6)
+		{
+			++DebugFlights;
+			UE_LOG(LogUEMMOVehicle, Log,
+				TEXT("UEMMO M5-044: pellet advancing (spot=%s finished=%d)."),
+				*Actor->GetActorLocation().ToCompactString(), Entry.Policy->IsFinished() ? 1 : 0);
 		}
 		const FVector PreviousPosition = Actor->GetActorLocation();
 		Entry.Policy->AdvanceMotion(DeltaTime);
@@ -901,7 +916,15 @@ void UVehicleTurretDeliveryComponent::RetirePellet(int32 LiveIndex)
 	const FCombatEpoch PelletEpoch = LivePellets[LiveIndex].ShotEpoch;
 	const FEntityId PelletSource = LivePellets[LiveIndex].ShotSource;
 	const FShotId PelletShotId = LivePellets[LiveIndex].ShotId;
+	const FVector PelletSpot = LivePellets[LiveIndex].Actor.IsValid()
+		? LivePellets[LiveIndex].Actor->GetActorLocation()
+		: FVector::ZeroVector;
+	const bool bActorGone = !LivePellets[LiveIndex].Actor.IsValid();
+	const bool bPolicyFinished = !bActorGone && LivePellets[LiveIndex].Policy->IsFinished();
 	LivePellets.RemoveAtSwap(LiveIndex);
+	UE_LOG(LogUEMMOVehicle, Log,
+		TEXT("UEMMO M5-044: turret pellet retired (actorGone=%d policyFinished=%d spot=%s shot=%llu)."),
+		bActorGone ? 1 : 0, bPolicyFinished ? 1 : 0, *PelletSpot.ToCompactString(), PelletShotId);
 
 	for (int32 PendingIndex = PendingShotEnds.Num() - 1; PendingIndex >= 0; --PendingIndex)
 	{

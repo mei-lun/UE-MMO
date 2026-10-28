@@ -326,7 +326,9 @@ namespace UE::UEMMO::Tasks::M5_045
 				Mount->GetVehicleFireSourceEntityId() != InvalidCombatEntityId);
 		}
 
-		// THE DRIVE: the production cadence through the pawn's recording seam.
+		// THE RIDE: the rider keeps walking control (the production cadence
+		// through the pawn's recording seam) and the attached hull follows.
+		const FVector RiderBefore = Player->GetActorLocation();
 		Player->RecordPlanarMoveInput(1.0f, 0.0f);
 		for (int32 Frame = 0; Frame < 60; ++Frame)
 		{
@@ -337,9 +339,12 @@ namespace UE::UEMMO::Tasks::M5_045
 		{
 			Wrapper.TickTestWorld(1.0f / 60.0f);
 		}
-		const float TotalDistance = Hull->GetActorLocation().X - BeforeEnter.X;
-		TestTrue(TEXT("the routed drive moved the hull (drive + brake integral)"),
-			TotalDistance >= 695.0f && TotalDistance <= 716.0f);
+		const float RiderWalked = Player->GetActorLocation().X - RiderBefore.X;
+		const float HullFollowed = Hull->GetActorLocation().X - BeforeEnter.X;
+		TestTrue(TEXT("the rider walked while riding"), RiderWalked >= 300.0f);
+		TestTrue(TEXT("the hull rides the rider on the plane (X/Y coincide)"),
+			Hull->GetActorLocation().Equals(
+				FVector(Player->GetActorLocation().X, Player->GetActorLocation().Y, Hull->GetActorLocation().Z), 1.0f));
 
 		// THE FIRE: the Q edge routes into the turret; the rocket flies from
 		// the shipped mount pivot and wounds through the unified entry.
@@ -348,7 +353,7 @@ namespace UE::UEMMO::Tasks::M5_045
 		{
 			FActorSpawnParameters TargetParams;
 			Target = World->SpawnActor<AActor>(AActor::StaticClass(),
-				M5_045_SceneBase + FVector(1900.0, 0.0, 60.0), FRotator::ZeroRotator, TargetParams);
+				M5_045_SceneBase + FVector(1900.0, 0.0, 100.0), FRotator::ZeroRotator, TargetParams);
 			if (Target != nullptr)
 			{
 				UBoxComponent* Body = NewObject<UBoxComponent>(Target, TEXT("M5_045_Target"));
@@ -357,7 +362,7 @@ namespace UE::UEMMO::Tasks::M5_045
 				Body->SetBoxExtent(FVector(50.0f, 50.0f, 60.0f));
 				Body->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
 				Body->RegisterComponent();
-				Body->SetWorldLocation(M5_045_SceneBase + FVector(1900.0, 0.0, 60.0));
+				Body->SetWorldLocation(M5_045_SceneBase + FVector(1900.0, 0.0, 100.0));
 				TargetHealth = NewObject<UHealthComponent>(Target, TEXT("M5_045_TargetHealth"));
 				TargetHealth->RegisterComponent();
 				TargetHealth->SetMaxHealth(100.0f);
@@ -398,8 +403,9 @@ namespace UE::UEMMO::Tasks::M5_045
 			return false;
 		}
 		TestFalse(TEXT("the driver is no longer seated"), Interaction->IsSeated());
-		UVehicleCameraBridge* Bridge = Player->FindComponentByClass<UVehicleCameraBridge>();
-		TestTrue(TEXT("the camera bridge restored on exit"), Bridge != nullptr && !Bridge->IsBridged());
+		// M5-H03 audit: the hull detached beside the rider (world space).
+		TestTrue(TEXT("the hull detached beside the rider"),
+			Hull->GetRootComponent()->GetAttachParent() == nullptr);
 		return true;
 	}
 
@@ -504,34 +510,33 @@ namespace UE::UEMMO::Tasks::M5_045
 		{
 			return false;
 		}
-		// M5-H03: the driver body rides inside - the standing mesh hides and
-		// the capsule drops out of collision while seated (no body left at
-		// the enter spot).
-		TestTrue(TEXT("the seated driver's mesh is hidden"),
-			Player->GetMesh() != nullptr && !Player->GetMesh()->IsVisible());
-		TestTrue(TEXT("the seated driver's capsule is non-colliding"),
-			Player->GetCapsuleComponent() != nullptr
-			&& Player->GetCapsuleComponent()->GetCollisionEnabled() == ECollisionEnabled::NoCollision);
+		// M5-H03 audit: the HULL becomes a child of the rider on enter (plain
+		// attachment, no visibility/collision toggling).
+		TestTrue(TEXT("the seated hull attaches to its rider"),
+			Hull->GetRootComponent()->GetAttachParent() == Player->GetRootComponent());
 		UVehicleMovementComponent* Drive = Hull->FindComponentByClass<UVehicleMovementComponent>();
 		if (!TestNotNull(TEXT("the rigging armed on the real-flow enter"), Drive))
 		{
 			return false;
 		}
 
-		// DRIVE: the move-axis seam (the same state the Enhanced Input
-		// handlers feed) through the possessed pawn's central tick.
-		const FVector BeforeDrive = Hull->GetActorLocation();
-		Player->RecordPlanarMoveInput(1.0f, 0.0f);
-		for (int32 Frame = 0; Frame < 60; ++Frame)
+		// RIDE: the riding core - the hull is the pawn's child, so ANY pawn
+		// motion carries it (the walk itself is proven by the 044/chain
+		// suites and the M0 smoke; the possessed-controller layer here pins
+		// the attachment follow through a direct placement).
+		const FVector BeforeRide = Hull->GetActorLocation();
+		const FVector PawnBeforeRide = Player->GetActorLocation();
+		const FVector TeleportTarget = PawnBeforeRide + FVector(500.0, 0.0, 0.0);
+		Player->SetActorLocation(TeleportTarget, /*bSweep*/ false, nullptr, ETeleportType::TeleportPhysics);
+		for (int32 Frame = 0; Frame < 3; ++Frame)
 		{
 			Wrapper.TickTestWorld(1.0f / 60.0f);
 		}
-		Player->RecordPlanarMoveInput(0.0f, 0.0f);
-		const float Driven = Hull->GetActorLocation().X - BeforeDrive.X;
-		AddInfo(FString::Printf(TEXT("M5_045 real-flow drive: driven=%f planar=%s grounded=%d"),
-			Driven, *Drive->GetPlanarVelocity().ToString(), Drive->IsGrounded() ? 1 : 0));
-		TestTrue(TEXT("the possessed pawn's drive input moves the hull"),
-			Driven >= 430.0f && Driven <= 437.0f);
+		const float HullFollowed = Hull->GetActorLocation().X - BeforeRide.X;
+		AddInfo(FString::Printf(TEXT("M5_045 real-flow ride: hullFollowed=%f"), HullFollowed));
+		TestTrue(TEXT("the hull followed the possessed rider's placement (the child rides)"),
+			FMath::Abs(HullFollowed - 500.0f) <= 1.0f
+			&& Hull->GetRootComponent()->GetAttachParent() == Player->GetRootComponent());
 
 		// THE FIRE through the seated Q route, then the V exit.
 		Player->OnFireInputPressed();
@@ -585,13 +590,9 @@ namespace UE::UEMMO::Tasks::M5_045
 
 		Interaction->TryInteract();
 		TestTrue(TEXT("the second V press exits the seat"), !Interaction->IsSeated());
-		// M5-H03: the exit restores the body (visible + collidable at the
-		// drop spot).
-		TestTrue(TEXT("the exited driver's mesh is visible again"),
-			Player->GetMesh() != nullptr && Player->GetMesh()->IsVisible());
-		TestTrue(TEXT("the exited driver's capsule collides again"),
-			Player->GetCapsuleComponent() != nullptr
-			&& Player->GetCapsuleComponent()->GetCollisionEnabled() == ECollisionEnabled::QueryAndPhysics);
+		// M5-H03 audit: the exit detaches the body back to world space.
+		TestTrue(TEXT("the exited driver detaches from the hull"),
+			Player->GetRootComponent()->GetAttachParent() == nullptr);
 		TestTrue(TEXT("the possession survived the whole flow"), Player->GetController() == Controller);
 		return true;
 	}

@@ -4,14 +4,11 @@
 #include "../Combat/HealthComponent.h"
 #include "../PrototypeHUD.h"
 #include "../UI/RoomResultWidget.h"
-#include "CollisionQueryParams.h"
-#include "CollisionShape.h"
 #include "Components/CapsuleComponent.h"
 #include "Engine/EngineTypes.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "InputAction.h"
-#include "VehicleCameraBridge.h"
 #include "VehicleMovementComponent.h"
 #include "VehicleWeaponMountComponent.h"
 
@@ -37,56 +34,6 @@ namespace
 	// hull) within this straight-line distance. A schema field would replace
 	// the constant (hull dimensions are not in the M5-037 schema either).
 	constexpr float M5_041_MaxEnterDistanceCm = 300.0f;
-
-	// The exit probe: the capsule sweep starts this far above the candidate
-	// (a start already inside geometry is the blocked case) and searches this
-	// deep below it for the resting floor.
-	constexpr float M5_041_ExitProbeHeadroomCm = 8.0f;
-	constexpr float M5_041_ExitProbeDepthCm = 300.0f;
-
-	/**
-	 * The exit drop spot: sweeps the pawn's capsule down the exit candidate
-	 * column (the seat's ExitOffsetCm transformed by the hull; the hull being
-	 * left and the pawn are ignored) and returns the capsule CENTER location
-	 * resting on the first blocking ground. False when the capsule does not
-	 * fit (a start penetration - the "all candidates blocked" case) or no
-	 * ground resolved: the caller refuses the exit and the driver stays
-	 * seated, so the character can never clip into blocking geometry.
-	 */
-	bool M5_041_FindExitTeleportSpot(const APrototypeCharacter& Pawn, const ACombatVehicle& Hull,
-		const FVector& ExitOffsetCm, FVector& OutCenterLocation)
-	{
-		const UWorld* World = Pawn.GetWorld();
-		const UCapsuleComponent* Capsule = Pawn.GetCapsuleComponent();
-		if (World == nullptr || Capsule == nullptr)
-		{
-			return false;
-		}
-		const float HalfHeight = Capsule->GetUnscaledCapsuleHalfHeight();
-		const FVector Candidate = Hull.GetActorTransform().TransformPosition(ExitOffsetCm);
-		const FVector SweepStart = Candidate + FVector(0.0f, 0.0f, HalfHeight + M5_041_ExitProbeHeadroomCm);
-		const FVector SweepEnd = Candidate - FVector(0.0f, 0.0f, M5_041_ExitProbeDepthCm);
-
-		FCollisionShape CapsuleShape = FCollisionShape::MakeCapsule(Capsule->GetUnscaledCapsuleRadius(), HalfHeight);
-		FCollisionQueryParams Params(SCENE_QUERY_STAT(M5_041VehicleExit), /*bTraceComplex*/ false);
-		Params.AddIgnoredActor(&Pawn);
-		Params.AddIgnoredActor(&Hull);
-
-		FHitResult Hit;
-		if (!World->SweepSingleByChannel(Hit, SweepStart, SweepEnd, FQuat::Identity, ECC_Pawn, CapsuleShape, Params))
-		{
-			return false;
-		}
-		if (Hit.bStartPenetrating || !Hit.bBlockingHit)
-		{
-			// A start inside geometry means the candidate column has no room
-			// for the capsule (a wall/ceiling over the exit); a non-blocking
-			// touch is no floor either. Both refuse - no teleport, no clip.
-			return false;
-		}
-		OutCenterLocation = FVector(Candidate.X, Candidate.Y, Hit.ImpactPoint.Z + HalfHeight);
-		return true;
-	}
 }
 
 UVehicleInteractionComponent::UVehicleInteractionComponent()
@@ -355,15 +302,14 @@ FVehicleEnterAttempt UVehicleInteractionComponent::TryEnterNearestVehicle()
 		return Refuse(EVehicleInteractionReject::ModelRefused, ModelReason, MoveTemp(ModelDetail));
 	}
 
-	// 6. Accepted: the bookkeeping locks onto the hull and the control face
-	// pauses (an idempotent flag set - the model already refused the
-	// duplicated enter, so this runs exactly once per occupation).
+	// 6. Accepted: the bookkeeping locks onto the hull (the model already
+	// refused the duplicated enter, so this runs exactly once per occupation).
+	// M5-H03 audit: the rider KEEPS walking control - no pause flag exists.
 	ACombatVehicle* Hull = Best->Vehicle.Get();
 	bSeated = true;
 	SeatedVehicleId = Request.VehicleId;
 	SeatedSeatId = Request.SeatId;
 	SeatedVehicle = Hull;
-	bDriverControlsPaused = true;
 	Attempt.bEntered = true;
 	Attempt.VehicleId = Request.VehicleId;
 	Attempt.SeatId = Request.SeatId;
@@ -378,32 +324,23 @@ FVehicleEnterAttempt UVehicleInteractionComponent::TryEnterNearestVehicle()
 		UE_LOG(LogUEMMOVehicleInteraction, Warning,
 			TEXT("UEMMO M5-044: vehicle '%s' production rigging refused: %s"), *Request.VehicleId.ToString(), *RiggingError);
 	}
-	// The driver presence + the camera bridge (M5-042): the seat now gates the
-	// drive authority and the rig follows the hull ground anchor.
-	if (UVehicleMovementComponent* Drive = Hull->FindComponentByClass<UVehicleMovementComponent>())
+	// M5-H03 audit: the HULL becomes a child of the rider - the plain engine
+	// attachment, no control swap and no visibility toggling. Snapped to the
+	// pawn origin, it rides every walk step through the transform
+	// propagation; the drive component stays idle (movement = the rider's
+	// own walking) and the exit detaches it right beside the rider.
+	Hull->AttachToComponent(Pawn->GetRootComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	// The rider and the worn hull ignore each other's sweeps: the capsule
+	// starts inside the hull box, and without the mutual ignore the walking
+	// depenetration would shove the rider out (the M5-044 ride-shove lesson).
+	if (UCapsuleComponent* RiderCapsule = Pawn->GetCapsuleComponent())
 	{
-		Drive->SetDriverPresent(true);
+		RiderCapsule->MoveIgnoreActors.Add(Hull);
 	}
-	if (UVehicleCameraBridge* Bridge = EnsureCameraBridge())
+	if (UPrimitiveComponent* HullBody = Cast<UPrimitiveComponent>(Hull->GetRootComponent()))
 	{
-		FString BridgeError;
-		if (!Bridge->BridgeToVehicle(*Hull, &BridgeError))
-		{
-			UE_LOG(LogUEMMOVehicleInteraction, Warning,
-				TEXT("UEMMO M5-044: the camera bridge refused: %s"), *BridgeError);
-		}
+		HullBody->MoveIgnoreActors.Add(Pawn);
 	}
-
-	// The pause face starts clean: a trigger held across the enter moment is
-	// dropped (the M5-033 release entry early-outs when nothing is held). The
-	// vehicle's own fire routing is M5-044's input face.
-	Pawn->OnFireInputReleased();
-	// M5-H03: the driver's body rides INSIDE the hull - hide the standing
-	// mesh and drop the capsule collision (the hull query box is the world
-	// body from here; a live capsule would block shots and stand visibly at
-	// the enter spot while the car drives away). Restored by every cleanup
-	// face through the shared restore helper.
-	Pawn->SetDriverBodyActive(false);
 
 	// The hull's one-shot vacate seam (M5-039's SetSeatVacateCallback wiring
 	// point): the death sequence forwards to the model's ClearVehicle, whose
@@ -429,57 +366,28 @@ FVehicleEnterAttempt UVehicleInteractionComponent::TryEnterNearestVehicle()
 	}
 
 	UE_LOG(LogUEMMOVehicleInteraction, Log,
-		TEXT("UEMMO M5-041: the driver entered seat '%s' of vehicle '%s' (character control suspended)."),
+		TEXT("UEMMO M5-041: the driver entered seat '%s' of vehicle '%s' (the hull rides the rider)."),
 		*Request.SeatId.ToString(), *Request.VehicleId.ToString());
 	return Attempt;
 }
 
 bool UVehicleInteractionComponent::TryExitVehicle(FString* OutRefusal)
 {
-	const auto Refuse = [OutRefusal](const FString& Why)
-	{
-		if (OutRefusal != nullptr)
-		{
-			*OutRefusal = Why;
-		}
-		UE_LOG(LogUEMMOVehicleInteraction, Verbose, TEXT("UEMMO M5-041: exit refused: %s"), *Why);
-		return false;
-	};
-
 	// Idempotent by design: the duplicated exit is the named no-op (no model
 	// call, no restore, no second teleport).
 	if (!bSeated)
 	{
-		return Refuse(TEXT("not seated: the exit request is the idempotent no-op"));
+		if (OutRefusal != nullptr)
+		{
+			*OutRefusal = TEXT("not seated: the exit request is the idempotent no-op");
+		}
+		UE_LOG(LogUEMMOVehicleInteraction, Verbose,
+			TEXT("UEMMO M5-041: exit refused: not seated (the idempotent no-op)"));
+		return false;
 	}
-	APrototypeCharacter* Pawn = Cast<APrototypeCharacter>(GetOwner());
-	ACombatVehicle* Hull = SeatedVehicle.Get();
-	if (Pawn == nullptr || Hull == nullptr)
-	{
-		// The hull is gone without its destroy event reaching this component
-		// (wiring misuse): the safe face is the forced restore, never a
-		// half-state where the model holds a seat the pawn cannot leave.
-		RestoreDriverAfterForcedCleanup(TEXT("exit with a gone vehicle"));
-		return true;
-	}
-
-	// The exit spot: the seated seat definition's ExitOffsetCm (the M5-037
-	// row the registry handed in), validated by the capsule ground sweep.
-	const FVehicleSeatEntry* Entry = FindEntry(SeatedVehicleId, SeatedSeatId);
-	// A missing entry (the seat row unregistered mid-occupation) falls back to
-	// the hull origin - the entry array is never pruned in normal operation.
-	const FVector ExitOffset = Entry != nullptr ? Entry->Seat.ExitOffsetCm : FVector::ZeroVector;
-	FVector CenterLocation;
-	if (!M5_041_FindExitTeleportSpot(*Pawn, *Hull, ExitOffset, CenterLocation))
-	{
-		return Refuse(FString::Printf(TEXT("every exit candidate of seat '%s' is blocked: the driver stays seated (no wall clipping)"),
-			*SeatedSeatId.ToString()));
-	}
-
-	// The drop: the validated spot (no swept move needed - the sweep above
-	// proved the capsule fits there), then the shared restore ends the
-	// occupation and reopens the control face.
-	Pawn->SetActorLocation(CenterLocation, /*bSweep*/ false, nullptr, ETeleportType::TeleportPhysics);
+	// M5-H03 audit: the rider never stopped walking, so the exit simply
+	// detaches the hull right beside them - no drop spot, nothing to be
+	// blocked by.
 	RestoreDriverAfterForcedCleanup(TEXT("active exit"));
 	return true;
 }
@@ -548,26 +456,34 @@ void UVehicleInteractionComponent::RestoreDriverAfterForcedCleanup(const TCHAR* 
 			Mount->NotifyOperatorChanged();
 		}
 	}
-	if (APrototypeCharacter* OwnerPawn = Cast<APrototypeCharacter>(GetOwner()))
+	// 2b. M5-H03 audit: detach the RIDING HULL first (it was the pawn's child
+	// while seated; the active exit and every forced cleanup leave it in
+	// world space right beside the rider). The pawn never moved. The mutual
+	// move-ignore drops with it (the rider can sweep the detached hull
+	// normally again).
+	if (ACombatVehicle* Hull = SeatedVehicle.Get())
 	{
-		// M5-H03: the hidden driver body comes back on every cleanup face
-		// (the active exit's teleport has already placed it; the forced
-		// cleanups restore it in place).
-		OwnerPawn->SetDriverBodyActive(true);
-		if (UVehicleCameraBridge* Bridge = OwnerPawn->FindComponentByClass<UVehicleCameraBridge>())
+		Hull->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+		if (APrototypeCharacter* Rider = Cast<APrototypeCharacter>(GetOwner()))
 		{
-			Bridge->RestoreCharacterAnchor();
+			if (UCapsuleComponent* RiderCapsule = Rider->GetCapsuleComponent())
+			{
+				RiderCapsule->MoveIgnoreActors.Remove(Hull);
+			}
+			if (UPrimitiveComponent* HullBody = Cast<UPrimitiveComponent>(Hull->GetRootComponent()))
+			{
+				HullBody->MoveIgnoreActors.Remove(Rider);
+			}
 		}
 	}
 	// 3. The bookkeeping and the control face (both idempotent flags): the
 	// character-side control face reopens. No possession change, no teleport -
 	// the surviving driver keeps its PlayerController and input context (the
-	// physical placement is M5-042's face; the pawn stands where it entered).
+	// rider never lost walking control; the hull detaches beside them).
 	bSeated = false;
 	SeatedVehicleId = NAME_None;
 	SeatedSeatId = NAME_None;
 	SeatedVehicle = nullptr;
-	bDriverControlsPaused = false;
 	// 4. The subscription and the vacate seam detach while the hull is still
 	// addressable (weak + pending-kill-safe: after a GC the weak reference is
 	// null and the delegate object is gone with the hull anyway).
@@ -734,29 +650,6 @@ void UVehicleInteractionComponent::HandleVehicleStagingTriggered()
 	Hud->UEMMODebugVehicle(1);
 }
 
-bool UVehicleInteractionComponent::RouteDriveInput(float X, float Y)
-{
-	// Not seated: not consumed - the pawn's walk face handles the sample.
-	if (!bSeated)
-	{
-		return false;
-	}
-	ACombatVehicle* Hull = SeatedVehicle.Get();
-	if (Hull == nullptr)
-	{
-		// Seated with a gone hull (the destroy event has not landed yet):
-		// swallow the sample - a seated driver never walks (contract 8).
-		return true;
-	}
-	if (UVehicleMovementComponent* Drive = Hull->FindComponentByClass<UVehicleMovementComponent>())
-	{
-		Drive->SetDriveInput(X, Y);
-	}
-	// Without a drive component the sample is still consumed: the walk face
-	// stays suspended while seated regardless.
-	return true;
-}
-
 bool UVehicleInteractionComponent::RouteVehicleFirePressed(FString* OutRefusal)
 {
 	const auto Refuse = [OutRefusal](const FString& Why)
@@ -852,23 +745,6 @@ bool UVehicleInteractionComponent::RouteVehicleReloadPressed(FString* OutRefusal
 		return false;
 	}
 	return true;
-}
-
-UVehicleCameraBridge* UVehicleInteractionComponent::EnsureCameraBridge()
-{
-	APrototypeCharacter* OwnerPawn = Cast<APrototypeCharacter>(GetOwner());
-	if (OwnerPawn == nullptr)
-	{
-		return nullptr;
-	}
-	UVehicleCameraBridge* Bridge = OwnerPawn->FindComponentByClass<UVehicleCameraBridge>();
-	if (Bridge == nullptr)
-	{
-		Bridge = NewObject<UVehicleCameraBridge>(OwnerPawn, TEXT("M5_044_VehicleCameraBridge"));
-		OwnerPawn->AddInstanceComponent(Bridge);
-		Bridge->RegisterComponent();
-	}
-	return Bridge;
 }
 
 FGuid& UVehicleInteractionComponent::GetOrCreateOccupantId()

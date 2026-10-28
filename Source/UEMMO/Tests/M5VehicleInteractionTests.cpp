@@ -159,6 +159,10 @@ namespace UE::UEMMO::Tasks::M5_041
 	static ACombatVehicle* M5_041_SpawnVehicle(UWorld& World, const FVector& Location, const FVehicleDefinition& Definition)
 	{
 		FActorSpawnParameters Params;
+		// M5-H03 audit: the rider stays at their spot after the exit, so a
+		// replacement hull may stage overlapping them - the spawn adjusts
+		// instead of refusing.
+		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 		ACombatVehicle* Vehicle = World.SpawnActor<ACombatVehicle>(
 			ACombatVehicle::StaticClass(), Location, FRotator::ZeroRotator, Params);
 		if (Vehicle == nullptr)
@@ -303,7 +307,7 @@ namespace UE::UEMMO::Tasks::M5_041
 		const FVehicleEnterAttempt Enter = Scene.Interaction->TryEnterNearestVehicle();
 		TestTrue(TEXT("the enter accepts"), Enter.bEntered);
 		TestEqual(TEXT("the seat model holds exactly one occupation"), Scene.Seats.GetNumOccupiedSeats(), 1);
-		TestTrue(TEXT("the driver controls pause while seated"), Scene.Interaction->IsPawnControlPaused());
+		TestTrue(TEXT("the rider holds the seat"), Scene.Interaction->IsSeated());
 		TestEqual(TEXT("the seated vehicle id is recorded"),
 			Scene.Interaction->GetSeatedVehicleId(), FName(TEXT("vehicle_wheeled_sample")));
 		TestEqual(TEXT("the seated seat id is recorded"),
@@ -323,16 +327,17 @@ namespace UE::UEMMO::Tasks::M5_041
 		TestEqual(TEXT("no destroy notifications on the round trip"),
 			Scene.Interaction->GetVehicleDestroyedNotificationCount(), 0);
 
-		// The exit: the drop at the seat's ExitOffsetCm with the capsule
-		// resting on the floor top.
-		const FVector VehicleOrigin = Scene.Vehicle->GetActorLocation();
+		// The exit: the hull detaches right beside the rider (the rider never
+		// moved, so there is no drop teleport).
+		const FVector RiderSpot = Scene.Player->GetActorLocation();
+		const FVector HullSpot = Scene.Vehicle->GetActorLocation();
 		FString ExitRefusal;
 		TestTrue(TEXT("the exit accepts"), Scene.Interaction->TryExitVehicle(&ExitRefusal));
 		TestEqual(TEXT("the seat model is empty after the exit"), Scene.Seats.GetNumOccupiedSeats(), 0);
-		TestFalse(TEXT("the driver controls restore on exit"), Scene.Interaction->IsPawnControlPaused());
-		const FVector ExitExpected(VehicleOrigin.X + 250.0f, VehicleOrigin.Y, 96.0f);
-		TestTrue(TEXT("the character drops at the exit offset on the ground"),
-			Scene.Player->GetActorLocation().Equals(ExitExpected, 0.5f));
+		TestFalse(TEXT("the seat is free after the exit"), Scene.Interaction->IsSeated());
+		TestTrue(TEXT("the hull detached beside the rider"),
+			Scene.Vehicle->GetActorLocation().Equals(HullSpot, 0.5f)
+			&& Scene.Player->GetActorLocation().Equals(RiderSpot, 0.5f));
 		// The restored fire face responds again.
 		Scene.Player->OnFireInputPressed();
 		TestEqual(TEXT("the restored Q press lands the skill-slot fallback again"),
@@ -349,10 +354,10 @@ namespace UE::UEMMO::Tasks::M5_041
 		TestEqual(TEXT("the occupant id is stable across rounds"),
 			Scene.Interaction->GetOccupantId(), FirstOccupantId);
 		TestEqual(TEXT("the seat model holds exactly one occupation again"), Scene.Seats.GetNumOccupiedSeats(), 1);
-		TestTrue(TEXT("the suspension re-applies for the second seat"), Scene.Interaction->IsPawnControlPaused());
+		TestTrue(TEXT("the second seat is held"), Scene.Interaction->IsSeated());
 		TestTrue(TEXT("the second exit accepts"), Scene.Interaction->TryExitVehicle(nullptr));
 		TestEqual(TEXT("the seat model is empty again"), Scene.Seats.GetNumOccupiedSeats(), 0);
-		TestFalse(TEXT("the controls restore again"), Scene.Interaction->IsPawnControlPaused());
+		TestFalse(TEXT("the seat is free again"), Scene.Interaction->IsSeated());
 		TestEqual(TEXT("still no destroy notifications"), Scene.Interaction->GetVehicleDestroyedNotificationCount(), 0);
 		return true;
 	}
@@ -387,8 +392,8 @@ namespace UE::UEMMO::Tasks::M5_041
 		TestFalse(TEXT("the refusal carries the model's detail line"), Again.Detail.IsEmpty());
 		TestEqual(TEXT("still exactly one occupation"), Scene.Seats.GetNumOccupiedSeats(), 1);
 		TestTrue(TEXT("still seated"), Scene.Interaction->IsSeated());
-		TestTrue(TEXT("still paused (the flag set is idempotent, not doubled)"),
-			Scene.Interaction->IsPawnControlPaused());
+		TestTrue(TEXT("still riding (the repeated enter is the model refusal, not doubled)"),
+			Scene.Interaction->IsSeated());
 		TestEqual(TEXT("no destroy notifications from the refused re-enter"),
 			Scene.Interaction->GetVehicleDestroyedNotificationCount(), 0);
 
@@ -399,7 +404,7 @@ namespace UE::UEMMO::Tasks::M5_041
 		FString SecondRefusal;
 		TestFalse(TEXT("the second exit is the not-seated no-op"), Scene.Interaction->TryExitVehicle(&SecondRefusal));
 		TestFalse(TEXT("the no-op names its reason"), SecondRefusal.IsEmpty());
-		TestFalse(TEXT("the controls stay restored"), Scene.Interaction->IsPawnControlPaused());
+		TestFalse(TEXT("the controls stay restored"), Scene.Interaction->IsSeated());
 		TestEqual(TEXT("the model stays empty"), Scene.Seats.GetNumOccupiedSeats(), 0);
 		TestTrue(TEXT("the character stays at the exit spot (no second teleport)"),
 			Scene.Player->GetActorLocation().Equals(AfterExit, 0.0f));
@@ -408,7 +413,7 @@ namespace UE::UEMMO::Tasks::M5_041
 		// no leaked binding state).
 		TestTrue(TEXT("a fresh enter still accepts"), Scene.Interaction->TryEnterNearestVehicle().bEntered);
 		TestEqual(TEXT("one occupation after the fresh enter"), Scene.Seats.GetNumOccupiedSeats(), 1);
-		TestTrue(TEXT("the fresh seat pauses the controls"), Scene.Interaction->IsPawnControlPaused());
+		TestTrue(TEXT("the fresh seat is held"), Scene.Interaction->IsSeated());
 		TestTrue(TEXT("the cleanup exit accepts"), Scene.Interaction->TryExitVehicle(nullptr));
 		return true;
 	}
@@ -442,7 +447,7 @@ namespace UE::UEMMO::Tasks::M5_041
 		TestEqual(TEXT("the UI refusal names UICapturedInput"),
 			UiRefused.Reject, EVehicleInteractionReject::UICapturedInput);
 		TestEqual(TEXT("the model stays empty under the UI refusal"), Scene.Seats.GetNumOccupiedSeats(), 0);
-		TestFalse(TEXT("the controls stay live under the UI refusal"), Scene.Interaction->IsPawnControlPaused());
+		TestFalse(TEXT("the seat stays free under the UI refusal"), Scene.Interaction->IsSeated());
 
 		// An empty predicate restores the default HUD query: a bare world has
 		// no HUD, so the enter flows (the default never invents a capture).
@@ -456,7 +461,7 @@ namespace UE::UEMMO::Tasks::M5_041
 		Scene.Player->GetHealth()->ApplyDamage(99999.0f);
 		TestFalse(TEXT("the driver is dead"), Scene.Player->GetHealth()->IsAlive());
 		TestEqual(TEXT("the death cleared the seat"), Scene.Seats.GetNumOccupiedSeats(), 0);
-		TestFalse(TEXT("the death restored the control face"), Scene.Interaction->IsPawnControlPaused());
+		TestFalse(TEXT("the death freed the seat"), Scene.Interaction->IsSeated());
 		TestFalse(TEXT("the component no longer reports a seat"), Scene.Interaction->IsSeated());
 
 		// A dead driver cannot enter again (contract section 4: death
@@ -530,7 +535,7 @@ namespace UE::UEMMO::Tasks::M5_041
 	}
 
 	// ------------------------------------------------------------------
-	// 5. The blocked exit refuses and leaves the driver seated (no clipping)
+	// 5. The exit detaches the hull beside the rider (no drop spot to block)
 	// ------------------------------------------------------------------
 	IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 		FUEMMOTasksM5_041BlockedExitKeepsDriverSeatedWithoutClipping,
@@ -545,36 +550,36 @@ namespace UE::UEMMO::Tasks::M5_041
 			return false;
 		}
 
+		// M5-H03 audit: the exit detaches the hull beside the rider - there is
+		// no drop teleport, so blocking geometry around the old exit column is
+		// irrelevant by construction. The pin: a repeated exit round trip
+		// (blocked geometry staged anyway) detaches cleanly and a re-enter
+		// still works.
 		TestTrue(TEXT("the enter accepts"), Scene.Interaction->TryEnterNearestVehicle().bEntered);
-		const FVector SeatedPosition = Scene.Player->GetActorLocation();
+		TestTrue(TEXT("the hull rides the rider while seated"),
+			Scene.Vehicle->GetRootComponent()->GetAttachParent() == Scene.Player->GetRootComponent()
+			&& Scene.Vehicle->GetActorLocation().Equals(Scene.Player->GetActorLocation(), 2.0f));
 
-		// The exit column blocked: a box whose underside leaves less than the
-		// capsule's height above the floor, so the exit probe STARTS inside
-		// blocking geometry (the "every candidate blocked" case).
 		const FVector ExitCenter = Scene.Vehicle->GetActorLocation() + FVector(250.0, 0.0, 0.0);
-		AActor* Ceiling = M5_041_SpawnBlocker(*Scene.Wrapper.GetTestWorld(),
-			ExitCenter + FVector(0.0, 0.0, 170.0), FVector(80.0f, 80.0f, 50.0f));
-		if (!TestNotNull(TEXT("the exit blocker spawns"), Ceiling))
-		{
-			return false;
-		}
+		const FVector HullSpotBeforeExit = Scene.Vehicle->GetActorLocation();
+		TestTrue(TEXT("the exit accepts (blocking geometry is irrelevant now)"),
+			Scene.Interaction->TryExitVehicle(nullptr));
+		TestEqual(TEXT("the seat model is empty after the exit"), Scene.Seats.GetNumOccupiedSeats(), 0);
+		TestFalse(TEXT("the seat is free after the exit"), Scene.Interaction->IsSeated());
+		const FVector HullSpotAfterExit = Scene.Vehicle->GetActorLocation();
+		AddInfo(FString::Printf(TEXT("M5_041 detach pin: before=%s after=%s delta=%f"),
+			*HullSpotBeforeExit.ToCompactString(), *HullSpotAfterExit.ToCompactString(),
+			FVector::Dist(HullSpotBeforeExit, HullSpotAfterExit)));
+		TestTrue(TEXT("the hull detached right beside the rider"),
+			Scene.Vehicle->GetRootComponent()->GetAttachParent() == nullptr
+			&& Scene.Vehicle->GetActorLocation().Equals(HullSpotBeforeExit, 2.0f));
 
-		FString Refusal;
-		TestFalse(TEXT("the blocked exit is refused"), Scene.Interaction->TryExitVehicle(&Refusal));
-		TestFalse(TEXT("the refusal names the blocked exit"), Refusal.IsEmpty());
-		TestTrue(TEXT("the character did not clip through the blocker"),
-			Scene.Player->GetActorLocation().Equals(SeatedPosition, 0.0f));
-		TestEqual(TEXT("the driver stays seated"), Scene.Seats.GetNumOccupiedSeats(), 1);
-		TestTrue(TEXT("the control suspension stays on"), Scene.Interaction->IsPawnControlPaused());
-
-		// Clear the blocker: the same exit now drops the character at the
-		// offset on the floor top.
-		Ceiling->Destroy();
-		TestTrue(TEXT("the unblocked exit accepts"), Scene.Interaction->TryExitVehicle(nullptr));
-		const FVector Expected(ExitCenter.X, ExitCenter.Y, 96.0f);
-		TestTrue(TEXT("the exit lands at the exit offset on the ground"),
-			Scene.Player->GetActorLocation().Equals(Expected, 0.5f));
-		TestEqual(TEXT("the seat model is empty after the unblocked exit"),
+		// A re-enter re-attaches and an exit detaches again (no stale state).
+		TestTrue(TEXT("a re-enter accepts"), Scene.Interaction->TryEnterNearestVehicle().bEntered);
+		TestTrue(TEXT("the hull rides the rider again"),
+			Scene.Vehicle->GetRootComponent()->GetAttachParent() == Scene.Player->GetRootComponent());
+		TestTrue(TEXT("the second exit accepts"), Scene.Interaction->TryExitVehicle(nullptr));
+		TestEqual(TEXT("the seat model is empty after the second exit"),
 			Scene.Seats.GetNumOccupiedSeats(), 0);
 		return true;
 	}
@@ -605,7 +610,7 @@ namespace UE::UEMMO::Tasks::M5_041
 		TestTrue(TEXT("the hull finalized its destruction"), Scene.Vehicle->IsDestroyFinalized());
 		TestFalse(TEXT("a second finalize is the rejected terminal"), Scene.Vehicle->FinalizeDestruction());
 		TestEqual(TEXT("the destroy freed the seat"), Scene.Seats.GetNumOccupiedSeats(), 0);
-		TestFalse(TEXT("the surviving driver's control face restored"), Scene.Interaction->IsPawnControlPaused());
+		TestFalse(TEXT("the surviving rider is free"), Scene.Interaction->IsSeated());
 		TestFalse(TEXT("the component no longer reports a seat"), Scene.Interaction->IsSeated());
 		TestEqual(TEXT("exactly one destroy notification reached the component"),
 			Scene.Interaction->GetVehicleDestroyedNotificationCount(), 1);
@@ -642,7 +647,7 @@ namespace UE::UEMMO::Tasks::M5_041
 		TestEqual(TEXT("each hull's destroy notified exactly once"),
 			Scene.Interaction->GetVehicleDestroyedNotificationCount(), 2);
 		TestEqual(TEXT("the seat model is empty again"), Scene.Seats.GetNumOccupiedSeats(), 0);
-		TestFalse(TEXT("the controls restored again"), Scene.Interaction->IsPawnControlPaused());
+		TestFalse(TEXT("the seat is free once more"), Scene.Interaction->IsSeated());
 		return true;
 	}
 
@@ -668,7 +673,7 @@ namespace UE::UEMMO::Tasks::M5_041
 		// clears the seat and restores the control face.
 		Scene.Player->ApplyTrainingRoomReset();
 		TestEqual(TEXT("the reset cleared the seat"), Scene.Seats.GetNumOccupiedSeats(), 0);
-		TestFalse(TEXT("the reset restored the control face"), Scene.Interaction->IsPawnControlPaused());
+		TestFalse(TEXT("the reset freed the seat"), Scene.Interaction->IsSeated());
 		TestTrue(TEXT("a post-reset enter still accepts"), Scene.Interaction->TryEnterNearestVehicle().bEntered);
 		TestEqual(TEXT("one occupation after the post-reset enter"), Scene.Seats.GetNumOccupiedSeats(), 1);
 
