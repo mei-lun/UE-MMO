@@ -398,6 +398,12 @@ FVehicleEnterAttempt UVehicleInteractionComponent::TryEnterNearestVehicle()
 	// dropped (the M5-033 release entry early-outs when nothing is held). The
 	// vehicle's own fire routing is M5-044's input face.
 	Pawn->OnFireInputReleased();
+	// M5-H03: the driver's body rides INSIDE the hull - hide the standing
+	// mesh and drop the capsule collision (the hull query box is the world
+	// body from here; a live capsule would block shots and stand visibly at
+	// the enter spot while the car drives away). Restored by every cleanup
+	// face through the shared restore helper.
+	Pawn->SetDriverBodyActive(false);
 
 	// The hull's one-shot vacate seam (M5-039's SetSeatVacateCallback wiring
 	// point): the death sequence forwards to the model's ClearVehicle, whose
@@ -544,6 +550,10 @@ void UVehicleInteractionComponent::RestoreDriverAfterForcedCleanup(const TCHAR* 
 	}
 	if (APrototypeCharacter* OwnerPawn = Cast<APrototypeCharacter>(GetOwner()))
 	{
+		// M5-H03: the hidden driver body comes back on every cleanup face
+		// (the active exit's teleport has already placed it; the forced
+		// cleanups restore it in place).
+		OwnerPawn->SetDriverBodyActive(true);
 		if (UVehicleCameraBridge* Bridge = OwnerPawn->FindComponentByClass<UVehicleCameraBridge>())
 		{
 			Bridge->RestoreCharacterAnchor();

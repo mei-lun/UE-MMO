@@ -221,6 +221,15 @@ public:
     void RecordPlanarMoveInput(float AxisX, float AxisY);
 
     /**
+     * M5-H03: the seated-body face. Active=false hides the character mesh and
+     * disables the capsule collision while the driver holds a vehicle seat
+     * (the body stops standing at the enter spot); Active=true restores both
+     * (the exit drop / the forced cleanups). The pawn keeps ticking - the
+     * seated input routing and the weapon polls live on its tick.
+     */
+    void SetDriverBodyActive(bool bActive);
+
+    /**
      * M5-033: the input-layer weapon wiring pass - selects the fire policy
      * from the active binding's weapon definition (delivery policy for
      * projectile weapons, burst policy for multi-round hitscan bursts,

@@ -41,6 +41,7 @@
 #include "../Vehicles/VehicleWeaponMountComponent.h"
 
 #include "Components/BoxComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/World.h"
 #include "Framework/Application/SlateApplication.h"
@@ -503,6 +504,14 @@ namespace UE::UEMMO::Tasks::M5_045
 		{
 			return false;
 		}
+		// M5-H03: the driver body rides inside - the standing mesh hides and
+		// the capsule drops out of collision while seated (no body left at
+		// the enter spot).
+		TestTrue(TEXT("the seated driver's mesh is hidden"),
+			Player->GetMesh() != nullptr && !Player->GetMesh()->IsVisible());
+		TestTrue(TEXT("the seated driver's capsule is non-colliding"),
+			Player->GetCapsuleComponent() != nullptr
+			&& Player->GetCapsuleComponent()->GetCollisionEnabled() == ECollisionEnabled::NoCollision);
 		UVehicleMovementComponent* Drive = Hull->FindComponentByClass<UVehicleMovementComponent>();
 		if (!TestNotNull(TEXT("the rigging armed on the real-flow enter"), Drive))
 		{
@@ -576,6 +585,13 @@ namespace UE::UEMMO::Tasks::M5_045
 
 		Interaction->TryInteract();
 		TestTrue(TEXT("the second V press exits the seat"), !Interaction->IsSeated());
+		// M5-H03: the exit restores the body (visible + collidable at the
+		// drop spot).
+		TestTrue(TEXT("the exited driver's mesh is visible again"),
+			Player->GetMesh() != nullptr && Player->GetMesh()->IsVisible());
+		TestTrue(TEXT("the exited driver's capsule collides again"),
+			Player->GetCapsuleComponent() != nullptr
+			&& Player->GetCapsuleComponent()->GetCollisionEnabled() == ECollisionEnabled::QueryAndPhysics);
 		TestTrue(TEXT("the possession survived the whole flow"), Player->GetController() == Controller);
 		return true;
 	}

@@ -1248,6 +1248,28 @@ void APrototypeCharacter::RecordPlanarMoveInput(float AxisX, float AxisY)
     PlanarAxes.SetAxisY(AxisY);
 }
 
+void APrototypeCharacter::SetDriverBodyActive(bool bActive)
+{
+    // M5-H03: the seated-body face. Hidden = the mesh invisible + the capsule
+    // non-colliding (the driver rides INSIDE the hull - the query box is the
+    // hittable body; a live capsule would block shots and stand visibly at
+    // the enter spot). Restored on every exit/cleanup face. The tick stays
+    // on: the seated routing and the weapon polls read it.
+    if (USkeletalMeshComponent* BodyMesh = GetMesh())
+    {
+        BodyMesh->SetVisibility(bActive, /*bPropagateToChildren*/ true);
+    }
+    if (UCapsuleComponent* Capsule = GetCapsuleComponent())
+    {
+        Capsule->SetCollisionEnabled(bActive ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
+    }
+    if (!bActive)
+    {
+        // Drop any residual walk velocity so the hidden body never drifts.
+        GetCharacterMovement()->StopMovementImmediately();
+    }
+}
+
 void APrototypeCharacter::OnReloadInputPressed()
 {
     // M5-041: a parked driver opens no character-side reload window.
