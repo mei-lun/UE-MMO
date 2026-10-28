@@ -210,7 +210,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M5-078 | [投射物服务容量陈旧窗口核算](Docs/Tasks/M5-078.md) | DONE | M5-050 | ZCode-20261024-A | 2026-10-26T02:29:08+08:00 | [report](Docs/Tasks/Reports/M5-078.md) |
 | M5-H01 | [M5-H01](Docs/Tasks/M5-H01.md) | DONE | M5-018B | ZCode-20260925-A | 2026-10-08T14:03:17+08:00 | [report](Docs/Tasks/Reports/M5-H01.md) |
 | M5-H02 | [M5-H02](Docs/Tasks/M5-H02.md) | DONE | M5-036,M5-056,M5-057,M5-058,M5-059,M5-060,M5-061,M5-062,M5-063,M5-064 | 用户 | 2026-10-26T02:49:27+08:00 | [report](Docs/Tasks/Reports/M5-H02.md) |
-| M5-H03 | [M5-H03](Docs/Tasks/M5-H03.md) | TODO | M5-045 | — | — | — |
+| M5-H03 | [M5-H03](Docs/Tasks/M5-H03.md) | REVIEW | M5-045 | ZCode-20261029-B | 2026-10-29T03:14:43+08:00 | [report](Docs/Tasks/Reports/M5-H03.md) |
 | M5-H04 | [M5-H04](Docs/Tasks/M5-H04.md) | TODO | M5-055,M5-H02,M5-H03 | — | — | — |
 | M6-001 | [多关卡目录数据层与生成管线扩展](Docs/Tasks/M6-001.md) | IN_PROGRESS | M3-017,M5-070,M5-074 | ZCode-20261029-B | 2026-10-29T03:08:30+08:00 | [report](Docs/Tasks/Reports/M6-001.md) |
 | M6-002 | [菜单自由选关列表](Docs/Tasks/M6-002.md) | TODO | M6-001,M6-003 | — | — | — |
