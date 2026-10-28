@@ -140,6 +140,14 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Room|Identity")
 	TSoftObjectPtr<UWorld> MapPath;
 
+	/**
+	 * M6-001: the menu display name (the rooms.json optional display_name row
+	 * field; ASCII English at this prototype stage - real localization is a
+	 * later UI task). Empty means the UI falls back to the RoomId.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Room|Identity")
+	FString DisplayName;
+
 	/** Player spawn position in centimeters (world space; mirrors the map's PlayerStart). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Room|Spawn")
 	FVector PlayerSpawnLocation = FVector::ZeroVector;

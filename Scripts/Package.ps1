@@ -59,6 +59,19 @@ if (Test-Path -LiteralPath $RepoItemsSource) {
 else {
     Write-Warning 'Data/items.json not found; the packaged inventory will stage no items and weapon binds will refuse.'
 }
+# M6-001: the level catalog ships as runtime config too (the menu catalog
+# reads Data/rooms.json per run from FPaths::ProjectDir(); the generated
+# DA_<room_id> assets ride the always-cooked /Game/UEMMO/Rooms directory).
+# Without this carry the packaged menu lists no catalog levels.
+$RepoRoomsSource = Join-Path $ProjectRoot 'Data\rooms.json'
+if (Test-Path -LiteralPath $RepoRoomsSource) {
+    $StagedRoomsSource = Join-Path $ArchiveDirectory 'Windows\UEMMO\Data\rooms.json'
+    New-Item -ItemType Directory -Path (Split-Path -Parent $StagedRoomsSource) -Force | Out-Null
+    Copy-Item -LiteralPath $RepoRoomsSource -Destination $StagedRoomsSource -Force
+}
+else {
+    Write-Warning 'Data/rooms.json not found; the packaged menu will list no catalog levels.'
+}
 if (-not (Test-Path -LiteralPath $DevelopmentPackageExecutable)) { throw 'Packaging did not produce the fixed development executable.' }
 $SourceRevision = & git -C $ProjectRoot rev-parse HEAD
 Assert-NativeSuccess 'Reading source revision'

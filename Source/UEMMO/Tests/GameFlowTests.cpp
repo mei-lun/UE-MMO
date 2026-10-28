@@ -48,6 +48,7 @@
 
 #include "Misc/AutomationTest.h"
 
+#include "../Combat/Data/CombatDataTableParser.h"
 #include "../Items/InventoryModel.h"
 #include "../Items/ItemDefinition.h"
 #include "../Items/ItemInstance.h"
@@ -64,6 +65,9 @@
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
+#include "HAL/PlatformFileManager.h"
+#include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
 #include "UObject/Package.h"
 #include "UObject/UObjectGlobals.h"
 
@@ -329,17 +333,18 @@ bool FUEMMOTasksM3_017StateMachineAcceptsLegalSequence::RunTest(const FString& P
 	TestFalse(TEXT("no load is in flight on a fresh flow"), Session.Flow->IsLoading());
 	TestTrue(TEXT("a fresh flow has no recorded error"), Session.Flow->GetLastError().IsEmpty());
 
-	// The card's one-map menu: exactly one selectable entry, the TrainingArena.
+	// The selectable entry (M6-001 reface): the catalog-backed TrainingArena
+	// definition. The M3-017 "exactly one map" list rule is superseded by the
+	// M6 free-select decision (user 2026-10-29); the catalog contract lives in
+	// the M6_001 suite below.
 	URoomDefinition* RoomDef = Session.Flow->GetSelectableRoomDefinition();
 	if (!TestNotNull(TEXT("the single selectable room definition exists"), RoomDef))
 	{
 		Session.TearDown();
 		return true;
 	}
-	TestEqual(TEXT("the menu list holds exactly one map"),
-		UGameFlowSubsystem::SelectableRoomCount, 1);
-	TestEqual(TEXT("the selectable entry carries the TrainingArena map path"),
-		RoomDef->MapPath.ToSoftObjectPath().ToString(), FString(M3_017_TrainingArenaPath));
+	TestEqual(TEXT("the selectable entry carries the TrainingArena map package"),
+		RoomDef->MapPath.ToSoftObjectPath().GetLongPackageName(), FString(M3_017_TrainingArenaPath));
 	TestTrue(TEXT("the selectable entry carries a room id"), !RoomDef->RoomId.IsNone());
 
 	// Injected map opener: counts the world switches, records the requested
@@ -988,6 +993,172 @@ bool FUEMMOTasksM3_017WidgetMenuSingleMapAndLoadGuard::RunTest(const FString& Pa
 	TestTrue(TEXT("the retry entered the room"), Flow->GetState() == EGameFlowState::Room);
 
 	Session.TearDown();
+	return true;
+}
+
+namespace UE::UEMMO::Tasks::M6_001
+{
+	/**
+	 * Reads the real Data/rooms.json rows (id + map_path) for the catalog
+	 * mirror assertions, through the project's own JSON parser (the engine
+	 * Json module import library is not on the UEMMO link line). An
+	 * unreadable source fails the calling test loudly (the catalog contract
+	 * cannot be checked without it).
+	 */
+	bool ReadRoomsJsonRows(FAutomationTestBase& Test, TArray<TPair<FString, FString>>& OutRows)
+	{
+		const FString SourcePath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir(), TEXT("Data/rooms.json"));
+		FString Json;
+		if (!Test.TestTrue(TEXT("the project rooms.json source is readable"),
+			FFileHelper::LoadFileToString(Json, *SourcePath)))
+		{
+			return false;
+		}
+		TSharedPtr<FCombatJsonValue> Document;
+		FString ParseError;
+		if (!Test.TestTrue(TEXT("the project rooms.json parses as an object"),
+			FCombatJsonParser::Parse(Json, Document, ParseError) && Document.IsValid() &&
+			Document->Kind == FCombatJsonValue::EKind::Object))
+		{
+			return false;
+		}
+		const TSharedPtr<FCombatJsonValue>* Rows = Document->Object.Find(TEXT("rooms"));
+		if (!Test.TestTrue(TEXT("the project rooms.json carries a rooms array"),
+			Rows != nullptr && (*Rows)->Kind == FCombatJsonValue::EKind::Array))
+		{
+			return false;
+		}
+		for (const TSharedPtr<FCombatJsonValue>& RowValue : (*Rows)->Array)
+		{
+			if (!RowValue.IsValid() || RowValue->Kind != FCombatJsonValue::EKind::Object)
+			{
+				continue;
+			}
+			const TSharedPtr<FCombatJsonValue>* IdValue = RowValue->Object.Find(TEXT("room_id"));
+			const TSharedPtr<FCombatJsonValue>* MapValue = RowValue->Object.Find(TEXT("map_path"));
+			if (IdValue != nullptr && (*IdValue)->Kind == FCombatJsonValue::EKind::String &&
+				MapValue != nullptr && (*MapValue)->Kind == FCombatJsonValue::EKind::String)
+			{
+				OutRows.Emplace((*IdValue)->String, (*MapValue)->String);
+			}
+		}
+		return Test.TestTrue(TEXT("the project rooms.json rows were read"), OutRows.Num() > 0);
+	}
+}
+
+// M6-001: the catalog mirrors Data/rooms.json row-for-row (order included),
+// the legacy enter targets resolve through it, and a row with no generated
+// asset is skipped with a recorded error instead of failing the catalog.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FUEMMOTasksM6_001LevelCatalogMirrorsRoomsJson,
+	"UEMMO.Tasks.M6_001.LevelCatalogMirrorsRoomsJson",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+
+bool FUEMMOTasksM6_001LevelCatalogMirrorsRoomsJson::RunTest(const FString& Parameters)
+{
+	using namespace UE::UEMMO::Tasks::M3_017;
+	FM3_017_FlowSession Session = FM3_017_FlowSession::Create(*this, TEXT("Catalog"));
+	if (Session.Flow == nullptr || Session.Profile == nullptr)
+	{
+		Session.TearDown();
+		return true;
+	}
+
+	// The mirror: one catalog entry per rooms.json row, same order, every
+	// entry carrying the row's identity (id, map package, display name).
+	TArray<TPair<FString, FString>> Rows;
+	if (!UE::UEMMO::Tasks::M6_001::ReadRoomsJsonRows(*this, Rows))
+	{
+		Session.TearDown();
+		return true;
+	}
+	const TArray<URoomDefinition*>& Catalog = Session.Flow->GetSelectableRoomDefinitions();
+	if (!TestEqual(TEXT("the catalog holds one entry per rooms.json row"), Catalog.Num(), Rows.Num()))
+	{
+		Session.TearDown();
+		return true;
+	}
+	for (int32 Index = 0; Index < Rows.Num(); ++Index)
+	{
+		const URoomDefinition* Entry = Catalog[Index];
+		const FString Label = FString::Printf(TEXT("catalog row %d"), Index);
+		if (!TestNotNull(*Label, Entry))
+		{
+			continue;
+		}
+		TestEqual(FString::Printf(TEXT("%s carries the row id"), *Label),
+			Entry->RoomId.ToString(), Rows[Index].Key);
+		TestEqual(FString::Printf(TEXT("%s carries the row map package"), *Label),
+			Entry->MapPath.ToSoftObjectPath().GetLongPackageName(), Rows[Index].Value);
+		TestFalse(FString::Printf(TEXT("%s carries a display name"), *Label),
+			Entry->DisplayName.IsEmpty());
+		TestTrue(FString::Printf(TEXT("%s carries a reward table"), *Label),
+			!Entry->RewardTableId.IsNone());
+	}
+
+	// The legacy enter targets resolve through the catalog (same pointers;
+	// the identity-double fallback stays for bare worlds and is not reached
+	// in the editor where the generated assets exist).
+	TArray<TPair<FString, FString>> TrainingRows = Rows.FilterByPredicate([](const TPair<FString, FString>& Row)
+	{
+		return Row.Key == TEXT("room_training_01");
+	});
+	if (TestTrue(TEXT("rooms.json carries the training row"), TrainingRows.Num() == 1))
+	{
+		URoomDefinition* Selectable = Session.Flow->GetSelectableRoomDefinition();
+		TestTrue(TEXT("the selectable entry is the catalog's training row"),
+			Catalog.Contains(Selectable) && Selectable != nullptr &&
+			Selectable->RoomId == FName(TEXT("room_training_01")));
+	}
+	TArray<TPair<FString, FString>> CombatRows = Rows.FilterByPredicate([](const TPair<FString, FString>& Row)
+	{
+		return Row.Key == TEXT("room_combat_01");
+	});
+	if (TestTrue(TEXT("rooms.json carries the combat row"), CombatRows.Num() == 1))
+	{
+		URoomDefinition* Combat = Session.Flow->GetCombatRoomDefinition();
+		TestTrue(TEXT("the combat entry is the catalog's combat row"),
+			Catalog.Contains(Combat) && Combat != nullptr &&
+			Combat->RoomId == FName(TEXT("room_combat_01")));
+	}
+
+	Session.TearDown();
+
+	// The skip face: a fresh flow builds its catalog from a parked source with
+	// one valid row (the real training row) and one row whose generated asset
+	// cannot exist; the valid row survives and the missing one is recorded.
+	FM3_017_FlowSession SkipSession = FM3_017_FlowSession::Create(*this, TEXT("CatalogSkip"));
+	if (SkipSession.Flow == nullptr)
+	{
+		SkipSession.TearDown();
+		return true;
+	}
+	const FString OverridePath = FPaths::ConvertRelativePathToFull(
+		FPaths::ProjectSavedDir(), TEXT("Temp/M6_001_CatalogSourceOverride.json"));
+	const FString OverrideJson = TEXT("{ \"schema_version\": 2, \"rooms\": [")
+		TEXT("{ \"room_id\": \"room_training_01\", \"map_path\": \"/Game/UEMMO/Maps/L_TrainingArena\" },")
+		TEXT("{ \"room_id\": \"room_does_not_exist\", \"map_path\": \"/Game/UEMMO/Maps/L_Missing\" }")
+		TEXT("] }");
+	if (!TestTrue(TEXT("the override catalog source was written"),
+		FFileHelper::SaveStringToFile(OverrideJson, *OverridePath)))
+	{
+		SkipSession.TearDown();
+		return true;
+	}
+	UGameFlowSubsystem::SetLevelCatalogSourcePathForTests(OverridePath);
+	const TArray<URoomDefinition*>& SkipCatalog = SkipSession.Flow->GetSelectableRoomDefinitions();
+	TestEqual(TEXT("the missing-asset row is skipped and the valid row survives"),
+		SkipCatalog.Num(), 1);
+	if (SkipCatalog.Num() == 1)
+	{
+		TestEqual(TEXT("the surviving entry is the valid row"),
+			SkipCatalog[0]->RoomId, FName(TEXT("room_training_01")));
+	}
+	TestTrue(TEXT("the skipped row is recorded as an error line"),
+		SkipSession.Flow->GetLastError().Contains(TEXT("room_does_not_exist")));
+	FPlatformFileManager::Get().GetPlatformFile().DeleteFile(*OverridePath);
+
+	SkipSession.TearDown();
 	return true;
 }
 

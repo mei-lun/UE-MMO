@@ -3,6 +3,7 @@
   "rooms": [
     {
       "room_id": "room_training_01",
+      "display_name": "TrainingArena",
       "map_path": "/Game/UEMMO/Maps/L_TrainingArena",
       "player_spawn_location_cm": { "x": -400, "y": 0, "z": 100 },
       "player_spawn_yaw_degrees": 0,
@@ -32,6 +33,7 @@
     },
     {
       "room_id": "room_combat_01",
+      "display_name": "CombatRoom01",
       "map_path": "/Game/UEMMO/Maps/L_CombatRoom01",
       "player_spawn_location_cm": { "x": -400, "y": 0, "z": 100 },
       "player_spawn_yaw_degrees": 0,

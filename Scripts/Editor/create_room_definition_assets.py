@@ -1,18 +1,20 @@
-"""Create /Game/UEMMO/Rooms/DA_room_combat_01 from the Data/rooms.json
-room_combat_01 row and wire the L_CombatRoom01 ARoomTrigger to it. Run inside
-the UE editor (commandlet) only.
+"""Create one /Game/UEMMO/Rooms/DA_<room_id> asset per Data/rooms.json row
+(the M6-001 multi-level catalog; the M5-070 precedent generalized) and wire
+the L_CombatRoom01 ARoomTrigger to the combat row's asset. Run inside the UE
+editor (commandlet) only.
 
 Two modes, selected by a token on the UE command line (the
 create_enemy_assets.py / create_room_assets.py patterns):
   generate (default) - structurally validate Data/rooms.json BEFORE writing
-                       anything (schema 1, unique room ids, the required
+                       anything (schema 2, unique room ids, the required
                        room_combat_01 row, wave count/location agreement);
-                       then create or update DA_room_combat_01 in place
-                       (never duplicating; auto-suffixed duplicates abort the
-                       run), set the combat map's single ARoomTrigger
-                       room_definition_asset soft reference to it, save both,
-                       and write Artifacts/Logs/room-definition-assets-report.json.
-  verify (UEMMORoomAssetVerify) - after a fresh process start, reload the
+                       then create or update DA_<room_id> for EVERY row in
+                       place (never duplicating; auto-suffixed or stale
+                       DA_room* assets abort the run), set the combat map's
+                       single ARoomTrigger room_definition_asset soft
+                       reference to the combat asset, save all, and write
+                       Artifacts/Logs/room-definition-assets-report.json.
+  verify (UEMMORoomAssetVerify) - after a fresh process start, reload EVERY
                        saved asset from disk and compare every field against
                        the same JSON; reload both maps and assert the combat
                        map carries exactly one trigger (referencing the asset)
@@ -23,7 +25,7 @@ The map_path property stores the FULLY-QUALIFIED object path
 (/Game/.../L_CombatRoom01.L_CombatRoom01); the JSON's package path is its
 prefix. That is the only normalization this script applies.
 
-Idempotent: a repeated run loads the existing asset and re-applies every
+Idempotent: a repeated run loads the existing assets and re-applies every
 field (update, not duplicate), and re-asserts the trigger reference.
 Atomicity: structural validation happens before the first write; any error
 aborts the whole run (nonzero exit via exception). The report is written in
@@ -37,10 +39,36 @@ import unreal
 
 ROOT = Path(unreal.Paths.project_dir())
 ROOMS_PATH = '/Game/UEMMO/Rooms'
-COMBAT_ASSET_NAME = 'DA_room_combat_01'
-COMBAT_ASSET_PATH = ROOMS_PATH + '/' + COMBAT_ASSET_NAME
-COMBAT_ASSET_OBJECT_PATH = COMBAT_ASSET_PATH + '.' + COMBAT_ASSET_NAME
 COMBAT_ROOM_ID = 'room_combat_01'
+
+
+def asset_name_for(room_id):
+    """The deterministic asset name of one rooms.json row (M6-001)."""
+    return 'DA_' + room_id
+
+
+def listed_asset_name(item):
+    """Bare asset name of a list_assets entry (the editor returns object
+    paths such as /Game/UEMMO/Rooms/DA_x.DA_x, not bare names)."""
+    name = str(item)
+    if '/' in name:
+        name = name.rsplit('/', 1)[1]
+    if '.' in name:
+        name = name.split('.', 1)[0]
+    return name
+
+
+def asset_path_for(room_id):
+    return ROOMS_PATH + '/' + asset_name_for(room_id)
+
+
+def asset_object_path_for(room_id):
+    return asset_path_for(room_id) + '.' + asset_name_for(room_id)
+
+
+COMBAT_ASSET_NAME = asset_name_for(COMBAT_ROOM_ID)
+COMBAT_ASSET_PATH = asset_path_for(COMBAT_ROOM_ID)
+COMBAT_ASSET_OBJECT_PATH = asset_object_path_for(COMBAT_ROOM_ID)
 BASE_MAP = '/Game/UEMMO/Maps/L_TrainingArena'
 COMBAT_MAP = '/Game/UEMMO/Maps/L_CombatRoom01'
 GENERATE_REPORT = ROOT / 'Artifacts' / 'Logs' / 'room-definition-assets-report.json'
@@ -173,7 +201,8 @@ def validate_rule(rule, wave_count, label, problems):
 
 def validate_document(doc, source_path):
     """Structural check of Data/rooms.json (schema 2 with finite rules);
-    returns the room_combat_01 row with parsed rules."""
+    returns EVERY validated row (combat row included, in file order) with
+    parsed rules attached."""
     problems = []
     if not isinstance(doc, dict):
         raise RuntimeError(source_path + ': the document is not a JSON object.')
@@ -189,7 +218,7 @@ def validate_document(doc, source_path):
     if not isinstance(rows, list) or not rows:
         raise RuntimeError(source_path + ": 'rooms' is missing or empty; nothing to generate.")
     id_set = set()
-    combat_row = None
+    validated_rows = []
     for index, entry in enumerate(rows):
         label = 'rooms[' + str(index) + ']'
         if not isinstance(entry, dict):
@@ -204,6 +233,9 @@ def validate_document(doc, source_path):
             problems.append('FAIL ' + label + " field 'room_id': duplicate room id.")
         else:
             id_set.add(room_id)
+        display_name = entry.get('display_name', '')
+        if not isinstance(display_name, str):
+            problems.append('FAIL ' + label + " field 'display_name': optional string (empty = the UI falls back to the room id).")
         for field in ('map_path', 'reward_table_id'):
             value = entry.get(field)
             if not isinstance(value, str) or not value:
@@ -256,13 +288,12 @@ def validate_document(doc, source_path):
                         rule_ids.add(parsed_rule['rule_id'])
                     parsed_rules.append(parsed_rule)
             entry['parsed_rules'] = parsed_rules
-        if room_id == COMBAT_ROOM_ID:
-            combat_row = entry
+        validated_rows.append(entry)
     if problems:
         raise RuntimeError('rooms.json validation failed; nothing was written.\n' + '\n'.join(problems))
-    if combat_row is None:
+    if not any(row.get('room_id') == COMBAT_ROOM_ID for row in validated_rows):
         raise RuntimeError("rooms.json carries no '" + COMBAT_ROOM_ID + "' row; nothing was written.")
-    return combat_row
+    return validated_rows
 
 
 def wave_structs(row):
@@ -352,8 +383,9 @@ def rule_structs(parsed_rules):
 
 
 def apply_fields(asset, row):
-    """Writes every URoomDefinition field of the room_combat_01 row."""
+    """Writes every URoomDefinition field of one rooms.json row."""
     asset.set_editor_property('room_id', str(row['room_id']))
+    asset.set_editor_property('display_name', str(row.get('display_name', '')))
     # TSoftObjectPtr properties take the LOADED object in editor Python (a
     # SoftObjectPath value is rejected); the soft path stored in the asset is
     # the object's fully-qualified path, so LoadSynchronous of the soft
@@ -389,6 +421,9 @@ def asset_matches(asset, row):
     if str(asset.get_editor_property('room_id')) != str(row['room_id']):
         problems.append('room_id: asset ' + str(asset.get_editor_property('room_id'))
                         + ' != json ' + str(row['room_id']))
+    if str(asset.get_editor_property('display_name')) != str(row.get('display_name', '')):
+        problems.append('display_name: asset ' + str(asset.get_editor_property('display_name'))
+                        + ' != json ' + str(row.get('display_name', '')))
     asset_map = soft_path_string(asset.get_editor_property('map_path'))
     if asset_map != full_object_path(str(row['map_path'])):
         problems.append('map_path: asset ' + asset_map + ' != json ' + full_object_path(str(row['map_path'])))
@@ -478,38 +513,60 @@ def write_report(path, payload):
 
 
 def run_generate():
-    row = validate_document(json.loads(Path(source_json_path()).read_text(encoding='utf-8')),
-                            source_json_path())
+    rows = validate_document(json.loads(Path(source_json_path()).read_text(encoding='utf-8')),
+                             source_json_path())
 
-    # Duplicate-asset guard: an auto-suffixed copy (DA_room_combat_01_1) would
-    # be a second source of truth; refuse to run next to one.
+    # Stale/duplicate guard: every DA_room* asset in the directory must be one
+    # of this run's expected names - an auto-suffixed copy (DA_x_1) would be a
+    # second source of truth, and a stale asset for a removed row would keep
+    # ghost rooms alive. Refuse to run next to either.
+    expected_names = {asset_name_for(str(row['room_id'])) for row in rows}
     listing = unreal.EditorAssetLibrary.list_assets(ROOMS_PATH, recursive=False) if \
         unreal.EditorAssetLibrary.does_directory_exist(ROOMS_PATH) else []
-    duplicates = [str(item) for item in listing
-                  if Path(str(item)).name.startswith(COMBAT_ASSET_NAME + '_')]
-    if duplicates:
-        raise RuntimeError('Duplicate room-definition assets already exist: ' + ', '.join(duplicates))
+    unexpected = [str(item) for item in listing
+                  if listed_asset_name(item).startswith('DA_')
+                  and listed_asset_name(item) not in expected_names]
+    if unexpected:
+        raise RuntimeError('Unexpected or duplicate room-definition assets already exist: '
+                           + ', '.join(unexpected))
 
     asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
-    created = False
-    if unreal.EditorAssetLibrary.does_asset_exist(COMBAT_ASSET_PATH):
-        asset = unreal.load_asset(COMBAT_ASSET_PATH)
-        if asset is None:
-            raise RuntimeError('Existing asset exists on disk but could not be loaded: ' + COMBAT_ASSET_PATH)
-    else:
-        asset = asset_tools.create_asset(COMBAT_ASSET_NAME, ROOMS_PATH, room_class(),
-                                         unreal.DataAssetFactory())
-        if asset is None:
-            raise RuntimeError('create_asset returned null for ' + COMBAT_ASSET_PATH)
-        created = True
-    apply_fields(asset, row)
-    if not unreal.EditorAssetLibrary.save_asset(COMBAT_ASSET_PATH):
-        raise RuntimeError('save_asset failed for ' + COMBAT_ASSET_PATH)
+    generated = []
+    for row in rows:
+        room_id = str(row['room_id'])
+        asset_path = asset_path_for(room_id)
+        created = False
+        if unreal.EditorAssetLibrary.does_asset_exist(asset_path):
+            asset = unreal.load_asset(asset_path)
+            if asset is None:
+                raise RuntimeError('Existing asset exists on disk but could not be loaded: ' + asset_path)
+        else:
+            asset = asset_tools.create_asset(asset_name_for(room_id), ROOMS_PATH, room_class(),
+                                             unreal.DataAssetFactory())
+            if asset is None:
+                raise RuntimeError('create_asset returned null for ' + asset_path)
+            created = True
+        apply_fields(asset, row)
+        if not unreal.EditorAssetLibrary.save_asset(asset_path):
+            raise RuntimeError('save_asset failed for ' + asset_path)
+        generated.append({
+            'room_id': room_id,
+            'asset': asset_path,
+            'created': created,
+            'updated': not created,
+            'wave_counts': [int(wave['count']) for wave in row['waves']],
+        })
+        unreal.log('UEMMO_ROOM_DEFINITION_ASSET_WRITTEN asset=' + asset_path
+                   + ' created=' + str(created))
 
     # Wire the production entry: exactly one ARoomTrigger on the combat map,
-    # its room_definition_asset pointing at the generated definition. The
-    # class-default FallbackWaves stay untouched for the transient-fallback
-    # test fixtures; the asset simply wins wherever one is assigned.
+    # its room_definition_asset pointing at the combat row's generated
+    # definition. The class-default FallbackWaves stay untouched for the
+    # transient-fallback test fixtures; the asset simply wins wherever one is
+    # assigned.
+    combat_asset = unreal.load_asset(asset_path_for(COMBAT_ROOM_ID))
+    if combat_asset is None:
+        raise RuntimeError('The combat asset could not be loaded for the trigger wiring.')
     if not levels.load_level(COMBAT_MAP):
         raise RuntimeError('Could not load ' + COMBAT_MAP)
     triggers = find_triggers()
@@ -519,7 +576,7 @@ def run_generate():
     # TSoftObjectPtr takes the loaded object (a SoftObjectPath value is
     # rejected by the editor Python API); the serialized soft reference is
     # the asset's fully-qualified path.
-    triggers[0].set_editor_property('room_definition_asset', asset)
+    triggers[0].set_editor_property('room_definition_asset', combat_asset)
     if count_class('RoomExit') != 1:
         raise RuntimeError('Expected exactly one RoomExit on ' + COMBAT_MAP + ', found '
                            + str(count_class('RoomExit')) + '.')
@@ -529,36 +586,39 @@ def run_generate():
     write_report(GENERATE_REPORT, {
         'mode': 'generate',
         'source': str(source_json_path()),
-        'asset': COMBAT_ASSET_PATH,
-        'created': created,
-        'updated': not created,
+        'assets': generated,
         'trigger_wired': COMBAT_ASSET_OBJECT_PATH,
-        'room_id': str(row['room_id']),
-        'wave_counts': [int(wave['count']) for wave in row['waves']],
         'success': True,
     })
-    unreal.log('UEMMO_ROOM_DEFINITION_ASSETS_GENERATED asset=' + COMBAT_ASSET_PATH
-               + ' created=' + str(created) + ' trigger_wired=' + COMBAT_ASSET_OBJECT_PATH)
+    unreal.log('UEMMO_ROOM_DEFINITION_ASSETS_GENERATED assets='
+               + ','.join(entry['asset'] for entry in generated)
+               + ' trigger_wired=' + COMBAT_ASSET_OBJECT_PATH)
 
 
 def run_verify():
-    row = validate_document(json.loads(Path(source_json_path()).read_text(encoding='utf-8')),
-                            source_json_path())
+    rows = validate_document(json.loads(Path(source_json_path()).read_text(encoding='utf-8')),
+                             source_json_path())
     checks = []
 
     def record(name, ok, detail=''):
         checks.append({'check': name, 'passed': bool(ok), 'detail': detail})
 
-    # Duplicate guard in the fresh process as well.
+    # Stale/duplicate guard in the fresh process as well.
+    expected_names = {asset_name_for(str(row['room_id'])) for row in rows}
     listing = unreal.EditorAssetLibrary.list_assets(ROOMS_PATH, recursive=False)
-    duplicates = [str(item) for item in listing
-                  if Path(str(item)).name.startswith(COMBAT_ASSET_NAME + '_')]
-    record('no_duplicate_room_definition_assets', not duplicates, 'duplicates=' + str(duplicates))
+    unexpected = [str(item) for item in listing
+                  if listed_asset_name(item).startswith('DA_')
+                  and listed_asset_name(item) not in expected_names]
+    record('no_unexpected_room_definition_assets', not unexpected, 'unexpected=' + str(unexpected))
 
-    asset = unreal.load_asset(COMBAT_ASSET_PATH)
-    record('asset_loads_from_disk', asset is not None, 'path=' + COMBAT_ASSET_PATH)
-    field_problems = asset_matches(asset, row) if asset is not None else ['asset did not load']
-    record('asset_fields_match_json', not field_problems, 'problems=' + str(field_problems))
+    for row in rows:
+        room_id = str(row['room_id'])
+        asset_path = asset_path_for(room_id)
+        asset = unreal.load_asset(asset_path)
+        record('asset_loads_from_disk[' + room_id + ']', asset is not None, 'path=' + asset_path)
+        field_problems = asset_matches(asset, row) if asset is not None else ['asset did not load']
+        record('asset_fields_match_json[' + room_id + ']', not field_problems,
+               'problems=' + str(field_problems))
 
     if not levels.load_level(COMBAT_MAP):
         raise RuntimeError('Verify: could not load ' + COMBAT_MAP)

@@ -8,6 +8,7 @@
 
 #include "GameFlowSubsystem.h"
 
+#include "../Combat/Data/CombatDataTableParser.h"
 #include "../Room/RoomDefinition.h"
 #include "../Room/RoomSessionSubsystem.h"
 
@@ -15,13 +16,20 @@
 #include "Engine/World.h"
 #include "CoreGlobals.h"
 #include "Kismet/GameplayStatics.h"
+#include "Misc/FileHelper.h"
 #include "Misc/PackageName.h"
+#include "Misc/Paths.h"
+#include "UObject/SoftObjectPath.h"
 
 namespace
 {
 	// M3-017 test seam: the save service the NEXT Initialize consumes (rooted
 	// while parked). Always null in production.
 	UProfileSaveService* GM3_017_StartupSaveServiceOverride = nullptr;
+
+	// M6-001: the generated room-definition assets (the M5-070 pipeline) the
+	// catalog resolves each Data/rooms.json row against.
+	const TCHAR* GM6_001_RoomAssetDir = TEXT("/Game/UEMMO/Rooms");
 
 	// The card's single selectable map (the M2-005 suite pins the same soft
 	// reference inside Data/rooms.json).
@@ -46,6 +54,9 @@ namespace
 	const TCHAR* GM3_017_ProductionSlotPrefix = TEXT("Profile_");
 }
 
+// M6-001: the parked catalog-source test path; empty in production.
+FString UGameFlowSubsystem::LevelCatalogSourcePathOverride;
+
 void UGameFlowSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -59,6 +70,8 @@ void UGameFlowSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	CachedSelectableRoom = nullptr;
 	CachedCombatRoom = nullptr;
 	CachedSystemTestRoom = nullptr;
+	LevelCatalog.Reset();
+	bLevelCatalogBuilt = false;
 	StartupOutcome = FStartupLoadOutcome();
 	bStartupProfileRestored = false;
 
@@ -293,6 +306,13 @@ bool UGameFlowSubsystem::NotifyRunEnded()
 
 URoomDefinition* UGameFlowSubsystem::GetSelectableRoomDefinition()
 {
+	// M6-001: the catalog's generated asset wins wherever one exists (the
+	// single source of truth); the hardcoded identity double below stays as
+	// the bare-world fallback.
+	if (URoomDefinition* FromCatalog = FindCatalogEntryByRoomId(FName(TEXT("room_training_01"))))
+	{
+		return FromCatalog;
+	}
 	if (CachedSelectableRoom == nullptr)
 	{
 		// The card's single selectable map: the Data/rooms.json
@@ -311,6 +331,11 @@ URoomDefinition* UGameFlowSubsystem::GetSelectableRoomDefinition()
 
 URoomDefinition* UGameFlowSubsystem::GetCombatRoomDefinition()
 {
+	// M6-001: catalog-first (see GetSelectableRoomDefinition).
+	if (URoomDefinition* FromCatalog = FindCatalogEntryByRoomId(FName(GM3_030_CombatRoomId)))
+	{
+		return FromCatalog;
+	}
 	if (CachedCombatRoom == nullptr)
 	{
 		// The M3-030 mount's enter target: the wave-combat room the boot
@@ -329,6 +354,13 @@ URoomDefinition* UGameFlowSubsystem::GetCombatRoomDefinition()
 
 URoomDefinition* UGameFlowSubsystem::GetSystemTestRoomDefinition()
 {
+	// M6-001: catalog-first where the row exists (the system test room stays
+	// OUTSIDE Data/rooms.json for now - the lookup simply misses and the
+	// hardcoded double below keeps serving the M5-018A contract).
+	if (URoomDefinition* FromCatalog = FindCatalogEntryByRoomId(FName(GM5_018A_SystemTestRoomId)))
+	{
+		return FromCatalog;
+	}
 	if (CachedSystemTestRoom == nullptr)
 	{
 		// The M5-018A menu's second legal entry: the config-driven test room
@@ -342,6 +374,116 @@ URoomDefinition* UGameFlowSubsystem::GetSystemTestRoomDefinition()
 		CachedSystemTestRoom = Room;
 	}
 	return CachedSystemTestRoom;
+}
+
+const TArray<URoomDefinition*>& UGameFlowSubsystem::GetSelectableRoomDefinitions()
+{
+	if (!bLevelCatalogBuilt)
+	{
+		BuildLevelCatalog();
+	}
+	return LevelCatalog;
+}
+
+void UGameFlowSubsystem::SetLevelCatalogSourcePathForTests(const FString& OverridePath)
+{
+	LevelCatalogSourcePathOverride = OverridePath;
+}
+
+void UGameFlowSubsystem::BuildLevelCatalog()
+{
+	bLevelCatalogBuilt = true;
+	LevelCatalog.Reset();
+
+	// The source: the parked test path (consumed exactly once, the M3-017
+	// startup-seam pattern) or the real project Data file. A missing file is
+	// the recorded empty-catalog case, never a crash.
+	FString SourcePath = MoveTemp(LevelCatalogSourcePathOverride);
+	LevelCatalogSourcePathOverride.Reset();
+	FString Json;
+	if (SourcePath.IsEmpty())
+	{
+		SourcePath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir(), TEXT("Data/rooms.json"));
+	}
+	if (!FFileHelper::LoadFileToString(Json, *SourcePath))
+	{
+		RecordError(FString::Printf(TEXT("M6-001: the level catalog could not read %s; the menu lists no catalog levels."), *SourcePath));
+		return;
+	}
+
+	// The engine Json module import library is not on the UEMMO link line
+	// (the CombatDataTableParser.h note); the catalog parses through the
+	// project's own RFC 8259 subset parser like every other source table.
+	TSharedPtr<FCombatJsonValue> Document;
+	FString ParseError;
+	if (!FCombatJsonParser::Parse(Json, Document, ParseError) || !Document.IsValid() ||
+		Document->Kind != FCombatJsonValue::EKind::Object)
+	{
+		RecordError(FString::Printf(TEXT("M6-001: the level catalog source %s is not a JSON object (%s); the menu lists no catalog levels."), *SourcePath, *ParseError));
+		return;
+	}
+	const TSharedPtr<FCombatJsonValue>* Rooms = Document->Object.Find(TEXT("rooms"));
+	if (Rooms == nullptr || (*Rooms)->Kind != FCombatJsonValue::EKind::Array)
+	{
+		RecordError(FString::Printf(TEXT("M6-001: the level catalog source %s carries no rooms array; the menu lists no catalog levels."), *SourcePath));
+		return;
+	}
+	if ((*Rooms)->Array.Num() == 0)
+	{
+		RecordError(FString::Printf(TEXT("M6-001: the level catalog source %s carries an empty rooms array; the menu lists no catalog levels."), *SourcePath));
+		return;
+	}
+
+	// Row order is the menu order (the M5-069 single-source rule): each row
+	// contributes its generated DA_<room_id>; any problem skips THAT row with
+	// a recorded line and keeps the rest.
+	TSet<FName> SeenIds;
+	int32 RowIndex = 0;
+	for (const TSharedPtr<FCombatJsonValue>& RowValue : (*Rooms)->Array)
+	{
+		const FString RowLabel = FString::Printf(TEXT("rooms[%d]"), RowIndex);
+		++RowIndex;
+		if (!RowValue.IsValid() || RowValue->Kind != FCombatJsonValue::EKind::Object)
+		{
+			RecordError(FString::Printf(TEXT("M6-001: level catalog %s is not a JSON object; the row is skipped."), *RowLabel));
+			continue;
+		}
+		const TSharedPtr<FCombatJsonValue>* IdValue = RowValue->Object.Find(TEXT("room_id"));
+		if (IdValue == nullptr || (*IdValue)->Kind != FCombatJsonValue::EKind::String || (*IdValue)->String.IsEmpty())
+		{
+			RecordError(FString::Printf(TEXT("M6-001: level catalog %s carries no room_id; the row is skipped."), *RowLabel));
+			continue;
+		}
+		const FString RoomIdString = (*IdValue)->String;
+		const FName RoomId(*RoomIdString);
+		if (SeenIds.Contains(RoomId))
+		{
+			RecordError(FString::Printf(TEXT("M6-001: level catalog room_id '%s' repeats; the later row is skipped."), *RoomIdString));
+			continue;
+		}
+		SeenIds.Add(RoomId);
+		const FString AssetPath = FString::Printf(TEXT("%s/DA_%s"), GM6_001_RoomAssetDir, *RoomIdString);
+		UObject* Loaded = FSoftObjectPath(AssetPath).TryLoad();
+		URoomDefinition* Definition = Cast<URoomDefinition>(Loaded);
+		if (Definition == nullptr)
+		{
+			RecordError(FString::Printf(TEXT("M6-001: level catalog row '%s' has no generated room definition at %s; the row is skipped."), *RoomIdString, *AssetPath));
+			continue;
+		}
+		LevelCatalog.Add(Definition);
+	}
+}
+
+URoomDefinition* UGameFlowSubsystem::FindCatalogEntryByRoomId(FName RoomId) const
+{
+	for (const TObjectPtr<URoomDefinition>& Entry : LevelCatalog)
+	{
+		if (Entry != nullptr && Entry->RoomId == RoomId)
+		{
+			return Entry.Get();
+		}
+	}
+	return nullptr;
 }
 
 bool UGameFlowSubsystem::OpenRoomMapProduction(const FString& MapPath)

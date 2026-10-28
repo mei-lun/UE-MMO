@@ -95,9 +95,6 @@ class UEMMO_API UGameFlowSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
-	/** The card's list rule: exactly one selectable map (no multi-map store). */
-	static constexpr int32 SelectableRoomCount = 1;
-
 	// -- Lifecycle -------------------------------------------------------------
 
 	/**
@@ -209,6 +206,28 @@ public:
 	 */
 	URoomDefinition* GetSystemTestRoomDefinition();
 
+	// -- M6-001: the multi-level catalog ------------------------------------------
+
+	/**
+	 * M6-001: the selectable level catalog in Data/rooms.json ROW ORDER - one
+	 * entry per row, resolved from the generated /Game/UEMMO/Rooms
+	 * DA_<room_id> assets (the M5-070 pipeline). Built lazily on first use and
+	 * cached for the subsystem lifetime. A row whose asset is missing or whose
+	 * id is empty/duplicated is skipped with a recorded error line (the menu
+	 * lists the rest); a missing or structurally broken Data/rooms.json yields
+	 * the EMPTY catalog (also an error line). Free-select rule (user decision
+	 * 2026-10-29): every entry is selectable, nothing here gates or unlocks.
+	 */
+	const TArray<URoomDefinition*>& GetSelectableRoomDefinitions();
+
+	/**
+	 * Automation-only source seam: parks the rooms.json path the NEXT catalog
+	 * build consumes exactly once (then the seam is empty), so a test can
+	 * drive the skip/refusal faces without touching the real Data file.
+	 * Production never calls this.
+	 */
+	static void SetLevelCatalogSourcePathForTests(const FString& OverridePath);
+
 	// -- Startup restore (the M3-015 chain) --------------------------------------
 
 	/** True when Initialize restored the profile through RestoreFromSave. */
@@ -250,6 +269,26 @@ private:
 	 */
 	static UProfileSaveService* ConsumeStartupSaveServiceOverride();
 
+	// -- M6-001: the multi-level catalog internals -------------------------------
+
+	/**
+	 * Reads the rooms.json source (the parked test path or the real
+	 * ProjectDir/Data/rooms.json) and fills LevelCatalog in row order. Every
+	 * problem (unreadable file, broken structure, empty/duplicate room id,
+	 * missing DA_<room_id> asset) is recorded and degrades to skipping that
+	 * row - never to a partial definition or a crash.
+	 */
+	void BuildLevelCatalog();
+
+	/** First catalog entry whose RoomId matches (null when none). */
+	URoomDefinition* FindCatalogEntryByRoomId(FName RoomId) const;
+
+	/**
+	 * The parked rooms.json path of the test seam (consumed once by the next
+	 * BuildLevelCatalog); empty in production.
+	 */
+	static FString LevelCatalogSourcePathOverride;
+
 	/** Lifecycle state; starts Menu. */
 	EGameFlowState State = EGameFlowState::Menu;
 
@@ -275,6 +314,17 @@ private:
 
 	/** M5-018A: the cached system test room definition (the second menu entry). */
 	TObjectPtr<URoomDefinition> CachedSystemTestRoom;
+
+	/**
+	 * M6-001: the selectable level catalog (Data/rooms.json row order; built
+	 * lazily once per subsystem lifetime). Transient by construction: the
+	 * entries are loaded assets and the source file can change between runs.
+	 */
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<URoomDefinition>> LevelCatalog;
+
+	/** True once BuildLevelCatalog ran for this subsystem lifetime. */
+	bool bLevelCatalogBuilt = false;
 
 	/** Map-open seam (unset in production: the real OpenLevel path runs). */
 	FGameFlowMapOpener MapOpener;
