@@ -21,6 +21,7 @@
 #include "Engine/CollisionProfile.h"
 #include "Engine/World.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "UObject/ConstructorHelpers.h"
 
 /**
  * M5-039: implementation of the hittable vehicle hull. See the header for the
@@ -129,6 +130,25 @@ ACombatVehicle::ACombatVehicle()
 
 	HullHealth = CreateDefaultSubobject<UHealthComponent>(TEXT("HullHealth"));
 	HullCombat = CreateDefaultSubobject<UCombatComponent>(TEXT("HullCombat"));
+
+	// The trial stand-in visual (M5-H03 prep): the ENGINE basic-shape cube -
+	// no generated art (the resource rule allows engine content) - scaled to
+	// the hull box (the cube is 100 cm: 1.8/3.2/1.6 -> 180x320x160). Without
+	// a visible body the playtester cannot see the car at all, and the trial
+	// cannot be judged. The real mesh card replaces this component.
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> HullCubeFinder(TEXT("/Engine/BasicShapes/Cube.Cube"));
+	if (HullCubeFinder.Succeeded())
+	{
+		HullVisual = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HullVisual"));
+		HullVisual->SetupAttachment(HullBody);
+		HullVisual->SetStaticMesh(HullCubeFinder.Object);
+		HullVisual->SetWorldScale3D(FVector(1.8f, 3.2f, 1.6f));
+		HullVisual->SetRelativeLocation(FVector::ZeroVector);
+		// Pure visual: no collision participation (the query box does all of
+		// it), no navigation obstructing.
+		HullVisual->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		HullVisual->SetCanEverAffectNavigation(false);
+	}
 }
 
 // M5-047-lesson: ACombatVehicle intentionally does NOT override

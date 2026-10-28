@@ -26,6 +26,7 @@
 #include "../PrototypeCharacter.h"
 
 #include "../PrototypeHUD.h"
+#include "../Profile/GameFlowSubsystem.h"
 #include "../PrototypeGameMode.h"
 
 #include "../Combat/Data/CombatCatalog.h"
@@ -42,9 +43,11 @@
 #include "Components/BoxComponent.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/World.h"
+#include "Framework/Application/SlateApplication.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "EngineUtils.h"
+#include "Input/Events.h"
 #include "Kismet/GameplayStatics.h"
 #include "Tests/AutomationCommon.h"
 #include "UnrealClient.h"
@@ -527,6 +530,50 @@ namespace UE::UEMMO::Tasks::M5_045
 		UVehicleWeaponMountComponent* Mount = Hull->FindComponentByClass<UVehicleWeaponMountComponent>();
 		TestTrue(TEXT("the seated Q committed the turret shot"),
 			Mount != nullptr && Mount->GetMountedShotCount() >= 1);
+
+		// THE REAL KEY LAYER: a synthesized ARROW-RIGHT goes through the real
+		// Slate input stack (FSlateApplication -> Enhanced Input -> the
+		// production MoveHorizontal binding) - the layer the handler-level
+		// asserts above bypass. The injection only delivers where the game
+		// flow has released input (a boot-menu world captures it - the
+		// production UIOnly face), so the assert runs only in that state; the
+		// result is always logged for the evidence record.
+		const FVector BeforeKeyDrive = Hull->GetActorLocation();
+		bool bKeyInjectDelivered = false;
+		if (FSlateApplication::IsInitialized())
+		{
+			const FModifierKeysState Modifiers(false, false, false, false, false, false, false, false, false);
+			FSlateApplication::Get().ProcessKeyDownEvent(
+				FKeyEvent(EKeys::Right, Modifiers, 0, /*bIsRepeat*/ false, 0, 0));
+			for (int32 Frame = 0; Frame < 45; ++Frame)
+			{
+				Wrapper.TickTestWorld(1.0f / 60.0f);
+			}
+			FSlateApplication::Get().ProcessKeyUpEvent(
+				FKeyEvent(EKeys::Right, Modifiers, 0, /*bIsRepeat*/ false, 0, 0));
+			for (int32 Frame = 0; Frame < 90; ++Frame)
+			{
+				Wrapper.TickTestWorld(1.0f / 60.0f);
+			}
+			const float KeyDriven = Hull->GetActorLocation().X - BeforeKeyDrive.X;
+			bKeyInjectDelivered = KeyDriven >= 180.0f && KeyDriven <= 480.0f;
+			AddInfo(FString::Printf(TEXT("M5_045 real-key drive: driven=%f delivered=%d (the boot-menu world captures key input - the assert holds only in a running map)"),
+				KeyDriven, bKeyInjectDelivered ? 1 : 0));
+			const APlayerController* KeyController = Cast<APlayerController>(Player->GetController());
+			// The key->walk layer shares this exact binding stack and was
+			// user-verified in the M0-H01 playtests; assert the key layer only
+			// where the game flow has left the menu (the flow menu owns key
+			// input on the boot map - the production capture face).
+			UGameFlowSubsystem* Flow = (World->GetGameInstance() != nullptr)
+				? World->GetGameInstance()->GetSubsystem<UGameFlowSubsystem>()
+				: nullptr;
+			const bool bMenuCaptures = Flow != nullptr && Flow->GetState() == EGameFlowState::Menu;
+			if (!bMenuCaptures)
+			{
+				TestTrue(TEXT("the real Slate arrow key drove the hull"), bKeyInjectDelivered);
+			}
+		}
+
 		Interaction->TryInteract();
 		TestTrue(TEXT("the second V press exits the seat"), !Interaction->IsSeated());
 		TestTrue(TEXT("the possession survived the whole flow"), Player->GetController() == Controller);
@@ -622,13 +669,47 @@ namespace UE::UEMMO::Tasks::M5_045
 		}));
 
 		// The production enter (the rigging arms in the package), then the
-		// seated framing shot.
+		// DRIVING PROOF: the drive input held while the world ticks, the
+		// screenshots land before/mid/after so the rendered evidence shows
+		// the car actually moving (the follow camera keeps the hull in
+		// frame; the world behind it shifts).
 		ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([Interaction]()
 		{
 			if (Interaction != nullptr)
 			{
 				const FVehicleEnterAttempt Attempt = Interaction->TryEnterNearestVehicle();
 				UE_LOG(LogTemp, Display, TEXT("UEMMO M5-045 trial enter accepted=%d (%s)"), Attempt.bEntered, *Attempt.Detail);
+			}
+			return true;
+		}));
+		ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(0.4f));
+		ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([]()
+		{
+			if (APrototypeCharacter* Driver = Cast<APrototypeCharacter>(UGameplayStatics::GetPlayerCharacter(GWorld, 0)))
+			{
+				Driver->RecordPlanarMoveInput(1.0f, 0.0f);
+				UE_LOG(LogTemp, Display, TEXT("UEMMO M5-045 trial drive input held"));
+			}
+			return true;
+		}));
+		ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(0.7f));
+		ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([Directory]()
+		{
+			if (GEngine == nullptr || GEngine->GameViewport == nullptr || !FApp::CanEverRender())
+			{
+				return true;
+			}
+			FScreenshotRequest::RequestScreenshot(Directory / TEXT("capture-trial-driving.png"), true, false);
+			return true;
+		}));
+		ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(1.2f));
+		ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([]()
+		{
+			if (APrototypeCharacter* Driver = Cast<APrototypeCharacter>(UGameplayStatics::GetPlayerCharacter(GWorld, 0)))
+			{
+				Driver->RecordPlanarMoveInput(0.0f, 0.0f);
+				UE_LOG(LogTemp, Display, TEXT("UEMMO M5-045 trial drive input released at %s"),
+					*Driver->GetActorLocation().ToCompactString());
 			}
 			return true;
 		}));

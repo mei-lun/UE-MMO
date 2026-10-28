@@ -695,6 +695,35 @@ UInputAction* UVehicleInteractionComponent::EnsureVehicleInteractAction()
 	return VehicleInteractAction.Get();
 }
 
+UInputAction* UVehicleInteractionComponent::EnsureVehicleStagingAction()
+{
+	if (VehicleStagingAction != nullptr)
+	{
+		return VehicleStagingAction.Get();
+	}
+	// The F8 staging action (the C-segment no-console trial entry): the same
+	// runtime-action pattern as the V key.
+	VehicleStagingAction = NewObject<UInputAction>(this, TEXT("M5_051_VehicleStaging"));
+	return VehicleStagingAction.Get();
+}
+
+void UVehicleInteractionComponent::HandleVehicleStagingTriggered()
+{
+	// The F8 entry: the local HUD stages one trial vehicle (UEMMODebugVehicle
+	// 1). A HUD-less world (bare test worlds) logs and does nothing - never a
+	// fake car.
+	const APrototypeCharacter* OwnerPawn = Cast<APrototypeCharacter>(GetOwner());
+	const APlayerController* Controller = OwnerPawn != nullptr ? Cast<APlayerController>(OwnerPawn->GetController()) : nullptr;
+	APrototypeHUD* Hud = Controller != nullptr ? Cast<APrototypeHUD>(Controller->GetHUD()) : nullptr;
+	if (Hud == nullptr)
+	{
+		UE_LOG(LogUEMMOVehicleInteraction, Verbose,
+			TEXT("UEMMO M5-051: the F8 staging needs the local HUD (no HUD in this world)."));
+		return;
+	}
+	Hud->UEMMODebugVehicle(1);
+}
+
 bool UVehicleInteractionComponent::RouteDriveInput(float X, float Y)
 {
 	// Not seated: not consumed - the pawn's walk face handles the sample.

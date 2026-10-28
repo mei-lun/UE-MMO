@@ -112,7 +112,7 @@ void APrototypeHUD::DrawHUD()
     // M5-044: the vehicle trial point. The hull stages through the HUD debug
     // entry; near it V enters/exits, arrows drive, Q fires the turret, T
     // reloads it (the walk faces stay suspended while seated).
-    DrawText(TEXT("Console: UEMMODebugVehicle 1 (stage car)  V: enter/exit  while seated Arrows drive, Q fire, T reload"), FLinearColor(0.6f, 0.95f, 0.7f), 32, 101);
+    DrawText(TEXT("F8: stage car (near you)  V: enter/exit  while seated Arrows drive, Q fire, T reload"), FLinearColor(0.6f, 0.95f, 0.7f), 32, 101);
     // M2-017: the stage note reflects the implemented M1 combat + M2 wave
     // room instead of the stale "M2 planned" text.
     DrawText(TEXT("Single-player. M1 combat + M2 wave room + M3 progression implemented; M4 server integration not started."), FLinearColor(0.9f, 0.8f, 0.45f), 32, 77);

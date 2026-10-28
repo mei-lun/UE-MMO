@@ -22,6 +22,7 @@ class ACombatVehicle;
 class UBoxComponent;
 class UCombatComponent;
 class UHealthComponent;
+class UStaticMeshComponent;
 class FCombatEntityRegistry;
 
 /**
@@ -242,6 +243,14 @@ private:
 	 */
 	UPROPERTY(VisibleAnywhere, Category = "Vehicles")
 	TObjectPtr<UBoxComponent> HullBody;
+
+	/**
+	 * M5-H03 prep: the trial stand-in visual body (the ENGINE basic-shape
+	 * cube scaled to the hull box; pure visual, no collision). The real mesh
+	 * card replaces this component.
+	 */
+	UPROPERTY(VisibleAnywhere, Category = "Vehicles")
+	TObjectPtr<UStaticMeshComponent> HullVisual;
 
 	/** The one owner of life (interface contract section 5) - no second pool exists. */
 	UPROPERTY(VisibleAnywhere, Category = "Vehicles")

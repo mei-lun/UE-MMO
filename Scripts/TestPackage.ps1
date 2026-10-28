@@ -772,7 +772,7 @@ if($IncludeVehicleScenario) {
     } | ConvertTo-Json
 
     $VehicleCaptureDir = Join-Path $PackageProject "Artifacts\Tasks\M5-045\scenario-json\render"
-    $VehicleCaptureNames = @('capture-trial-staged.png','capture-trial-seated.png')
+    $VehicleCaptureNames = @('capture-trial-staged.png','capture-trial-driving.png','capture-trial-seated.png')
     foreach ($Name in $VehicleCaptureNames) {
         $OldCapture = Join-Path $VehicleCaptureDir $Name
         if (Test-Path -LiteralPath $OldCapture) { Remove-Item -LiteralPath $OldCapture -Force }

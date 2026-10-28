@@ -933,6 +933,10 @@ void APrototypeCharacter::EnsureCombatInputActions()
     if (UVehicleInteractionComponent* VehicleInteraction = M5_041_EnsureVehicleInteraction(*this))
     {
         Mapping->MapKey(VehicleInteraction->EnsureVehicleInteractAction(), EKeys::V);
+        // M5-051-followup: F8 stages one trial vehicle through the HUD debug
+        // entry (the C-segment no-console trial entry). F8 collides with no
+        // other mapping in the M1-040 DNF layout.
+        Mapping->MapKey(VehicleInteraction->EnsureVehicleStagingAction(), EKeys::F8);
     }
 }
 
@@ -995,6 +999,9 @@ void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
     {
         Input->BindAction(VehicleInteraction->EnsureVehicleInteractAction(), ETriggerEvent::Started,
             VehicleInteraction, &UVehicleInteractionComponent::HandleVehicleInteractTriggered);
+        // M5-051-followup: F8 routes into the staging handler (Started only).
+        Input->BindAction(VehicleInteraction->EnsureVehicleStagingAction(), ETriggerEvent::Started,
+            VehicleInteraction, &UVehicleInteractionComponent::HandleVehicleStagingTriggered);
     }
     if (APlayerController* PC = Cast<APlayerController>(Controller))
     {

@@ -266,6 +266,21 @@ public:
 	 */
 	UInputAction* EnsureVehicleInteractAction();
 
+	/**
+	 * M5-051-followup: the F8 vehicle-staging action (the no-console trial
+	 * entry the C-segment card requires). Created once, owned here; the
+	 * pawn's input setup maps and binds it to the staging handler below.
+	 */
+	UInputAction* EnsureVehicleStagingAction();
+
+	/**
+	 * M5-051-followup: the F8 UFUNCTION entry - stages one trial vehicle
+	 * through the local HUD's debug entry (UEMMODebugVehicle 1). Without a
+	 * HUD it logs and does nothing (never a fake car).
+	 */
+	UFUNCTION()
+	void HandleVehicleStagingTriggered();
+
 	// -- M5-044: production input routing (the seat authority's faces) ------
 
 	/**
@@ -385,6 +400,10 @@ private:
 	/** The V-key action, created once and owned here (no hot-header member). */
 	UPROPERTY(Transient)
 	TObjectPtr<UInputAction> VehicleInteractAction;
+
+	/** The F8 staging action, created once and owned here (no hot-header member). */
+	UPROPERTY(Transient)
+	TObjectPtr<UInputAction> VehicleStagingAction;
 
 	/** The destroy-notification counter (the once-only subscription pin). */
 	int32 VehicleDestroyedNotifications = 0;
