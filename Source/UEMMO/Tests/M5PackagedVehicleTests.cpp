@@ -25,6 +25,9 @@
 
 #include "../PrototypeCharacter.h"
 
+#include "../PrototypeHUD.h"
+#include "../PrototypeGameMode.h"
+
 #include "../Combat/Data/CombatCatalog.h"
 #include "../Combat/Data/CombatDataTableParser.h"
 #include "../Combat/HealthComponent.h"
@@ -40,6 +43,8 @@
 #include "Engine/CollisionProfile.h"
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/PlayerController.h"
+#include "EngineUtils.h"
 #include "Kismet/GameplayStatics.h"
 #include "Tests/AutomationCommon.h"
 #include "UnrealClient.h"
@@ -391,6 +396,140 @@ namespace UE::UEMMO::Tasks::M5_045
 		TestFalse(TEXT("the driver is no longer seated"), Interaction->IsSeated());
 		UVehicleCameraBridge* Bridge = Player->FindComponentByClass<UVehicleCameraBridge>();
 		TestTrue(TEXT("the camera bridge restored on exit"), Bridge != nullptr && !Bridge->IsBridged());
+		return true;
+	}
+
+	// ------------------------------------------------------------------
+	// 2b. The REAL game flow with a possessed controller: the user's path is
+	// spawn the car through the HUD debug exec, walk to it, V to enter, drive
+	// with the move axes, fire, exit. This suite runs THAT flow with a live
+	// PlayerController (possession builds the pawn's real InputComponent and
+	// its bindings), the exec entry through the controller's own console
+	// command routing, and the V/axis production handlers - the layers the
+	// fixture-world suites skip. A boot-menu world would refuse the enter
+	// (the M5-041 UIOnly face) - the flow belongs in a running map, and the
+	// playtest guide was corrected for it.
+	// ------------------------------------------------------------------
+	IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+		FUEMMOTasksM5_045PackagedControllerFlowDrives,
+		"UEMMO.Tasks.M5_045.PackagedControllerFlowDrives",
+		EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+
+	bool FUEMMOTasksM5_045PackagedControllerFlowDrives::RunTest(const FString& Parameters)
+	{
+		FTestWorldWrapper Wrapper;
+		if (!TestTrue(TEXT("the test world is created"), Wrapper.CreateTestWorld(EWorldType::Game)) ||
+			!TestTrue(TEXT("the test world began play"), Wrapper.BeginPlayInTestWorld()))
+		{
+			return false;
+		}
+		UWorld* World = Wrapper.GetTestWorld();
+		if (!TestNotNull(TEXT("the test world exists"), World))
+		{
+			return false;
+		}
+		M5_045_SpawnFloor(*World, M5_045_SceneBase);
+		APrototypeCharacter* Player = M5_045_SpawnPlayer(*World, M5_045_SceneBase + FVector(250.0, 0.0, 160.0));
+		if (!TestNotNull(TEXT("the prototype pawn spawns"), Player))
+		{
+			return false;
+		}
+		// The REAL possession: SetupPlayerInputComponent runs, the pawn's
+		// input bindings (V + the move axes) go live - the fixture worlds
+		// never had this layer.
+		APlayerController* Controller = World->SpawnActor<APlayerController>(
+			APlayerController::StaticClass(), M5_045_SceneBase + FVector(0.0, 0.0, 300.0), FRotator::ZeroRotator);
+		if (!TestNotNull(TEXT("the player controller spawns"), Controller))
+		{
+			return false;
+		}
+		Controller->Possess(Player);
+		if (!TestTrue(TEXT("the pawn is possessed"), Player->GetController() == Controller))
+		{
+			return false;
+		}
+		for (int32 Frame = 0; Frame < 90; ++Frame)
+		{
+			Wrapper.TickTestWorld(1.0f / 60.0f);
+		}
+
+		// THE REAL STAGING ENTRY: the HUD's debug entry - the same function
+		// the user's console command routes into (the M1-035 packaged
+		// precedent proved the string->exec plumbing). The wrapper world's
+		// manual possession skips the game mode's HUD assignment, so the HUD
+		// is staged explicitly with its owner controller set - a HUD-less
+		// exec silently does nothing, and that gap is what this suite exists
+		// to catch.
+		APrototypeHUD* Hud = Cast<APrototypeHUD>(Controller->GetHUD());
+		if (Hud == nullptr)
+		{
+			Hud = World->SpawnActor<APrototypeHUD>(
+				APrototypeHUD::StaticClass(), M5_045_SceneBase + FVector(0.0, 0.0, 500.0), FRotator::ZeroRotator);
+			TestNotNull(TEXT("the prototype HUD resolves for the staging entry"), Hud);
+			if (Hud != nullptr)
+			{
+				Hud->PlayerOwner = Controller;
+			}
+		}
+		if (Hud != nullptr)
+		{
+			Hud->UEMMODebugVehicle(1);
+		}
+		ACombatVehicle* Hull = nullptr;
+		for (TActorIterator<ACombatVehicle> It(World); It; ++It)
+		{
+			Hull = *It;
+			break;
+		}
+		if (!TestNotNull(TEXT("the console staging spawned the trial hull"), Hull))
+		{
+			return false;
+		}
+		TestTrue(TEXT("the staged hull carries the shipped definition"), Hull->HasVehicleDefinition());
+
+		// Walk next to the hull and press V (the binding target handler - the
+		// same entry the V key's Triggered event calls).
+		Player->SetActorLocation(Hull->GetActorLocation() - FVector(150.0, 0.0, 0.0), /*bSweep*/ false, nullptr, ETeleportType::TeleportPhysics);
+		UVehicleInteractionComponent* Interaction = Player->FindComponentByClass<UVehicleInteractionComponent>();
+		if (!TestNotNull(TEXT("the interaction component exists"), Interaction))
+		{
+			return false;
+		}
+		Interaction->TryInteract();
+		if (!TestTrue(TEXT("the V press enters the seat"), Interaction->IsSeated()))
+		{
+			return false;
+		}
+		UVehicleMovementComponent* Drive = Hull->FindComponentByClass<UVehicleMovementComponent>();
+		if (!TestNotNull(TEXT("the rigging armed on the real-flow enter"), Drive))
+		{
+			return false;
+		}
+
+		// DRIVE: the move-axis seam (the same state the Enhanced Input
+		// handlers feed) through the possessed pawn's central tick.
+		const FVector BeforeDrive = Hull->GetActorLocation();
+		Player->RecordPlanarMoveInput(1.0f, 0.0f);
+		for (int32 Frame = 0; Frame < 60; ++Frame)
+		{
+			Wrapper.TickTestWorld(1.0f / 60.0f);
+		}
+		Player->RecordPlanarMoveInput(0.0f, 0.0f);
+		const float Driven = Hull->GetActorLocation().X - BeforeDrive.X;
+		AddInfo(FString::Printf(TEXT("M5_045 real-flow drive: driven=%f planar=%s grounded=%d"),
+			Driven, *Drive->GetPlanarVelocity().ToString(), Drive->IsGrounded() ? 1 : 0));
+		TestTrue(TEXT("the possessed pawn's drive input moves the hull"),
+			Driven >= 430.0f && Driven <= 437.0f);
+
+		// THE FIRE through the seated Q route, then the V exit.
+		Player->OnFireInputPressed();
+		Player->OnFireInputReleased();
+		UVehicleWeaponMountComponent* Mount = Hull->FindComponentByClass<UVehicleWeaponMountComponent>();
+		TestTrue(TEXT("the seated Q committed the turret shot"),
+			Mount != nullptr && Mount->GetMountedShotCount() >= 1);
+		Interaction->TryInteract();
+		TestTrue(TEXT("the second V press exits the seat"), !Interaction->IsSeated());
+		TestTrue(TEXT("the possession survived the whole flow"), Player->GetController() == Controller);
 		return true;
 	}
 
