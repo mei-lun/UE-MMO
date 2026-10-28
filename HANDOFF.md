@@ -16,12 +16,12 @@
 ## M6 阶段（同批注册，`c20024d`）
 
 - 用户决策**自由选关**（非解锁制），注册 M6-001..M6-005 五卡；**M6-001 已领取 IN_PROGRESS**（多关卡目录数据层与生成管线扩展）。
-- **WIP 警告**：工作区有 M6-001 头文件半成品（`GameFlowSubsystem.h` 删 `SelectableRoomCount`+加目录 API、`RoomDefinition.h` 加 DisplayName）——**GameFlowTests.cpp:340 仍引用被删常量，当前工作区树编译不过**。续做第一步=补 .cpp 实现+修该引用，再构建。
+- **M6-001 并发写者进行中**：交接落笔时有另一写者在推进 M6-001（`GameFlowSubsystem.h/.cpp`、`RoomDefinition.h`、`Data/rooms.json` 相继更新，目录 API 已见 +135 行实现）。其余会话**不得触碰这些文件**；树可能短暂编译不过（GameFlowTests.cpp:340 曾引用被移除的 `SelectableRoomCount`），以其写者收口为准。
 
 ## 下一步
 
 - **用户事项：M5-H03 按骑乘版指引试玩签收**（进图→F8→走路带车→Q 车炮→V 下车→清理面）。
-- AI 侧：续做 M6-001（已领取）；H03 通过后 M5-049→054→055→H04。
+- AI 侧：M6-001 由其领取写者继续；H03 通过后 M5-049→054→055→H04。
 
 # 第十二批交接（M5-045/M5-051 收口，H03 就绪）
 
