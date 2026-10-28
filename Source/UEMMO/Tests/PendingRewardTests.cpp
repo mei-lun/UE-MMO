@@ -669,4 +669,64 @@ bool FUEMMOTasksM3_009MultiItemDraftPartiallyClaimsRetainingFailures::RunTest(co
 	return true;
 }
 
+// M6-003: the room-clear record rides the BeginReward one-shot mutation - the
+// new-draft path records exactly once, the replay and the failed-result
+// rejections record nothing.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FUEMMOTasksM6_003BeginRewardRecordsRoomClearOnce,
+	"UEMMO.Tasks.M6_003.BeginRewardRecordsRoomClearOnce",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+
+bool FUEMMOTasksM6_003BeginRewardRecordsRoomClearOnce::RunTest(const FString& Parameters)
+{
+	FM3_009_ProfileSession Session = FM3_009_ProfileSession::Create(*this, TEXT("ClearRecord"));
+	if (Session.Profile == nullptr)
+	{
+		Session.TearDown();
+		return true;
+	}
+	URewardService* Service = M3_009_MakeBoundService(*this, Session, TEXT("ClearRecord"));
+	if (Service == nullptr)
+	{
+		Session.TearDown();
+		return true;
+	}
+
+	// The first cleared run records the room with count 1.
+	const FRoomResult Result = M3_009_MakeResult(/*RunId*/ 31, /*SettlementId*/ 3101, /*Seed*/ 31001, /*bCleared*/ true);
+	const FRewardBeginOutcome Begin = Service->BeginReward(Result, M3_009_MakeTrainingCatalog());
+	TestEqual(TEXT("the settlement began with a pending draft"), Begin.Result, ERewardBeginResult::Applied);
+	FRoomClearSaveEntry Record;
+	TestTrue(TEXT("the cleared run recorded the room"),
+		Session.Profile->GetRoomClearRecord(Result.RoomId, Record));
+	TestEqual(TEXT("the recorded count is one clear"), Record.ClearCount, 1);
+	TestTrue(TEXT("the recorded timestamp is a real unix second"), Record.LastClearUnixSeconds > 0);
+
+	// The BeginReward replay (same settlement) answers AlreadyApplied and
+	// never double-counts the clear.
+	const FRewardBeginOutcome Replay = Service->BeginReward(Result, M3_009_MakeTrainingCatalog());
+	TestEqual(TEXT("the replay answers AlreadyApplied"), Replay.Result, ERewardBeginResult::AlreadyApplied);
+	Session.Profile->GetRoomClearRecord(Result.RoomId, Record);
+	TestEqual(TEXT("the replay did not double-count the clear"), Record.ClearCount, 1);
+	TestEqual(TEXT("the replay created no extra row"), Session.Profile->GetRoomClears().Num(), 1);
+
+	// A failed result is refused before the reward path and records nothing.
+	const FRoomResult FailedResult = M3_009_MakeResult(/*RunId*/ 32, /*SettlementId*/ 3102, /*Seed*/ 31002, /*bCleared*/ false);
+	const FRewardBeginOutcome FailedBegin = Service->BeginReward(FailedResult, M3_009_MakeTrainingCatalog());
+	TestEqual(TEXT("the failed result is rejected"), FailedBegin.Result, ERewardBeginResult::RejectedFailedResult);
+	TestEqual(TEXT("the failed run recorded nothing"), Session.Profile->GetRoomClears().Num(), 1);
+
+	// A different cleared room gets its own row.
+	FRoomResult OtherRoomResult = M3_009_MakeResult(/*RunId*/ 33, /*SettlementId*/ 3103, /*Seed*/ 31003, /*bCleared*/ true);
+	OtherRoomResult.RoomId = FName(TEXT("room_combat_01"));
+	const FRewardBeginOutcome OtherBegin = Service->BeginReward(OtherRoomResult, M3_009_MakeTrainingCatalog());
+	TestEqual(TEXT("the second settlement began"), OtherBegin.Result, ERewardBeginResult::Applied);
+	TestEqual(TEXT("the second room holds its own row"), Session.Profile->GetRoomClears().Num(), 2);
+	TestTrue(TEXT("the second room's row is queryable"),
+		Session.Profile->GetRoomClearRecord(FName(TEXT("room_combat_01")), Record) && Record.ClearCount == 1);
+
+	Session.TearDown();
+	return true;
+}
+
 #endif

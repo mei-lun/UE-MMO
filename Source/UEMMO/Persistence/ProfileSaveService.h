@@ -170,6 +170,11 @@ struct FProfileSaveRequest
 
 	/** The combat-config revision the session mounted (traceability stamp). */
 	FString ConfigRevision;
+
+	// -- M6-003: the per-room clear records ride the same consistent snapshot --
+
+	/** Per-room clear records at capture time (schema v3 field; empty = no clears yet). */
+	TArray<FRoomClearSaveEntry> RoomClears;
 };
 
 /**
@@ -358,6 +363,10 @@ struct FStartupLoadOutcome
 	TArray<FAmmoReserveSaveEntry> ReserveAmmoPools;
 	bool bWeaponStateInitialized = false;
 	FString WeaponConfigRevision;
+
+	// M6-003: the restored slot's per-room clear records (empty on v1/v2 slots
+	// and on every failure - the migration seeds them explicitly empty).
+	TArray<FRoomClearSaveEntry> RoomClears;
 };
 
 /**
@@ -586,6 +595,9 @@ private:
 		TArray<FAmmoReserveSaveEntry> ReserveAmmoPools;
 		bool bWeaponStateInitialized = false;
 		FString WeaponConfigRevision;
+
+		// M6-003: the slot's per-room clear records (empty on v1/v2 slots).
+		TArray<FRoomClearSaveEntry> RoomClears;
 	};
 
 	/** Fills OutRead for SlotNames[SlotIndex] per the classification order above. */

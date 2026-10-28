@@ -221,6 +221,14 @@ uint32 UProfileSaveService::M3_014_ComputePayloadDigest(const UProfileSaveGame& 
 	{
 		Canonical += FString::Printf(TEXT("rev=%s|"), *Save.ConfigRevision);
 	}
+	// M6-003: the per-room clear records join the canonical form (the v3
+	// digest-coverage rule - a v1/v2 payload carries no rows and hashes to its
+	// own unchanged canonical string, so the migration routing still runs).
+	for (const FRoomClearSaveEntry& Clear : Save.RoomClears)
+	{
+		Canonical += FString::Printf(TEXT("room=%s:%d:%lld|"),
+			*Clear.RoomId.ToString(), Clear.ClearCount, Clear.LastClearUnixSeconds);
+	}
 	return FCrc::StrCrc32(*Canonical);
 }
 
@@ -232,7 +240,7 @@ UProfileSlotSaveGame* UProfileSaveService::M3_014_BuildSlotSave(const FProfileSa
 	UProfileSaveGame* Payload = FProfileSerializer::ToSaveGame(Request.Snapshot, Request.Inventory,
 		Request.PendingRewards, Request.AppliedSettlementIds, Request.EquippedMap,
 		Request.WeaponMagazines, Request.ReserveAmmoPools, Request.bWeaponStateInitialized,
-		Request.ConfigRevision);
+		Request.ConfigRevision, Request.RoomClears);
 	if (!Payload)
 	{
 		return nullptr;
@@ -827,6 +835,8 @@ FStartupLoadOutcome UProfileSaveService::M3_023_StartupLoadBody()
 		Outcome.ReserveAmmoPools = Source.ReserveAmmoPools;
 		Outcome.bWeaponStateInitialized = Source.bWeaponStateInitialized;
 		Outcome.WeaponConfigRevision = Source.WeaponConfigRevision;
+		// M6-003: the per-room clear records travel with the restored data.
+		Outcome.RoomClears = Source.RoomClears;
 	};
 
 	// 1) The index names a real active slot: try it, then the other one.
@@ -974,11 +984,13 @@ void UProfileSaveService::M3_015_ClassifySlot(int32 SlotIndex, FM3_015_SlotRead&
 	// read (empty/false on a v1 slot), and the config compatibility gate is
 	// deliberately NOT armed here - the startup restore hands the rows to the
 	// profile; the rebind decides (the live-config gate needs the mounted
-	// catalog, a service-level object).
+	// catalog, a service-level object). M6-003: the room-clear out param pulls
+	// the v3 rows the same way (empty on a v1/v2 slot).
 	FProfileLoadError Error;
 	FProfileWeaponStateOut WeaponState;
+	TArray<FRoomClearSaveEntry> RoomClears;
 	if (!FProfileSerializer::FromSaveGame(Slot, OutRead.Snapshot, OutRead.Inventory, OutRead.PendingRewards,
-		OutRead.AppliedSettlementIds, OutRead.EquippedMap, Error, nullptr, nullptr, &WeaponState))
+		OutRead.AppliedSettlementIds, OutRead.EquippedMap, Error, nullptr, nullptr, &WeaponState, &RoomClears))
 	{
 		OutRead.Problem = FString::Printf(TEXT("the save of '%s' failed the serializer validation: %s"), *SlotNames[SlotIndex], *Error.Message);
 		return;
@@ -987,6 +999,7 @@ void UProfileSaveService::M3_015_ClassifySlot(int32 SlotIndex, FM3_015_SlotRead&
 	OutRead.ReserveAmmoPools = WeaponState.ReserveAmmoPools;
 	OutRead.bWeaponStateInitialized = WeaponState.bWeaponStateInitialized;
 	OutRead.WeaponConfigRevision = WeaponState.ConfigRevision;
+	OutRead.RoomClears = MoveTemp(RoomClears);
 	OutRead.bLoaded = true;
 	OutRead.Generation = Slot->SlotGeneration;
 }

@@ -818,4 +818,223 @@ bool FUEMMOTasksM3_013SaveStructureContainsNoActorOrWorldReferences::RunTest(con
 	return true;
 }
 
+namespace UE::UEMMO::Tasks::M6_003
+{
+	/** One deterministic clear-record row. */
+	static FRoomClearSaveEntry M6_003_MakeClearRow(const TCHAR* RoomId, int32 Count, int64 UnixSeconds)
+	{
+		FRoomClearSaveEntry Entry;
+		Entry.RoomId = FName(RoomId);
+		Entry.ClearCount = Count;
+		Entry.LastClearUnixSeconds = UnixSeconds;
+		return Entry;
+	}
+}
+
+// M6-003: the v3 per-room clear records round trip verbatim, a v2 save
+// migrates into an explicitly empty record set, and the rejection faces
+// refuse broken rows (duplicate room, non-positive count, negative
+// timestamp, nameless room).
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FUEMMOTasksM6_003RoomClearRecordsRoundTripMigrateAndReject,
+	"UEMMO.Tasks.M6_003.RoomClearRecordsRoundTripMigrateAndReject",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+
+bool FUEMMOTasksM6_003RoomClearRecordsRoundTripMigrateAndReject::RunTest(const FString& Parameters)
+{
+	FAutomationTestBase& Test = *this;
+	using namespace UE::UEMMO::Tasks::M3_013;
+	using namespace UE::UEMMO::Tasks::M6_003;
+	const FM3_013_Fixture Fixture = FM3_013_Fixture::Make(*this, true);
+
+	// -- The round trip: two rows travel verbatim (order included) --------------
+	TArray<FRoomClearSaveEntry> Clears;
+	Clears.Add(M6_003_MakeClearRow(TEXT("room_training_01"), 3, 1700000000));
+	Clears.Add(M6_003_MakeClearRow(TEXT("room_combat_01"), 1, 1700000500));
+	UProfileSaveGame* Save = FProfileSerializer::ToSaveGame(Fixture.Snapshot, Fixture.Inventory,
+		Fixture.PendingRewards, Fixture.AppliedSettlementIds, Fixture.EquippedMap,
+		{}, {}, false, FString(), Clears);
+	if (!TestNotNull(TEXT("ToSaveGame produced a save object"), Save))
+	{
+		return true;
+	}
+	TestEqual(TEXT("the save stamps the current (v3) schema version"),
+		Save->SchemaVersion, UProfileSaveGame::CurrentSchemaVersion);
+	TestEqual(TEXT("the save carries both clear rows"), Save->RoomClears.Num(), 2);
+	if (Save->RoomClears.Num() == 2)
+	{
+		TestTrue(TEXT("row 0 carries its room id"), Save->RoomClears[0].RoomId == FName(TEXT("room_training_01")));
+		TestEqual(TEXT("row 0 carries its count"), Save->RoomClears[0].ClearCount, 3);
+		TestEqual(TEXT("row 0 carries its timestamp"), Save->RoomClears[0].LastClearUnixSeconds, static_cast<int64>(1700000000));
+		TestTrue(TEXT("row 1 carries its room id"), Save->RoomClears[1].RoomId == FName(TEXT("room_combat_01")));
+	}
+
+	FM3_013_LoadOuts Outs;
+	TArray<FRoomClearSaveEntry> RestoredClears;
+	if (!FProfileSerializer::FromSaveGame(Save, Outs.Snapshot, Outs.Inventory, Outs.Pending,
+		Outs.Applied, Outs.Equipped, Outs.Error, nullptr, nullptr, nullptr, &RestoredClears))
+	{
+		Test.AddError(FString::Printf(TEXT("FromSaveGame rejected the v3 save: %s"), *Outs.Error.Message));
+		return true;
+	}
+	TestEqual(TEXT("the restore hands back both clear rows"), RestoredClears.Num(), 2);
+	if (RestoredClears.Num() == 2)
+	{
+		TestTrue(TEXT("restored row 0 is identical"),
+			RestoredClears[0].RoomId == Clears[0].RoomId
+			&& RestoredClears[0].ClearCount == Clears[0].ClearCount
+			&& RestoredClears[0].LastClearUnixSeconds == Clears[0].LastClearUnixSeconds);
+		TestTrue(TEXT("restored row 1 is identical"),
+			RestoredClears[1].RoomId == Clears[1].RoomId
+			&& RestoredClears[1].ClearCount == Clears[1].ClearCount
+			&& RestoredClears[1].LastClearUnixSeconds == Clears[1].LastClearUnixSeconds);
+	}
+	TestTrue(TEXT("the base state still round-trips alongside the records"),
+		Outs.Snapshot.CharacterId == Fixture.Snapshot.CharacterId && Outs.Inventory.Count() == 3);
+
+	// -- The v2 migration: verbatim body, explicitly empty records --------------
+	UProfileSaveGame* V2Save = FProfileSerializer::ToSaveGame(Fixture.Snapshot, Fixture.Inventory,
+		Fixture.PendingRewards, Fixture.AppliedSettlementIds, Fixture.EquippedMap);
+	if (!TestNotNull(TEXT("ToSaveGame produced the v2 input"), V2Save))
+	{
+		return true;
+	}
+	V2Save->SchemaVersion = UProfileSaveGame::SchemaVersion2;
+	TArray<FRoomClearSaveEntry> V2Clears;
+	if (!FProfileSerializer::FromSaveGame(V2Save, Outs.Snapshot, Outs.Inventory, Outs.Pending,
+		Outs.Applied, Outs.Equipped, Outs.Error, nullptr, nullptr, nullptr, &V2Clears))
+	{
+		Test.AddError(FString::Printf(TEXT("FromSaveGame rejected the v2 save: %s"), *Outs.Error.Message));
+		return true;
+	}
+	TestEqual(TEXT("the v2 input save keeps its own schema version"), V2Save->SchemaVersion, UProfileSaveGame::SchemaVersion2);
+	TestEqual(TEXT("the v2 save's records restore explicitly empty"), V2Clears.Num(), 0);
+	TestTrue(TEXT("the migrated v2 body keeps its identity"), Outs.Snapshot.CharacterId == Fixture.Snapshot.CharacterId);
+	TestEqual(TEXT("the migrated v2 body keeps its inventory"), Outs.Inventory.Count(), 3);
+
+	// -- The rejection faces -----------------------------------------------------
+	// A duplicated RoomId is refused (never silently merged).
+	TArray<FRoomClearSaveEntry> DuplicateClears;
+	DuplicateClears.Add(M6_003_MakeClearRow(TEXT("room_training_01"), 1, 10));
+	DuplicateClears.Add(M6_003_MakeClearRow(TEXT("room_training_01"), 2, 20));
+	UProfileSaveGame* DuplicateSave = FProfileSerializer::ToSaveGame(Fixture.Snapshot, Fixture.Inventory,
+		Fixture.PendingRewards, Fixture.AppliedSettlementIds, Fixture.EquippedMap,
+		{}, {}, false, FString(), DuplicateClears);
+	M3_013_ExpectRejectedLoad(*this, DuplicateSave, EProfileLoadError::DuplicateRoomClearRecord, TEXT("RoomId"), TEXT("duplicate room clear"));
+
+	// A non-positive count is refused (a room with no clear carries no row).
+	TArray<FRoomClearSaveEntry> ZeroCountClears;
+	ZeroCountClears.Add(M6_003_MakeClearRow(TEXT("room_training_01"), 0, 10));
+	UProfileSaveGame* ZeroCountSave = FProfileSerializer::ToSaveGame(Fixture.Snapshot, Fixture.Inventory,
+		Fixture.PendingRewards, Fixture.AppliedSettlementIds, Fixture.EquippedMap,
+		{}, {}, false, FString(), ZeroCountClears);
+	M3_013_ExpectRejectedLoad(*this, ZeroCountSave, EProfileLoadError::InvalidRoomClearRecord, TEXT("ClearCount"), TEXT("zero count clear"));
+
+	// A negative timestamp is refused.
+	TArray<FRoomClearSaveEntry> NegativeTimeClears;
+	NegativeTimeClears.Add(M6_003_MakeClearRow(TEXT("room_training_01"), 1, -5));
+	UProfileSaveGame* NegativeSave = FProfileSerializer::ToSaveGame(Fixture.Snapshot, Fixture.Inventory,
+		Fixture.PendingRewards, Fixture.AppliedSettlementIds, Fixture.EquippedMap,
+		{}, {}, false, FString(), NegativeTimeClears);
+	M3_013_ExpectRejectedLoad(*this, NegativeSave, EProfileLoadError::InvalidRoomClearRecord, TEXT("LastClearUnixSeconds"), TEXT("negative timestamp clear"));
+
+	// A nameless room is refused.
+	TArray<FRoomClearSaveEntry> NoneRoomClears;
+	NoneRoomClears.Add(M6_003_MakeClearRow(TEXT(""), 1, 10));
+	UProfileSaveGame* NoneRoomSave = FProfileSerializer::ToSaveGame(Fixture.Snapshot, Fixture.Inventory,
+		Fixture.PendingRewards, Fixture.AppliedSettlementIds, Fixture.EquippedMap,
+		{}, {}, false, FString(), NoneRoomClears);
+	M3_013_ExpectRejectedLoad(*this, NoneRoomSave, EProfileLoadError::InvalidRoomClearRecord, TEXT("RoomId"), TEXT("nameless room clear"));
+
+	return true;
+}
+
+// M6-003: the profile-level record API - create/increment/monotonic timestamp,
+// the restore form, and the NewProfile reset.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FUEMMOTasksM6_003ProfileRoomClearRecordsLifecycle,
+	"UEMMO.Tasks.M6_003.ProfileRoomClearRecordsLifecycle",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+
+bool FUEMMOTasksM6_003ProfileRoomClearRecordsLifecycle::RunTest(const FString& Parameters)
+{
+	FAutomationTestBase& Test = *this;
+	using namespace UE::UEMMO::Tasks::M6_003;
+	// The M3-006 world-free fixture precedent: UGameInstanceSubsystem is
+	// Within=GameInstance, so the subsystem is parented to a bare
+	// UGameInstance object (never Init()ed - no subsystem collection, no
+	// World); the record API touches no World and no other subsystem.
+	UGameInstance* OwnerInstance = NewObject<UGameInstance>(GEngine);
+	UProfileSubsystem* Profile = OwnerInstance ? NewObject<UProfileSubsystem>(OwnerInstance) : nullptr;
+	if (!TestNotNull(TEXT("the profile subsystem object is constructible without a world"), Profile))
+	{
+		return true;
+	}
+	OwnerInstance->AddToRoot();
+	Profile->AddToRoot();
+	Profile->NewProfile();
+
+	// No records on a fresh profile.
+	FRoomClearSaveEntry Entry;
+	TestFalse(TEXT("a fresh profile has no clear record"), Profile->GetRoomClearRecord(FName(TEXT("room_training_01")), Entry));
+	TestEqual(TEXT("a fresh profile carries no rows"), Profile->GetRoomClears().Num(), 0);
+
+	// The first clear creates the row with count 1.
+	Profile->RecordRoomCleared(FName(TEXT("room_training_01")), 1000);
+	TestTrue(TEXT("the first clear creates the row"),
+		Profile->GetRoomClearRecord(FName(TEXT("room_training_01")), Entry));
+	TestEqual(TEXT("the created row counts one clear"), Entry.ClearCount, 1);
+	TestEqual(TEXT("the created row stamps its timestamp"), Entry.LastClearUnixSeconds, static_cast<int64>(1000));
+
+	// A later clear increments and the timestamp never travels backwards.
+	Profile->RecordRoomCleared(FName(TEXT("room_training_01")), 900);
+	TestTrue(TEXT("the row survives the second clear"),
+		Profile->GetRoomClearRecord(FName(TEXT("room_training_01")), Entry));
+	TestEqual(TEXT("the second clear increments the count"), Entry.ClearCount, 2);
+	TestEqual(TEXT("an earlier timestamp never travels backwards"), Entry.LastClearUnixSeconds, static_cast<int64>(1000));
+	Profile->RecordRoomCleared(FName(TEXT("room_training_01")), 2000);
+	Profile->GetRoomClearRecord(FName(TEXT("room_training_01")), Entry);
+	TestEqual(TEXT("a later timestamp refreshes the row"), Entry.LastClearUnixSeconds, static_cast<int64>(2000));
+
+	// A second room gets its own row; insertion order = first-clear order.
+	Profile->RecordRoomCleared(FName(TEXT("room_combat_01")), 3000);
+	TestEqual(TEXT("two rooms hold two rows"), Profile->GetRoomClears().Num(), 2);
+	TestTrue(TEXT("the rows keep first-clear order"),
+		Profile->GetRoomClears()[0].RoomId == FName(TEXT("room_training_01"))
+		&& Profile->GetRoomClears()[1].RoomId == FName(TEXT("room_combat_01")));
+
+	// A nameless room never becomes a row.
+	Profile->RecordRoomCleared(NAME_None, 4000);
+	TestEqual(TEXT("a nameless room records nothing"), Profile->GetRoomClears().Num(), 2);
+
+	// The restore form hands the rows in verbatim; the base restore guarantees
+	// still apply (a bad snapshot restores nothing).
+	TArray<FRoomClearSaveEntry> RestoreRows;
+	RestoreRows.Add(M6_003_MakeClearRow(TEXT("room_system_test_01"), 5, 5000));
+	{
+		FProfileSnapshot Snapshot;
+		Snapshot.CharacterId = FGuid(0x01020304u, 0x05060708u, 0x090A0B0Cu, 0x0D0E0F10u);
+		Snapshot.Level = 2;
+		Snapshot.XP = 10;
+		TestTrue(TEXT("the restore form accepts a valid snapshot"),
+			Profile->RestoreFromSave(Snapshot, Profile->GetInventory(), {}, {}, {},
+				{}, {}, false, FString(), RestoreRows));
+		TestEqual(TEXT("the restored records replace the live rows"), Profile->GetRoomClears().Num(), 1);
+		Profile->GetRoomClearRecord(FName(TEXT("room_system_test_01")), Entry);
+		TestTrue(TEXT("the restored row is verbatim"),
+			Entry.RoomId == FName(TEXT("room_system_test_01")) && Entry.ClearCount == 5
+			&& Entry.LastClearUnixSeconds == static_cast<int64>(5000));
+	}
+
+	// A new game clears the records with the rest of the state.
+	Profile->NewProfile();
+	TestEqual(TEXT("a fresh profile clears the records"), Profile->GetRoomClears().Num(), 0);
+	TestFalse(TEXT("the cleared record is no longer queryable"),
+		Profile->GetRoomClearRecord(FName(TEXT("room_training_01")), Entry));
+
+	Profile->RemoveFromRoot();
+	OwnerInstance->RemoveFromRoot();
+	return true;
+}
+
 #endif

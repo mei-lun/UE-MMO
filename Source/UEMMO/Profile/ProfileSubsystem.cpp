@@ -252,7 +252,8 @@ bool UProfileSubsystem::RestoreFromSave(const FProfileSnapshot& Snapshot, const 
 	const TMap<EItemSlot, FGuid>& InEquippedMap,
 	const TArray<FWeaponMagazineSaveEntry>& InWeaponMagazines,
 	const TArray<FAmmoReserveSaveEntry>& InReserveAmmoPools,
-	bool bInWeaponStateInitialized, const FString& InWeaponConfigRevision)
+	bool bInWeaponStateInitialized, const FString& InWeaponConfigRevision,
+	const TArray<FRoomClearSaveEntry>& InRoomClears)
 {
 	// The v2 form restores the same base state first (the five-argument body),
 	// then pushes the loaded weapon state on top - all-or-nothing propagates
@@ -265,7 +266,56 @@ bool UProfileSubsystem::RestoreFromSave(const FProfileSnapshot& Snapshot, const 
 	ReserveAmmoPools = InReserveAmmoPools;
 	bWeaponStateInitialized = bInWeaponStateInitialized;
 	WeaponConfigRevision = InWeaponConfigRevision;
+	// M6-003: the loaded clear records restore verbatim (a v1/v2 slot hands in
+	// the migration's explicitly empty set).
+	RoomClears = InRoomClears;
 	return true;
+}
+
+void UProfileSubsystem::RecordRoomCleared(FName RoomId, int64 UnixSeconds)
+{
+	// No profile: no bookkeeping (the same face as AddXP). A nameless room is
+	// not a room the catalog can ever display.
+	if (!bHasProfile || RoomId.IsNone())
+	{
+		return;
+	}
+	if (FRoomClearSaveEntry* Existing = RoomClears.FindByPredicate(
+		[RoomId](const FRoomClearSaveEntry& Entry) { return Entry.RoomId == RoomId; }))
+	{
+		// Saturating count: a wrap could only fabricate a smaller history. The
+		// timestamp never travels backwards.
+		if (Existing->ClearCount < MAX_int32)
+		{
+			++Existing->ClearCount;
+		}
+		Existing->LastClearUnixSeconds = FMath::Max<int64>(Existing->LastClearUnixSeconds, UnixSeconds);
+		return;
+	}
+	FRoomClearSaveEntry Entry;
+	Entry.RoomId = RoomId;
+	Entry.ClearCount = 1;
+	Entry.LastClearUnixSeconds = FMath::Max<int64>(0, UnixSeconds);
+	RoomClears.Add(Entry);
+}
+
+bool UProfileSubsystem::GetRoomClearRecord(FName RoomId, FRoomClearSaveEntry& OutEntry) const
+{
+	for (const FRoomClearSaveEntry& Entry : RoomClears)
+	{
+		if (Entry.RoomId == RoomId)
+		{
+			OutEntry = Entry;
+			return true;
+		}
+	}
+	OutEntry = FRoomClearSaveEntry();
+	return false;
+}
+
+const TArray<FRoomClearSaveEntry>& UProfileSubsystem::GetRoomClears() const
+{
+	return RoomClears;
 }
 
 void UProfileSubsystem::PushWeaponState(const TArray<FWeaponMagazineSaveEntry>& InWeaponMagazines,
@@ -358,6 +408,8 @@ void UProfileSubsystem::ApplyFreshProfileState(bool bGenerateNewCharacterId)
 	ReserveAmmoPools.Reset();
 	bWeaponStateInitialized = false;
 	WeaponConfigRevision.Reset();
+	// M6-003: a fresh profile has cleared no rooms.
+	RoomClears.Reset();
 }
 
 void UProfileSubsystem::SetEquippedStatBonus(const FItemStats& Bonus)

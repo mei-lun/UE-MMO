@@ -91,7 +91,17 @@ enum class EProfileLoadError : uint8
 	DuplicateWeaponState,
 
 	/** M5-046: a magazine's InstanceId does not exist among the INVENTORY instances. */
-	DanglingMagazineReference
+	DanglingMagazineReference,
+
+	/**
+	 * M6-003: a RoomClears row fails its own field rules (no RoomId,
+	 * ClearCount outside 1..MAX_int32, a negative LastClearUnixSeconds).
+	 * Rejected, never clamped.
+	 */
+	InvalidRoomClearRecord,
+
+	/** M6-003: the same RoomId appears in more than one RoomClears row. */
+	DuplicateRoomClearRecord
 };
 
 /** Error code plus a human-readable reason that names the offending field. */
@@ -291,6 +301,7 @@ struct FProfileSerializer
 		const TArray<FAmmoReserveSaveEntry>& ReserveAmmoPools = TArray<FAmmoReserveSaveEntry>(),
 		bool bInWeaponStateInitialized = false,
 		const FString& InConfigRevision = FString(),
+		const TArray<FRoomClearSaveEntry>& InRoomClears = TArray<FRoomClearSaveEntry>(),
 		UObject* Outer = nullptr);
 
 	/**
@@ -341,7 +352,8 @@ struct FProfileSerializer
 		FProfileLoadError& OutError,
 		const FProfileItemManifest* ItemManifest = nullptr,
 		const TMap<FName, FAmmoType>* CurrentAmmoTypes = nullptr,
-		FProfileWeaponStateOut* OutWeaponState = nullptr);
+		FProfileWeaponStateOut* OutWeaponState = nullptr,
+		TArray<FRoomClearSaveEntry>* OutRoomClears = nullptr);
 
 	/**
 	 * M5-046: the explicit one-time v1 -> v2 migration (interface contract
@@ -371,6 +383,22 @@ struct FProfileSerializer
 		const FProfileItemManifest& ItemManifest,
 		FProfileLoadError& OutError,
 		const FString& MigrationConfigRevision = FString(),
+		UObject* Outer = nullptr);
+
+	/**
+	 * M6-003: the explicit one-time v2 -> v3 migration (the second migration
+	 * channel). Refuses anything but a valid schema_version 2 input (a corrupt
+	 * v2 save is refused by the same field rules a load applies; any other
+	 * version is a caller bug). v3 adds ONLY the RoomClears record set, so the
+	 * migration is a verbatim copy: every v2 field travels unchanged, the new
+	 * RoomClears seeds explicitly EMPTY (a migrated save "has cleared no rooms
+	 * yet" - the same nothing-stays-implicit rule as the v1 weapon-state
+	 * seeding), SchemaVersion stamps CurrentSchemaVersion, and the original
+	 * save stays byte-identical either way. Returns null on any refusal
+	 * (OutError names the reason).
+	 */
+	static UProfileSaveGame* MigrateV2ToV3(const UProfileSaveGame& LegacySave,
+		FProfileLoadError& OutError,
 		UObject* Outer = nullptr);
 
 	/**

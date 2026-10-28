@@ -125,6 +125,31 @@ struct FAmmoReserveSaveEntry
 };
 
 /**
+ * Serialized form of one per-room clear record (schema_version=3, M6-003).
+ * Pure value row: the room id (a Data/rooms.json room_id), how many CLEARED
+ * runs finished there and the unix-seconds timestamp of the last one. The
+ * record is bookkeeping only - nothing in the game reads it as a gate (the
+ * free-select decision), and the menu display is the M6-002 card.
+ */
+USTRUCT()
+struct FRoomClearSaveEntry
+{
+	GENERATED_BODY()
+
+	/** Business identity of the cleared room (e.g. "room_training_01"). */
+	UPROPERTY()
+	FName RoomId;
+
+	/** How many cleared runs finished in this room (>= 1 in any valid row). */
+	UPROPERTY()
+	int32 ClearCount = 0;
+
+	/** Unix-seconds timestamp of the most recent clear (>= 0). */
+	UPROPERTY()
+	int64 LastClearUnixSeconds = 0;
+};
+
+/**
  * M3-013: the versioned profile save structure (interface contract section 8).
  * A USaveGame whose every field is a plain VALUE type - no Actor pointers, no
  * resource object addresses, no World references, no TObjectPtr of any kind.
@@ -200,16 +225,21 @@ class UEMMO_API UProfileSaveGame : public USaveGame
 public:
 	/**
 	 * The schema version this build writes and understands. M5-046 bumped it
-	 * from 1 to 2 and opened the first migration channel: loaders accept 1
-	 * (restored through the explicit FProfileSerializer::MigrateV1ToV2, which
-	 * preserves every id/stat/claim and initializes the missing weapon state
-	 * exactly once) and 2 (the current layout); anything else is refused
-	 * without destroying the save file.
+	 * from 1 to 2 (the first migration channel), M6-003 from 2 to 3: loaders
+	 * accept 3 (the current layout), 2 (restored through the explicit
+	 * FProfileSerializer::MigrateV2ToV3 - a verbatim copy with an explicitly
+	 * EMPTY RoomClears set) and 1 (restored through FProfileSerializer::
+	 * MigrateV1ToV2, which preserves every id/stat/claim and initializes the
+	 * missing weapon state exactly once); anything else is refused without
+	 * destroying the save file.
 	 */
-	static constexpr int32 CurrentSchemaVersion = 2;
+	static constexpr int32 CurrentSchemaVersion = 3;
 
 	/** The pre-M5-046 legacy schema version; the migration channel's input. */
 	static constexpr int32 LegacySchemaVersion = 1;
+
+	/** The M5-046 pre-M6-003 layout; loads through the v2->v3 migration. */
+	static constexpr int32 SchemaVersion2 = 2;
 
 	/** Serialized schema version; ToSaveGame stamps CurrentSchemaVersion. */
 	UPROPERTY()
@@ -281,4 +311,18 @@ public:
 	 */
 	UPROPERTY()
 	FString ConfigRevision;
+
+	// -- schema_version=3 additions (M6-003) --------------------------------------
+
+	/**
+	 * Per-room clear records of the multi-level profile (M6-003; the user's
+	 * 2026-10-29 free-select decision: records only, no gating anywhere). One
+	 * row per CLEARED room id - the row appears with the first cleared run and
+	 * counts every later clear. A v2 (and a migrated v1) save carries no rows;
+	 * the one-time v2->v3 migration copies the rest of the state verbatim and
+	 * seeds an explicitly EMPTY record set. The A/B payload digest covers the
+	 * rows like every other field (the M5-046 digest-coverage rule).
+	 */
+	UPROPERTY()
+	TArray<FRoomClearSaveEntry> RoomClears;
 };

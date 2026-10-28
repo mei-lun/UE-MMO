@@ -124,7 +124,8 @@ void UGameFlowSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 				StartupOutcome.WeaponMagazines,
 				StartupOutcome.ReserveAmmoPools,
 				StartupOutcome.bWeaponStateInitialized,
-				StartupOutcome.WeaponConfigRevision);
+				StartupOutcome.WeaponConfigRevision,
+				StartupOutcome.RoomClears);
 			if (!bStartupProfileRestored)
 			{
 				UE_LOG(LogTemp, Error, TEXT("UEMMO M3-017: the startup snapshot was refused by RestoreFromSave; the profile stays empty and the outcome stays queryable."));

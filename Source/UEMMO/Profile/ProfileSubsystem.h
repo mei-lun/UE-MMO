@@ -257,6 +257,26 @@ public:
 	 */
 	void MarkSettlementApplied(uint64 SettlementId);
 
+	// -- M6-003: the per-room clear records (GameInstance level) ----------------
+
+	/**
+	 * M6-003: records one CLEARED run of RoomId into the profile's v3 clear
+	 * records: the room's row is created with count 1 on the first clear and
+	 * every later clear increments the count and refreshes the timestamp.
+	 * Bookkeeping only - the free-select decision (user 2026-10-29) keeps this
+	 * data OUT of every gate; the menu display is M6-002. No-op without a
+	 * profile. The caller owns one-call-per-cleared-settlement semantics (the
+	 * BeginReward replay guard already provides it); this function does not
+	 * deduplicate.
+	 */
+	void RecordRoomCleared(FName RoomId, int64 UnixSeconds);
+
+	/** Read-only copy of the room's clear record (false = the room has no clear row). */
+	bool GetRoomClearRecord(FName RoomId, FRoomClearSaveEntry& OutEntry) const;
+
+	/** Read-only access to all clear records (insertion order; the save request reads it). */
+	const TArray<FRoomClearSaveEntry>& GetRoomClears() const;
+
 	// -- Save-state restore (M3-015) ---------------------------------------------
 
 	/**
@@ -288,7 +308,8 @@ public:
 		const TMap<EItemSlot, FGuid>& InEquippedMap,
 		const TArray<FWeaponMagazineSaveEntry>& InWeaponMagazines,
 		const TArray<FAmmoReserveSaveEntry>& InReserveAmmoPools,
-		bool bInWeaponStateInitialized, const FString& InWeaponConfigRevision);
+		bool bInWeaponStateInitialized, const FString& InWeaponConfigRevision,
+		const TArray<FRoomClearSaveEntry>& InRoomClears = TArray<FRoomClearSaveEntry>());
 
 	// -- Read-only snapshot --------------------------------------------------------
 
@@ -382,6 +403,15 @@ private:
 
 	/** The combat-config revision the pushing session mounted (traceability). */
 	FString WeaponConfigRevision;
+
+	// -- M6-003: the per-room clear records (v3 save fields) ---------------------
+
+	/**
+	 * One row per cleared room (insertion order = first-clear order; restored
+	 * from the save's row order). Cleared by NewProfile/ResetNewGame with the
+	 * rest of the profile state.
+	 */
+	TArray<FRoomClearSaveEntry> RoomClears;
 
 	/**
 	 * Card-listed placeholder ("AliveIds") with no consumer inside this card's

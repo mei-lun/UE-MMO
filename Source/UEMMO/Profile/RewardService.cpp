@@ -24,6 +24,8 @@
 #include "../Items/DropGenerator.h"
 #include "../Items/DropTable.h"
 
+#include "Misc/DateTime.h"
+
 namespace
 {
 	// M3-023: result-enum text forms (one switch per outcome family; every
@@ -164,6 +166,11 @@ namespace
 		Request.ReserveAmmoPools = Profile.GetReserveAmmoPools();
 		Request.bWeaponStateInitialized = Profile.IsWeaponStateInitialized();
 		Request.ConfigRevision = Profile.GetWeaponConfigRevision();
+		// M6-003: the per-room clear records ride every claim-flow save the
+		// same way (the in-memory profile is the restore of the last committed
+		// save plus the BeginReward recordings made since - exactly the state
+		// this persistence point must carry forward).
+		Request.RoomClears = Profile.GetRoomClears();
 		return Request;
 	}
 }
@@ -298,6 +305,14 @@ FRewardBeginOutcome URewardService::M3_023_BeginRewardBody(const FRoomResult& Re
 	Draft.XP = RewardXPPerClear;
 	Draft.Items.Add(Drop.Instance);
 	Profile->GetPendingRewards().Add(Draft);
+
+	// M6-003: the room-clear record rides the same one-shot mutation. This
+	// code only runs on the NEW-draft path (steps 3/4 refused every replay),
+	// so a repeated BeginReward for the same settlement can never double-
+	// count the clear - the replay guard IS the once semantics. The result's
+	// RoomId is the session's run identity (the catalog's room_id); the
+	// timestamp is wall-clock unix seconds (bookkeeping, never a gate).
+	Profile->RecordRoomCleared(Result.RoomId, FDateTime::UtcNow().ToUnixTimestamp());
 
 	Outcome.Result = ERewardBeginResult::Applied;
 	Outcome.Error.Reset();

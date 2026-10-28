@@ -556,8 +556,15 @@ bool FUEMMOTasksM5_046V1CompleteFixtureMigratesLosslessly::RunTest(const FString
 		return true;
 	}
 
-	// Schema moved forward; everything else survived.
-	Test.TestEqual(TEXT("the migrated save carries schema_version 2"), Migrated->SchemaVersion, 2);
+	// Schema moved forward; everything else survived. The migration stamps
+	// the CURRENT layout symbolically: since M6-003 the v1->v2 output is the
+	// v3 file shape (the v2 fields verbatim plus the explicitly empty
+	// RoomClears set), so the literal-2 pin went symbolic - a later bump must
+	// not rot this assertion again.
+	Test.TestEqual(TEXT("the migrated save carries the current schema version"),
+		Migrated->SchemaVersion, UProfileSaveGame::CurrentSchemaVersion);
+	Test.TestEqual(TEXT("the migrated save seeds no clear records (the explicit v3 empty set)"),
+		Migrated->RoomClears.Num(), 0);
 	Test.TestTrue(TEXT("CharacterId preserved"), Migrated->CharacterId == V1Save->CharacterId);
 	Test.TestEqual(TEXT("Level preserved"), Migrated->Level, 3);
 	Test.TestEqual(TEXT("XP preserved"), Migrated->XP, 45);

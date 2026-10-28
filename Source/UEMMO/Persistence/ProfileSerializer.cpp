@@ -30,6 +30,7 @@ UProfileSaveGame* FProfileSerializer::ToSaveGame(const FProfileSnapshot& Snapsho
 	const TArray<FAmmoReserveSaveEntry>& ReserveAmmoPools,
 	bool bInWeaponStateInitialized,
 	const FString& InConfigRevision,
+	const TArray<FRoomClearSaveEntry>& InRoomClears,
 	UObject* Outer)
 {
 	UProfileSaveGame* Save = NewObject<UProfileSaveGame>(Outer ? Outer : GetTransientPackage());
@@ -80,6 +81,10 @@ UProfileSaveGame* FProfileSerializer::ToSaveGame(const FProfileSnapshot& Snapsho
 	Save->ReserveAmmoPools = ReserveAmmoPools;
 	Save->bWeaponStateInitialized = bInWeaponStateInitialized;
 	Save->ConfigRevision = InConfigRevision;
+
+	// M6-003: the per-room clear records travel verbatim (plain value rows;
+	// the caller owns their consistency, the load path re-validates them).
+	Save->RoomClears = InRoomClears;
 
 	return Save;
 }
@@ -330,10 +335,11 @@ namespace
 
 	/**
 	 * The shared field-level validation body (the schema-version gate already
-	 * ran). Checks the M3-013 rules plus the M5-046 v2 weapon-state rows; a
-	 * v1 save passes the new checks trivially (its containers are empty and
-	 * the marker false). With a manifest supplied, every DefinitionId must
-	 * resolve through it. Returns false with OutError naming the field.
+	 * ran). Checks the M3-013 rules plus the M5-046 v2 weapon-state rows and
+	 * the M6-003 v3 room-clear rows; a v1/v2 save passes the newer checks
+	 * trivially (its newer containers are empty). With a manifest supplied,
+	 * every DefinitionId must resolve through it. Returns false with OutError
+	 * naming the field.
 	 */
 	bool M5_046_ValidateBody(const UProfileSaveGame& Save, const FProfileItemManifest* ItemManifest,
 		FProfileLoadError& OutError)
@@ -573,6 +579,48 @@ namespace
 			SeenPoolIds.Add(Pool.AmmoId);
 		}
 
+		// M6-003: the per-room clear records - non-empty room ids, a positive
+		// clear count, a non-negative timestamp and set semantics (one row per
+		// room; duplicates would be silently deduplicated on restore).
+		TSet<FName> SeenRoomIds;
+		for (int32 Index = 0; Index < Save.RoomClears.Num(); ++Index)
+		{
+			const FRoomClearSaveEntry& Entry = Save.RoomClears[Index];
+			if (Entry.RoomId.IsNone() || Entry.RoomId.IsEqual(NAME_None, ENameCase::IgnoreCase))
+			{
+				OutError.Code = EProfileLoadError::InvalidRoomClearRecord;
+				OutError.Message = FString::Printf(
+					TEXT("RoomClears[%d].RoomId must be a non-empty room id"),
+					Index);
+				return false;
+			}
+			if (Entry.ClearCount < 1)
+			{
+				OutError.Code = EProfileLoadError::InvalidRoomClearRecord;
+				OutError.Message = FString::Printf(
+					TEXT("RoomClears[%d] ('%s').ClearCount must be >= 1 (got %d); a room with no clear carries no row"),
+					Index, *Entry.RoomId.ToString(), Entry.ClearCount);
+				return false;
+			}
+			if (Entry.LastClearUnixSeconds < 0)
+			{
+				OutError.Code = EProfileLoadError::InvalidRoomClearRecord;
+				OutError.Message = FString::Printf(
+					TEXT("RoomClears[%d] ('%s').LastClearUnixSeconds must be >= 0 (got %lld)"),
+					Index, *Entry.RoomId.ToString(), Entry.LastClearUnixSeconds);
+				return false;
+			}
+			if (SeenRoomIds.Contains(Entry.RoomId))
+			{
+				OutError.Code = EProfileLoadError::DuplicateRoomClearRecord;
+				OutError.Message = FString::Printf(
+					TEXT("RoomClears[%d]: RoomId '%s' carries more than one record row; duplicates are rejected, never silently merged"),
+					Index, *Entry.RoomId.ToString());
+				return false;
+			}
+			SeenRoomIds.Add(Entry.RoomId);
+		}
+
 		return true;
 	}
 }
@@ -592,7 +640,8 @@ bool FProfileSerializer::Validate(const UProfileSaveGame* Save, FProfileLoadErro
 	// fail and the original file must stay exactly as it is (no auto-wipe).
 	// M5-046: schema version 1 is NOT refused here - it is the legacy layout
 	// and loads through the explicit migration channel (FromSaveGame /
-	// MigrateV1ToV2).
+	// MigrateV1ToV2). M6-003: schema version 2 is likewise loadable through
+	// the second migration channel (MigrateV2ToV3).
 	if (Save->SchemaVersion > UProfileSaveGame::CurrentSchemaVersion)
 	{
 		OutError.Code = EProfileLoadError::UnsupportedSchema;
@@ -602,12 +651,14 @@ bool FProfileSerializer::Validate(const UProfileSaveGame* Save, FProfileLoadErro
 		return false;
 	}
 	if (Save->SchemaVersion != UProfileSaveGame::CurrentSchemaVersion
+		&& Save->SchemaVersion != UProfileSaveGame::SchemaVersion2
 		&& Save->SchemaVersion != UProfileSaveGame::LegacySchemaVersion)
 	{
 		OutError.Code = EProfileLoadError::UnsupportedSchema;
 		OutError.Message = FString::Printf(
-			TEXT("schema_version %d is not a schema this build knows (expected %d, or the legacy %d for the migration channel); refusing to load and refusing to modify or wipe the existing save file"),
-			Save->SchemaVersion, UProfileSaveGame::CurrentSchemaVersion, UProfileSaveGame::LegacySchemaVersion);
+			TEXT("schema_version %d is not a schema this build knows (expected %d, or the migratable %d/%d); refusing to load and refusing to modify or wipe the existing save file"),
+			Save->SchemaVersion, UProfileSaveGame::CurrentSchemaVersion,
+			UProfileSaveGame::SchemaVersion2, UProfileSaveGame::LegacySchemaVersion);
 		return false;
 	}
 
@@ -630,7 +681,8 @@ bool FProfileSerializer::FromSaveGame(const UProfileSaveGame* InSave,
 	FProfileLoadError& OutError,
 	const FProfileItemManifest* ItemManifest,
 	const TMap<FName, FAmmoType>* CurrentAmmoTypes,
-	FProfileWeaponStateOut* OutWeaponState)
+	FProfileWeaponStateOut* OutWeaponState,
+	TArray<FRoomClearSaveEntry>* OutRoomClears)
 {
 	const UProfileSaveGame* Save = InSave;
 
@@ -649,6 +701,20 @@ bool FProfileSerializer::FromSaveGame(const UProfileSaveGame* InSave,
 			ActiveManifest = &FProfileItemManifest::Get();
 		}
 		MigratedScratch = MigrateV1ToV2(*Save, *ActiveManifest, OutError);
+		if (!MigratedScratch)
+		{
+			return false;
+		}
+		Save = MigratedScratch;
+	}
+
+	// M6-003: a schema_version 2 save enters through the second migration
+	// channel - a verbatim v3 copy whose RoomClears seed explicitly empty.
+	// The manifest gate (when the caller supplied one) still applies to the
+	// migrated result below, exactly like the v1 path.
+	if (Save && Save->SchemaVersion == UProfileSaveGame::SchemaVersion2)
+	{
+		MigratedScratch = MigrateV2ToV3(*Save, OutError);
 		if (!MigratedScratch)
 		{
 			return false;
@@ -772,6 +838,14 @@ bool FProfileSerializer::FromSaveGame(const UProfileSaveGame* InSave,
 		OutWeaponState->ReserveAmmoPools = Save->ReserveAmmoPools;
 		OutWeaponState->bWeaponStateInitialized = Save->bWeaponStateInitialized;
 		OutWeaponState->ConfigRevision = Save->ConfigRevision;
+	}
+
+	// M6-003: hand the per-room clear records to the caller when asked - the
+	// (possibly migrated) save's rows verbatim (a v1/v2 input migrates to an
+	// explicitly EMPTY set).
+	if (OutRoomClears)
+	{
+		*OutRoomClears = Save->RoomClears;
 	}
 
 	OutError.Code = EProfileLoadError::None;
@@ -906,6 +980,73 @@ UProfileSaveGame* FProfileSerializer::MigrateV1ToV2(const UProfileSaveGame& Lega
 	{
 		OutError.Code = SelfCheck.Code;
 		OutError.Message = FString::Printf(TEXT("the migrated v2 save failed its own validation: %s"), *SelfCheck.Message);
+		return nullptr;
+	}
+
+	OutError.Code = EProfileLoadError::None;
+	OutError.Message.Reset();
+	return Migrated;
+}
+
+UProfileSaveGame* FProfileSerializer::MigrateV2ToV3(const UProfileSaveGame& LegacySave,
+	FProfileLoadError& OutError,
+	UObject* Outer)
+{
+	// The migration is EXPLICITLY v2 -> v3: anything else is a caller bug or
+	// an unknown schema, and the original save stays untouched either way.
+	if (LegacySave.SchemaVersion == UProfileSaveGame::CurrentSchemaVersion)
+	{
+		OutError.Code = EProfileLoadError::UnsupportedSchema;
+		OutError.Message = FString::Printf(
+			TEXT("the save already carries schema_version %d; there is nothing to migrate (this channel accepts schema_version %d only)"),
+			UProfileSaveGame::CurrentSchemaVersion, UProfileSaveGame::SchemaVersion2);
+		return nullptr;
+	}
+	if (LegacySave.SchemaVersion != UProfileSaveGame::SchemaVersion2)
+	{
+		OutError.Code = EProfileLoadError::UnsupportedSchema;
+		OutError.Message = FString::Printf(
+			TEXT("schema_version %d is not the schema_version %d this migration accepts; refusing to load and refusing to modify or wipe the existing save file"),
+			LegacySave.SchemaVersion, UProfileSaveGame::SchemaVersion2);
+		return nullptr;
+	}
+
+	// The v2 payload must be a VALID v2 payload: the same field rules a load
+	// applies (level range, parseable snapshots, unique ids, weapon-state row
+	// rules). The manifest gate stays with the caller's post-migration load
+	// validation - v2 -> v3 performs no content rewriting. A corrupt legacy
+	// save is refused here - never partially migrated.
+	if (!Validate(&LegacySave, OutError))
+	{
+		return nullptr;
+	}
+
+	// v3 adds ONLY the RoomClears record set, so every v2 field copies
+	// verbatim: no re-forge, no re-roll, no silent deletion. RoomClears seeds
+	// explicitly EMPTY (a migrated save "has cleared no rooms yet" - the same
+	// nothing-stays-implicit rule as the v1 weapon-state seeding).
+	UProfileSaveGame* Migrated = NewObject<UProfileSaveGame>(Outer ? Outer : GetTransientPackage());
+	Migrated->SchemaVersion = UProfileSaveGame::CurrentSchemaVersion;
+	Migrated->CharacterId = LegacySave.CharacterId;
+	Migrated->Level = LegacySave.Level;
+	Migrated->XP = LegacySave.XP;
+	Migrated->MasterVolume = LegacySave.MasterVolume;
+	Migrated->InventoryInstanceSnapshots = LegacySave.InventoryInstanceSnapshots;
+	Migrated->EquippedIds = LegacySave.EquippedIds;
+	Migrated->PendingRewards = LegacySave.PendingRewards;
+	Migrated->AppliedSettlementIds = LegacySave.AppliedSettlementIds;
+	Migrated->WeaponMagazines = LegacySave.WeaponMagazines;
+	Migrated->ReserveAmmoPools = LegacySave.ReserveAmmoPools;
+	Migrated->bWeaponStateInitialized = LegacySave.bWeaponStateInitialized;
+	Migrated->ConfigRevision = LegacySave.ConfigRevision;
+	Migrated->RoomClears.Reset();
+
+	// Defensive self-check: the migration's own output must validate as v3.
+	FProfileLoadError SelfCheck;
+	if (!Validate(Migrated, SelfCheck))
+	{
+		OutError.Code = SelfCheck.Code;
+		OutError.Message = FString::Printf(TEXT("the migrated v3 save failed its own validation: %s"), *SelfCheck.Message);
 		return nullptr;
 	}
 
