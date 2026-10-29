@@ -9,6 +9,13 @@
       "seat_role": "driver",
       "seat_location_cm": { "x": 0, "y": -40, "z": 45 },
       "exit_offset_cm": { "x": -180, "y": 0, "z": 0 }
+    },
+    {
+      "seat_id": "seat_armored_driver",
+      "vehicle_id": "vehicle_armored_test",
+      "seat_role": "driver",
+      "seat_location_cm": { "x": 0, "y": -40, "z": 45 },
+      "exit_offset_cm": { "x": -180, "y": 0, "z": 0 }
     }
   ]
 }

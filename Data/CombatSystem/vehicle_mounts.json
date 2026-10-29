@@ -10,6 +10,14 @@
       "location_cm": { "x": 120, "y": 40, "z": 40 },
       "pitch_min_deg": -20,
       "pitch_max_deg": 60
+    },
+    {
+      "mount_id": "mount_armored_turret",
+      "vehicle_id": "vehicle_armored_test",
+      "turret_weapon_id": "weapon_projectile_sample",
+      "location_cm": { "x": 120, "y": 40, "z": 40 },
+      "pitch_min_deg": -10,
+      "pitch_max_deg": 45
     }
   ]
 }

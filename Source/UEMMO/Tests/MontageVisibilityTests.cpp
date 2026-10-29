@@ -638,9 +638,10 @@ bool FUEMMOTasksM3_024RealCharacterMontagePlaysDuringAttack::RunTest(const FStri
 }
 
 // 3. The default-map gate (red before / green after): the engine's
-//    GameDefaultMap points into the combat room, so the packaged game boots
-//    straight into a map with the activation zone and damagable enemies
-//    (the second feedback round: zero hits because the arena had no enemy).
+//    GameDefaultMap boots the packaged game into a real playable surface.
+//    M3-024 pinned the combat room; M6-005 moved the boot to the dedicated
+//    menu surface (the combat room is reached through the menu's enter
+//    travel), so the pin follows the boot map honestly.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FUEMMOTasksM3_024GameDefaultMapBootsIntoCombatRoom,
 	"UEMMO.Tasks.M3_024.GameDefaultMapBootsIntoCombatRoom",
@@ -659,12 +660,17 @@ bool FUEMMOTasksM3_024GameDefaultMapBootsIntoCombatRoom::RunTest(const FString& 
 		return true;
 	}
 	const FString MapName = World->GetMapName();
-	TestTrue(TEXT("the packaged default map boots into the combat room"),
-		MapName.Contains(TEXT("L_CombatRoom01")));
+	// M6-005: the boot surface is the dedicated menu map (the combat room is
+	// reached through the free-select menu's enter travel, not the boot).
+	TestTrue(TEXT("the packaged default map boots into the menu surface"),
+		MapName.Contains(TEXT("L_MainMenu")));
 
-	// The combat room map package exists in the cooked mount (a config
-	// pointing at a missing map would break every -game boot). In packaged
-	// builds content lives in paks, so existence goes through FPackageName.
+	// The booted map package exists in the cooked mount (a config pointing
+	// at a missing map would break every -game boot). In packaged builds
+	// content lives in paks, so existence goes through FPackageName. The
+	// combat room stays a legal travel destination behind the menu.
+	TestTrue(TEXT("the menu map package exists"),
+		FPackageName::DoesPackageExist(TEXT("/Game/UEMMO/Maps/L_MainMenu")));
 	TestTrue(TEXT("the combat room map package exists"),
 		FPackageName::DoesPackageExist(TEXT("/Game/UEMMO/Maps/L_CombatRoom01")));
 	return true;

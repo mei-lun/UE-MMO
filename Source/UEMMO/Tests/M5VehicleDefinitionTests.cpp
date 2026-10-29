@@ -455,10 +455,11 @@ bool FUEMMOTasksM5_037DirectoryRegistersVehicleTables::RunTest(const FString& Pa
 		return true;
 	}
 
-	// The vehicle tables are registered and hold the sample rows.
-	TestEqual(TEXT("vehicles holds 1 row"), Tables.Vehicles.Num(), 1);
-	TestEqual(TEXT("vehicle_seats holds 1 row"), Tables.VehicleSeats.Num(), 1);
-	TestEqual(TEXT("vehicle_mounts holds 1 row"), Tables.VehicleMounts.Num(), 1);
+	// The vehicle tables are registered and hold the shipped rows (the
+	// M5-049 armored variant joined by table row, M6-004's count).
+	TestEqual(TEXT("vehicles holds 2 rows"), Tables.Vehicles.Num(), 2);
+	TestEqual(TEXT("vehicle_seats holds 2 rows"), Tables.VehicleSeats.Num(), 2);
+	TestEqual(TEXT("vehicle_mounts holds 2 rows"), Tables.VehicleMounts.Num(), 2);
 
 	const FVehicleDefinition* Vehicle = Tables.Vehicles.Find(FName(TEXT("vehicle_wheeled_sample")));
 	if (TestNotNull(TEXT("vehicle_wheeled_sample is loaded"), Vehicle))

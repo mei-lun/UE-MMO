@@ -14,6 +14,18 @@
       "camera_distance_cm": 650,
       "camera_height_cm": 260,
       "camera_pitch_deg": -18
+    },
+    {
+      "vehicle_id": "vehicle_armored_test",
+      "drive_type": "ground",
+      "max_health": 500,
+      "defense": 25,
+      "max_speed_cm_s": 400,
+      "acceleration_cm_s2": 600,
+      "mesh_path": "/Game/UEMMO/Vehicles/SM_Vehicle_Wheeled_Sample.SM_Vehicle_Wheeled_Sample",
+      "camera_distance_cm": 650,
+      "camera_height_cm": 260,
+      "camera_pitch_deg": -18
     }
   ]
 }

@@ -832,7 +832,10 @@ if($IncludeMultiLevelScenario) {
         "-ExecCmds=Automation RunTests UEMMO.Tasks.M6_004",
         '-TestExit=Automation Test Queue Empty',
         "-ReportExportPath=$RoomReportDir",
-        "-abslog=$ArtifactRoot\Logs\package-room-automation.log"
+        "-abslog=$ArtifactRoot\Logs\package-room-automation.log",
+        # The packaged room smoke is a dedicated process: the real travel
+        # chain runs (the M5-049 full-suite discovery gates it elsewhere).
+        '-UEMMOFullTravelChain'
     ) 'package-room-automation' 900
     $RoomIndex = Join-Path $RoomReportDir 'index.json'
     if(-not (Test-Path -LiteralPath $RoomIndex)) { throw 'Packaged room automation did not produce a report.' }

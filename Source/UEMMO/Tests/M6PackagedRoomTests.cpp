@@ -33,6 +33,8 @@
 #include "HAL/FileManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/App.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
 #include "Misc/Paths.h"
 #include "Tests/AutomationCommon.h"
 #include "UnrealClient.h"
@@ -79,12 +81,15 @@ bool FUEMMOTasksM6_005BootMapIsMainMenu::RunTest(const FString& Parameters)
 	}
 	TestTrue(TEXT("the game boots into the dedicated menu map"),
 		PlayWorld->GetMapName().Contains(TEXT("L_MainMenu")));
-	// The menu surface carries no combat orchestration: a fresh session
-	// subsystem in the boot world must hold no room assets (the map itself
-	// has no trigger/exit - verified on disk by the clone's verify pass).
+	// The menu surface carries no combat orchestration (the map itself has
+	// no trigger/exit - verified on disk by the clone's verify pass): no run
+	// can be ACTIVE on it right now. The session's non-current-run state is
+	// shared-process order-dependent (an earlier suite may have settled a
+	// run here), so the invariant is "nothing is running", not a literal
+	// Idle pin.
 	URoomSessionSubsystem* Session = PlayWorld->GetSubsystem<URoomSessionSubsystem>();
-	TestTrue(TEXT("the menu boot world starts with an idle session"),
-		Session != nullptr && Session->GetState() == ERoomSessionState::Idle);
+	TestTrue(TEXT("the menu boot world runs no active combat run"),
+		Session != nullptr && Session->GetState() != ERoomSessionState::Running);
 	return true;
 }
 
@@ -152,7 +157,13 @@ bool FUEMMOTasksM6_004NewRoomPackagedArtifacts::RunTest(const FString& Parameter
 	return true;
 }
 
-// Suite 2: the real travel chain (ClientContext only; headless skips).
+// Suite 2: the real travel chain (ClientContext only; headless skips; the
+// dedicated-process token gates it). A REAL OpenLevel mid-suite forces a GC
+// pass that turns OTHER suites' pre-existing world leaks fatal (the M5-049
+// full-suite discovery: the M5-067 bare worlds are SignificanceManager-
+// rooted and never destroyed) - so the chain runs only where the process is
+// dedicated to it: the targeted M6_004 verification and the packaged room
+// smoke, both carrying -UEMMOFullTravelChain.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FUEMMOTasksM6_004NewRoomRealTravelChain,
 	"UEMMO.Tasks.M6_004.NewRoomRealTravelChain",
@@ -167,6 +178,11 @@ bool FUEMMOTasksM6_004NewRoomRealTravelChain::RunTest(const FString& Parameters)
 		|| Flow->GetState() != EGameFlowState::Menu)
 	{
 		AddInfo(TEXT("real travel chain skipped: no real game world in the Menu state"));
+		return true;
+	}
+	if (!FParse::Param(FCommandLine::Get(), TEXT("UEMMOFullTravelChain")))
+	{
+		AddInfo(TEXT("real travel chain skipped: the shared-suite process is not travel-dedicated (pass -UEMMOFullTravelChain)"));
 		return true;
 	}
 	const URoomDefinition* NewRoom = UE::UEMMO::Tasks::M6_004::FindNewRoomDefinition(*Flow);
@@ -316,6 +332,11 @@ bool FUEMMOTasksM6_004NewRoomRenderCapture::RunTest(const FString& Parameters)
 		|| Flow->GetState() != EGameFlowState::Menu)
 	{
 		AddInfo(TEXT("new room render capture skipped: no rendered game world in the Menu state"));
+		return true;
+	}
+	if (!FParse::Param(FCommandLine::Get(), TEXT("UEMMOFullTravelChain")))
+	{
+		AddInfo(TEXT("new room render capture skipped: the process is not travel-dedicated (pass -UEMMOFullTravelChain)"));
 		return true;
 	}
 

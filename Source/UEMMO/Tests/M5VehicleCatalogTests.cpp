@@ -393,9 +393,9 @@ bool FUEMMOTasksM5_038VehicleCatalogMirrorsSourceRows::RunTest(const FString& Pa
 	{
 		return true;
 	}
-	TestEqual(TEXT("the shipped vehicles table holds the sample row"), Tables.Vehicles.Num(), 1);
-	TestEqual(TEXT("the shipped vehicle_seats table holds the sample row"), Tables.VehicleSeats.Num(), 1);
-	TestEqual(TEXT("the shipped vehicle_mounts table holds the sample row"), Tables.VehicleMounts.Num(), 1);
+	TestEqual(TEXT("the shipped vehicles table holds both rows"), Tables.Vehicles.Num(), 2);
+	TestEqual(TEXT("the shipped vehicle_seats table holds both rows"), Tables.VehicleSeats.Num(), 2);
+	TestEqual(TEXT("the shipped vehicle_mounts table holds both rows"), Tables.VehicleMounts.Num(), 2);
 
 	FCombatCatalog Catalog;
 	FString Errors;
@@ -405,9 +405,9 @@ bool FUEMMOTasksM5_038VehicleCatalogMirrorsSourceRows::RunTest(const FString& Pa
 		AddError(FString::Printf(TEXT("the catalog build refused: %s"), *Errors));
 		return true;
 	}
-	TestEqual(TEXT("NumVehicles mirrors the table"), Catalog.NumVehicles(), 1);
-	TestEqual(TEXT("NumVehicleSeats mirrors the table"), Catalog.NumVehicleSeats(), 1);
-	TestEqual(TEXT("NumVehicleMounts mirrors the table"), Catalog.NumVehicleMounts(), 1);
+	TestEqual(TEXT("NumVehicles mirrors the table"), Catalog.NumVehicles(), 2);
+	TestEqual(TEXT("NumVehicleSeats mirrors the table"), Catalog.NumVehicleSeats(), 2);
+	TestEqual(TEXT("NumVehicleMounts mirrors the table"), Catalog.NumVehicleMounts(), 2);
 	TestTrue(TEXT("the revision of a vehicle-inclusive build is non-empty"), !Catalog.GetConfigRevision().IsEmpty());
 
 	// Every vehicle field survives the parse -> catalog round trip.

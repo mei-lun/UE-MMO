@@ -783,9 +783,9 @@ bool FUEMMOTasksM2_005RoomTraining01LoadsAndPassesValidation::RunTest(const FStr
 		AddError(TEXT("missing required top-level array 'rooms'"));
 		return true;
 	}
-	// M5-069: the file now carries two rows (room_training_01 plus the
-	// production room_combat_01); the training room is addressed by id.
-	TestEqual(TEXT("rooms holds exactly 2 entries (M5-069 added the combat row)"), (*Rooms)->Array.Num(), 2);
+	// M5-069 added the production combat row; M6-004 added the multi-level
+	// room_combat_02 row (the free-select catalog grows by table row).
+	TestEqual(TEXT("rooms holds exactly 3 entries"), (*Rooms)->Array.Num(), 3);
 	TSharedPtr<FRoomJsonValue> Entry;
 	if (!TestTrue(TEXT("the room_training_01 entry is found by its id"),
 		FindRoomEntryById(Root, TEXT("room_training_01"), Entry)) || !Entry.IsValid())

@@ -2,7 +2,11 @@ param(
     [string]$Filter = '',
     [string]$TaskId = '',
     [switch]$SelfTest,
-    [int]$TimeoutSeconds = 600
+    [int]$TimeoutSeconds = 600,
+    # Extra raw UE command-line tokens forwarded verbatim (e.g. the
+    # -UEMMOFullTravelChain dedicated-process token the M6-004 travel chain
+    # gates on). Only dedicated verification paths pass it.
+    [string]$ExtraArgs = ''
 )
 . "$PSScriptRoot\Common.ps1"
 
@@ -119,6 +123,11 @@ $Arguments = @(
     ("-ReportExportPath=" + $OutputDir),
     ("-abslog=" + $LogPath)
 )
+if (-not [string]::IsNullOrWhiteSpace($ExtraArgs)) {
+    # The extra tokens ride as one raw string (they may carry their own
+    # leading dashes); UE parses them from the same command line.
+    $Arguments += $ExtraArgs
+}
 
 $Summary = [ordered]@{
     success = $false
