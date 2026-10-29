@@ -63,7 +63,8 @@ $Verification = Get-Content -LiteralPath $VerifyReport -Raw | ConvertFrom-Json
 if (-not $Verification.success) { throw 'Room definition verification failed; inspect room-definition-assets-verify.json and Artifacts/Logs/prepare-rooms-verify.log.' }
 Copy-Item -LiteralPath $VerifyReport -Destination (Join-Path $EvidenceDir 'room-definition-assets-verify.json')
 
-Write-Output ("Room definition asset ready: " + $Result.asset + " created=" + $Result.created + " wave_counts=" + ($Result.wave_counts -join ','))
+$AssetSummary = ($Result.assets | ForEach-Object { [string]$_.asset + ' created=' + [string]$_.created + ' waves=' + (($_.wave_counts | ForEach-Object { [string]$_ }) -join '+') }) -join '; '
+Write-Output ("Room definition assets ready: " + $AssetSummary)
 Write-Output ("Fresh-process verification checks: " + (($Verification.checks | ForEach-Object { [string]$_.check + '=' + [string]$_.passed }) -join ', '))
 Write-Output ("Evidence: " + $EvidenceDir)
 exit 0

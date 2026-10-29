@@ -106,6 +106,7 @@ param(
     # zero-exemption gate, and the rendered capture companion stages the
     # enter/drive trial in the real game world.
     [switch]$IncludeVehicleScenario,
+    [switch]$IncludeMultiLevelScenario,
     [string]$PackageRoot = '',
     [string]$TaskId = 'M5-063',
     [string]$CombatFilter = 'UEMMO.Tasks',
@@ -809,4 +810,83 @@ if($IncludeVehicleScenario) {
         Copy-Item -LiteralPath $SourceFile -Destination (Join-Path $ArtifactRoot ('package-' + $SourceName)) -Force
     }
     [ordered]@{ success=$true; pass='package-vehicle-capture'; captures=$VehicleCaptureNames } | ConvertTo-Json
+}
+
+# M6-004: -IncludeMultiLevelScenario adds the multi-level room-chain smoke:
+#   1. in-package room automation: UEMMO.Tasks.M6_004.* - the catalog row
+#      identity, the cloned map wiring, and the REAL travel chain (enter ->
+#      walk-in activation -> MarkCleared -> ReturnToMenu) against the
+#      packaged build;
+#   2. the rendered capture pass (capture-menu-3-rooms.png +
+#      capture-new-room.png), PNG-header and freshness validated, copied out.
+# (The -IncludeRoomScenario switch stays the M2-015 single-room smoke.)
+if($IncludeMultiLevelScenario) {
+    $PackageRoomsConfig = Join-Path $PackageProject 'Data\rooms.json'
+    if(-not (Test-Path -LiteralPath $PackageRoomsConfig)) { throw 'The package does not carry Data/rooms.json; rebuild with the M6-001 Package.ps1 carry.' }
+
+    $RoomStamp = [DateTimeOffset]::Now.ToString('yyyy-MM-ddTHH-mm-sszzz').Replace(':', '')
+    $RoomReportDir = Join-Path $PackageProject "Artifacts\Tasks\M6-004\$RoomStamp"
+    New-Item -ItemType Directory -Path $RoomReportDir -Force | Out-Null
+    Invoke-UEProcess $Executable @(
+        '-game', '-unattended', '-nosplash', '-nosound', '-nullrhi',
+        "-ExecCmds=Automation RunTests UEMMO.Tasks.M6_004",
+        '-TestExit=Automation Test Queue Empty',
+        "-ReportExportPath=$RoomReportDir",
+        "-abslog=$ArtifactRoot\Logs\package-room-automation.log"
+    ) 'package-room-automation' 900
+    $RoomIndex = Join-Path $RoomReportDir 'index.json'
+    if(-not (Test-Path -LiteralPath $RoomIndex)) { throw 'Packaged room automation did not produce a report.' }
+    $RoomParsed = ConvertFrom-AutomationReportJson -ReportJson (Get-Content -LiteralPath $RoomIndex -Raw) -Filter 'UEMMO.Tasks.M6_004'
+    if(-not $RoomParsed.Ok) { throw 'Packaged room automation gate failed: ' + $RoomParsed.Error }
+    if($RoomParsed.Failed -ne 0 -or $RoomParsed.Incomplete -ne 0) { throw 'Packaged room automation gate failed: a room-chain suite failed or went incomplete.' }
+    Copy-Item -LiteralPath $RoomIndex -Destination (Join-Path $ArtifactRoot 'package-room-automation-index.json') -Force
+    [ordered]@{
+        success = $true
+        pass = 'package-room-automation'
+        test = 'UEMMO.Tasks.M6_004'
+        matched = $RoomParsed.Matched
+        passed = $RoomParsed.Passed
+        failed = $RoomParsed.Failed
+        incomplete = $RoomParsed.Incomplete
+        allowed_failures = @()
+    } | ConvertTo-Json
+
+    $RoomCaptureDir = Join-Path $PackageProject "Artifacts\Tasks\M6-004\scenario-json\render"
+    $RoomCaptureNames = @('capture-menu-3-rooms.png','capture-new-room.png')
+    foreach ($Name in $RoomCaptureNames) {
+        $OldCapture = Join-Path $RoomCaptureDir $Name
+        if (Test-Path -LiteralPath $OldCapture) { Remove-Item -LiteralPath $OldCapture -Force }
+    }
+    $RoomCaptureReportDir = Join-Path $RoomReportDir 'render'
+    New-Item -ItemType Directory -Path $RoomCaptureReportDir -Force | Out-Null
+    $RoomCaptureStartedUtc = [DateTime]::UtcNow
+    Invoke-UEProcess $Executable @(
+        '-game', '-unattended', '-nosplash', '-nosound', '-RenderOffscreen',
+        '-ResX=1280', '-ResY=720',
+        "-ExecCmds=Automation RunTests UEMMO.Tasks.M6_004.NewRoomRenderCapture",
+        '-TestExit=Automation Test Queue Empty',
+        "-ReportExportPath=$RoomCaptureReportDir",
+        "-abslog=$ArtifactRoot\Logs\package-room-capture.log"
+    ) 'package-room-capture' 900
+    $RoomCaptureIndex = Join-Path $RoomCaptureReportDir 'index.json'
+    if (-not (Test-Path -LiteralPath $RoomCaptureIndex)) { throw 'Room capture did not export its automation report.' }
+    $RoomCaptureParsed = ConvertFrom-AutomationReportJson -ReportJson (Get-Content -LiteralPath $RoomCaptureIndex -Raw) -Filter 'UEMMO.Tasks.M6_004.NewRoomRenderCapture'
+    if (-not $RoomCaptureParsed.Ok) { throw ('Room capture failed: ' + $RoomCaptureParsed.Error) }
+    foreach($SourceName in $RoomCaptureNames) {
+        $SourceFile = Join-Path $RoomCaptureDir $SourceName
+        if(-not (Test-Path -LiteralPath $SourceFile)) {
+            # The engine flushes the screenshot during shutdown; poll briefly.
+            $Waited = 0
+            while(-not (Test-Path -LiteralPath $SourceFile) -and $Waited -lt 15) {
+                Start-Sleep -Milliseconds 500
+                $Waited += 1
+            }
+        }
+        if(-not (Test-Path -LiteralPath $SourceFile)) { throw "Packaged room capture screenshot missing: $SourceName" }
+        if ((Get-Item -LiteralPath $SourceFile).LastWriteTimeUtc -lt $RoomCaptureStartedUtc) { throw "Stale room capture: $SourceName" }
+        $CaptureBytes = [IO.File]::ReadAllBytes($SourceFile)
+        if($CaptureBytes.Length -lt 1024 -or [BitConverter]::ToString($CaptureBytes,0,8) -ne '89-50-4E-47-0D-0A-1A-0A') { throw "Packaged room capture screenshot $SourceName is not a valid PNG." }
+        Copy-Item -LiteralPath $SourceFile -Destination (Join-Path $ArtifactRoot ('package-' + $SourceName)) -Force
+    }
+    [ordered]@{ success=$true; pass='package-room-capture'; captures=$RoomCaptureNames } | ConvertTo-Json
 }

@@ -559,40 +559,53 @@ def run_generate():
         unreal.log('UEMMO_ROOM_DEFINITION_ASSET_WRITTEN asset=' + asset_path
                    + ' created=' + str(created))
 
-    # Wire the production entry: exactly one ARoomTrigger on the combat map,
-    # its room_definition_asset pointing at the combat row's generated
-    # definition. The class-default FallbackWaves stay untouched for the
-    # transient-fallback test fixtures; the asset simply wins wherever one is
-    # assigned.
-    combat_asset = unreal.load_asset(asset_path_for(COMBAT_ROOM_ID))
-    if combat_asset is None:
-        raise RuntimeError('The combat asset could not be loaded for the trigger wiring.')
-    if not levels.load_level(COMBAT_MAP):
-        raise RuntimeError('Could not load ' + COMBAT_MAP)
-    triggers = find_triggers()
-    if len(triggers) != 1:
-        raise RuntimeError('Expected exactly one RoomTrigger on ' + COMBAT_MAP + ', found '
-                           + str(len(triggers)) + '.')
-    # TSoftObjectPtr takes the loaded object (a SoftObjectPath value is
-    # rejected by the editor Python API); the serialized soft reference is
-    # the asset's fully-qualified path.
-    triggers[0].set_editor_property('room_definition_asset', combat_asset)
-    if count_class('RoomExit') != 1:
-        raise RuntimeError('Expected exactly one RoomExit on ' + COMBAT_MAP + ', found '
-                           + str(count_class('RoomExit')) + '.')
-    if not levels.save_current_level():
-        raise RuntimeError('Could not save ' + COMBAT_MAP)
+    # Wire the production entries (M6-004 per-row generalization): every row
+    # whose map carries exactly one RoomTrigger gets that trigger pointed at
+    # the row's OWN generated definition (room_combat_01 -> L_CombatRoom01 ->
+    # DA_room_combat_01; the M6-004 clone -> L_CombatRoom02 ->
+    # DA_room_combat_02). A map with NO trigger (the training room keeps its
+    # non-combat semantics) is skipped untouched; more than one trigger on a
+    # wired map refuses (ambiguous wiring). The class-default FallbackWaves
+    # stay untouched for the transient-fallback test fixtures.
+    wired = []
+    for row in rows:
+        room_id = str(row['room_id'])
+        row_map = str(row['map_path'])
+        row_asset = unreal.load_asset(asset_path_for(room_id))
+        if row_asset is None:
+            raise RuntimeError('The row asset could not be loaded for the wiring: ' + asset_path_for(room_id))
+        if not levels.load_level(row_map):
+            raise RuntimeError('Could not load ' + row_map)
+        triggers = find_triggers()
+        if len(triggers) == 0:
+            unreal.log('UEMMO_ROOM_TRIGGER_SKIPPED map=' + row_map + ' (no RoomTrigger)')
+            continue
+        if len(triggers) != 1:
+            raise RuntimeError('Expected zero or one RoomTrigger on ' + row_map + ', found '
+                               + str(len(triggers)) + '.')
+        if count_class('RoomExit') != 1:
+            raise RuntimeError('Expected exactly one RoomExit on ' + row_map + ', found '
+                               + str(count_class('RoomExit')) + '.')
+        # TSoftObjectPtr takes the loaded object (a SoftObjectPath value is
+        # rejected by the editor Python API); the serialized soft reference is
+        # the asset's fully-qualified path.
+        triggers[0].set_editor_property('room_definition_asset', row_asset)
+        if not levels.save_current_level():
+            raise RuntimeError('Could not save ' + row_map)
+        wired.append({'room_id': room_id, 'map': row_map,
+                      'trigger_reference': asset_object_path_for(room_id)})
+        unreal.log('UEMMO_ROOM_TRIGGER_WIRED map=' + row_map + ' asset=' + asset_object_path_for(room_id))
 
     write_report(GENERATE_REPORT, {
         'mode': 'generate',
         'source': str(source_json_path()),
         'assets': generated,
-        'trigger_wired': COMBAT_ASSET_OBJECT_PATH,
+        'wired': wired,
         'success': True,
     })
     unreal.log('UEMMO_ROOM_DEFINITION_ASSETS_GENERATED assets='
                + ','.join(entry['asset'] for entry in generated)
-               + ' trigger_wired=' + COMBAT_ASSET_OBJECT_PATH)
+               + ' wired=' + ','.join(entry['trigger_reference'] for entry in wired))
 
 
 def run_verify():
@@ -620,29 +633,33 @@ def run_verify():
         record('asset_fields_match_json[' + room_id + ']', not field_problems,
                'problems=' + str(field_problems))
 
-    if not levels.load_level(COMBAT_MAP):
-        raise RuntimeError('Verify: could not load ' + COMBAT_MAP)
-    triggers = find_triggers()
-    record('combat_map_exactly_one_room_trigger', len(triggers) == 1, 'count=' + str(len(triggers)))
-    record('combat_map_exactly_one_room_exit', count_class('RoomExit') == 1,
-           'count=' + str(count_class('RoomExit')))
-    trigger_reference = ''
-    if len(triggers) == 1:
-        trigger_reference = soft_path_string(triggers[0].get_editor_property('room_definition_asset'))
-        record('trigger_references_generated_asset', trigger_reference == COMBAT_ASSET_OBJECT_PATH,
-               'reference=' + trigger_reference)
-
-    if not levels.load_level(BASE_MAP):
-        raise RuntimeError('Verify: could not load ' + BASE_MAP)
-    record('training_map_has_no_room_trigger', count_class('RoomTrigger') == 0,
-           'count=' + str(count_class('RoomTrigger')))
-    record('training_map_has_no_room_exit', count_class('RoomExit') == 0,
-           'count=' + str(count_class('RoomExit')))
+    # The production wiring, per row (M6-004 generalization): a row whose map
+    # carries a trigger must point it at the row's OWN asset; a trigger-less
+    # map (the training room's non-combat semantics) must carry no exit
+    # either. Every map reloads from disk in this fresh process.
+    for row in rows:
+        room_id = str(row['room_id'])
+        row_map = str(row['map_path'])
+        if not levels.load_level(row_map):
+            raise RuntimeError('Verify: could not load ' + row_map)
+        triggers = find_triggers()
+        exits = count_class('RoomExit')
+        if len(triggers) == 0:
+            record('map_has_no_room_trigger[' + room_id + ']', True, 'map=' + row_map)
+            record('map_has_no_room_exit[' + room_id + ']', exits == 0, 'count=' + str(exits))
+        else:
+            record('map_exactly_one_room_trigger[' + room_id + ']', len(triggers) == 1,
+                   'count=' + str(len(triggers)))
+            record('map_exactly_one_room_exit[' + room_id + ']', exits == 1,
+                   'count=' + str(exits))
+            trigger_reference = soft_path_string(triggers[0].get_editor_property('room_definition_asset'))
+            record('trigger_references_row_asset[' + room_id + ']',
+                   trigger_reference == asset_object_path_for(room_id),
+                   'reference=' + trigger_reference)
 
     report = {
         'mode': 'verify',
-        'asset': COMBAT_ASSET_PATH,
-        'trigger_reference': trigger_reference,
+        'rows': [str(row['room_id']) for row in rows],
         'checks': checks,
         'success': all(check['passed'] for check in checks),
     }
