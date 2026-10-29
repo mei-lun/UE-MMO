@@ -49,6 +49,7 @@
 #include "Misc/AutomationTest.h"
 
 #include "../Combat/Data/CombatDataTableParser.h"
+#include "../PrototypeHUD.h"
 #include "../Items/InventoryModel.h"
 #include "../Items/ItemDefinition.h"
 #include "../Items/ItemInstance.h"
@@ -65,9 +66,15 @@
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
+#include "GameFramework/PlayerController.h"
+#include "HAL/FileManager.h"
 #include "HAL/PlatformFileManager.h"
+#include "Kismet/GameplayStatics.h"
+#include "Misc/App.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
+#include "Tests/AutomationCommon.h"
+#include "UnrealClient.h"
 #include "UObject/Package.h"
 #include "UObject/UObjectGlobals.h"
 
@@ -881,23 +888,23 @@ bool FUEMMOTasksM3_017WidgetMenuSingleMapAndLoadGuard::RunTest(const FString& Pa
 	// BindResult safety-net precedent) and arms a fresh presentation.
 	Widget->BindMenu();
 
-	// The card's one-map menu surface.
-	// M5-018A: the menu carries two legal entries now (the wave room row and
-	// the config-driven system test room row) - the M3-017 single-row sample
-	// grew a second destination as the M5-018A card requires.
-	TestEqual(TEXT("the widget declares exactly two map entries"),
-		UMapSelectWidget::MapEntryCount, 2);
+	// The menu surface. M6-002 superseded the M3-017/M5-018A entry-count pins:
+	// the level list is the M6-001 catalog (one dynamic free-select row per
+	// entry; the count/order/enter routing live in the M6_002 suite below) and
+	// the appended SystemTestRoom row stays.
 	TestNotNull(TEXT("the title block exists"), Widget->PeekTitleBlock());
 	if (Widget->PeekTitleBlock() != nullptr)
 	{
 		TestEqual(TEXT("the title names the map select menu"),
 			Widget->PeekTitleBlock()->GetText().ToString(), FString(TEXT("Map Select")));
 	}
-	TestNotNull(TEXT("the single map entry block exists"), Widget->PeekMapEntryBlock());
-	if (Widget->PeekMapEntryBlock() != nullptr)
+	TestTrue(TEXT("the free-select list carries the catalog rows"),
+		Widget->PeekCatalogRowCount() == Session.Flow->GetSelectableRoomDefinitions().Num());
+	if (Widget->PeekCatalogRowCount() > 0 && Widget->PeekCatalogRow(0) != nullptr
+		&& Widget->PeekCatalogRow(0)->PeekRowText() != nullptr)
 	{
-		TestTrue(TEXT("the first entry is the wave room row (TrainingArena / CombatRoom01)"),
-			Widget->PeekMapEntryBlock()->GetText().ToString().Contains(TEXT("TrainingArena")));
+		TestTrue(TEXT("the first catalog row names the TrainingArena entry"),
+			Widget->PeekCatalogRow(0)->PeekRowText()->GetText().ToString().Contains(TEXT("TrainingArena")));
 	}
 	TestNotNull(TEXT("the settings/volume placeholder block exists"),
 		Widget->PeekSettingsPlaceholderBlock());
@@ -1159,6 +1166,250 @@ bool FUEMMOTasksM6_001LevelCatalogMirrorsRoomsJson::RunTest(const FString& Param
 	FPlatformFileManager::Get().GetPlatformFile().DeleteFile(*OverridePath);
 
 	SkipSession.TearDown();
+	return true;
+}
+
+// M6-002: the free-select row list - the rows mirror the catalog (count,
+// order, per-row definition), the read-only clear-record status line follows
+// the M6-003 records across re-presentations, every row's enter routes its
+// own definition through the flow (with the M5-056 real-click bridge), and
+// the failure/loading guards hold per row.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FUEMMOTasksM6_002CatalogRowsFreeSelectAndPerRowEnter,
+	"UEMMO.Tasks.M6_002.CatalogRowsFreeSelectAndPerRowEnter",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+
+bool FUEMMOTasksM6_002CatalogRowsFreeSelectAndPerRowEnter::RunTest(const FString& Parameters)
+{
+	using namespace UE::UEMMO::Tasks::M3_017;
+	FM3_017_FlowSession Session = FM3_017_FlowSession::Create(*this, TEXT("FreeSelect"));
+	if (Session.Flow == nullptr || Session.Profile == nullptr || Session.World == nullptr)
+	{
+		Session.TearDown();
+		return true;
+	}
+	// A known fresh profile: the record lines start at "not cleared".
+	Session.Profile->NewProfile();
+
+	UMapSelectWidget* Widget = CreateWidget<UMapSelectWidget>(Session.World, UMapSelectWidget::StaticClass());
+	if (!TestNotNull(TEXT("the native map select widget is created in a plain game world"), Widget))
+	{
+		Session.TearDown();
+		return true;
+	}
+	Widget->BindMenu();
+
+	// The rows mirror the catalog: count, order, identity, initial status.
+	const TArray<URoomDefinition*>& Catalog = Session.Flow->GetSelectableRoomDefinitions();
+	if (!TestTrue(TEXT("the project catalog carries at least one level"), Catalog.Num() > 0))
+	{
+		Session.TearDown();
+		return true;
+	}
+	TestEqual(TEXT("the rows mirror the catalog count"),
+		Widget->PeekCatalogRowCount(), Catalog.Num());
+	for (int32 Index = 0; Index < Catalog.Num() && Index < Widget->PeekCatalogRowCount(); ++Index)
+	{
+		UMapSelectCatalogRow* Row = Widget->PeekCatalogRow(Index);
+		if (!TestNotNull(*FString::Printf(TEXT("catalog row %d exists"), Index), Row))
+		{
+			continue;
+		}
+		TestTrue(FString::Printf(TEXT("catalog row %d enters its own definition"), Index),
+			Row->GetRowDefinition() == Catalog[Index]);
+		TestEqual(FString::Printf(TEXT("catalog row %d carries its index"), Index),
+			Row->GetRowIndex(), Index);
+		TestTrue(FString::Printf(TEXT("catalog row %d starts enabled"), Index),
+			Row->PeekRowButton() != nullptr && Row->PeekRowButton()->GetIsEnabled());
+		TestTrue(FString::Printf(TEXT("catalog row %d shows the not-cleared status"), Index),
+			Row->PeekRowText() != nullptr
+			&& Row->PeekRowText()->GetText().ToString().Contains(TEXT("not cleared")));
+	}
+	if (Widget->PeekCatalogRowCount() > 0 && Widget->PeekCatalogRow(0) != nullptr
+		&& Widget->PeekCatalogRow(0)->PeekRowText() != nullptr)
+	{
+		TestTrue(TEXT("the first row names the TrainingArena entry (rooms.json row order)"),
+			Widget->PeekCatalogRow(0)->PeekRowText()->GetText().ToString().Contains(TEXT("TrainingArena")));
+	}
+
+	// The status line is read-only bookkeeping that follows the records: one
+	// recorded clear re-renders as "cleared x1" on the next presentation.
+	Session.Profile->RecordRoomCleared(FName(TEXT("room_training_01")), 1234);
+	Widget->BindMenu();
+	if (Widget->PeekCatalogRowCount() > 0 && Widget->PeekCatalogRow(0) != nullptr
+		&& Widget->PeekCatalogRow(0)->PeekRowText() != nullptr)
+	{
+		TestTrue(TEXT("the recorded clear re-renders as the cleared status"),
+			Widget->PeekCatalogRow(0)->PeekRowText()->GetText().ToString().Contains(TEXT("cleared x1")));
+	}
+
+	// The per-row enter routing + the M5-056 real-click bridge (a catalog-row
+	// click is a REAL menu click into gameplay).
+	int32 OpenCount = 0;
+	int32 GameplayBridgeCount = 0;
+	TArray<FString> OpenedPaths;
+	Session.Flow->SetMapOpenerForTests([&OpenCount, &OpenedPaths](const FString& Path)
+	{
+		++OpenCount;
+		OpenedPaths.Add(Path);
+		return true;
+	});
+	Widget->GameplayEnterAccepted.AddLambda([&GameplayBridgeCount]()
+	{
+		++GameplayBridgeCount;
+	});
+	// The REAL click path: the row's own button broadcasts through its
+	// per-instance binding (the row forwards its index to the menu handler).
+	UMapSelectCatalogRow* ClickedRow = Widget->PeekCatalogRow(0);
+	if (!TestNotNull(TEXT("row 0 exists for the click path"), ClickedRow)
+		|| !TestNotNull(TEXT("row 0 carries its enter button"), ClickedRow->PeekRowButton()))
+	{
+		Session.TearDown();
+		return true;
+	}
+	ClickedRow->PeekRowButton()->OnClicked.Broadcast();
+	TestEqual(TEXT("row 0's enter requested exactly one world switch"), OpenCount, 1);
+	if (OpenedPaths.Num() == 1)
+	{
+		TestTrue(TEXT("row 0 entered its own map (the training package)"),
+			OpenedPaths[0].Contains(TEXT("L_TrainingArena")));
+	}
+	TestEqual(TEXT("the accepted row enter crossed the gameplay bridge"), GameplayBridgeCount, 1);
+	bool bAllRowsDisabled = true;
+	for (int32 Index = 0; Index < Widget->PeekCatalogRowCount(); ++Index)
+	{
+		UMapSelectCatalogRow* Row = Widget->PeekCatalogRow(Index);
+		bAllRowsDisabled = bAllRowsDisabled && Row != nullptr
+			&& Row->PeekRowButton() != nullptr && !Row->PeekRowButton()->GetIsEnabled();
+	}
+	TestTrue(TEXT("every row button parked after the accepted enter"), bAllRowsDisabled);
+
+	// The return keeps the profile (the M3-017 cross-session rule) and the
+	// re-presentation rebuilds the rows; row 1 enters ITS OWN definition.
+	Session.Flow->ReturnToMenu();
+	Widget->BindMenu();
+	UMapSelectCatalogRow* SecondRow = Widget->PeekCatalogRow(1);
+	if (!TestNotNull(TEXT("row 1 exists after the re-presentation"), SecondRow)
+		|| !TestNotNull(TEXT("row 1 carries its enter button"), SecondRow->PeekRowButton()))
+	{
+		Session.TearDown();
+		return true;
+	}
+	SecondRow->PeekRowButton()->OnClicked.Broadcast();
+	TestEqual(TEXT("row 1's enter requested the second world switch"), OpenCount, 2);
+	if (OpenedPaths.Num() == 2)
+	{
+		TestTrue(TEXT("row 1 entered its own map (the combat package)"),
+			OpenedPaths[1].Contains(TEXT("L_CombatRoom01")));
+	}
+	Session.Flow->ReturnToMenu();
+	Widget->BindMenu();
+
+	// The failure face: a failing open shows the flow's error and re-arms the
+	// rows; the OTHER row stays operable and enters successfully.
+	Session.Flow->SetMapOpenerForTests([&OpenCount](const FString& Path)
+	{
+		if (Path.Contains(TEXT("L_TrainingArena")))
+		{
+			return false;
+		}
+		++OpenCount;
+		return true;
+	});
+	UMapSelectCatalogRow* FailingRow = Widget->PeekCatalogRow(0);
+	if (!TestNotNull(TEXT("row 0 exists for the failure face"), FailingRow)
+		|| !TestNotNull(TEXT("row 0 carries its enter button for the failure face"), FailingRow->PeekRowButton()))
+	{
+		Session.TearDown();
+		return true;
+	}
+	FailingRow->PeekRowButton()->OnClicked.Broadcast();
+	TestEqual(TEXT("the failed open requested no switch"), OpenCount, 2);
+	if (Widget->PeekErrorBlock() != nullptr)
+	{
+		TestTrue(TEXT("the failed open shows the flow's error line"),
+			Widget->PeekErrorBlock()->GetVisibility() != ESlateVisibility::Collapsed);
+	}
+	UMapSelectCatalogRow* Row0 = Widget->PeekCatalogRow(0);
+	TestTrue(TEXT("the failed row re-arms (retry stays possible)"),
+		Row0 != nullptr && Row0->PeekRowButton() != nullptr && Row0->PeekRowButton()->GetIsEnabled());
+	UMapSelectCatalogRow* OtherRow = Widget->PeekCatalogRow(1);
+	if (!TestNotNull(TEXT("row 1 exists for the sibling face"), OtherRow)
+		|| !TestNotNull(TEXT("row 1 carries its enter button for the sibling face"), OtherRow->PeekRowButton()))
+	{
+		Session.TearDown();
+		return true;
+	}
+	OtherRow->PeekRowButton()->OnClicked.Broadcast();
+	TestEqual(TEXT("the other row entered after the sibling's failure"), OpenCount, 3);
+
+	// The loading guard (the flow is still in the Room state after row 1's
+	// accepted enter): a row click requests nothing and parks its own button
+	// (the machine half refuses; the visible half parks).
+	UMapSelectCatalogRow* GuardedRow = Widget->PeekCatalogRow(0);
+	if (!TestNotNull(TEXT("row 0 exists for the guard face"), GuardedRow)
+		|| !TestNotNull(TEXT("row 0 carries its enter button for the guard face"), GuardedRow->PeekRowButton()))
+	{
+		Session.TearDown();
+		return true;
+	}
+	GuardedRow->PeekRowButton()->OnClicked.Broadcast();
+	TestEqual(TEXT("no switch while the flow is not in the Menu state"), OpenCount, 3);
+	TestTrue(TEXT("the refused row's button parked"),
+		GuardedRow->PeekRowButton() != nullptr
+		&& !GuardedRow->PeekRowButton()->GetIsEnabled());
+	return true;
+}
+
+// M6-002: the rendered menu capture companion (ClientContext only; headless
+// runs skip silently). The production mount presents the menu overlay over
+// the boot world by itself (the flow menu state owns the screen), so the
+// capture just waits for the live menu and screenshots the free-select list
+// - the acceptance's visual check (multi-row layout, no overlap/overflow)
+// reads the PNG, not this test.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FUEMMOTasksM6_002MenuCatalogCapture,
+	"UEMMO.Tasks.M6_002.MenuCatalogCapture",
+	EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+
+bool FUEMMOTasksM6_002MenuCatalogCapture::RunTest(const FString& Parameters)
+{
+	UWorld* World = GWorld;
+	if (World == nullptr || GEngine == nullptr || GEngine->GameViewport == nullptr
+		|| World->WorldType != EWorldType::Game)
+	{
+		AddInfo(TEXT("menu catalog capture skipped: no rendered game world"));
+		return true;
+	}
+
+	const FString Directory = FPaths::ConvertRelativePathToFull(
+		FPaths::ProjectDir() / TEXT("Artifacts") / TEXT("Tasks") / TEXT("M6-002") / TEXT("scenario-json") / TEXT("render"));
+	IFileManager::Get().MakeDirectory(*Directory, /*Tree*/ true);
+
+	// The menu presents itself during boot; the wait lands after the overlay
+	// (and its catalog rows) are on screen.
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(1.5f));
+	ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([Directory]()
+	{
+		if (GEngine == nullptr || GEngine->GameViewport == nullptr || !FApp::CanEverRender())
+		{
+			return true;
+		}
+		FScreenshotRequest::RequestScreenshot(Directory / TEXT("capture-menu-catalog.png"), true, false);
+		return true;
+	}));
+	ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(0.8f));
+	ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, Directory]()
+	{
+		if (GEngine == nullptr || GEngine->GameViewport == nullptr || !FApp::CanEverRender())
+		{
+			return true;
+		}
+		const FString CaptureFile = Directory / TEXT("capture-menu-catalog.png");
+		TestTrue(FString::Printf(TEXT("the menu capture was written: %s"), *CaptureFile),
+			IFileManager::Get().FileExists(*CaptureFile));
+		return true;
+	}));
 	return true;
 }
 
