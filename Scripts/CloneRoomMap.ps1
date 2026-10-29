@@ -8,7 +8,11 @@ param(
     # Source map package (default: the shipped wave-combat room).
     [string]$SourceMap = '/Game/UEMMO/Maps/L_CombatRoom01',
     # Target map package (default: the M6-004 second combat room).
-    [string]$TargetMap = '/Game/UEMMO/Maps/L_CombatRoom02'
+    [string]$TargetMap = '/Game/UEMMO/Maps/L_CombatRoom02',
+    # M6-005: strip the RoomTrigger/RoomExit actors (the pure menu-surface
+    # clone). The parameters are the single source of configuration - the
+    # script always overwrites the python env with them.
+    [switch]$StripRoomActors
 )
 . "$PSScriptRoot\Common.ps1"
 
@@ -25,9 +29,12 @@ foreach ($Report in @($GenerateReport, $VerifyReport)) {
     if (Test-Path -LiteralPath $Report) { Remove-Item -LiteralPath $Report }
 }
 
-# Pass 1: the clone (idempotent; an existing target re-saves untouched).
+# Pass 1: the clone (idempotent; an existing target re-strips/re-saves
+# untouched). The params overwrite the python env unconditionally - the
+# caller-facing configuration is THESE parameters, never stale env state.
 $env:UEMMOCloneSourceMap = $SourceMap
 $env:UEMMOCloneTargetMap = $TargetMap
+$env:UEMMOCloneStripRoomActors = if ($StripRoomActors) { '1' } else { '' }
 Invoke-UEProcess $Editor @(
     $ProjectFile,
     '-run=pythonscript',

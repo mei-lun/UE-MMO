@@ -62,6 +62,32 @@ namespace UE::UEMMO::Tasks::M6_004
 	}
 }
 
+// M6-005: the first-boot surface - the game boots into the dedicated menu
+// map (the walkable shell with no combat orchestration; the menu overlay is
+// the flow's Menu-state surface on top of it).
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FUEMMOTasksM6_005BootMapIsMainMenu,
+	"UEMMO.Tasks.M6_005.BootMapIsMainMenu",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+
+bool FUEMMOTasksM6_005BootMapIsMainMenu::RunTest(const FString& Parameters)
+{
+	UWorld* PlayWorld = GEngine ? GEngine->GetCurrentPlayWorld() : nullptr;
+	if (!TestNotNull(TEXT("the play world resolves"), PlayWorld))
+	{
+		return true;
+	}
+	TestTrue(TEXT("the game boots into the dedicated menu map"),
+		PlayWorld->GetMapName().Contains(TEXT("L_MainMenu")));
+	// The menu surface carries no combat orchestration: a fresh session
+	// subsystem in the boot world must hold no room assets (the map itself
+	// has no trigger/exit - verified on disk by the clone's verify pass).
+	URoomSessionSubsystem* Session = PlayWorld->GetSubsystem<URoomSessionSubsystem>();
+	TestTrue(TEXT("the menu boot world starts with an idle session"),
+		Session != nullptr && Session->GetState() == ERoomSessionState::Idle);
+	return true;
+}
+
 // Suite 1: the packaged artifacts - catalog row + cloned map wiring.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FUEMMOTasksM6_004NewRoomPackagedArtifacts,
