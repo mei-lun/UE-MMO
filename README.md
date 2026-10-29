@@ -4,22 +4,23 @@ UE 5.8.3 单机3D横版学习原型，固定侧面镜头，支持X横向、Y地�
 
 **开发包统一在`D:\Github-Poj\UE-MMO\Artifacts\Package\Windows`。** 后续覆盖同一份，不再创建日期或版本号包。修复追溯使用Git提交和任务报告；完整整理见[开发交付与修复汇总](Docs/开发交付与修复汇总.md)。
 
-当前武器实现：普通枪、点射和散弹发射独立弹丸实体；橙色弹头本身可见，碰撞后扣血，命中/超时/复位/离场销毁。普通弹24×12cm、1200cm/s、寿命2s；参数见`Data/CombatSystem/projectiles.json`。线状拖尾方案已按用户反馈删除。
+当前内容（2026-10-30）：多关卡自由选关（菜单三关：训练场/CombatRoom01/CombatRoom02）；地面载具骑乘链（F8 生成样车，走路带车、Q 车炮、V 下车；armored 变体走表驱动：HP500/防25/速400/挂 12 发线性弹炮塔）；独立主菜单启动图；存档 v3 携带每关通关记录；普通枪、点射和散弹发射独立弹丸实体（橙色可见弹头），参数见`Data/CombatSystem/projectiles.json`。
 
-任务状态只看[TASKS.md](TASKS.md)，最近验证与接续看[HANDOFF.md](HANDOFF.md)。自动验证不等于人工试玩通过；M5-H02仍待用户确认。
-首次接手这轮服务端战斗/场景适配时，按[接手工作指导](Docs/Tasks/接手工作指导.md)核对现状、阅读顺序和逐项交接；具体实施步骤见[执行计划](Docs/Tasks/M5-战斗与场景适配执行计划.md)。两份文档描述待办，M5-067～074 尚未因此变为已实现。
+加内容按[配置作者手册](Docs/Tasks/M5-配置作者手册.md)（武器/子弹/反应/载具/关卡的表驱动步骤都有任务报告背书）。
+
+任务状态只看[TASKS.md](TASKS.md)，最近验证与接续看[HANDOFF.md](HANDOFF.md)。自动验证不等于人工试玩通过；M5-H03（载具试玩）待用户签收，M5-H04 为最终人工关。
 
 ## 直接试玩
 
-运行[开发包](Artifacts/Package/Windows/UEMMO.exe)，或在仓库根目录执行：
+运行[开发包](Artifacts/Package/Windows/UEMMO.exe)（启动即进主菜单），或在仓库根目录执行：
 
 ```powershell
 rtk proxy powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/Run.ps1
 ```
 
-点击上方CombatRoom01的Enter，向右走进房间，Q射击，训练剑X。需换武器时在激活区外按I，选一行、Equip、Close后再进房。方向键左右与纵深移动，C/Space跳跃，F1调试面板，F2训练复位。
+菜单选一行点 Enter 进关（TrainingArena 训练 / CombatRoom01·02 波次房），方向键左右与纵深移动，C/Space 跳跃，X 普攻，Q 射击（手持武器），I 背包换装，F1 调试面板，F2 训练复位，F8 在身边生成试验载具。
 
-当前备弹0且无补给，T会拒绝补弹；战斗开始后不能换装；弹药持久化尚未实现。真实键鼠、手感与可听性仍由用户签收。
+载具骑乘：F8 后走近按 V 上车，方向键走路带车，Q 发射车炮，V 下车。真实键鼠、手感与可听性仍由用户签收（M5-H03/H04）。
 
 ## 开发命令
 
