@@ -216,4 +216,4 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M6-002 | [菜单自由选关列表](Docs/Tasks/M6-002.md) | DONE | M6-001,M6-003 | ZCode-20261029-B | 2026-10-30T00:05:00+08:00 | [report](Docs/Tasks/Reports/M6-002.md) |
 | M6-003 | [存档通关记录（schema v3）](Docs/Tasks/M6-003.md) | DONE | M3-013,M3-016 | ZCode-20261029-B | 2026-10-29T04:05:00+08:00 | [report](Docs/Tasks/Reports/M6-003.md) |
 | M6-004 | [新战斗房关卡生产与打包冒烟](Docs/Tasks/M6-004.md) | DONE | M6-001,M6-002 | ZCode-20261029-B | 2026-10-30T00:50:00+08:00 | [report](Docs/Tasks/Reports/M6-004.md) |
-| M6-005 | [独立主菜单启动图](Docs/Tasks/M6-005.md) | TODO | M6-004 | — | — | — |
+| M6-005 | [独立主菜单启动图](Docs/Tasks/M6-005.md) | DONE | M6-004 | ZCode-20261029-B | 2026-10-30T01:05:00+08:00 | [report](Docs/Tasks/Reports/M6-005.md) |
