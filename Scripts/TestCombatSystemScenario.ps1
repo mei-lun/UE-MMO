@@ -67,6 +67,18 @@ $SectionConfigs = @{
         'CaptureSuffix' = '.VehicleScenarioCapture'
         'Screenshots' = @('capture-vehicle.png', 'capture-driving.png')
     }
+    # M5-054: the release-candidate full loop (the M5FullLoopScenarioTests
+    # chain: empty save -> menu -> armored vehicle -> the real wave run ->
+    # claim -> equip -> save -> the second-instance restore). No scenario
+    # JSON exports yet (the loop's evidence is the automation report itself),
+    # so the ExpectedFiles gate stays empty by design.
+    'Full' = @{
+        'Filter' = 'UEMMO.Tasks.M5_054'
+        'ArtifactTask' = 'M5-054'
+        'ExpectedFiles' = @()
+        'CaptureSuffix' = ''
+        'Screenshots' = @()
+    }
 }
 $Config = $SectionConfigs[$Section]
 if ($null -eq $Config) {

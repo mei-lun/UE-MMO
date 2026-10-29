@@ -824,6 +824,19 @@ if($IncludeMultiLevelScenario) {
     $PackageRoomsConfig = Join-Path $PackageProject 'Data\rooms.json'
     if(-not (Test-Path -LiteralPath $PackageRoomsConfig)) { throw 'The package does not carry Data/rooms.json; rebuild with the M6-001 Package.ps1 carry.' }
 
+    # M5-054 source-table isolation: the DEV tree's Data directory is renamed
+    # away for the whole packaged run, so any code reading the dev tables
+    # fails loudly - the package must run on its OWN carried copies. The
+    # original name is restored afterwards and the table hashes are verified
+    # byte-identical (the restore proof; nothing else may touch the dev data).
+    $DevDataDir = Join-Path $ProjectRoot 'Data'
+    $IsolatedDataDir = Join-Path $ProjectRoot 'Data.m5-054-isolated'
+    if (Test-Path -LiteralPath $IsolatedDataDir) { throw 'A previous isolation left Data.m5-054-isolated behind; restore it first.' }
+    $DevDataHashesBefore = Get-ChildItem -LiteralPath $DevDataDir -Recurse -File | Get-FileHash -Algorithm SHA256
+    Rename-Item -LiteralPath $DevDataDir -NewName 'Data.m5-054-isolated'
+    try {
+        if (Test-Path -LiteralPath $DevDataDir) { throw 'The dev Data directory is still visible after the isolation rename.' }
+
     $RoomStamp = [DateTimeOffset]::Now.ToString('yyyy-MM-ddTHH-mm-sszzz').Replace(':', '')
     $RoomReportDir = Join-Path $PackageProject "Artifacts\Tasks\M6-004\$RoomStamp"
     New-Item -ItemType Directory -Path $RoomReportDir -Force | Out-Null
@@ -869,7 +882,9 @@ if($IncludeMultiLevelScenario) {
         "-ExecCmds=Automation RunTests UEMMO.Tasks.M6_004.NewRoomRenderCapture",
         '-TestExit=Automation Test Queue Empty',
         "-ReportExportPath=$RoomCaptureReportDir",
-        "-abslog=$ArtifactRoot\Logs\package-room-capture.log"
+        "-abslog=$ArtifactRoot\Logs\package-room-capture.log",
+        # The capture travels too (the same dedicated-process gate).
+        '-UEMMOFullTravelChain'
     ) 'package-room-capture' 900
     $RoomCaptureIndex = Join-Path $RoomCaptureReportDir 'index.json'
     if (-not (Test-Path -LiteralPath $RoomCaptureIndex)) { throw 'Room capture did not export its automation report.' }
@@ -892,4 +907,18 @@ if($IncludeMultiLevelScenario) {
         Copy-Item -LiteralPath $SourceFile -Destination (Join-Path $ArtifactRoot ('package-' + $SourceName)) -Force
     }
     [ordered]@{ success=$true; pass='package-room-capture'; captures=$RoomCaptureNames } | ConvertTo-Json
+    }
+    finally {
+        # The restore: the dev Data directory comes back and its hashes are
+        # verified byte-identical (the M5-054 isolation proof closes).
+        Rename-Item -LiteralPath $IsolatedDataDir -NewName 'Data'
+        $DevDataHashesAfter = Get-ChildItem -LiteralPath $DevDataDir -Recurse -File | Get-FileHash -Algorithm SHA256
+        $Before = @{}; foreach ($H in $DevDataHashesBefore) { $Before[$H.Path] = $H.Hash }
+        foreach ($H in $DevDataHashesAfter) {
+            if (-not $Before.ContainsKey($H.Path) -or $Before[$H.Path] -ne $H.Hash) {
+                throw ("The dev Data directory changed across the isolation run: " + $H.Path)
+            }
+        }
+        Write-Output ("M5-054 source-table isolation: the dev Data tree restored byte-identical (" + $DevDataHashesAfter.Count + " files).")
+    }
 }
