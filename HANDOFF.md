@@ -1,3 +1,29 @@
+# 最近一轮交接：M6-008 DNFArt Blender 交付包 UE 导入验收（2026-11-01）
+
+> 本轮新完成 DONE 1 项：M6-008。任务板 198 项、194 DONE、0 IN_PROGRESS；M5-H03 仍等用户试玩签收。
+> 用户指令：按 Docs/DNF-Research 三份最终文档完整执行设计任务并交付；建模工具选用 Blender CLI
+> （ART 全部阶段），UE 侧只做 ART-06 资源验收。
+
+- Owner：ZCode-20261101-DNFArt；实施提交 091767aec77a22d32d78ceeeb02b7ce6f4e4c119；[M6-008 报告](Docs/Tasks/Reports/M6-008.md)。
+- **Blender 管线 ART-01～06 全部完成**（产物在 Git 忽略的 SourceAssets/Unpacked/DNFPrivateReference/blender-work/，
+  1099 个文件、manifest.json 含全量 SHA-256）：格斗家（棕发/橙上衣/深长裤/厚底鞋/护腕/可开关后发束）
+  与哥布林（绿皮/灰胸甲/腰布/裹腕裹踝/木骨刺武器）低模-细化-UV 程序贴图-LOD-规则蒙皮-
+  19+8 条 60fps 动作-逐动作 FBX 导出；blender_validation.json（骨骼 23/22、高度 1.825/1.25m、
+  FBX 抽检）全过；4 极端姿势测试渲染通过（高踢残留胯部小扇面已记录）。
+- **UE 导入验收（M6-008）**：/Game/UEMMO/ArtValidation/DNFArt 独立命名空间；高度 182.5/125.0cm 与
+  Blender 逐值一致；13/11 材质槽接 MIC+贴图（数据链验证）；6 条动作序列时长与源一致
+  （FBX 曾落场景默认帧范围 1..250 → art06_export.py 修正为动作范围）；mode=verify 第二进程复核
+  success=true；12 张验收截图在 Artifacts/Tasks/M6-008/。
+- **两项渲染级限制（已在报告"限制"记录）**：无 tick 会话的 SceneCapture 材质呈黑（数据链逐级
+  验证正确，需 GUI 编辑器目视复核）+ 动作冻结帧呈绑定姿势（set_position 无 tick 无法求值）。
+  动作/材质数据本身已验证；GUI 打开 /Game/UEMMO/ArtValidation/DNFArt 可查看真实表现。
+- **未动项**：旧四功能/旧存档/M5-H03 判定均未触碰；Content/UEMMO/ArtValidation/** 与
+  blender-work/** 不入 Git（可由脚本从 FBX 重建）；AGENTS.md 已按 02 文档 §9.1 写入 Blender
+  建模例外条目。
+- **下一步（等用户）**：资源 A/B 验收（审阅 blender-work 转台/概念图 + 本报告截图，或 GUI 打开
+  验收命名空间）→ 通过后按 02-多职业功能实施方案.md 第 2 步建多职业功能任务卡；不通过则按
+  审阅意见回 Blender 修改（ART-04/05 迭代路径已在交接文档中定义）。
+
 # 最近一轮交接：M6-007 DNF 研究文档最终版收敛（2026-11-01）
 
 > 本轮新完成 DONE 1 项：M6-007。任务板当前 197 项、193 DONE、0 IN_PROGRESS；M5-H03 仍等用户试玩，M5-H04 保留原依赖。之前的 M6-006 迁入事实与历史记录仍保留在下文和 [本轮独立交接](Docs/Tasks/Handoffs/2026-11-01-Codex-DNFFinal.md)。
