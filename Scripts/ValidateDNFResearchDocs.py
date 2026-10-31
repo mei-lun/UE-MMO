@@ -13,9 +13,16 @@ private = root / "SourceAssets" / "Unpacked" / "DNFPrivateReference"
 manifest = json.loads((private / "migration-manifest.json").read_text(encoding="utf-8"))
 issues: list[str] = []
 
+expected_docs = {
+    "README.md",
+    "01-逆向研究依据.md",
+    "02-多职业功能实施方案.md",
+    "03-Blender建模与资源交接.md",
+}
+actual_docs = {p.name for p in docs.glob("*.md")}
+if actual_docs != expected_docs:
+    issues.append(f"unexpected final document set: {sorted(actual_docs ^ expected_docs)}")
 source_docs = [p for p in docs.glob("*.md") if p.name != "README.md"]
-if len(source_docs) != 11:
-    issues.append(f"expected 11 authored documents, found {len(source_docs)}")
 
 for document in [*source_docs, docs / "README.md"]:
     body = document.read_text(encoding="utf-8")
@@ -26,9 +33,10 @@ for document in [*source_docs, docs / "README.md"]:
             issues.append(f"broken link: {document.name}: {relative}")
 
 records = manifest.get("files", [])
-if len(records) != 328:
-    issues.append(f"expected 328 copied source files, found {len(records)}")
-for record in records:
+private_records = [row for row in records if row["destination"].startswith("SourceAssets/")]
+if len(private_records) != 317:
+    issues.append(f"expected 317 private source records, found {len(private_records)}")
+for record in private_records:
     path = root / record["destination"]
     if not path.is_file():
         issues.append(f"missing: {record['destination']}")
@@ -47,7 +55,7 @@ if len(raw_img) != 10:
 result = {
     "success": not issues,
     "documents": len(source_docs),
-    "copied_records": len(records),
+    "private_records": len(private_records),
     "sample_pngs": len(samples),
     "raw_img_examples": len(raw_img),
     "issues": issues,

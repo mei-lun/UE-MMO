@@ -1,8 +1,54 @@
-# Blender 建模 Agent 执行计划：首职业与一只近战怪物
+# Blender 建模与私有资源交接最终计划
 
-版本：2026-11-01（Asia/Shanghai）。用途：**仅本机私人学习试玩**。本计划供另一名建模 Agent 逐阶段执行；本次编写计划不代表模型已经制作。目标为 UE-MMO 的第一个多职业研究切片：一个穿完整衣服的格斗家、一个带胸甲和武器的哥布林，之后再制作六招动画/表现与双房间共用件。先完成可验收资源，再启动 UE 功能代码。
+状态：**可交给建模 Agent 执行 ART-01～ART-03，模型尚未制作**。用户已认可格斗家橙色短上衣、深色长裤、运动鞋、棕发，以及哥布林绿色皮肤、胸甲、腰部布衣与木骨武器的方向；要求真正有厚度的衣物和可见装备。缺失的正/背视角先作为推测设计展示转台，再由用户审阅。只限本机私人学习试玩。
 
-## 0. 工作范围和冻结条件
+## 参考帧与来源
+
+项目内私有工作根：../../SourceAssets/Unpacked/DNFPrivateReference。建模可直接使用该目录 model-reference/samples、manifest.json、fighter_outfit_alignment.png、goblin_armor_weapon_alignment.png；必要的原始 IMG、PVF、CSV 索引也在该目录。完整 NPK/IMG/PVF 与媒体仍在 D:/DOF/DNF-REA-Output。Blender 程序路径及命令模板在下方执行阶段内。以下图表保留原 IMG/NPK 特征名：
+
+- [格斗家衣裤鞋叠层图](../../SourceAssets/Unpacked/DNFPrivateReference/model-reference/fighter_outfit_alignment.png)与[哥布林胸甲/武器叠层图](../../SourceAssets/Unpacked/DNFPrivateReference/model-reference/goblin_armor_weapon_alignment.png)是已生成的 2D 参考；不是 3D 模型。
+- 参考清单位于私有目录 model-reference/manifest.json，218 张 PNG 在 model-reference/samples；每帧保留 SpriteX/SpriteY、公共画布尺寸、源 NPK/IMG。
+
+| 用途 | NPK 包 | IMG 路径示例 | 检查重点 |
+|---|---|---|---|
+| 格斗家身体与姿势 | sprite_character_fighter_equipment_avatar_skin.NPK | sprite/character/fighter/equipment/avatar/skin/ft_body0000.img | 先挑完整身体与静止/移动帧，不用缩略图代替姿势 |
+| 格斗家头发 | sprite_character_fighter_equipment_avatar_hair.NPK | sprite/character/fighter/equipment/avatar/hair/ft_hair0000a.img | 与身体是否同一职业造型、前后遮挡是否正确 |
+| 格斗家上装 | sprite_character_fighter_equipment_avatar_coat.NPK | sprite/character/fighter/equipment/avatar/coat/ft_coat0000a.img | 已避开 (tn) 缩略版本；该层像素非常小，必须按原偏移与身体叠合后审阅 |
+| 哥布林 | sprite_monster_goblin.NPK | sprite/monster/goblin/body0.img | 造型、动作帧、是否包含多方向；缺失角度须在建模时另行决定 |
+| 技能视觉 | sprite_character_fighter_effect.NPK | sprite/character/fighter/effect/skillicon.img 及其他 effect IMG | 图标、起手、命中特效必须分别归类；不要把特效帧当人物动作 |
+
+## 服装与护具规格
+
+### 格斗家：完整服装版本
+
+目标是一个可从侧面和斜后方观看的真正有体积、可动画的角色，不能只有人体加一张朝向相机的纸片。默认造型按第 5 帧：暖棕发色、橙色运动短上衣、深色长裤、厚底运动鞋。角色模型以现有 UE Manny 的身高和骨架比例做游戏空间参照；最终具体尺寸由第一轮转台试样确认。
+
+| 部件 | Blender 结构要求 | 纹理/材质与运动要求 |
+|---|---|---|
+| 身体与头部 | 头、躯干、双臂、双腿、手脚具有前后厚度；面部五官是几何或材质细节，不把像素贴在脸的平面上 | 皮肤/头发分材质；左/右朝向、站姿/跳踢/上挑的剪影可读 |
+| 头发与可选头饰 | 前发、后发分块，发梢有厚度；参考图中的后飘件先作独立开关而非永久贴身 | 转身、跳跃时不穿入脖子/肩膀；不引入未经确认的复杂布料模拟 |
+| 上衣 | 作为身体之外的独立合身衣片，肩带/领口、胸前橙色区域、边缘滚条、背部布片都要闭合 | 橙/棕两级色块，布料粗糙度和接缝法线细节；挥拳抬臂不穿肩/胸 |
+| 手部 | 手套或护腕作为可见独立部件，先在造型审阅图中确认具体样式 | 拳面朝攻击方向，手腕扭转时护腕随骨骼稳定 |
+| 下装 | 深色长裤有腰头、裤缝、膝盖区域与腿部体积；腰带与上衣分层 | 高踢时裆部、髋关节和膝盖不严重拉伸/穿模；侧视不丢裤子轮廓 |
+| 鞋 | 左右鞋独立，有鞋面、包边、鞋底、踝部结构 | 落地位置接地面，跑动和踢腿中不变形为贴片 |
+
+制作方式：先选同一版本的衣裤鞋头发，不混搭不同时代的装扮；先做裸色人体比例代理，再以独立可见衣片包覆，按身体骨骼绑定权重。UV 不直接平铺原像素帧；依据参考色形生成新的三维 UV 与材质。服装最低包含上衣、长裤、鞋、护腕/手套，头发不能省略。帽/头饰和腰带可作为可切换配件，但若开启也须有前后结构。
+
+### 哥布林：有衣物与护具的敌人
+
+默认设计保留侧视图的绿色皮肤、长耳、前伸头部和短身比例；使用灰色胸甲与木质带骨刺/齿状武器作为核心识别点。**不能只把裸身体模型染绿**。由于参考帧没有充分定义裤装和背面，以下衣物为建模阶段提出的三维补全方案；待实际转台生成后进行视觉验收，不宣称原作具有同样样式：
+
+| 部件 | 3D 补全要求 | 动作检查 |
+|---|---|---|
+| 躯干衣物 | 胸甲下方增加粗布内衬或短背心，使胸甲不是悬浮贴片 | 呼吸、追击、攻击中不会穿过肩/腹部 |
+| 胸甲与绑带 | 胸甲有厚度、侧边与背部系带；正侧/背三视都能看出固定方式 | 肩转动与挥武器时胸甲/绑带不穿模 |
+| 腰部与下身 | 腰带、短裤或分片围裙覆盖骨盆，腿部保留行动空间 | 跨步、蹲伏和倒地时布片不穿腿、不挡脚下判定 |
+| 手脚与护具 | 可见腕带、脚踝绑带或鞋/裹脚；左右保持可辨 | 手正确握住武器，脚底贴地 |
+| 武器 | 独立网格，保留木柄、骨刺/齿状轮廓；碰撞仍由现有战斗查询负责 | 待机/预警/出招/受击/死亡中武器位置稳定，不把视觉武器直接当伤害体 |
+
+先做单种敌人、单套完整衣物。彩色变体只能换材质，不可把多种来源图层随意拼成一只不协调的怪。若用户更偏好皮革甲、布衣或其他造型，在转台审阅时更换外观设计，不影响敌人逻辑 ID。
+
+## 工作范围和冻结条件
 
 1. 只在 D:/Github-Poj/UE-MMO/SourceAssets/Unpacked/DNFPrivateReference 之下建立建模工作区；不修改 D:/DOF/地下城与勇士 原始目录，不直接写 D:/Github-Poj/UE-MMO/Content 的 uasset，不覆盖固定开发包。
 2. 已确认：多个独立角色；首职业六技能**包含现有 Z 上挑**。首职业推荐格斗家，待交付的五个额外技能候选为 W 单踢、E 下段踢、R 抛沙、A 地裂、S 踏地。职业和这五个具体名称属于设计候选；先以格斗家造型做美术试样，技能动作批量制作要等造型审阅通过。
@@ -10,7 +56,7 @@
 4. 用户此前认可“橙色上衣＋深色长裤＋运动鞋”的格斗家与“绿皮＋胸甲＋腰部布衣＋木骨武器”的哥布林方向，并进一步要求角色和怪物有更多服装细节。因此首轮无需再询问是否裸体或仅用平面图；但对缺失的正/背面细节要给转台供用户审阅。
 5. 原始 2D 帧不构成完整三视图，背面、厚度、腰部布料、胸甲系带为设计推测。禁止宣称“精确还原原作 3D 模型”。像素帧可以指导轮廓、色块、动作节奏，不能直接当 UV、法线或 3D 骨骼数据。
 
-## 1. 环境、资料和尺寸基线
+## 环境、资料和尺寸基线
 
 **已验证的 Blender 路径**：
 
@@ -26,8 +72,8 @@
 | 怪物胸甲与武器叠层 | D:/Github-Poj/UE-MMO/SourceAssets/Unpacked/DNFPrivateReference/model-reference/goblin_armor_weapon_alignment.png | 对照绿皮体型、灰色胸甲和木骨武器 |
 | 原始关键帧与元数据 | D:/Github-Poj/UE-MMO/SourceAssets/Unpacked/DNFPrivateReference/model-reference/samples 与 manifest.json | 逐帧 PNG、SpriteX/Y、帧尺寸及来源 NPK/IMG；叠层应按公共画布对齐 |
 | 所有原始 IMG | D:/DOF/DNF-REA-Output/assets/img | 需要更多关键帧时按原特征名定位；不一次性导入 Blender |
-| 源配置、动作 | D:/Github-Poj/UE-MMO/SourceAssets/Unpacked/DNFPrivateReference/pvf 与 Docs/DNF-Research/01-技能系统.md（完整 PVF 仍在 D:/DOF/DNF-REA-Output/pvf） | 技能动作节奏和怪物行为参考，不直接把 PVF 数字当 UE 单位 |
-| 完整服装规格 | D:/Github-Poj/UE-MMO/Docs/DNF-Research/09-首职业与怪物服装细化设计-待审阅.md | 模型部件及穿模验收基线 |
+| 源配置、动作 | D:/Github-Poj/UE-MMO/SourceAssets/Unpacked/DNFPrivateReference/pvf 与 [研究依据](01-逆向研究依据.md)（完整 PVF 仍在 D:/DOF/DNF-REA-Output/pvf） | 技能动作节奏和怪物行为参考，不直接把 PVF 数字当 UE 单位 |
+| 完整服装规格 | D:/Github-Poj/UE-MMO/Docs/DNF-Research/03-Blender建模与资源交接.md | 模型部件及穿模验收基线 |
 
 建模坐标：Blender Z 向上，根骨骼放双脚地面中点，游戏面朝 +X，Y 表示地面纵深。设计以 1 Blender 单位约等于 1 米作为工作约定，导出后在 UE 验证厘米尺寸，不能只凭 Blender 视口看起来正确。现有 UE 角色 Capsule 半径 36 cm、半高 96 cm；近战敌人半径 34 cm、半高 88 cm；模型体型需与这些碰撞外壳协调，但不强行把怪物伸高到角色身高。现有 Manny/Quinn 网格在运行时有 -90° 相对 Yaw 校准；由 UE 导入验证决定新网格是否沿用此校准，不在 Blender 中凭猜测额外转 90°。
 
@@ -43,7 +89,7 @@
 
 其中 <阶段脚本>.py 是后续建模 Agent 应提交的实际脚本名称；当前文件尚不存在。不要仅凭进程退出码认定成功，脚本须输出自己的 JSON 报告，重新打开 .blend 并渲染截图。
 
-## 2. 产物目录与命名约定
+## 产物目录与命名约定
 
 新建 D:/Github-Poj/UE-MMO/SourceAssets/Unpacked/DNFPrivateReference/blender-work：
 
@@ -63,7 +109,7 @@
 
 命名用稳定英文 snake_case。Blender Collection 建议为 REF（参考图，导出时排除）、BODY、CLOTHING、HAIR、ACCESSORY、ARMATURE、WEAPON、CAMERA_LIGHT。对象名例如 hero_body、hero_coat、hero_pants、hero_shoes_l/r、goblin_armor、goblin_waistcloth、goblin_weapon。不得把 2D 参考平面或灯光烘进游戏网格。每阶段新源文件另存；不要覆盖通过审阅的上一阶段 .blend。
 
-## 3. 分阶段模型任务（每阶段都有可审阅交付）
+## 分阶段模型任务（每阶段都有可审阅交付）
 
 ### ART-01：清点参考并冻结造型
 
@@ -116,7 +162,7 @@
 
 **交付**：建模 Agent 交导出文件、最终 .blend、textures、manifest.json、blender_validation.json；UE 资源 Agent 接着交 ue_import_validation.json、复载结果和截图路径。**通过条件**：文件可二次导入、骨骼/贴图不丢、尺寸与碰撞可协调、无关键报错；两段资源验收均通过后才可交给 UE 功能 Agent。
 
-## 4. 最终交接验收表
+## 最终交接验收表
 
 建模 Agent 必须按资源分别填写 OK / BLOCKED / PLACEHOLDER，而不是只写“完成模型”：
 
@@ -132,6 +178,6 @@
 
 任何阶段出现“缺一条技能动作、背面只有空白贴片、衣服未蒙皮、怪物胸甲漂浮”等问题，明确 BLOCKED 或 PLACEHOLDER 并给下一步；不能把制作进度写入 UE-MMO 旧任务 DONE。既有 UE 工程本轮无人对其建模任务改状态；若未来开 UE 资源任务，先创建新任务卡并按 TASKS/HANDOFF 规则登记。
 
-## 5. 可直接发送给另一个建模 Agent 的任务说明
+## 可直接发送给建模 Agent 的任务说明
 
-> 请在本机 D:/Github-Poj/UE-MMO/SourceAssets/Unpacked/DNFPrivateReference 下完成一个私人学习用 Blender 5.2.4 LTS RC 建模任务。先阅读 Docs/DNF-Research/10-Blender建模Agent执行计划.md、Docs/DNF-Research/09-首职业与怪物服装细化设计-待审阅.md、Docs/DNF-Research/08-Blender首轮参考候选-待确认.md，核对 SourceAssets/Unpacked/DNFPrivateReference/model-reference/manifest.json 与已合成 PNG；不要改 D:/DOF/地下城与勇士 原件、D:/Github-Poj/UE-MMO 代码/uasset、TASKS.md 或固定开发包。使用文档中的 blender.exe 路径。第一轮只做 ART-01 参考与 ART-02/03 穿衣格斗家和有胸甲、腰部衣物、武器的哥布林低模转台，给正/侧/背及两个 3/4 的可视截图、.blend 源、来源哈希与问题列表，不先做六技能或 UE 功能代码。用户审阅第一轮转台后，再逐阶段完成细化、骨骼、动作和导出。侧帧缺失的 3D 结构标为设计推测；不公开或推送提取资源。每个阶段做实际文件与画面核验，未通过不得标完成。
+> 请在本机 D:/Github-Poj/UE-MMO/SourceAssets/Unpacked/DNFPrivateReference 下完成一个私人学习用 Blender 5.2.4 LTS RC 建模任务。先阅读本文件的“参考帧与来源”“服装与护具规格”“分阶段模型任务”及“最终交接验收表”，核对 SourceAssets/Unpacked/DNFPrivateReference/model-reference/manifest.json 与已合成 PNG。不要改 D:/DOF/地下城与勇士 原件、D:/Github-Poj/UE-MMO 代码/uasset、TASKS.md 或固定开发包。使用上文已验证的 blender.exe 路径。第一轮只做 ART-01 参考与 ART-02/03 穿衣格斗家和有胸甲、腰部衣物、武器的哥布林低模转台，交正/侧/背及两个 3/4 的截图、.blend 源、来源哈希与问题列表，不先做六技能或 UE 功能代码。用户审阅第一轮转台后，再做细化、骨骼、动作和导出。侧帧缺失的 3D 结构标为设计推测；不公开或推送提取资源。每个阶段做实际文件与画面核验，未通过不得标完成。
