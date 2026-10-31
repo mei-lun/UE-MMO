@@ -1,4 +1,13 @@
-# 最近一轮交接：第十六批（M5 收尾链收官：M5-049/054/055——任务板 AI 侧全部清零）
+# 最近一轮交接：M6-006 DNF 研究资料迁入（2026-11-01）
+
+> 本轮新完成 DONE 1 项：M6-006。任务板现为 196 项、192 DONE、0 IN_PROGRESS；M5-H03 仍由用户试玩签收，M5-H04 仍依赖该人工关。此前 M5/M6 交接历史保留在下文和 [本轮独立交接](Docs/Tasks/Handoffs/2026-11-01-Codex-DNFDocs.md)。
+
+- Owner：Codex-20261101-DNFDocs；实施提交 f5d69ec7303298921580251a3bad282b9f326193，验证见 [M6-006 报告](Docs/Tasks/Reports/M6-006.md)。
+- 11 份逆向/多职业/Blender 规划文档集中在 [Docs/DNF-Research](Docs/DNF-Research/README.md)。218 张 PNG 样本、10 个 IMG 样本、必要索引等位于 Git 忽略的 SourceAssets/Unpacked/DNFPrivateReference。完整原始包仍在 D:/DOF/DNF-REA-Output，未入 Git 或 UE Content。
+- 本轮未制作 3D 模型、未改游戏功能、未签 M5-H03。下一步建模 Agent 可按 Docs/DNF-Research/10-Blender建模Agent执行计划.md 执行 ART-01～ART-03 并交用户审阅转台；私有 DNF 图像不发布。
+- 工作区原有未跟踪 .zcode/ 不是本次产物，未触碰。结束前 CheckTaskBoard 验证通过；本轮报告有命令和结果。
+
+# 第十六批交接：M5 收尾链收官（M5-049/054/055——当时任务板 AI 侧全部清零）
 
 > 本批新增 DONE **3 项：M5-049、M5-054、M5-055**——连同此前批次，**任务板 195 项中 191 DONE，AI 侧可领取任务清零**；剩余 M5-H03（REVIEW 等用户签收）与 M5-H04（最终人工关）。历史批次见 Docs/Tasks/Handoffs/（M6 两批、batch13 归档等）。
 
