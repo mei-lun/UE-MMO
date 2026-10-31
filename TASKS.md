@@ -219,3 +219,4 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M6-005 | [独立主菜单启动图](Docs/Tasks/M6-005.md) | DONE | M6-004 | ZCode-20261029-B | 2026-10-30T01:05:00+08:00 | [report](Docs/Tasks/Reports/M6-005.md) |
 | M6-006 | [DNF 研究文档与私有参考素材归档](Docs/Tasks/M6-006.md) | DONE | M6-005 | Codex-20261101-DNFDocs | 2026-11-01T04:04:00+08:00 | [report](Docs/Tasks/Reports/M6-006.md) |
 | M6-007 | [DNF 研究文档最终版收敛](Docs/Tasks/M6-007.md) | DONE | M6-006 | Codex-20261101-DNFFinal | 2026-11-01T04:33:00+08:00 | [report](Docs/Tasks/Reports/M6-007.md) |
+| M6-008 | [DNFArt Blender 交付包 UE 导入验收](Docs/Tasks/M6-008.md) | DONE | M6-007 | ZCode-20261101-DNFArt | 2026-11-01T14:20:00+08:00 | [report](Docs/Tasks/Reports/M6-008.md) |
