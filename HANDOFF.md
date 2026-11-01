@@ -8,6 +8,14 @@
   0F4DACA3DB764E18）。旧用户存档已放回包内——首启即自动迁移。包内 README 附 M7 试玩清单
   （UEMMOSkillDemo 切格斗家、六键位、已知边界）。Package.ps1 已补 Data/Professions 与
   dungeon_sequences.json 携带（本次包为手工补齐，等价生效）。
+- **M7 试玩包第三版（2026-11-02，源码 `976bddd`，分支 art/hero-v2-rework）**：全链路包内验证绿——
+  ①用户畸形旧档恢复触发（插桩证明 stored/recomputed 摘要差 + 职业状态修复）→ ②旧档导入 →
+  ③启动恢复（11 件物品进度回来）→ ④HUD-exec SkillDemo 生效（屏幕横幅）→ ⑤证据截图产出。
+  前两版包的问题：v1 无恢复代码；v2 验证时用了错误时代的存档副本。
+- **视觉集成（976bddd）**：玩家=DNF 格斗家模型（单节点 idle/run 切换；mannequin AnimBP 无法驱动
+  DNF 骨架）；旧四招换真实 DNF 动作（clip_end 对齐导入时长）；9 个 MNT montage 在 DNF 骨架上
+  重建并二进程验证；M3-032 占位决策解锁（全部 placeholder=false）；M3_024/M3_028 测试恢复
+  mannequin 表现层以继续验证 AnimBP 契约。**全量回归 919/919**。
 - **M7-005 已设 BLOCKED（依赖外部条件）**：其 A/B/C 资源门由用户签收（任务卡原文），第二职业
   造型/动作资源需用户先给出方向（03 文档的建模例外按职业逐个过审）；阻塞原因与剩余步骤：
   ①用户选定第二职业与两项结构差异能力 → ②Blender 建模+用户 A/B/C 签收 → ③配置行接入（不复制
