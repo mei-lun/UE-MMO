@@ -1,3 +1,26 @@
+# 最近一轮交接：M7-002 迁移 + M7-003 六技能 + M7-004 连续地城（2026-11-01/02）
+
+> 本轮新完成 DONE 3 项：M7-002、M7-003、M7-004。任务板 203 项、198 DONE、0 IN_PROGRESS、
+> TODO 1（M7-005）；M5-H03/H04 仍等用户。延续会话指令：M7-005 第二职业证明为剩余项
+> （其 A/B/C 资源门属用户人工验收范畴，见 02 文档 §9 第 6 步）。
+
+- Owner：ZCode-20261101-DNFArt。M7-002 `ec5705b`；M7-003 `cb9bf57`；M7-004 `9e5ab7e`。
+  报告：[M7-002](Docs/Tasks/Reports/M7-002.md)、[M7-003](Docs/Tasks/Reports/M7-003.md)、[M7-004](Docs/Tasks/Reports/M7-004.md)。
+- **M7-002**：Roster 三槽事务 + schema v4 六列 + 显式迁移链（修复三个真缺口：Validate 漏 v3 门、
+  迁移输出必播种职业状态、LoadActiveProfile 静默丢 RoomClears）+ GameFlow roster-first 启动。
+- **M7-003**：USkillLoadoutComponent（预检-提交九类拒绝）+ 目录发布门子系统 + 购技能/SP/MaxMP
+  resolver + 逐实例伤害系数 + 四策略白名单（弹体复用统一命中；SelfBuff 无消费者已实现）+
+  Z 经济门 + HUD 五槽条；DNF 五条技能动画导入并二进程 verify；数据表/DataAsset 重生成。
+- **M7-004**：地城运行态（FDungeonRunState 仅运行态）+ 严格序列解析 + 协调器（门口快照→过图→
+  一次结算→DungeonClears；失败不结算；陈旧回调按房 id 丢弃）+ OnExitAccepted 门事件 +
+  过图 MP/冷却携带 + HUD 结算区分 + dungeon_goblin_proto（配置/资产/哥布林换装；两房 waves
+  重定向因 M2-016 单敌路径重构推迟，02 文档默认认可）。
+- **验证**：M7_002 10/10、M7_003 7/7、M7_004 2/2；**全量回归 917/917** 0 失败（含 M1_008/M1_010/
+  M5_004/M5_005/M2_001 五处陈旧钉诚实更新）。
+- **限制**：技能帧截图自动化环境不出图（M6-008 同类限制，留给试玩）；地城菜单入口按钮未接
+  （启动 API 就绪）；TravelProvider 的生产绑定（GameFlow::EnterRoom）待一行接线。
+- **下一步**：M7-005 第二职业证明（TODO）——需要第二职业造型资源与 A/B/C 门（用户人工验收）。
+
 # 最近一轮交接：M7-002 存档迁移 + M7-003 首职业六技能（2026-11-01）
 
 > 本轮新完成 DONE 2 项：M7-002、M7-003。任务板 203 项、197 DONE、0 IN_PROGRESS、TODO 2
