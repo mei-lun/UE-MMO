@@ -1,3 +1,17 @@
+# 最近一轮交接：M7-001 职业与等级配置底座 + DNFArt 资源 A/B 验收（2026-11-01）
+
+> 本轮新完成 DONE 2 项：DNFArt-AB-Acceptance（验收记录，非任务卡）与 M7-001。任务板 203 项、195 DONE、
+> 0 IN_PROGRESS、TODO 4（M7-002..005 已登记待领）；M5-H03 仍等用户试玩签收。
+> 延续会话指令：完成资源 A/B 验收 → 通过后按 02 文档 §9 第 2 步开始实施。
+
+- Owner：ZCode-20261101-DNFArt；实施提交 ad4456a（本报告提交后如有文档修订以后续提交为准）；[M7-001 报告](Docs/Tasks/Reports/M7-001.md)、[A/B 验收记录](Docs/Tasks/Reports/DNFArt-AB-Acceptance.md)。
+- **资源 A/B 验收（会话内执行，用户可推翻）**：按 03 文档验收表逐项审阅 ART-01～06 产物 + UE 导入数据，结论**通过**（3 项已记录限制：高踢胯部小扇面、无 tick 截图材质黑/动作帧静态、格斗家面数略低）。基线快照：固定包 identity（642aee5 / exe SHA-256 9E0D89...）+ 当前无用户存档（M5-H03 未试玩，旧档迁移测试将用合成夹具）。
+- **M7-001 职业与等级配置底座**：Data/Professions 六表（prototype 与 FExperienceCurve 逐值等价 + fighter MP/SP 默认值）+ 严格解析器（复用 combat JSON 解析器）+ 跨表门 + FProfessionCatalog 发布门 + UProfessionConfigAsset（一资产一包）+ generate/verify 编辑器包装 + 6 条 Automation 测试。
+- **验证**：Automation 904/904（898 既有 + 6 新增）0 失败；DataAsset generate→verify 第二进程逐字段+revision 一致（18b86af4e3c7b63f）；CheckTaskBoard valid=True。
+- **关键修复**：FName::Sort 需 LexicalLess lambda；combat-attacks.json attacks 是数组；DataAsset 首版误以文件夹路径落盘；测试文本突变注意源文件 CRLF。
+- **未动项**：旧功能/旧存档/M5-H03 判定/固定包未触碰；ArtValidation uassets 与 blender-work 保持本机不入库（gitignore 已加）。
+- **下一步**：M7-002 多角色存档与旧档迁移（TODO，依赖已满足）；M7-003/004/005 依次排队。
+
 # 最近一轮交接：M6-008 DNFArt Blender 交付包 UE 导入验收（2026-11-01）
 
 > 本轮新完成 DONE 1 项：M6-008。任务板 198 项、194 DONE、0 IN_PROGRESS；M5-H03 仍等用户试玩签收。

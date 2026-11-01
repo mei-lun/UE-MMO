@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "required_tables": [
+    "professions",
+    "level_curves",
+    "skills",
+    "skill_levels",
+    "loadouts"
+  ],
+  "comment": "M7-001: the profession data directory manifest - the explicit required-table registry the profession loader enforces (same contract as Data/CombatSystem/manifest.json). Every listed table must exist and parse; a supported table file that is not listed is refused, never silently loaded or ignored."
+}

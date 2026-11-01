@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "table": "professions",
+  "rows": [
+    {
+      "profession_id": "prototype",
+      "display_name": "原型战士",
+      "curve_id": "prototype_curve",
+      "mesh_path": "",
+      "skeleton_path": "",
+      "locomotion_set_id": "prototype_locomotion",
+      "starting_skill_ranks": {},
+      "allowed_weapon_modes": ["melee"],
+      "presentation_id": "",
+      "asset_placeholder": true
+    },
+    {
+      "profession_id": "fighter",
+      "display_name": "格斗家",
+      "curve_id": "fighter_curve",
+      "mesh_path": "",
+      "skeleton_path": "",
+      "locomotion_set_id": "fighter_locomotion",
+      "starting_skill_ranks": { "launcher_z": 1 },
+      "allowed_weapon_modes": ["melee"],
+      "presentation_id": "",
+      "asset_placeholder": true
+    }
+  ],
+  "comment": "M7-001: prototype is the legacy-compatibility profession (empty starting_skill_ranks - the legacy four attacks are not skill-gated). fighter starts with launcher_z at rank 1 (the Z launcher is granted at creation; the other five hotbar skills must be purchased with SP). mesh_path/skeleton_path are empty with asset_placeholder=true because the DNFArt meshes are imported by the later gameplay-integration task, not by the config base; a non-empty path must live under /Game/UEMMO/ and must not carry the placeholder flag. presentation_id is empty in this card (hit presentations for skills arrive with M7-003)."
+}

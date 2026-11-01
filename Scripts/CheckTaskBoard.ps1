@@ -7,7 +7,7 @@ $Problems = New-Object 'System.Collections.Generic.List[string]'
 $Rows = New-Object 'System.Collections.Generic.List[object]'
 $ById = @{}
 $Allowed = @('TODO','IN_PROGRESS','PAUSED','BLOCKED','REVIEW','DONE','DEFERRED','SUPERSEDED')
-$IdPattern = '^M[0-6]-(?:[0-9]{3}[A-Z]?|H[0-9]{2})$'
+$IdPattern = '^M[0-9]-(?:[0-9]{3}[A-Z]?|H[0-9]{2})$'
 $EmptyCell = [string][char]0x2014
 
 function Get-LinkPath([string]$Cell) {

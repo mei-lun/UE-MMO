@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "table": "skill_levels",
+  "rows": [
+    { "skill_id": "launcher_z", "rank": 1, "required_character_level": 1, "sp_cost": 0, "cooldown_s": 2.0, "mp_cost": 10, "damage_coefficient": 1.0, "effect_parameters": {} },
+    { "skill_id": "launcher_z", "rank": 2, "required_character_level": 4, "sp_cost": 3, "cooldown_s": 2.0, "mp_cost": 12, "damage_coefficient": 1.25, "effect_parameters": {} },
+    { "skill_id": "launcher_z", "rank": 3, "required_character_level": 7, "sp_cost": 5, "cooldown_s": 2.0, "mp_cost": 14, "damage_coefficient": 1.5, "effect_parameters": {} },
+
+    { "skill_id": "singlekick_w", "rank": 1, "required_character_level": 1, "sp_cost": 2, "cooldown_s": 1.5, "mp_cost": 8, "damage_coefficient": 0.8, "effect_parameters": {} },
+    { "skill_id": "singlekick_w", "rank": 2, "required_character_level": 5, "sp_cost": 4, "cooldown_s": 1.5, "mp_cost": 10, "damage_coefficient": 1.0, "effect_parameters": {} },
+
+    { "skill_id": "damagelowkick_e", "rank": 1, "required_character_level": 2, "sp_cost": 2, "cooldown_s": 2.5, "mp_cost": 8, "damage_coefficient": 0.7, "effect_parameters": {} },
+    { "skill_id": "damagelowkick_e", "rank": 2, "required_character_level": 6, "sp_cost": 4, "cooldown_s": 2.5, "mp_cost": 10, "damage_coefficient": 0.9, "effect_parameters": {} },
+
+    { "skill_id": "throwsand_r", "rank": 1, "required_character_level": 3, "sp_cost": 3, "cooldown_s": 4.0, "mp_cost": 12, "damage_coefficient": 0.6, "effect_parameters": {} },
+    { "skill_id": "throwsand_r", "rank": 2, "required_character_level": 8, "sp_cost": 5, "cooldown_s": 4.0, "mp_cost": 14, "damage_coefficient": 0.8, "effect_parameters": {} },
+
+    { "skill_id": "earthbreak_a", "rank": 1, "required_character_level": 4, "sp_cost": 4, "cooldown_s": 6.0, "mp_cost": 18, "damage_coefficient": 1.1, "effect_parameters": {} },
+    { "skill_id": "earthbreak_a", "rank": 2, "required_character_level": 9, "sp_cost": 6, "cooldown_s": 6.0, "mp_cost": 22, "damage_coefficient": 1.4, "effect_parameters": {} },
+
+    { "skill_id": "stomp_s", "rank": 1, "required_character_level": 5, "sp_cost": 4, "cooldown_s": 5.0, "mp_cost": 16, "damage_coefficient": 1.0, "effect_parameters": {} },
+    { "skill_id": "stomp_s", "rank": 2, "required_character_level": 10, "sp_cost": 6, "cooldown_s": 5.0, "mp_cost": 20, "damage_coefficient": 1.3, "effect_parameters": {} }
+  ],
+  "comment": "M7-001 design defaults (recorded, not user-confirmed item by item; PVF seconds are NOT used - these are tunable UE-side numbers per the implementation plan): launcher_z rank 1 is free (sp_cost 0 - granted via professions.starting_skill_ranks at creation), higher ranks purchase with SP and gate on required_character_level. cooldown_s/mp_cost/damage_coefficient are first-pass tuning values; M7-003 validates them against the implemented attacks. Ranks are continuous 1..max_rank per skill and are enforced by the parser."
+}
