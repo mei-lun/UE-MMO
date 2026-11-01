@@ -9,6 +9,7 @@
 #include "../Profile/ProfileSubsystem.h"
 #include "../Profile/RewardService.h"
 #include "ProfileSaveGame.h"
+#include "ProfileSerializer.h"
 
 #include "ProfileSaveService.generated.h"
 
@@ -175,6 +176,16 @@ struct FProfileSaveRequest
 
 	/** Per-room clear records at capture time (schema v3 field; empty = no clears yet). */
 	TArray<FRoomClearSaveEntry> RoomClears;
+
+	// -- M7-002: the profession state rides the same consistent snapshot ------
+
+	/**
+	 * The profession state at capture time (schema v4 fields). A request
+	 * assembled without one carries the legacy-equivalent defaults (the
+	 * serializer stamps them), so pre-existing request builders compile and
+	 * produce a legal v4 payload unchanged.
+	 */
+	FProfessionSaveState ProfessionState;
 };
 
 /**
@@ -289,6 +300,12 @@ struct FProfileLoadOutcome
 	TArray<FPendingReward> PendingRewards;
 	TSet<uint64> AppliedSettlementIds;
 	TMap<EItemSlot, FGuid> EquippedMap;
+
+	// M6-003: the restored slot's per-room clear records (empty on v1/v2 slots).
+	TArray<FRoomClearSaveEntry> RoomClears;
+
+	// M7-002: the restored profession state (default values on any failure).
+	FProfessionStateOut ProfessionState;
 };
 
 /**
@@ -367,6 +384,10 @@ struct FStartupLoadOutcome
 	// M6-003: the restored slot's per-room clear records (empty on v1/v2 slots
 	// and on every failure - the migration seeds them explicitly empty).
 	TArray<FRoomClearSaveEntry> RoomClears;
+
+	// M7-002: the restored slot's profession state (the legacy-equivalent
+	// shape on migrated v1/v2/v3 slots; default values on every failure).
+	FProfessionStateOut ProfessionState;
 };
 
 /**
@@ -588,6 +609,9 @@ private:
 		FInventoryModel Inventory;
 		TArray<FPendingReward> PendingRewards;
 		TSet<uint64> AppliedSettlementIds;
+
+		// M7-002: the restored profession state (default values unless loaded).
+		FProfessionStateOut ProfessionState;
 		TMap<EItemSlot, FGuid> EquippedMap;
 
 		// M5-047: the slot's v2 weapon state (default empty/false on v1 slots).

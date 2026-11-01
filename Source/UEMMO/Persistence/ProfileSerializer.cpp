@@ -21,6 +21,70 @@
 
 #include "UObject/UObjectGlobals.h"
 
+// M7-002: the frozen legacy attack ids. The four normal attacks of the
+// research prototype (Data/combat-attacks.json) - a migrated legacy save
+// carries exactly these at rank 1 so a legacy player is never locked out of
+// the normal attacks. Frozen content: the list is a checked-in contract, the
+// same ids the M1-009 tests pin.
+static const TArray<FName>& GetLegacyPrototypeAttackIds()
+{
+	static const TArray<FName> Ids = {
+		FName(TEXT("light_01")),
+		FName(TEXT("light_02")),
+		FName(TEXT("launcher")),
+		FName(TEXT("aerial_01"))
+	};
+	return Ids;
+}
+
+/**
+ * M7-002: seeds the legacy-equivalent profession state onto a migration
+ * output. Every pre-v4 migration channel stamps CurrentSchemaVersion (the
+ * pinned M5-046 one-step contract), so EVERY migration output is a v4 payload
+ * and must carry the profession columns - the prototype profession, the four
+ * legacy attacks at rank 1, UnspentSP 0, an EMPTY loadout, no revision and
+ * DungeonClears 0. Without this the migration's own v4 self-validation would
+ * refuse its own output.
+ */
+static void M7_002_SeedLegacyProfessionState(UProfileSaveGame& Migrated)
+{
+	Migrated.ProfessionId = FName(TEXT("prototype"));
+	for (const FName& LegacySkill : FProfessionSaveState::LegacyPrototypeSkillIds())
+	{
+		FSkillRankSaveEntry RankRow;
+		RankRow.SkillId = LegacySkill;
+		RankRow.Rank = 1;
+		Migrated.SkillRanks.Add(RankRow);
+	}
+	Migrated.UnspentSP = 0;
+	Migrated.SkillLoadout.Reset();
+	Migrated.ProfessionConfigRevision.Reset();
+	Migrated.DungeonClears = 0;
+}
+
+FProfessionSaveState FProfessionSaveState::MakeLegacyPrototype()
+{
+	FProfessionSaveState State;
+	State.ProfessionId = FName(TEXT("prototype"));
+	for (const FName& Attack : GetLegacyPrototypeAttackIds())
+	{
+		FSkillRankSaveEntry RankRow;
+		RankRow.SkillId = Attack;
+		RankRow.Rank = 1;
+		State.SkillRanks.Add(RankRow);
+	}
+	State.UnspentSP = 0;
+	State.SkillLoadout.Reset();
+	State.ProfessionConfigRevision.Reset();
+	State.DungeonClears = 0;
+	return State;
+}
+
+const TArray<FName>& FProfessionSaveState::LegacyPrototypeSkillIds()
+{
+	return GetLegacyPrototypeAttackIds();
+}
+
 UProfileSaveGame* FProfileSerializer::ToSaveGame(const FProfileSnapshot& Snapshot,
 	const FInventoryModel& Inventory,
 	const TArray<FPendingReward>& PendingRewards,
@@ -31,6 +95,7 @@ UProfileSaveGame* FProfileSerializer::ToSaveGame(const FProfileSnapshot& Snapsho
 	bool bInWeaponStateInitialized,
 	const FString& InConfigRevision,
 	const TArray<FRoomClearSaveEntry>& InRoomClears,
+	const FProfessionSaveState* InProfessionState,
 	UObject* Outer)
 {
 	UProfileSaveGame* Save = NewObject<UProfileSaveGame>(Outer ? Outer : GetTransientPackage());
@@ -42,6 +107,19 @@ UProfileSaveGame* FProfileSerializer::ToSaveGame(const FProfileSnapshot& Snapsho
 	// Settings placeholder: no settings domain exists yet, so the serializer
 	// always writes the documented default (reported as a known limitation).
 	Save->MasterVolume = 1.0f;
+
+	// M7-002: the profession state. nullptr stamps the legacy-equivalent
+	// default shape (prototype + the four legacy attacks at rank 1), so every
+	// pre-existing call site writes a legal v4 payload unchanged.
+	const FProfessionSaveState ResolvedProfession = InProfessionState
+		? *InProfessionState
+		: FProfessionSaveState::MakeLegacyPrototype();
+	Save->ProfessionId = ResolvedProfession.ProfessionId;
+	Save->SkillRanks = ResolvedProfession.SkillRanks;
+	Save->UnspentSP = ResolvedProfession.UnspentSP;
+	Save->SkillLoadout = ResolvedProfession.SkillLoadout;
+	Save->ProfessionConfigRevision = ResolvedProfession.ProfessionConfigRevision;
+	Save->DungeonClears = ResolvedProfession.DungeonClears;
 
 	// Inventory instances as their M3-001 snapshot strings, insertion order.
 	for (const FItemInstance& Instance : Inventory.GetAll())
@@ -621,6 +699,98 @@ namespace
 			SeenRoomIds.Add(Entry.RoomId);
 		}
 
+		// M7-002: the profession state (schema_version 4). Every rule is
+		// structural - the profession's EXISTENCE against the live catalog is
+		// the consuming layer's gate, this validator stays catalog-free.
+		if (Save.SchemaVersion >= UProfileSaveGame::SchemaVersion3 + 1)
+		{
+			if (Save.ProfessionId.IsNone() || Save.ProfessionId.IsEqual(NAME_None, ENameCase::IgnoreCase)
+				|| !IsValidDefinitionIdText(Save.ProfessionId.ToString()))
+			{
+				OutError.Code = EProfileLoadError::InvalidProfessionState;
+				OutError.Message = FString::Printf(
+					TEXT("ProfessionId must be a non-empty 1-64 character a-z0-9_ id (got '%s')"),
+					*Save.ProfessionId.ToString());
+				return false;
+			}
+			if (Save.UnspentSP < 0 || Save.DungeonClears < 0)
+			{
+				OutError.Code = EProfileLoadError::InvalidProfessionState;
+				OutError.Message = FString::Printf(
+					TEXT("UnspentSP (%d) and DungeonClears (%d) must be >= 0"),
+					Save.UnspentSP, Save.DungeonClears);
+				return false;
+			}
+			TSet<FName> SeenRankSkills;
+			for (int32 Index = 0; Index < Save.SkillRanks.Num(); ++Index)
+			{
+				const FSkillRankSaveEntry& Entry = Save.SkillRanks[Index];
+				if (Entry.SkillId.IsNone() || !IsValidDefinitionIdText(Entry.SkillId.ToString()))
+				{
+					OutError.Code = EProfileLoadError::InvalidProfessionState;
+					OutError.Message = FString::Printf(
+						TEXT("SkillRanks[%d].SkillId must be a non-empty 1-64 character a-z0-9_ id (got '%s')"),
+						Index, *Entry.SkillId.ToString());
+					return false;
+				}
+				if (Entry.Rank < 1 || Entry.Rank > 8)
+				{
+					OutError.Code = EProfileLoadError::InvalidProfessionState;
+					OutError.Message = FString::Printf(
+						TEXT("SkillRanks[%d] ('%s').Rank must be 1..8 (got %d)"),
+						Index, *Entry.SkillId.ToString(), Entry.Rank);
+					return false;
+				}
+				if (SeenRankSkills.Contains(Entry.SkillId))
+				{
+					OutError.Code = EProfileLoadError::DuplicateProfessionState;
+					OutError.Message = FString::Printf(
+						TEXT("SkillRanks[%d]: SkillId '%s' carries more than one rank row; duplicates are rejected, never silently merged"),
+						Index, *Entry.SkillId.ToString());
+					return false;
+				}
+				SeenRankSkills.Add(Entry.SkillId);
+			}
+			TSet<int32> SeenLoadoutSlots;
+			for (int32 Index = 0; Index < Save.SkillLoadout.Num(); ++Index)
+			{
+				const FSkillSlotSaveEntry& Entry = Save.SkillLoadout[Index];
+				if (Entry.SlotIndex < 1 || Entry.SlotIndex > 8)
+				{
+					OutError.Code = EProfileLoadError::InvalidProfessionState;
+					OutError.Message = FString::Printf(
+						TEXT("SkillLoadout[%d].SlotIndex must be 1..8 (got %d)"),
+						Index, Entry.SlotIndex);
+					return false;
+				}
+				if (Entry.SkillId.IsNone() || !IsValidDefinitionIdText(Entry.SkillId.ToString()))
+				{
+					OutError.Code = EProfileLoadError::InvalidProfessionState;
+					OutError.Message = FString::Printf(
+						TEXT("SkillLoadout[%d].SkillId must be a non-empty 1-64 character a-z0-9_ id (got '%s')"),
+						Index, *Entry.SkillId.ToString());
+					return false;
+				}
+				if (SeenLoadoutSlots.Contains(Entry.SlotIndex))
+				{
+					OutError.Code = EProfileLoadError::DuplicateProfessionState;
+					OutError.Message = FString::Printf(
+						TEXT("SkillLoadout[%d]: SlotIndex %d carries more than one assignment; duplicates are rejected, never silently merged"),
+						Index, Entry.SlotIndex);
+					return false;
+				}
+				SeenLoadoutSlots.Add(Entry.SlotIndex);
+				if (!SeenRankSkills.Contains(Entry.SkillId))
+				{
+					OutError.Code = EProfileLoadError::DanglingLoadoutSkill;
+					OutError.Message = FString::Printf(
+						TEXT("SkillLoadout[%d]: skill '%s' has no learned rank row; a dangling hotbar assignment can never launch anything"),
+						Index, *Entry.SkillId.ToString());
+					return false;
+				}
+			}
+		}
+
 		return true;
 	}
 }
@@ -650,15 +820,20 @@ bool FProfileSerializer::Validate(const UProfileSaveGame* Save, FProfileLoadErro
 			Save->SchemaVersion, UProfileSaveGame::CurrentSchemaVersion);
 		return false;
 	}
+	// M7-002: schema version 3 joins the migratable set - it loads through
+	// the explicit MigrateV3ToV4 channel in FromSaveGame (every M6-003-era
+	// save is a v3 save; refusing it here would orphan the whole history).
 	if (Save->SchemaVersion != UProfileSaveGame::CurrentSchemaVersion
+		&& Save->SchemaVersion != UProfileSaveGame::SchemaVersion3
 		&& Save->SchemaVersion != UProfileSaveGame::SchemaVersion2
 		&& Save->SchemaVersion != UProfileSaveGame::LegacySchemaVersion)
 	{
 		OutError.Code = EProfileLoadError::UnsupportedSchema;
 		OutError.Message = FString::Printf(
-			TEXT("schema_version %d is not a schema this build knows (expected %d, or the migratable %d/%d); refusing to load and refusing to modify or wipe the existing save file"),
+			TEXT("schema_version %d is not a schema this build knows (expected %d, or the migratable %d/%d/%d); refusing to load and refusing to modify or wipe the existing save file"),
 			Save->SchemaVersion, UProfileSaveGame::CurrentSchemaVersion,
-			UProfileSaveGame::SchemaVersion2, UProfileSaveGame::LegacySchemaVersion);
+			UProfileSaveGame::SchemaVersion3, UProfileSaveGame::SchemaVersion2,
+			UProfileSaveGame::LegacySchemaVersion);
 		return false;
 	}
 
@@ -682,7 +857,8 @@ bool FProfileSerializer::FromSaveGame(const UProfileSaveGame* InSave,
 	const FProfileItemManifest* ItemManifest,
 	const TMap<FName, FAmmoType>* CurrentAmmoTypes,
 	FProfileWeaponStateOut* OutWeaponState,
-	TArray<FRoomClearSaveEntry>* OutRoomClears)
+	TArray<FRoomClearSaveEntry>* OutRoomClears,
+	FProfessionStateOut* OutProfessionState)
 {
 	const UProfileSaveGame* Save = InSave;
 
@@ -715,6 +891,20 @@ bool FProfileSerializer::FromSaveGame(const UProfileSaveGame* InSave,
 	if (Save && Save->SchemaVersion == UProfileSaveGame::SchemaVersion2)
 	{
 		MigratedScratch = MigrateV2ToV3(*Save, OutError);
+		if (!MigratedScratch)
+		{
+			return false;
+		}
+		Save = MigratedScratch;
+	}
+
+	// M7-002: a schema_version 3 save enters through the third migration
+	// channel - the profession state seeds the legacy-equivalent shape (see
+	// MigrateV3ToV4). The manifest gate (when the caller supplied one) still
+	// applies to the migrated result below, exactly like the v1/v2 paths.
+	if (Save && Save->SchemaVersion == UProfileSaveGame::SchemaVersion3)
+	{
+		MigratedScratch = MigrateV3ToV4(*Save, OutError);
 		if (!MigratedScratch)
 		{
 			return false;
@@ -848,6 +1038,22 @@ bool FProfileSerializer::FromSaveGame(const UProfileSaveGame* InSave,
 		*OutRoomClears = Save->RoomClears;
 	}
 
+	// M7-002: the restored profession state (a v4 save carries it verbatim; a
+	// migrated v1/v2/v3 save carries the legacy-equivalent shape the migration
+	// seeded). Never written on a failed load - this code only runs after
+	// every step above succeeded.
+	if (OutProfessionState)
+	{
+		FProfessionStateOut ProfessionState;
+		ProfessionState.ProfessionId = Save->ProfessionId;
+		ProfessionState.SkillRanks = Save->SkillRanks;
+		ProfessionState.UnspentSP = Save->UnspentSP;
+		ProfessionState.SkillLoadout = Save->SkillLoadout;
+		ProfessionState.ProfessionConfigRevision = Save->ProfessionConfigRevision;
+		ProfessionState.DungeonClears = Save->DungeonClears;
+		*OutProfessionState = ProfessionState;
+	}
+
 	OutError.Code = EProfileLoadError::None;
 	OutError.Message.Reset();
 	return true;
@@ -975,6 +1181,8 @@ UProfileSaveGame* FProfileSerializer::MigrateV1ToV2(const UProfileSaveGame& Lega
 	Migrated->ConfigRevision = MigrationConfigRevision;
 
 	// Defensive self-check: the migration's own output must validate as v2.
+	M7_002_SeedLegacyProfessionState(*Migrated);
+
 	FProfileLoadError SelfCheck;
 	if (!Validate(Migrated, SelfCheck, &ItemManifest))
 	{
@@ -985,6 +1193,74 @@ UProfileSaveGame* FProfileSerializer::MigrateV1ToV2(const UProfileSaveGame& Lega
 
 	OutError.Code = EProfileLoadError::None;
 	OutError.Message.Reset();
+	return Migrated;
+}
+
+UProfileSaveGame* FProfileSerializer::MigrateV3ToV4(const UProfileSaveGame& LegacySave,
+	FProfileLoadError& OutError,
+	UObject* Outer)
+{
+	// The migration is EXPLICITLY v3 -> v4: anything else is a caller bug or
+	// an unknown schema, and the original save stays untouched either way.
+	if (LegacySave.SchemaVersion == UProfileSaveGame::CurrentSchemaVersion)
+	{
+		OutError.Code = EProfileLoadError::UnsupportedSchema;
+		OutError.Message = FString::Printf(
+			TEXT("the save already carries schema_version %d; there is nothing to migrate (this channel accepts schema_version %d only)"),
+			UProfileSaveGame::CurrentSchemaVersion, UProfileSaveGame::SchemaVersion3);
+		return nullptr;
+	}
+	if (LegacySave.SchemaVersion != UProfileSaveGame::SchemaVersion3)
+	{
+		OutError.Code = EProfileLoadError::UnsupportedSchema;
+		OutError.Message = FString::Printf(
+			TEXT("schema_version %d is not the schema_version %d this migration accepts; refusing to load and refusing to modify or wipe the existing save file"),
+			LegacySave.SchemaVersion, UProfileSaveGame::SchemaVersion3);
+		return nullptr;
+	}
+
+	// The v3 payload must be a VALID v3 payload: the same field rules a load
+	// applies. The manifest gate stays with the caller's post-migration load
+	// validation - v3 -> v4 performs no content rewriting. A corrupt legacy
+	// save is refused here - never partially migrated.
+	if (!Validate(&LegacySave, OutError))
+	{
+		return nullptr;
+	}
+
+	// v4 adds ONLY the profession state, so every v3 field copies verbatim
+	// and the new columns seed the legacy-equivalent shape (nothing stays
+	// implicit - the same rule as the v1 weapon-state and v3 RoomClears
+	// seeding): the prototype profession, the four legacy attacks at rank 1
+	// (a legacy player is never locked out of the normal attacks, and the
+	// legacy attacks do not consume MP or SP), UnspentSP 0, an EMPTY loadout,
+	// no revision and DungeonClears 0.
+	UProfileSaveGame* Migrated = NewObject<UProfileSaveGame>(Outer ? Outer : GetTransientPackage());
+	Migrated->SchemaVersion = UProfileSaveGame::CurrentSchemaVersion;
+	Migrated->CharacterId = LegacySave.CharacterId;
+	Migrated->Level = LegacySave.Level;
+	Migrated->XP = LegacySave.XP;
+	Migrated->MasterVolume = LegacySave.MasterVolume;
+	Migrated->InventoryInstanceSnapshots = LegacySave.InventoryInstanceSnapshots;
+	Migrated->EquippedIds = LegacySave.EquippedIds;
+	Migrated->PendingRewards = LegacySave.PendingRewards;
+	Migrated->AppliedSettlementIds = LegacySave.AppliedSettlementIds;
+	Migrated->WeaponMagazines = LegacySave.WeaponMagazines;
+	Migrated->ReserveAmmoPools = LegacySave.ReserveAmmoPools;
+	Migrated->bWeaponStateInitialized = LegacySave.bWeaponStateInitialized;
+	Migrated->ConfigRevision = LegacySave.ConfigRevision;
+	Migrated->RoomClears = LegacySave.RoomClears;
+	M7_002_SeedLegacyProfessionState(*Migrated);
+
+	// Defensive self-check: the migration's own output must validate as v4
+	// (the profession-state rules included).
+	FProfileLoadError SelfCheck;
+	if (!Validate(Migrated, SelfCheck))
+	{
+		OutError.Code = SelfCheck.Code;
+		OutError.Message = FString::Printf(TEXT("the migrated v4 save failed its own validation: %s"), *SelfCheck.Message);
+		return nullptr;
+	}
 	return Migrated;
 }
 
@@ -1040,6 +1316,8 @@ UProfileSaveGame* FProfileSerializer::MigrateV2ToV3(const UProfileSaveGame& Lega
 	Migrated->bWeaponStateInitialized = LegacySave.bWeaponStateInitialized;
 	Migrated->ConfigRevision = LegacySave.ConfigRevision;
 	Migrated->RoomClears.Reset();
+
+	M7_002_SeedLegacyProfessionState(*Migrated);
 
 	// Defensive self-check: the migration's own output must validate as v3.
 	FProfileLoadError SelfCheck;

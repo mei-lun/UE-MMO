@@ -353,6 +353,10 @@ namespace UE::UEMMO::Tasks::M3_013
 		Save->CharacterId = M3_013_FixtureCharacterId();
 		Save->Level = 2;
 		Save->XP = 10;
+		// M7-002: a schema_version 4 payload REQUIRES a valid profession id
+		// (the serializer refuses None); a hand-built raw save stamps the
+		// same default ToSaveGame would.
+		Save->ProfessionId = FName(TEXT("prototype"));
 		return Save;
 	}
 }

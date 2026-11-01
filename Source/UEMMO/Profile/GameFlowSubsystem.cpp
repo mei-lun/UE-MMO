@@ -8,6 +8,8 @@
 
 #include "GameFlowSubsystem.h"
 
+#include "../Persistence/RosterService.h"
+
 #include "../Combat/Data/CombatDataTableParser.h"
 #include "../Room/RoomDefinition.h"
 #include "../Room/RoomSessionSubsystem.h"
@@ -26,6 +28,11 @@ namespace
 	// M3-017 test seam: the save service the NEXT Initialize consumes (rooted
 	// while parked). Always null in production.
 	UProfileSaveService* GM3_017_StartupSaveServiceOverride = nullptr;
+
+	// M7-002 test seam: the roster service the NEXT Initialize consumes (the
+	// roster A/B storage rides its own ISaveStorage). Always null in
+	// production; automation without it skips the roster pass entirely.
+	URosterService* GM7_002_StartupRosterServiceOverride = nullptr;
 
 	// M6-001: the generated room-definition assets (the M5-070 pipeline) the
 	// catalog resolves each Data/rooms.json row against.
@@ -52,6 +59,10 @@ namespace
 	// The production save prefix of the M3-014/M3-015 chain (only ever used
 	// outside automation; automation runs the isolated injected service).
 	const TCHAR* GM3_017_ProductionSlotPrefix = TEXT("Profile_");
+
+	// The production roster prefix of the M7-002 chain (only ever used
+	// outside automation).
+	const TCHAR* GM7_002_ProductionRosterPrefix = TEXT("Roster_");
 }
 
 // M6-001: the parked catalog-source test path; empty in production.
@@ -101,10 +112,130 @@ void UGameFlowSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		}
 	}
 
+	// M7-002: the roster-first startup order (production only; the injected
+	// legacy service keeps the M3-017 semantics exactly). The roster pass
+	// decides WHICH character prefix the profile restores from; the legacy
+	// "Profile_" pass becomes the one-time import source.
+	URosterService* RosterService = ConsumeStartupRosterServiceOverride();
+	bool bRosterPassRan = false;
+	if (RosterService == nullptr && !GIsAutomationTesting && Profile != nullptr)
+	{
+		RosterService = NewObject<URosterService>(this);
+		if (!RosterService->Initialize(GM7_002_ProductionRosterPrefix))
+		{
+			UE_LOG(LogTemp, Error, TEXT("UEMMO M7-002: the roster service rejected the '%s' prefix; the roster pass is skipped."),
+				GM7_002_ProductionRosterPrefix);
+			RosterService = nullptr;
+		}
+	}
+	FRosterLoadOutcome RosterLoad;
+	if (RosterService != nullptr && Profile != nullptr && Service != nullptr)
+	{
+		RosterLoad = RosterService->LoadRoster();
+		if (RosterLoad.Result == ERosterLoadResult::Recovered
+			|| RosterLoad.Result == ERosterLoadResult::RecoveredFallback)
+		{
+			// Roster-first: the ACTIVE character's own prefix runs the
+			// M3-015 startup pass (the legacy "Profile_" pass is never read
+			// once a roster exists).
+			const FRosterEntry* ActiveEntry = RosterLoad.Entries.FindByPredicate(
+				[](const FRosterEntry& Entry) { return Entry.bActive; });
+			if (ActiveEntry)
+			{
+				UProfileSaveService* CharService = NewObject<UProfileSaveService>(this);
+				if (CharService->Initialize(ActiveEntry->SavePrefix))
+				{
+					StartupOutcome = CharService->StartupLoad();
+					bRanStartupPass = true;
+					bRosterPassRan = true;
+				}
+				else
+				{
+					StartupOutcome = FStartupLoadOutcome();
+					StartupOutcome.Result = EStartupLoadResult::RecoveryError;
+					StartupOutcome.Summary = FString::Printf(TEXT("M7-002: the character save service rejected the prefix '%s'"),
+						*ActiveEntry->SavePrefix);
+					bRosterPassRan = true;
+				}
+			}
+			else
+			{
+				StartupOutcome = FStartupLoadOutcome();
+				StartupOutcome.Result = EStartupLoadResult::RecoveryError;
+				StartupOutcome.Summary = TEXT("M7-002: the roster carries no active character");
+				bRosterPassRan = true;
+			}
+		}
+		else if (RosterLoad.Result == ERosterLoadResult::RecoveryError)
+		{
+			// A corrupt roster is NEVER treated as a fresh state (双角色
+			// guard): no restore, no import, the files stay for diagnosis.
+			StartupOutcome = FStartupLoadOutcome();
+			StartupOutcome.Result = EStartupLoadResult::RecoveryError;
+			StartupOutcome.Summary = FString::Printf(TEXT("M7-002: the roster is corrupt: %s"), *RosterLoad.Message);
+			bRosterPassRan = true;
+		}
+		// NoRoster falls through to the one-time import below.
+	}
+
 	if (Service != nullptr && Profile != nullptr)
 	{
 		bRanStartupPass = true;
-		StartupOutcome = Service->StartupLoad();
+		if (RosterService != nullptr)
+		{
+			// M7-002: the one-time import gate runs BEFORE any legacy direct
+			// load - a healthy roster never reaches here (the roster-first
+			// branch above already ran), a corrupt roster already reported.
+			const FRosterImportOutcome Import =
+				RosterService->ImportLegacyProfile(*Service, Profile);
+			if (Import.Result == ERosterImportResult::Imported)
+			{
+				UE_LOG(LogTemp, Log, TEXT("UEMMO M7-002: the legacy profile was imported (character %s, prefix %s)."),
+					*Import.CharacterId.ToString(), *Import.SavePrefix);
+			}
+			else if (Import.Result == ERosterImportResult::FreshInstallCreated)
+			{
+				UE_LOG(LogTemp, Log, TEXT("UEMMO M7-002: fresh install - the default prototype character was created (%s)."),
+					*Import.CharacterId.ToString());
+			}
+			else if (Import.Result != ERosterImportResult::RosterAlreadyExists)
+			{
+				UE_LOG(LogTemp, Error, TEXT("UEMMO M7-002: the legacy import failed: %s"), *Import.Message);
+			}
+
+			// The roster (existing or just created) decides the restore.
+			const FRosterLoadOutcome RosterAfter = RosterService->LoadRoster();
+			const FRosterEntry* ActiveEntry = RosterAfter.Entries.FindByPredicate(
+				[](const FRosterEntry& Entry) { return Entry.bActive; });
+			if (ActiveEntry)
+			{
+				UProfileSaveService* CharService = NewObject<UProfileSaveService>(this);
+				if (CharService->Initialize(ActiveEntry->SavePrefix))
+				{
+					StartupOutcome = CharService->StartupLoad();
+				}
+				else
+				{
+					StartupOutcome = FStartupLoadOutcome();
+					StartupOutcome.Result = EStartupLoadResult::RecoveryError;
+					StartupOutcome.Summary = FString::Printf(TEXT("M7-002: the character save service rejected the prefix '%s'"),
+						*ActiveEntry->SavePrefix);
+				}
+			}
+			else
+			{
+				StartupOutcome = FStartupLoadOutcome();
+				StartupOutcome.Result = EStartupLoadResult::RecoveryError;
+				StartupOutcome.Summary = TEXT("M7-002: the roster carries no active character after the import");
+			}
+			// The restore below runs on whatever the roster pass loaded.
+		}
+		else
+		{
+			// No roster service (the injected-override automation path): the
+			// M3-017 legacy semantics run exactly as before.
+			StartupOutcome = Service->StartupLoad();
+		}
 		const bool bRecovered =
 			StartupOutcome.Result == EStartupLoadResult::Recovered ||
 			StartupOutcome.Result == EStartupLoadResult::RecoveredFallback;
@@ -125,7 +256,13 @@ void UGameFlowSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 				StartupOutcome.ReserveAmmoPools,
 				StartupOutcome.bWeaponStateInitialized,
 				StartupOutcome.WeaponConfigRevision,
-				StartupOutcome.RoomClears);
+				StartupOutcome.RoomClears,
+				StartupOutcome.ProfessionState.ProfessionId,
+				StartupOutcome.ProfessionState.SkillRanks,
+				StartupOutcome.ProfessionState.UnspentSP,
+				StartupOutcome.ProfessionState.SkillLoadout,
+				StartupOutcome.ProfessionState.ProfessionConfigRevision,
+				StartupOutcome.ProfessionState.DungeonClears);
 			if (!bStartupProfileRestored)
 			{
 				UE_LOG(LogTemp, Error, TEXT("UEMMO M3-017: the startup snapshot was refused by RestoreFromSave; the profile stays empty and the outcome stays queryable."));
@@ -199,6 +336,26 @@ UProfileSaveService* UGameFlowSubsystem::ConsumeStartupSaveServiceOverride()
 {
 	UProfileSaveService* Service = GM3_017_StartupSaveServiceOverride;
 	GM3_017_StartupSaveServiceOverride = nullptr;
+	if (Service)
+	{
+		Service->RemoveFromRoot();
+	}
+	return Service;
+}
+
+void UGameFlowSubsystem::ParkStartupRosterServiceOverride(URosterService* Service)
+{
+	GM7_002_StartupRosterServiceOverride = Service;
+	if (Service)
+	{
+		Service->AddToRoot();
+	}
+}
+
+URosterService* UGameFlowSubsystem::ConsumeStartupRosterServiceOverride()
+{
+	URosterService* Service = GM7_002_StartupRosterServiceOverride;
+	GM7_002_StartupRosterServiceOverride = nullptr;
 	if (Service)
 	{
 		Service->RemoveFromRoot();

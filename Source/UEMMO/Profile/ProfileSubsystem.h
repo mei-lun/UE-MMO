@@ -9,6 +9,7 @@
 // M5-047: the v2 weapon-state save rows (the pushed session state's type);
 // a leaf persistence header with no gameplay includes behind it.
 #include "../Persistence/ProfileSaveGame.h"
+#include "../Persistence/ProfileSerializer.h"
 
 #include "ExperienceCurve.h"
 #include "../Items/StatCalculator.h"
@@ -51,6 +52,15 @@ struct FProfileSnapshot
 
 	/** Value copy of the backing inventory at snapshot time (insertion order). */
 	FInventoryModel Inventory;
+
+	/**
+	 * M7-002: the character's profession id (a Data/Professions
+	 * profession_id; "prototype" for the legacy shape). The snapshot never
+	 * carries the live skill-rank table - the save/service layer passes the
+	 * profession bundle explicitly (the same one-source-of-truth rule as the
+	 * inventory above).
+	 */
+	FName ProfessionId;
 };
 
 /**
@@ -277,6 +287,27 @@ public:
 	/** Read-only access to all clear records (insertion order; the save request reads it). */
 	const TArray<FRoomClearSaveEntry>& GetRoomClears() const;
 
+	// -- M7-002: the profession state (read-only surface) -----------------------
+
+	/**
+	 * The active character's profession id; NAME_None before the first
+	 * profile (NewProfile/RestoreFromSave stamp it). Read-only: profession
+	 * changes happen only through the save/roster flows, never in combat.
+	 */
+	FName GetProfessionId() const { return ProfessionId; }
+
+	/** Value copy of the learned skill ranks (empty before the first profile). */
+	TArray<FSkillRankSaveEntry> GetSkillRanks() const { return SkillRanks; }
+
+	/** Unspent skill points (0 before the first profile). */
+	int32 GetUnspentSP() const { return UnspentSP; }
+
+	/** Value copy of the recorded default hotbar assignments. */
+	TArray<FSkillSlotSaveEntry> GetSkillLoadout() const { return SkillLoadout; }
+
+	/** Completed continuous dungeon runs (0 before the first profile). */
+	int32 GetDungeonClears() const { return DungeonClears; }
+
 	// -- Save-state restore (M3-015) ---------------------------------------------
 
 	/**
@@ -310,6 +341,27 @@ public:
 		const TArray<FAmmoReserveSaveEntry>& InReserveAmmoPools,
 		bool bInWeaponStateInitialized, const FString& InWeaponConfigRevision,
 		const TArray<FRoomClearSaveEntry>& InRoomClears = TArray<FRoomClearSaveEntry>());
+
+	/**
+	 * M7-002: the v4 restore - everything the ten-argument form restores plus
+	 * the loaded profession state (ProfessionId, learned ranks, UnspentSP,
+	 * the recorded default loadout, the profession-config provenance and the
+	 * completed-run counter), pushed into the profile's v4 fields. Same
+	 * all-or-nothing guarantee: a base refusal changes nothing here either.
+	 */
+	bool RestoreFromSave(const FProfileSnapshot& Snapshot, const FInventoryModel& InInventory,
+		const TArray<FPendingReward>& InPendingRewards, const TSet<uint64>& InAppliedSettlementIds,
+		const TMap<EItemSlot, FGuid>& InEquippedMap,
+		const TArray<FWeaponMagazineSaveEntry>& InWeaponMagazines,
+		const TArray<FAmmoReserveSaveEntry>& InReserveAmmoPools,
+		bool bInWeaponStateInitialized, const FString& InWeaponConfigRevision,
+		const TArray<FRoomClearSaveEntry>& InRoomClears,
+		const FName InProfessionId,
+		const TArray<FSkillRankSaveEntry>& InSkillRanks,
+		int32 InUnspentSP,
+		const TArray<FSkillSlotSaveEntry>& InSkillLoadout,
+		const FString& InProfessionConfigRevision,
+		int32 InDungeonClears);
 
 	// -- Read-only snapshot --------------------------------------------------------
 
@@ -412,6 +464,32 @@ private:
 	 * rest of the profile state.
 	 */
 	TArray<FRoomClearSaveEntry> RoomClears;
+
+	// -- M7-002: the profession state (schema v4 fields) -------------------------
+
+	/** The active character's profession id (prototype for the legacy shape). */
+	UPROPERTY()
+	FName ProfessionId = FName(TEXT("prototype"));
+
+	/** The learned skill ranks (skill id -> owned rank; set semantics). */
+	UPROPERTY()
+	TArray<FSkillRankSaveEntry> SkillRanks;
+
+	/** Unspent skill points. */
+	UPROPERTY()
+	int32 UnspentSP = 0;
+
+	/** The recorded default hotbar assignments (slot -> skill). */
+	UPROPERTY()
+	TArray<FSkillSlotSaveEntry> SkillLoadout;
+
+	/** The profession-config provenance of the last save. */
+	UPROPERTY()
+	FString ProfessionConfigRevision;
+
+	/** Completed continuous dungeon runs. */
+	UPROPERTY()
+	int32 DungeonClears = 0;
 
 	/**
 	 * Card-listed placeholder ("AliveIds") with no consumer inside this card's

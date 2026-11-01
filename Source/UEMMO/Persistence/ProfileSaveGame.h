@@ -150,6 +150,44 @@ struct FRoomClearSaveEntry
 };
 
 /**
+ * Serialized form of one per-skill learned rank (schema_version=4, M7-002).
+ * Pure value row: the skill id (a Data/Professions/skills.json skill_id) and
+ * the rank the character has purchased/been granted (1..max_rank).
+ */
+USTRUCT()
+struct FSkillRankSaveEntry
+{
+	GENERATED_BODY()
+
+	/** Business identity of the skill (e.g. "launcher_z"). */
+	UPROPERTY()
+	FName SkillId;
+
+	/** The character's owned rank of this skill (1..max_rank; >= 1 in any valid row). */
+	UPROPERTY()
+	int32 Rank = 0;
+};
+
+/**
+ * Serialized form of one default hotbar assignment (schema_version=4, M7-002):
+ * the slot index (1..8, Q/W/E/R/A/S/D/F) and the skill it launches. A skill
+ * without a learned rank row is dangling and rejected on load.
+ */
+USTRUCT()
+struct FSkillSlotSaveEntry
+{
+	GENERATED_BODY()
+
+	/** Hotbar slot index (1..8; Q=1, W=2, E=3, R=4, A=5, S=6, D=7, F=8). */
+	UPROPERTY()
+	int32 SlotIndex = 0;
+
+	/** The skill this slot launches (must have a learned rank row). */
+	UPROPERTY()
+	FName SkillId;
+};
+
+/**
  * M3-013: the versioned profile save structure (interface contract section 8).
  * A USaveGame whose every field is a plain VALUE type - no Actor pointers, no
  * resource object addresses, no World references, no TObjectPtr of any kind.
@@ -233,13 +271,16 @@ public:
 	 * missing weapon state exactly once); anything else is refused without
 	 * destroying the save file.
 	 */
-	static constexpr int32 CurrentSchemaVersion = 3;
+	static constexpr int32 CurrentSchemaVersion = 4;
 
 	/** The pre-M5-046 legacy schema version; the migration channel's input. */
 	static constexpr int32 LegacySchemaVersion = 1;
 
 	/** The M5-046 pre-M6-003 layout; loads through the v2->v3 migration. */
 	static constexpr int32 SchemaVersion2 = 2;
+
+	/** The M6-003 pre-M7-002 layout; loads through the v3->v4 migration. */
+	static constexpr int32 SchemaVersion3 = 3;
 
 	/** Serialized schema version; ToSaveGame stamps CurrentSchemaVersion. */
 	UPROPERTY()
@@ -325,4 +366,50 @@ public:
 	 */
 	UPROPERTY()
 	TArray<FRoomClearSaveEntry> RoomClears;
+
+	// -- schema_version=4 additions (M7-002) --------------------------------------
+
+	/**
+	 * The character's profession (a Data/Professions/professions.json
+	 * profession_id). The DEFAULT is "prototype" (the legacy shape), so a
+	 * hand-assembled v4 payload without profession inputs is a legal legacy
+	 * character. Structural id rules are validated on load; the profession's
+	 * EXISTENCE against the live catalog is the consuming layer's gate
+	 * (M7-003).
+	 */
+	UPROPERTY()
+	FName ProfessionId;
+
+	/**
+	 * The learned skill ranks (see FSkillRankSaveEntry). A migrated legacy
+	 * save carries exactly the four legacy attacks at rank 1 (the M7-002
+	 * migration contract: a legacy player is never locked out of the normal
+	 * attacks, and the legacy attacks do not consume MP or SP).
+	 */
+	UPROPERTY()
+	TArray<FSkillRankSaveEntry> SkillRanks;
+
+	/** Unspent skill points (>= 0; a migrated legacy save starts at 0). */
+	UPROPERTY()
+	int32 UnspentSP = 0;
+
+	/** The recorded default hotbar assignments (see FSkillSlotSaveEntry). */
+	UPROPERTY()
+	TArray<FSkillSlotSaveEntry> SkillLoadout;
+
+	/**
+	 * Provenance of the profession config this state was last saved under;
+	 * empty when unknown (e.g. right after a migration). Provenance only -
+	 * never a load gate by itself (the M5-046 revision rule).
+	 */
+	UPROPERTY()
+	FString ProfessionConfigRevision;
+
+	/**
+	 * How many CONTINUOUS dungeon runs finished completely (M7-004's
+	 * independent value counter, distinct from the per-room RoomClears
+	 * records). A migrated legacy save starts at 0.
+	 */
+	UPROPERTY()
+	int32 DungeonClears = 0;
 };

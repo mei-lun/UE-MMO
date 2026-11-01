@@ -14,6 +14,7 @@
 #include "GameFlowSubsystem.generated.h"
 
 class UProfileSaveService;
+class URosterService;
 
 /**
  * Lifecycle state of the single-player game flow (M3-017, interface contract
@@ -268,6 +269,10 @@ private:
 	 * production path must build its own service.
 	 */
 	static UProfileSaveService* ConsumeStartupSaveServiceOverride();
+
+	/** M7-002 test seam: the roster service the NEXT Initialize consumes (rooted). */
+	static void ParkStartupRosterServiceOverride(URosterService* Service);
+	static URosterService* ConsumeStartupRosterServiceOverride();
 
 	// -- M6-001: the multi-level catalog internals -------------------------------
 

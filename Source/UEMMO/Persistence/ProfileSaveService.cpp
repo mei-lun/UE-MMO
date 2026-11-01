@@ -229,6 +229,25 @@ uint32 UProfileSaveService::M3_014_ComputePayloadDigest(const UProfileSaveGame& 
 		Canonical += FString::Printf(TEXT("room=%s:%d:%lld|"),
 			*Clear.RoomId.ToString(), Clear.ClearCount, Clear.LastClearUnixSeconds);
 	}
+	// M7-002: the profession-state fields join the canonical form ONLY for a
+	// schema_version 4 payload (the digest-coverage rule: a v1/v2/v3 payload
+	// carries none of the new columns and must hash to EXACTLY its pre-M7
+	// canonical string, so the migration routing and the planted-legacy-digest
+	// tests keep running).
+	if (Save.SchemaVersion >= UProfileSaveGame::SchemaVersion3 + 1)
+	{
+		Canonical += FString::Printf(TEXT("prof=%s|sp=%d|dc=%d|prev=%s|"),
+			*Save.ProfessionId.ToString(), Save.UnspentSP, Save.DungeonClears,
+			*Save.ProfessionConfigRevision);
+		for (const FSkillRankSaveEntry& Rank : Save.SkillRanks)
+		{
+			Canonical += FString::Printf(TEXT("rank=%s:%d|"), *Rank.SkillId.ToString(), Rank.Rank);
+		}
+		for (const FSkillSlotSaveEntry& SlotEntry : Save.SkillLoadout)
+		{
+			Canonical += FString::Printf(TEXT("slot=%d:%s|"), SlotEntry.SlotIndex, *SlotEntry.SkillId.ToString());
+		}
+	}
 	return FCrc::StrCrc32(*Canonical);
 }
 
@@ -240,7 +259,7 @@ UProfileSlotSaveGame* UProfileSaveService::M3_014_BuildSlotSave(const FProfileSa
 	UProfileSaveGame* Payload = FProfileSerializer::ToSaveGame(Request.Snapshot, Request.Inventory,
 		Request.PendingRewards, Request.AppliedSettlementIds, Request.EquippedMap,
 		Request.WeaponMagazines, Request.ReserveAmmoPools, Request.bWeaponStateInitialized,
-		Request.ConfigRevision, Request.RoomClears);
+		Request.ConfigRevision, Request.RoomClears, &Request.ProfessionState);
 	if (!Payload)
 	{
 		return nullptr;
@@ -625,12 +644,17 @@ FProfileLoadOutcome UProfileSaveService::LoadActiveProfile()
 			return false;
 		}
 		FProfileLoadError Error;
+		FProfessionStateOut ProfessionState;
 		if (!FProfileSerializer::FromSaveGame(Slot, Out.Snapshot, Out.Inventory, Out.PendingRewards,
-			Out.AppliedSettlementIds, Out.EquippedMap, Error))
+			Out.AppliedSettlementIds, Out.EquippedMap, Error, nullptr, nullptr, nullptr,
+			&Out.RoomClears, &ProfessionState))
 		{
 			OutProblem = FString::Printf(TEXT("slot '%s' failed the serializer validation: %s"), *SlotNames[SlotIndex], *Error.Message);
 			return false;
 		}
+		// M7-002: the restored profession state rides the outcome (the
+		// GameFlow restore pushes it into the profile's v4 fields).
+		Out.ProfessionState = ProfessionState;
 		Out.Generation = Slot->SlotGeneration;
 		Out.SlotIndex = SlotIndex;
 		return true;
@@ -837,6 +861,8 @@ FStartupLoadOutcome UProfileSaveService::M3_023_StartupLoadBody()
 		Outcome.WeaponConfigRevision = Source.WeaponConfigRevision;
 		// M6-003: the per-room clear records travel with the restored data.
 		Outcome.RoomClears = Source.RoomClears;
+		// M7-002: the restored profession state travels with the restored data.
+		Outcome.ProfessionState = Source.ProfessionState;
 	};
 
 	// 1) The index names a real active slot: try it, then the other one.
@@ -989,8 +1015,10 @@ void UProfileSaveService::M3_015_ClassifySlot(int32 SlotIndex, FM3_015_SlotRead&
 	FProfileLoadError Error;
 	FProfileWeaponStateOut WeaponState;
 	TArray<FRoomClearSaveEntry> RoomClears;
+	FProfessionStateOut ProfessionState;
 	if (!FProfileSerializer::FromSaveGame(Slot, OutRead.Snapshot, OutRead.Inventory, OutRead.PendingRewards,
-		OutRead.AppliedSettlementIds, OutRead.EquippedMap, Error, nullptr, nullptr, &WeaponState, &RoomClears))
+		OutRead.AppliedSettlementIds, OutRead.EquippedMap, Error, nullptr, nullptr, &WeaponState, &RoomClears,
+		&ProfessionState))
 	{
 		OutRead.Problem = FString::Printf(TEXT("the save of '%s' failed the serializer validation: %s"), *SlotNames[SlotIndex], *Error.Message);
 		return;
@@ -1000,6 +1028,9 @@ void UProfileSaveService::M3_015_ClassifySlot(int32 SlotIndex, FM3_015_SlotRead&
 	OutRead.bWeaponStateInitialized = WeaponState.bWeaponStateInitialized;
 	OutRead.WeaponConfigRevision = WeaponState.ConfigRevision;
 	OutRead.RoomClears = MoveTemp(RoomClears);
+	// M7-002: the restored profession state travels with the restored data
+	// (the legacy-equivalent shape on a migrated v1/v2/v3 slot).
+	OutRead.ProfessionState = MoveTemp(ProfessionState);
 	OutRead.bLoaded = true;
 	OutRead.Generation = Slot->SlotGeneration;
 }

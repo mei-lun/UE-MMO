@@ -272,6 +272,46 @@ bool UProfileSubsystem::RestoreFromSave(const FProfileSnapshot& Snapshot, const 
 	return true;
 }
 
+bool UProfileSubsystem::RestoreFromSave(const FProfileSnapshot& Snapshot, const FInventoryModel& InInventory,
+	const TArray<FPendingReward>& InPendingRewards, const TSet<uint64>& InAppliedSettlementIds,
+	const TMap<EItemSlot, FGuid>& InEquippedMap,
+	const TArray<FWeaponMagazineSaveEntry>& InWeaponMagazines,
+	const TArray<FAmmoReserveSaveEntry>& InReserveAmmoPools,
+	bool bInWeaponStateInitialized, const FString& InWeaponConfigRevision,
+	const TArray<FRoomClearSaveEntry>& InRoomClears,
+	const FName InProfessionId,
+	const TArray<FSkillRankSaveEntry>& InSkillRanks,
+	int32 InUnspentSP,
+	const TArray<FSkillSlotSaveEntry>& InSkillLoadout,
+	const FString& InProfessionConfigRevision,
+	int32 InDungeonClears)
+{
+	// The v4 form restores the same base state first (the ten-argument body),
+	// then pushes the loaded profession state on top - all-or-nothing
+	// propagates (a base refusal changes nothing here either).
+	if (!RestoreFromSave(Snapshot, InInventory, InPendingRewards, InAppliedSettlementIds, InEquippedMap,
+		InWeaponMagazines, InReserveAmmoPools, bInWeaponStateInitialized, InWeaponConfigRevision, InRoomClears))
+	{
+		return false;
+	}
+	// M7-002: the loaded profession state restores verbatim (a v1/v2/v3 slot
+	// hands in the migration's legacy-equivalent shape). The structural rules
+	// (id syntax, rank range, set semantics) were validated by the serializer;
+	// this entry is public, so the id is re-checked - a nameless profession
+	// must never surface on a restored profile.
+	if (InProfessionId.IsNone())
+	{
+		return false;
+	}
+	ProfessionId = InProfessionId;
+	SkillRanks = InSkillRanks;
+	UnspentSP = InUnspentSP;
+	SkillLoadout = InSkillLoadout;
+	ProfessionConfigRevision = InProfessionConfigRevision;
+	DungeonClears = InDungeonClears;
+	return true;
+}
+
 void UProfileSubsystem::RecordRoomCleared(FName RoomId, int64 UnixSeconds)
 {
 	// No profile: no bookkeeping (the same face as AddXP). A nameless room is
@@ -362,6 +402,9 @@ FProfileSnapshot UProfileSubsystem::GetProfileSnapshot() const
 	Snapshot.CharacterId = CharacterId;
 	Snapshot.Level = Level;
 	Snapshot.XP = XP;
+	// M7-002: the active profession rides the snapshot (the skill-rank table
+	// stays out - the save/service layer passes it explicitly).
+	Snapshot.ProfessionId = ProfessionId;
 	// The derived stats are recomputed at copy time - never copied out of a
 	// World's HealthComponent - so a snapshot can never fossilize temporary
 	// in-combat HP as the permanent base.

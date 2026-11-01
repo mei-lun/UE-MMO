@@ -171,6 +171,12 @@ namespace
 		// save plus the BeginReward recordings made since - exactly the state
 		// this persistence point must carry forward).
 		Request.RoomClears = Profile.GetRoomClears();
+		Request.ProfessionState.ProfessionId = Profile.GetProfessionId();
+		Request.ProfessionState.SkillRanks = Profile.GetSkillRanks();
+		Request.ProfessionState.UnspentSP = Profile.GetUnspentSP();
+		Request.ProfessionState.SkillLoadout = Profile.GetSkillLoadout();
+		Request.ProfessionState.ProfessionConfigRevision = FString();
+		Request.ProfessionState.DungeonClears = Profile.GetDungeonClears();
 		return Request;
 	}
 }
@@ -545,6 +551,7 @@ FRewardClaimAtomicOutcome URewardService::M3_023_ClaimAtomicBody(uint64 Settleme
 		Outcome.Result = ERewardClaimAtomicResult::SaveFailed;
 		Outcome.Error = FString::Printf(TEXT("the pending-draft save failed before any claim mutation (%s); the draft stays pending unchanged"),
 			*DraftSave.Message);
+		
 		return Outcome;
 	}
 
@@ -592,6 +599,7 @@ FRewardClaimAtomicOutcome URewardService::M3_023_ClaimAtomicBody(uint64 Settleme
 		Outcome.Result = ERewardClaimAtomicResult::SaveFailed;
 		Outcome.Error = FString::Printf(TEXT("the claim-snapshot save failed (%s); the claim was rolled back and the draft stays pending unchanged"),
 			*ClaimSave.Message);
+		
 		return Outcome;
 	}
 
