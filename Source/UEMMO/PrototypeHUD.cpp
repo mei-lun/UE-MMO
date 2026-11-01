@@ -1,5 +1,7 @@
 #include "PrototypeHUD.h"
 #include "Engine/Canvas.h"
+#include "Profession/ProfessionTypes.h"
+#include "Skills/SkillLoadoutComponent.h"
 
 #include "Combat/AttackDefinition.h"
 #include "Combat/CombatComponent.h"
@@ -109,6 +111,41 @@ void APrototypeHUD::DrawHUD()
     // Z launcher, C jump (Space stays a jump alias), F2 resets, QWERASDF are
     // the reserved skill slots (no skill effect yet), F1 the debug overlay.
     DrawText(TEXT("Arrows: move  X: attack  Z: launcher  C: jump  F2: reset  QWERASDF: skills (reserved)  F1: debug"), FLinearColor(0.6f, 0.85f, 1.f), 32, 53);
+    // M7-003: the fighter skill bar - the five hotbar slots with the skill
+    // name, the MP cost and the live cooldown remaining (empty slots show a
+    // dash); the Z launcher keeps its standing hint. Drawn from the pawn's
+    // SkillLoadoutComponent; an inert component draws nothing.
+    if (const APrototypeCharacter* SkillBarPlayer = ResolveSkillBarPlayer())
+    {
+        if (const USkillLoadoutComponent* Loadout = SkillBarPlayer->GetSkillLoadout())
+        {
+            if (Loadout->IsWired())
+            {
+                static const TCHAR* SkillSlotKeys[8] =
+                    { TEXT("Q"), TEXT("W"), TEXT("E"), TEXT("R"), TEXT("A"), TEXT("S"), TEXT("D"), TEXT("F") };
+                FString Bar = TEXT("Skills: ");
+                for (int32 SlotIndex = 2; SlotIndex <= 6; ++SlotIndex)
+                {
+                    const FName SkillId = Loadout->GetSlotSkill(SlotIndex);
+                    if (SkillId.IsNone())
+                    {
+                        Bar += FString::Printf(TEXT("[%s: -]  "), SkillSlotKeys[SlotIndex - 1]);
+                        continue;
+                    }
+                    const float Cooldown = Loadout->GetCooldownRemaining(SkillId);
+                    const FSkillLevelRow* RankRow = ResolveSkillRankRow(Loadout, SkillId);
+                    Bar += FString::Printf(TEXT("[%s: %s%s]  "),
+                        SkillSlotKeys[SlotIndex - 1],
+                        *SkillId.ToString(),
+                        Cooldown > 0.f
+                            ? *FString::Printf(TEXT(" CD %.1fs"), Cooldown)
+                            : (RankRow ? *FString::Printf(TEXT(" %dMP"), RankRow->MPCost) : TEXT("")));
+                }
+                Bar += FString::Printf(TEXT("| Z: launcher | MP %d"), Loadout->GetCurrentMP());
+                DrawText(Bar, FLinearColor(0.95f, 0.85f, 0.55f), 32, 125);
+            }
+        }
+    }
     // M5-044: the vehicle trial point. The hull stages through the HUD debug
     // entry; near it V enters/exits, arrows drive, Q fires the turret, T
     // reloads it (the walk faces stay suspended while seated).
@@ -274,6 +311,41 @@ void APrototypeHUD::DrawSharedHitBox(const FVector& FeetLocation, int32 Facing, 
     {
         DrawLine(Screen[Edge[0]].X, Screen[Edge[0]].Y, Screen[Edge[1]].X, Screen[Edge[1]].Y, M1_028_BoxColor, 2.0f);
     }
+}
+
+const APrototypeCharacter* APrototypeHUD::ResolveSkillBarPlayer()
+{
+    RefreshDebugReferences();
+    return DebugPlayer.Get();
+}
+
+const FSkillLevelRow* APrototypeHUD::ResolveSkillRankRow(const USkillLoadoutComponent* Loadout, FName SkillId)
+{
+    if (Loadout == nullptr)
+    {
+        return nullptr;
+    }
+    const FProfessionCatalog* Catalog = Loadout->GetCatalog();
+    const APrototypeCharacter* Player = DebugPlayer.Get();
+    const UProfileSubsystem* Profile = ResolveProfileSubsystem();
+    if (Catalog == nullptr || !Catalog->IsPublished() || Player == nullptr || Profile == nullptr)
+    {
+        return nullptr;
+    }
+    const int32 OwnedRank = Profile->GetSkillRank(SkillId);
+    const TArray<FSkillLevelRow>* Levels = Catalog->FindSkillLevels(SkillId);
+    if (Levels == nullptr)
+    {
+        return nullptr;
+    }
+    for (const FSkillLevelRow& Row : *Levels)
+    {
+        if (Row.Rank == OwnedRank)
+        {
+            return &Row;
+        }
+    }
+    return nullptr;
 }
 
 void APrototypeHUD::RefreshDebugReferences()

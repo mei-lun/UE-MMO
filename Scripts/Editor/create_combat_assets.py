@@ -34,7 +34,10 @@ import unreal
 ROOT = Path(unreal.Paths.project_dir())
 DEFINITIONS_PATH = '/Game/UEMMO/Combat/Definitions'
 ASSET_PREFIX = 'DA_'
-EXPECTED_IDS = ('light_01', 'light_02', 'launcher', 'aerial_01')
+# M7-003: the frozen four join the five wired skill attacks (the card's
+# "旧四招必须存在 + 经验证的新增招式" rule - extended, never modified).
+EXPECTED_IDS = ('light_01', 'light_02', 'launcher', 'aerial_01',
+                'singlekick', 'damagelowkick', 'throwsand', 'earthbreak', 'stomp')
 GENERATE_REPORT = ROOT / 'Artifacts' / 'Logs' / 'combat-assets-report.json'
 VERIFY_REPORT = ROOT / 'Artifacts' / 'Logs' / 'combat-assets-verify.json'
 
@@ -183,8 +186,8 @@ def validate_document(doc, source_path):
     if not isinstance(attacks, list):
         problems.append("FAIL field 'attacks': must be a JSON array.")
         return entries, animations, problems
-    if len(attacks) != 4:
-        problems.append("FAIL field 'attacks': must hold exactly 4 entries (got " + str(len(attacks)) + ').')
+    if len(attacks) != len(EXPECTED_IDS):
+        problems.append("FAIL field 'attacks': must hold exactly " + str(len(EXPECTED_IDS)) + " entries (got " + str(len(attacks)) + ").")
     id_list = []
     for index, entry in enumerate(attacks):
         if not isinstance(entry, dict):
@@ -326,8 +329,8 @@ def run_generate():
         raise RuntimeError('save_directory failed for ' + DEFINITIONS_PATH)
     saved = [asset_name_for(x) for x in EXPECTED_IDS
              if unreal.EditorAssetLibrary.does_asset_exist(DEFINITIONS_PATH + '/' + asset_name_for(x))]
-    if len(saved) != 4:
-        raise RuntimeError('Expected 4 saved assets, found: ' + repr(saved))
+    if len(saved) != len(EXPECTED_IDS):
+        raise RuntimeError('Expected ' + str(len(EXPECTED_IDS)) + ' saved assets, found: ' + repr(saved))
     write_report(GENERATE_REPORT, {
         'mode': 'generate',
         'source_json': source_path,

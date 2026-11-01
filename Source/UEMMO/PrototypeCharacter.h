@@ -22,6 +22,9 @@
 #include "PrototypeCharacter.generated.h"
 
 class ACombatProjectile;
+class USkillLoadoutComponent;
+class UProfessionCatalogSubsystem;
+struct FSkillActivationOutcome;
 class USideViewCameraComponent;
 class UCombatComponent;
 class UCombatPresentationComponent;
@@ -277,6 +280,9 @@ public:
      */
     const TArray<TObjectPtr<UInputAction>>& GetSkillSlotActions() const { return SkillSlotActions; }
 
+    /** M7-003: the skill loadout component (null-safe read for the HUD/tests). */
+    USkillLoadoutComponent* GetSkillLoadout() const { return SkillLoadout; }
+
     /**
      * M1-028: the runtime mapping context built by EnsureCombatInputActions,
      * read-only. The automation smoke asserts the F1 debug-toggle mapping
@@ -416,6 +422,16 @@ private:
     // M1-040: the eight DNF skill-slot actions in slot order (Q W E R A S D F
     // = slot 1..8); created with the same runtime-action pattern.
     UPROPERTY(Transient) TArray<TObjectPtr<UInputAction>> SkillSlotActions;
+
+    /**
+     * M7-003: the skill chain's loadout half (8-slot map, MP, cooldowns).
+     * Created as a default subobject; the BeginPlay pass binds combat,
+     * profile, catalog, clock and facing. Bare test worlds keep it inert
+     * (every activation refuses with InvalidContext; the slot counting and
+     * the legacy launcher path stay verbatim).
+     */
+    UPROPERTY(VisibleAnywhere, Category = "Skills")
+    TObjectPtr<USkillLoadoutComponent> SkillLoadout;
     FVector SpawnLocation;
     // M1-027: the facing captured with the spawn point; the unified reset
     // restores it alongside the position (interface contract section 6).
@@ -520,6 +536,76 @@ private:
         FShotId ShotId = InvalidCombatShotId;
     };
     TArray<FLiveWeaponProjectile> LiveWeaponProjectiles;
+
+    // -- M7-003: the skill projectile path (the throwsand cast) ----------------
+    //
+    // The SAME delivery as the weapon path: one ACombatProjectile body, the
+    // M5-028 linear motion policy, the unified hit entry (ApplyUnifiedHit) and
+    // the M5-077 retirement EndShot. The registry/ledger pair is the
+    // sanctioned per-attacker placement (the CombatComponent precedent), so
+    // skill dedup keys never cross the weapon's keys and there is no second
+    // damage pipeline.
+
+    /** The skill projectile registry pair (lazy-registered owner entity). */
+    FCombatEntityRegistry SkillProjectileRegistry;
+    FHitLedger SkillProjectileLedger;
+    FEntityId SkillProjectileSourceEntityId = InvalidCombatEntityId;
+
+    /** Live skill pellets (one per throwsand cast; the same entry struct). */
+    TArray<FLiveWeaponProjectile> LiveSkillProjectiles;
+
+    /** Shots whose skill pellets are still in flight (the M5-077 pattern). */
+    struct FPendingSkillShotEnd
+    {
+        FCombatEpoch Epoch = InvalidCombatEpoch;
+        FEntityId SourceEntityId = InvalidCombatEntityId;
+        FShotId ShotId = InvalidCombatShotId;
+        int32 LivePellets = 0;
+    };
+    TArray<FPendingSkillShotEnd> PendingSkillShotEnds;
+
+    /** Spawns the sand pellet for one Projectile-policy activation (or no-ops). */
+    void HandleSkillProjectileActivated(const FSkillActivationOutcome& Outcome);
+
+    /** Per-frame pellet advance + retirement (called next to TickWeaponInput). */
+    void TickSkillProjectiles(float DeltaSeconds);
+
+    /** One pellet retirement (the M5-077 EndShot when the last pellet goes). */
+    void RetireSkillProjectilePellet(int32 LiveIndex);
+
+    /**
+     * The target-identity core both seams share: the health-pool gate, the
+     * lazy registration and the per-registry cache. The weapon seam keeps its
+     * mount-registry cache; the skill seam owns its own pair.
+     */
+    FEntityId ResolveTargetEntityIdInto(const AActor& HitActor,
+        FCombatEntityRegistry& Registry, FCombatEpoch RegistryEpoch,
+        TMap<TWeakObjectPtr<const AActor>, FEntityId>& Cache) const;
+
+    /** The skill pellet's identity seam (targets into the skill registry). */
+    class FSkillProjectileIdentity final : public IHitscanTargetIdentity
+    {
+    public:
+        FSkillProjectileIdentity(const APrototypeCharacter* InOwner, FCombatEntityRegistry* InRegistry)
+            : Owner(InOwner)
+            , Registry(InRegistry)
+        {
+        }
+
+        FEntityId ResolveTargetEntityId(const AActor& HitActor) const override
+        {
+            return (Owner.IsValid() && Registry != nullptr)
+                ? Owner->ResolveTargetEntityIdInto(HitActor, *Registry,
+                    Registry->GetCurrentEpoch(), Cache)
+                : InvalidCombatTargetId;
+        }
+
+    private:
+        TWeakObjectPtr<const APrototypeCharacter> Owner;
+        FCombatEntityRegistry* Registry = nullptr;
+        mutable TMap<TWeakObjectPtr<const AActor>, FEntityId> Cache;
+    };
+    TUniquePtr<FSkillProjectileIdentity> SkillProjectileIdentity;
     // M5-077: shots whose pellets are still in flight (one entry per committed
     // projectile shot; the retirement loop EndShots an entry when its last
     // pellet retires, releasing the ledger's event/control keys back - the

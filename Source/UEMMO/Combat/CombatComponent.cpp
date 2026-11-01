@@ -272,6 +272,10 @@ bool UCombatComponent::TryStartAttack(FName AttackId, int32 NewFacing)
 	// Every successful start mints a fresh stable in-session instance id
 	// (monotonic from 1, never a raw pointer value, never reused).
 	ActiveInstanceId = NextInstanceId++;
+	// M7-003: the pending skill damage scale (default 1.0) lands on THIS
+	// instance and is consumed - a following legacy start is never rescaled.
+	ActiveDamageScale = NextInstanceDamageScale;
+	NextInstanceDamageScale = 1.0f;
 	ActiveAttackId = AttackId;
 	ActiveDurationFrames = Definition->DurationFrames;
 	Facing = NewFacing;
@@ -699,6 +703,25 @@ void UCombatComponent::SetClockFrozen(bool bNewFrozen)
 bool UCombatComponent::IsClockFrozen() const
 {
 	return bClockFrozen;
+}
+
+void UCombatComponent::SetNextInstanceDamageScale(float Scale)
+{
+	NextInstanceDamageScale = (FMath::IsFinite(Scale) && Scale > 0.f) ? Scale : 1.0f;
+}
+
+float UCombatComponent::GetActiveDamageScale() const
+{
+	return ActiveDamageScale;
+}
+
+void UCombatComponent::SetActiveInstanceDamageScale(float Scale)
+{
+	if (ActionState == ECombatActionState::Attacking
+		&& FMath::IsFinite(Scale) && Scale > 0.f)
+	{
+		ActiveDamageScale = Scale;
+	}
 }
 
 void UCombatComponent::SetCombatStats(float InAttackPower, float InDefense)
@@ -1514,6 +1537,8 @@ bool UCombatComponent::TryJumpCancelFromBuffer()
 void UCombatComponent::ClearInstance()
 {
 	ActionState = ECombatActionState::Free;
+	// M7-003: a torn-down instance never leaks its skill damage scale.
+	ActiveDamageScale = 1.0f;
 	ActiveAttackId = NAME_None;
 	ActiveInstanceId = 0;
 	ActiveDurationFrames = 0;
@@ -1717,6 +1742,11 @@ void UCombatComponent::TryApplyActiveWindowHits()
 		UHealthComponent* TargetHealth = Target->FindComponentByClass<UHealthComponent>();
 		UCombatComponent* VictimCombat = Target->FindComponentByClass<UCombatComponent>();
 		FDamageProfile Profile = M5_013_MakeDamageProfile(*Definition);
+		// M7-003: the skill's rank damage coefficient scales BOTH profile
+		// terms linearly (s*(Base + AP*Coeff) with s folded into each), so a
+		// scale of 1.0 keeps every pre-M7 hit byte-identical.
+		Profile.BaseDamage *= ActiveDamageScale;
+		Profile.AttackCoefficient *= ActiveDamageScale;
 
 		// M5-015: the effective target policy - the victim's explicitly
 		// overridden policy wins (per-target heavy/boss configuration through

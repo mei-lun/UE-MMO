@@ -25,6 +25,8 @@ class UHealthComponent;
 class UMapSelectWidget;
 class UProfileSaveService;
 class UProfileSubsystem;
+class USkillLoadoutComponent;
+struct FSkillLevelRow;
 class URoomDefinition;
 class URoomSessionSubsystem;
 class URewardService;
@@ -399,6 +401,12 @@ private:
 
     /** M3-011: the profile subsystem of the world's game instance (weak-safe). */
     UProfileSubsystem* ResolveProfileSubsystem();
+
+    /** M7-003: the debug player pawn for the skill bar (null-safe). */
+    const APrototypeCharacter* ResolveSkillBarPlayer();
+
+    /** M7-003: the rank row of the skill (null when unknown/unpublished). */
+    const FSkillLevelRow* ResolveSkillRankRow(const USkillLoadoutComponent* Loadout, FName SkillId);
 
     /** M3-011: debug-only staging (profile + starter items + display catalog). */
     bool EnsureInventoryStaging();

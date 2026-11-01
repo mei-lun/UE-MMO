@@ -10,7 +10,9 @@
       "effect_policy": "SingleMeleeHit",
       "attack_id": "launcher",
       "attack_pending": false,
-      "effect_parameters": { "poise_break": 1 },
+      "effect_parameters": {
+        "poise_break": 1
+      },
       "icon_path": "",
       "montage_path": "",
       "vfx_path": "",
@@ -24,8 +26,10 @@
       "slot_eligibility": "hotbar",
       "effect_policy": "SingleMeleeHit",
       "attack_id": "singlekick",
-      "attack_pending": true,
-      "effect_parameters": { "poise_break": 0 },
+      "attack_pending": false,
+      "effect_parameters": {
+        "poise_break": 0
+      },
       "icon_path": "",
       "montage_path": "",
       "vfx_path": "",
@@ -39,8 +43,10 @@
       "slot_eligibility": "hotbar",
       "effect_policy": "SingleMeleeHit",
       "attack_id": "damagelowkick",
-      "attack_pending": true,
-      "effect_parameters": { "poise_break": 0 },
+      "attack_pending": false,
+      "effect_parameters": {
+        "poise_break": 0
+      },
       "icon_path": "",
       "montage_path": "",
       "vfx_path": "",
@@ -54,8 +60,10 @@
       "slot_eligibility": "hotbar",
       "effect_policy": "Projectile",
       "attack_id": "throwsand",
-      "attack_pending": true,
-      "effect_parameters": { "poise_break": 0 },
+      "attack_pending": false,
+      "effect_parameters": {
+        "poise_break": 0
+      },
       "icon_path": "",
       "montage_path": "",
       "vfx_path": "",
@@ -69,8 +77,10 @@
       "slot_eligibility": "hotbar",
       "effect_policy": "GroundArea",
       "attack_id": "earthbreak",
-      "attack_pending": true,
-      "effect_parameters": { "poise_break": 0 },
+      "attack_pending": false,
+      "effect_parameters": {
+        "poise_break": 0
+      },
       "icon_path": "",
       "montage_path": "",
       "vfx_path": "",
@@ -84,8 +94,10 @@
       "slot_eligibility": "hotbar",
       "effect_policy": "GroundArea",
       "attack_id": "stomp",
-      "attack_pending": true,
-      "effect_parameters": { "poise_break": 0 },
+      "attack_pending": false,
+      "effect_parameters": {
+        "poise_break": 0
+      },
       "icon_path": "",
       "montage_path": "",
       "vfx_path": "",

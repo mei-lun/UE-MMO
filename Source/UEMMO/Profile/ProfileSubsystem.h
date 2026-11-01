@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Templates/Function.h"
 #include "Misc/Guid.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 
@@ -46,6 +47,14 @@ struct FProfileSnapshot
 
 	/** Derived: GetAttackForLevel(Level) - base attack before any equipment. */
 	int32 Attack = 0;
+
+	/**
+	 * M7-003: the active profession's base MP pool at the snapshot level
+	 * (FProfessionCatalog::GetBaseStats; 0 for the legacy prototype, whose
+	 * curve carries no MP). Derived at copy time like MaxHP; the CURRENT MP
+	 * is combat-transient and never lives here.
+	 */
+	int32 MaxMP = 0;
 
 	/** Derived: GetDefenseForLevel(Level) - base defense before any equipment. */
 	int32 Defense = 0;
@@ -307,6 +316,45 @@ public:
 
 	/** Completed continuous dungeon runs (0 before the first profile). */
 	int32 GetDungeonClears() const { return DungeonClears; }
+
+	// -- M7-003: profession-driven progression seams ---------------------------
+
+	/**
+	 * Injects the profession-catalog resolvers the subsystem itself stays
+	 * catalog-free without. MaxMP(ProfessionId, Level) returns the curve's
+	 * base MP pool (0 for unknown/legacy professions); SkillPointsGained
+	 * (ProfessionId, LevelReached) returns that level row's skill_points (0
+	 * for the legacy prototype curve). The game wires both from the published
+	 * FProfessionCatalog once; tests inject fixed lambdas. Unset resolvers
+	 * read as 0 - every pre-M7-003 caller keeps its exact behavior.
+	 */
+	static void SetProfessionProgressionResolvers(
+		TFunction<int32(FName, int32)> InMaxMPResolver,
+		TFunction<int32(FName, int32)> InSkillPointsResolver);
+
+	/**
+	 * M7-003: purchases one skill rank with SP (02 文档 §5: 学习/升阶要检查
+	 * 前置、角色等级、可用 SP 与上限，成功一次扣一次 SP 并保存). The CALLER
+	 * resolves the rank row's numbers from the published catalog (this
+	 * subsystem stays catalog-free); the purchase validates against them and
+	 * the current profile state:
+	 * - a profile must exist and the profession must match the skill's owner
+	 *   profession check at the call site (the catalog gate);
+	 * - TargetRank must be exactly the current rank + 1 (no skipping, no
+	 *   re-purchase) and at most MaxRank;
+	 * - Level must have reached RequiredCharacterLevel;
+	 * - UnspentSP must cover SPCost.
+	 * On success the rank row is written, UnspentSP drops by SPCost and true
+	 * returns; a refusal names the reason and changes nothing (失败事务不扣 SP).
+	 */
+	bool TryPurchaseSkillRank(FName SkillId, int32 TargetRank, int32 MaxRank,
+		int32 RequiredCharacterLevel, int32 SPCost, FString& OutProblem);
+
+	/** True when the active character holds at least rank 1 of the skill. */
+	bool HasLearnedSkill(FName SkillId) const;
+
+	/** The active character's rank of the skill (0 = not learned). */
+	int32 GetSkillRank(FName SkillId) const;
 
 	// -- Save-state restore (M3-015) ---------------------------------------------
 

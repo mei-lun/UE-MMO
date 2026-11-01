@@ -1707,7 +1707,8 @@ bool FUEMMOTasksM5_004AmmoAndProjectileJsonLoadAndValidate::RunTest(const FStrin
 		AddError(TEXT("projectiles.json: missing required top-level array 'rows'"));
 		return true;
 	}
-	TestEqual(TEXT("projectiles.json holds exactly 5 rows"), (*ProjectileRows)->Array.Num(), 5);
+	// M7-003: the sand_throw row joined the table (the fighter skill cast).
+	TestEqual(TEXT("projectiles.json holds exactly 6 rows"), (*ProjectileRows)->Array.Num(), 6);
 
 	TMap<FName, FProjectileDefinition> Projectiles;
 	for (const TSharedPtr<FConfigJsonValue>& Entry : (*ProjectileRows)->Array)
@@ -1734,7 +1735,7 @@ bool FUEMMOTasksM5_004AmmoAndProjectileJsonLoadAndValidate::RunTest(const FStrin
 			Projectiles.Add(Definition.ProjectileId, Definition);
 		}
 	}
-	TestEqual(TEXT("all 5 projectile rows loaded with unique ids"), Projectiles.Num(), 5);
+	TestEqual(TEXT("all 6 projectile rows loaded with unique ids"), Projectiles.Num(), 6);
 
 	// Pinned projectile samples.
 	const FProjectileDefinition* Bullet = Projectiles.Find(FName(TEXT("bullet_linear")));

@@ -691,7 +691,35 @@ bool FUEMMOTasksM1_008CatalogLoadsAsFourUniqueAttackIds::RunTest(const FString& 
 	{
 		return true;
 	}
-	TestEqual(TEXT("the catalog holds exactly 4 attacks"), Attacks.Num(), 4);
+	// M7-003: the catalog grew from the four legacy attacks to the four plus
+	// the six fighter skill attacks (the card's "旧四招必须存在 + 经验证的新增
+	// 招式" rule) - the pin is the PRESENCE of the frozen four, not the count.
+	static const TCHAR* M7_003_LegacyAttackIds[4] =
+		{ TEXT("light_01"), TEXT("light_02"), TEXT("launcher"), TEXT("aerial_01") };
+	TSet<FString> M7_003_AttackIdSet;
+	for (const TSharedPtr<FSimpleJson>& EntryPtr : Attacks)
+	{
+		if (EntryPtr.IsValid() && EntryPtr->Kind == FSimpleJson::EKind::Object)
+		{
+			if (const TSharedPtr<FSimpleJson>* IdValue = EntryPtr->Object.Find(TEXT("attack_id"));
+				IdValue != nullptr && (*IdValue)->Kind == FSimpleJson::EKind::String)
+			{
+				M7_003_AttackIdSet.Add((*IdValue)->String);
+			}
+		}
+	}
+	for (const TCHAR* LegacyId : M7_003_LegacyAttackIds)
+	{
+		TestTrue(FString::Printf(TEXT("the frozen legacy attack '%s' is present"), LegacyId),
+			M7_003_AttackIdSet.Contains(LegacyId));
+	}
+	static const TCHAR* M7_003_SkillAttackIds[6] =
+		{ TEXT("singlekick"), TEXT("damagelowkick"), TEXT("throwsand"), TEXT("earthbreak"), TEXT("stomp"), TEXT("launcher") };
+	for (const TCHAR* SkillId : M7_003_SkillAttackIds)
+	{
+		TestTrue(FString::Printf(TEXT("the skill attack '%s' is present"), SkillId),
+			M7_003_AttackIdSet.Contains(SkillId));
+	}
 
 	TMap<FString, int32> IdCounts;
 	for (int32 Index = 0; Index < Attacks.Num(); ++Index)
@@ -976,6 +1004,13 @@ bool FUEMMOTasksM1_008EveryEntryHasAnimationExtentAndImpulses::RunTest(const FSt
 			continue;
 		}
 		const FString Name = EntryName(Entry);
+		// M7-003: the frozen M1 contract box/offset applies to the FOUR legacy
+		// attacks only - the six skill rows carry their own semantic boxes
+		// (the low kick's low band, the GroundArea strikes' deep boxes and the
+		// projectile cast's no-hit 1cm box) validated by the M7_003 pins.
+		const bool bLegacyContractRow =
+			Name == TEXT("light_01") || Name == TEXT("light_02")
+			|| Name == TEXT("launcher") || Name == TEXT("aerial_01");
 
 		FString AnimationPath;
 		if (GetStringOrReport(*this, Entry, TEXT("animation_path"), AnimationPath))
@@ -989,15 +1024,21 @@ bool FUEMMOTasksM1_008EveryEntryHasAnimationExtentAndImpulses::RunTest(const FSt
 		{
 			TestTrue(FString::Printf(TEXT("attack '%s' hit_half_extent_cm components are all > 0"), *Name),
 				HalfExtent.X > 0.0f && HalfExtent.Y > 0.0f && HalfExtent.Z > 0.0f);
-			TestEqual<FVector>(FString::Printf(TEXT("attack '%s' hit_half_extent_cm matches the contract box"), *Name),
-				HalfExtent, FVector(85.0f, 50.0f, 70.0f));
+			if (bLegacyContractRow)
+			{
+				TestEqual<FVector>(FString::Printf(TEXT("attack '%s' hit_half_extent_cm matches the contract box"), *Name),
+					HalfExtent, FVector(85.0f, 50.0f, 70.0f));
+			}
 		}
 
 		FVector HitOffset = FVector::ZeroVector;
 		if (GetVectorOrReport(*this, Entry, TEXT("hit_offset_cm"), HitOffset))
 		{
-			TestEqual<FVector>(FString::Printf(TEXT("attack '%s' hit_offset_cm matches the contract offset"), *Name),
-				HitOffset, FVector(95.0f, 0.0f, 90.0f));
+			if (bLegacyContractRow)
+			{
+				TestEqual<FVector>(FString::Printf(TEXT("attack '%s' hit_offset_cm matches the contract offset"), *Name),
+					HitOffset, FVector(95.0f, 0.0f, 90.0f));
+			}
 		}
 
 		double Coefficient = 0.0;
@@ -1019,7 +1060,10 @@ bool FUEMMOTasksM1_008EveryEntryHasAnimationExtentAndImpulses::RunTest(const FSt
 		{
 			TestTrue(FString::Printf(TEXT("attack '%s' impulse and stun fields are all >= 0"), *Name),
 				Knockback >= 0.0 && Launch >= 0.0 && HitStun >= 0.0 && HitStop >= 0.0);
-			TestEqual(FString::Printf(TEXT("attack '%s' hit_stop_seconds is 0.04"), *Name), HitStop, 0.04);
+			if (bLegacyContractRow)
+			{
+				TestEqual(FString::Printf(TEXT("attack '%s' hit_stop_seconds is 0.04"), *Name), HitStop, 0.04);
+			}
 		}
 	}
 	return true;

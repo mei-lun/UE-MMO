@@ -335,6 +335,26 @@ public:
 	 */
 	void SetCombatStats(float InAttackPower, float InDefense);
 
+	/**
+	 * M7-003: one-shot damage multiplier for the NEXT started attack instance
+	 * (the skill chain's per-rank damage_coefficient). Consumed by the
+	 * successful TryStartAttack into the instance's scale and reset to 1, so
+	 * legacy chains are never rescaled. Values are clamped to finite > 0;
+	 * everything else keeps 1.
+	 */
+	void SetNextInstanceDamageScale(float Scale);
+
+	/**
+	 * M7-003: overrides the RUNNING instance's damage scale (the buffered
+	 * launcher path: the skill pays at the OnStarted broadcast, which happens
+	 * inside TryStartAttack - after SetNextInstanceDamageScale was already
+	 * consumed). No-op while Free.
+	 */
+	void SetActiveInstanceDamageScale(float Scale);
+
+	/** M7-003: the running instance's damage multiplier (1.0 = legacy exact). */
+	float GetActiveDamageScale() const;
+
 	/** M3-010: attack power this component feeds the damage formula as an attacker. */
 	float GetAttackPower() const;
 
@@ -741,6 +761,14 @@ private:
 	 */
 	float CombatAttackPower = 0.0f;
 	float CombatDefense = 0.0f;
+
+	/**
+	 * M7-003: the running instance's damage multiplier (1.0 = legacy exact).
+	 * Consumed from NextInstanceDamageScale at each start; ClearInstance
+	 * resets both so a torn-down skill instance can never leak its scale.
+	 */
+	float ActiveDamageScale = 1.0f;
+	float NextInstanceDamageScale = 1.0f;
 
 	/**
 	 * M5-014: the attack-side reaction (M5-003) this component's hits carry

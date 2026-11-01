@@ -1,5 +1,7 @@
 #include "PrototypeCharacter.h"
 #include "Animation/AnimInstance.h"
+#include "Profession/ProfessionCatalogSubsystem.h"
+#include "Skills/SkillLoadoutComponent.h"
 #include "Character/AttackMovementGate.h"
 #include "Character/SideViewCameraComponent.h"
 #include "Combat/AttackCatalog.h"
@@ -369,6 +371,9 @@ APrototypeCharacter::APrototypeCharacter()
     // M5-020: the production weapon mount (session binding registry + ammo
     // model + the catalogs mounted in BeginPlay).
     WeaponMount = CreateDefaultSubobject<UWeaponComponent>(TEXT("WeaponMount"));
+    // M7-003: the skill chain's loadout half (BeginPlay binds the
+    // collaborators; the bare-component defaults stay inert).
+    SkillLoadout = CreateDefaultSubobject<USkillLoadoutComponent>(TEXT("SkillLoadout"));
 }
 
 void APrototypeCharacter::BeginPlay()
@@ -462,6 +467,71 @@ void APrototypeCharacter::BeginPlay()
     if (Health != nullptr)
     {
         Health->ResetHealth();
+    }
+    // M7-003: the skill chain wiring. The published profession catalog is the
+    // GameInstance-level config snapshot; the loadout component binds combat,
+    // profile, catalog, the World clock (the same pause-aware time base the
+    // combat input uses) and the facing. A bare test world (no game instance
+    // or no published catalog) keeps the component inert: slot presses keep
+    // counting, the legacy launcher path stays verbatim.
+    if (SkillLoadout != nullptr)
+    {
+        const UProfessionCatalogSubsystem* CatalogSubsystem = nullptr;
+        if (UWorld* SkillWorld = GetWorld())
+        {
+            if (UGameInstance* SkillGameInstance = SkillWorld->GetGameInstance())
+            {
+                CatalogSubsystem = SkillGameInstance->GetSubsystem<UProfessionCatalogSubsystem>();
+            }
+        }
+        if (CatalogSubsystem != nullptr && CatalogSubsystem->IsPublished())
+        {
+            UProfileSubsystem* SkillProfile = ProfilePtr.Get();
+            SkillLoadout->Initialize(Combat, SkillProfile, &CatalogSubsystem->GetCatalog(),
+                CatalogSubsystem->GetConfigRevision());
+            SkillLoadout->SetAttackCatalog(Catalog);
+            SkillLoadout->SetClockProvider([this]()
+            {
+                const UWorld* ClockWorld = GetWorld();
+                return ClockWorld ? ClockWorld->GetTimeSeconds() : 0.0;
+            });
+            SkillLoadout->SetFacingProvider([this]()
+            {
+                const float Yaw = GetActorRotation().Yaw;
+                return (Yaw > -90.0f && Yaw < 90.0f) ? 1 : -1;
+            });
+            // The launcher payment fires exactly when the launcher attack
+            // STARTS (combat acceptance); the MP floor keeps the legacy
+            // X->Z combo chain working at an empty pool.
+            Combat->OnStarted.AddLambda([this](FName StartedAttackId, uint64)
+            {
+                if (SkillLoadout != nullptr)
+                {
+                    SkillLoadout->CommitLauncherPayment(StartedAttackId);
+                }
+            });
+            SkillLoadout->OnSkillActivated.AddLambda([this](const FSkillActivationOutcome& Outcome)
+            {
+                // M7-003: the Projectile policy casts the sand pellet at the
+                // committed activation (the unified entry is the only damage
+                // path it ever touches).
+                HandleSkillProjectileActivated(Outcome);
+                if (UOperationLogSubsystem* SkillOpLog = UOperationLogSubsystem::FindForContext(this))
+                {
+                    SkillOpLog->LogState(FString::Printf(
+                        TEXT("Skill Activated: skill=%s attack=%s instance=%llu mpCost=%d cooldown=%.2fs revision=%s"),
+                        *Outcome.SkillId.ToString(), *Outcome.AttackId.ToString(),
+                        Outcome.AttackInstanceId, Outcome.MPCost, Outcome.CooldownSeconds,
+                        *Outcome.Message));
+                }
+            });
+            // The spawn load opens MP full (the pool's own "first load" rule).
+            SkillLoadout->RestoreFullMP();
+        }
+        else
+        {
+            UE_LOG(LogTemp, Verbose, TEXT("UEMMO M7-003: no published profession catalog; the skill layer stays inert."));
+        }
     }
     // M5-033: the input-layer weapon wiring pass (gates, fire source, ledger
     // bind, the shot subscription) runs before the first load so every bind
@@ -827,6 +897,12 @@ void APrototypeCharacter::ApplyProfileFinalStats()
     {
         Combat->SetCombatStats(static_cast<float>(Snapshot.Attack), static_cast<float>(Snapshot.Defense));
     }
+    // M7-003: the profession curve's MP pool rides the same snapshot (an
+    // increased pool never refills the current MP; a shrank pool clamps).
+    if (SkillLoadout != nullptr)
+    {
+        SkillLoadout->RefreshMaxMPFromProfile();
+    }
 }
 
 void APrototypeCharacter::HandleRoomRunStarted()
@@ -840,6 +916,12 @@ void APrototypeCharacter::HandleRoomRunStarted()
     if (Health != nullptr)
     {
         Health->ResetHealth();
+    }
+    // M7-003: a new run opens with full MP and clear cooldowns (the same
+    // "the load opens full" rule the health pool follows).
+    if (SkillLoadout != nullptr)
+    {
+        SkillLoadout->ResetTransientCombatState();
     }
 }
 
@@ -1088,7 +1170,29 @@ void APrototypeCharacter::SubmitSkillSlot(int32 SlotIndex)
             M3_023_SkillSlotKeyNames[SlotIndex - 1], SlotIndex));
     }
     ++SkillSlotPressCounts[SlotIndex - 1];
-    UE_LOG(LogTemp, Verbose, TEXT("UEMMO: skill slot %d pressed (no effect; M2+ placeholder)."), SlotIndex);
+    // M7-003: the press drives the skill chain when the loadout component is
+    // wired (a published catalog + active character); an inert component or
+    // an empty/invalid slot keeps the counting-only behavior verbatim. The
+    // slot counters record every press regardless of the activation result
+    // (所有既有槽位计数与操作日志继续记录).
+    if (SkillLoadout != nullptr && SkillLoadout->IsWired())
+    {
+        const FSkillActivationOutcome Outcome = SkillLoadout->TryActivateSkill(SlotIndex);
+        if (Outcome.bAccepted)
+        {
+            UE_LOG(LogTemp, Verbose, TEXT("UEMMO M7-003: slot %d activated skill '%s' (attack '%s')."),
+                SlotIndex, *Outcome.SkillId.ToString(), *Outcome.AttackId.ToString());
+        }
+        else if (UOperationLogSubsystem* SkillOpLog = UOperationLogSubsystem::FindForContext(this))
+        {
+            SkillOpLog->LogInput(FString::Printf(TEXT("SkillSlot%d Refused: %s"),
+                SlotIndex, *Outcome.Message));
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Verbose, TEXT("UEMMO: skill slot %d pressed (no effect; M2+ placeholder)."), SlotIndex);
+    }
 }
 int32 APrototypeCharacter::GetSkillSlotPressCount(int32 SlotIndex) const
 {
@@ -1795,25 +1899,37 @@ void APrototypeCharacter::PlayFireFeedbackSound()
 
 FEntityId APrototypeCharacter::ResolveTargetEntityId(const AActor& HitActor) const
 {
-    if (const FEntityId* Known = ShotTargetEntityIds.Find(&HitActor))
+    UWeaponComponent* Mount = GetWeaponMount();
+    if (Mount == nullptr)
+    {
+        return InvalidCombatTargetId;
+    }
+    return ResolveTargetEntityIdInto(HitActor, Mount->GetFireRegistry(), Mount->GetFireEpoch(),
+        ShotTargetEntityIds);
+}
+
+FEntityId APrototypeCharacter::ResolveTargetEntityIdInto(const AActor& HitActor,
+    FCombatEntityRegistry& Registry, FCombatEpoch RegistryEpoch,
+    TMap<TWeakObjectPtr<const AActor>, FEntityId>& Cache) const
+{
+    if (const FEntityId* Known = Cache.Find(&HitActor))
     {
         return *Known;
     }
-    UWeaponComponent* Mount = GetWeaponMount();
     // Walls and bodies without a health pool stay unregistered environment
     // (the unified entry ignores them; the trace filter blocks the shot).
-    if (Mount == nullptr || HitActor.FindComponentByClass<UHealthComponent>() == nullptr)
+    if (HitActor.FindComponentByClass<UHealthComponent>() == nullptr)
     {
         return InvalidCombatTargetId;
     }
     FCombatEntityMetadata Metadata;
     Metadata.Faction = M5_033_TargetFaction;
     Metadata.Category = M5_033_TargetCategory;
-    const FEntityId TargetId = Mount->GetFireRegistry().RegisterEntity(
-        const_cast<AActor*>(&HitActor), Metadata, Mount->GetFireEpoch());
+    const FEntityId TargetId = Registry.RegisterEntity(
+        const_cast<AActor*>(&HitActor), Metadata, RegistryEpoch);
     if (TargetId != InvalidCombatTargetId)
     {
-        ShotTargetEntityIds.Add(&HitActor, TargetId);
+        Cache.Add(&HitActor, TargetId);
     }
     return TargetId;
 }
@@ -1962,6 +2078,35 @@ void APrototypeCharacter::SubmitCombatInput(ECombatInput Action)
 }
 void APrototypeCharacter::SubmitCombatInput(ECombatInput Action, double PressedAt)
 {
+    // M7-003: the launcher skill economy gate. A Z press whose launcher skill
+    // refuses (cooldown / MP / not learned / wrong profession / pending
+    // attack) never enters the combat buffer - the skill layer's explicit
+    // rejection replaces the legacy unconditional queueing. Busy and
+    // InvalidContext do NOT gate here: the buffered-input path owns those
+    // semantics (a press during a cancel window is the combo chain), and an
+    // unwired skill layer keeps the legacy behavior verbatim. The payment
+    // itself happens at combat acceptance (the OnStarted handler).
+    if (Action == ECombatInput::Launcher && SkillLoadout != nullptr && SkillLoadout->IsWired())
+    {
+        const FSkillActivationOutcome LauncherCheck = SkillLoadout->PrecheckLauncherSkill();
+        const bool bEconomyRefusal =
+            LauncherCheck.Error == ESkillActivationError::Cooldown
+            || LauncherCheck.Error == ESkillActivationError::InsufficientMP
+            || LauncherCheck.Error == ESkillActivationError::Locked
+            || LauncherCheck.Error == ESkillActivationError::WrongProfession
+            || LauncherCheck.Error == ESkillActivationError::MissingAsset
+            || LauncherCheck.Error == ESkillActivationError::MissingAttack;
+        if (bEconomyRefusal)
+        {
+            if (UOperationLogSubsystem* LauncherOpLog = UOperationLogSubsystem::FindForContext(this))
+            {
+                LauncherOpLog->LogInput(FString::Printf(TEXT("Pressed Z (Launcher) Refused: %s"),
+                    *LauncherCheck.Message));
+            }
+            UE_LOG(LogTemp, Verbose, TEXT("UEMMO M7-003: launcher press refused: %s"), *LauncherCheck.Message);
+            return;
+        }
+    }
     // M5-041: while parked in a seat the character's combat intents (X/Z/C)
     // are dropped at this single choke point BEFORE the M3-023 input row and
     // the buffer push - a seated driver keeps no character-side combat queue
@@ -2164,6 +2309,223 @@ void APrototypeCharacter::Tick(float DeltaSeconds)
     // M5-033: the input-layer weapon duties (hold/burst polling, the reload
     // deadline poll, the live-projectile motion advance) run per game frame.
     TickWeaponInput(DeltaSeconds);
+    // M7-003: the skill pellets advance one logical step per frame with the
+    // same retirement semantics as the weapon pellets.
+    TickSkillProjectiles(DeltaSeconds);
+    if (SkillLoadout != nullptr)
+    {
+        SkillLoadout->TickSkillBuffs();
+    }
     ApplyPlanarMovement(*this, PlanarAxes);
     if (GetActorLocation().Z < -1000.f) ResetPosition();
+}
+
+// -- M7-003: the skill projectile path (throwsand) ------------------------------
+
+void APrototypeCharacter::HandleSkillProjectileActivated(const FSkillActivationOutcome& Outcome)
+{
+    UWorld* World = GetWorld();
+    if (World == nullptr || SkillLoadout == nullptr
+        || SkillLoadout->GetSkillPolicy(Outcome.SkillId) != EProfessionSkillEffectPolicy::Projectile)
+    {
+        return;
+    }
+    // The sand projectile definition loads through the SAME strict parser the
+    // combat catalog build uses (Data/CombatSystem/projectiles.json); a
+    // missing/invalid row refuses the cast with zero side effects (the MP and
+    // the cooldown were already paid - the cast animation still plays, only
+    // the delivery is absent, which the missing-definition log makes visible).
+    static const FString ProjectilesPath = FPaths::Combine(FPaths::ProjectDir(), TEXT("Data/CombatSystem/projectiles.json"));
+    FString Raw;
+    if (!FFileHelper::LoadFileToString(Raw, *ProjectilesPath))
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UEMMO M7-003: projectiles.json unreadable; the sand cast delivers nothing."));
+        return;
+    }
+    TSharedPtr<FCombatJsonValue> ParsedRoot;
+    FString ParseError;
+    if (!FCombatJsonParser::Parse(Raw, ParsedRoot, ParseError) || !ParsedRoot.IsValid()
+        || ParsedRoot->Kind != FCombatJsonValue::EKind::Object)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UEMMO M7-003: projectiles.json parse failed (%s)."), *ParseError);
+        return;
+    }
+    const TSharedPtr<FCombatJsonValue>* Rows = ParsedRoot->Object.Find(TEXT("rows"));
+    if (Rows == nullptr || (*Rows)->Kind != FCombatJsonValue::EKind::Array)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UEMMO M7-003: projectiles.json has no rows array."));
+        return;
+    }
+    FProjectileDefinition Definition;
+    bool bFound = false;
+    for (const TSharedPtr<FCombatJsonValue>& RowValue : (*Rows)->Array)
+    {
+        if (!RowValue.IsValid() || RowValue->Kind != FCombatJsonValue::EKind::Object)
+        {
+            continue;
+        }
+        const TSharedPtr<FCombatJsonValue>* Id = RowValue->Object.Find(TEXT("projectile_id"));
+        if (Id != nullptr && (*Id)->Kind == FCombatJsonValue::EKind::String
+            && (*Id)->String == TEXT("sand_throw"))
+        {
+            FString RowError;
+            if (ParseProjectileDefinition(*RowValue, Definition, RowError))
+            {
+                bFound = true;
+            }
+            else
+            {
+                UE_LOG(LogTemp, Warning, TEXT("UEMMO M7-003: the sand_throw row refused (%s)."), *RowError);
+            }
+            break;
+        }
+    }
+    if (!bFound)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UEMMO M7-003: no valid sand_throw projectile row; the sand cast delivers nothing."));
+        return;
+    }
+
+    // The per-attacker registry pair (the M5-013 placement): the owner enters
+    // once per registry lifetime, every cast allocates its own shot id.
+    if (!SkillProjectileIdentity.IsValid())
+    {
+        SkillProjectileIdentity = MakeUnique<FSkillProjectileIdentity>(this, &SkillProjectileRegistry);
+    }
+    if (!IsValidCombatEntityId(SkillProjectileSourceEntityId))
+    {
+        FCombatEntityMetadata SourceMetadata;
+        SourceMetadata.Faction = M5_033_PlayerFaction;
+        SourceMetadata.Category = M5_033_PlayerCategory;
+        SkillProjectileSourceEntityId = SkillProjectileRegistry.RegisterEntity(
+            this, SourceMetadata, SkillProjectileRegistry.GetCurrentEpoch());
+    }
+    if (!IsValidCombatEntityId(SkillProjectileSourceEntityId))
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UEMMO M7-003: the skill registry refused the owner; the sand cast delivers nothing."));
+        return;
+    }
+    const FCombatEpoch Epoch = SkillProjectileRegistry.GetCurrentEpoch();
+    const FShotId ShotId = SkillProjectileRegistry.AllocateActionSequence(SkillProjectileSourceEntityId, Epoch);
+    if (!IsValidCombatShotId(ShotId))
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UEMMO M7-003: the skill registry refused the shot; the sand cast delivers nothing."));
+        return;
+    }
+
+    // The spawn mirrors the weapon pellet setup (the same actor, motion
+    // policy and unified entry): origin at a chest-height forward offset,
+    // direction = the planar facing, speed/gravity/lifetime from the row.
+    const FVector Origin = (Combat != nullptr ? Combat->GetDebugFeetLocation() : GetActorLocation())
+        + FVector(60.f, 0.f, 80.f);
+    const float Facing = (GetActorRotation().Yaw > -90.0f && GetActorRotation().Yaw < 90.0f) ? 1.f : -1.f;
+    const FVector Direction = FVector(Facing, 0.f, 0.f);
+    FActorSpawnParameters Params;
+    Params.Owner = this;
+    ACombatProjectile* Actor = World->SpawnActor<ACombatProjectile>(
+        ACombatProjectile::StaticClass(), Origin, FRotator::ZeroRotator, Params);
+    if (Actor == nullptr)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UEMMO M7-003: the sand pellet actor failed to spawn."));
+        return;
+    }
+    Actor->Context.Epoch = Epoch;
+    Actor->Context.SourceEntityId = SkillProjectileSourceEntityId;
+    Actor->Context.ShotId = ShotId;
+    Actor->Context.PelletIndex = 0;
+    Actor->Context.WeaponInstanceId = FGuid();
+    Actor->Context.ProjectileInstanceId = FGuid::NewGuid();
+    Actor->Context.ConfigRevision = SkillLoadout->GetConfigRevision();
+    Actor->Context.ProjectileId = Definition.ProjectileId;
+    Actor->LaunchSpeedCmS = Definition.SpeedCmS;
+    Actor->MotionGravityScale = Definition.Motion == EProjectileMotion::Parabolic ? 1.0f : 0.0f;
+    if (Actor->Movement != nullptr)
+    {
+        Actor->Movement->InitialSpeed = Definition.SpeedCmS;
+        Actor->Movement->MaxSpeed = Definition.SpeedCmS;
+        Actor->Movement->ProjectileGravityScale = Actor->MotionGravityScale;
+    }
+    Actor->SetLifeSpan(Definition.LifetimeS);
+    Actor->FaceFlightDirection(Direction);
+
+    // The damage profile: the attack row's base scaled by the rank
+    // coefficient (the skill's damage_numbers are the attack's, retuned per
+    // rank), carried verbatim by the pellet (the policy never re-reads data).
+    FProjectileHitContext HitContext;
+    HitContext.Registry = &SkillProjectileRegistry;
+    HitContext.Ledger = &SkillProjectileLedger;
+    HitContext.Identity = SkillProjectileIdentity.Get();
+    HitContext.AttackProfile.DamageProfileId = Outcome.AttackId;
+    HitContext.AttackProfile.BaseDamage = 14.f * Outcome.DamageCoefficient;
+    HitContext.AttackProfile.AttackCoefficient = 1.0f;
+    HitContext.AttackProfile.HitStunSeconds = 0.22f;
+    HitContext.PierceCount = Definition.PierceCount;
+    HitContext.SourceActor = this;
+
+    FLiveWeaponProjectile Entry;
+    Entry.Actor = Actor;
+    Entry.Policy = MakeUnique<FLinearProjectilePolicy>();
+    Entry.ShotEpoch = Epoch;
+    Entry.ShotSourceEntityId = SkillProjectileSourceEntityId;
+    Entry.ShotId = ShotId;
+    if (Entry.Policy.IsValid() && Entry.Policy->Begin(*Actor, Direction, HitContext))
+    {
+        LiveSkillProjectiles.Add(MoveTemp(Entry));
+        FPendingSkillShotEnd Pending;
+        Pending.Epoch = Epoch;
+        Pending.SourceEntityId = SkillProjectileSourceEntityId;
+        Pending.ShotId = ShotId;
+        Pending.LivePellets = 1;
+        PendingSkillShotEnds.Add(Pending);
+        UE_LOG(LogTemp, Verbose, TEXT("UEMMO M7-003: sand pellet committed (shot %llu, speed %.0f)."),
+            static_cast<uint64>(ShotId), Definition.SpeedCmS);
+    }
+    else
+    {
+        Actor->Destroy();
+        UE_LOG(LogTemp, Warning, TEXT("UEMMO M7-003: the sand pellet policy refused its binding; actor retired."));
+    }
+}
+
+void APrototypeCharacter::TickSkillProjectiles(float DeltaSeconds)
+{
+    for (int32 Index = LiveSkillProjectiles.Num() - 1; Index >= 0; --Index)
+    {
+        FLiveWeaponProjectile& Entry = LiveSkillProjectiles[Index];
+        ACombatProjectile* Actor = Entry.Actor.Get();
+        if (Actor == nullptr)
+        {
+            RetireSkillProjectilePellet(Index);
+            continue;
+        }
+        Entry.Policy->AdvanceMotion(DeltaSeconds);
+    }
+}
+
+void APrototypeCharacter::RetireSkillProjectilePellet(int32 LiveIndex)
+{
+    if (!LiveSkillProjectiles.IsValidIndex(LiveIndex))
+    {
+        return;
+    }
+    const FCombatEpoch PelletEpoch = LiveSkillProjectiles[LiveIndex].ShotEpoch;
+    const FEntityId PelletSource = LiveSkillProjectiles[LiveIndex].ShotSourceEntityId;
+    const FShotId PelletShotId = LiveSkillProjectiles[LiveIndex].ShotId;
+    LiveSkillProjectiles.RemoveAtSwap(LiveIndex);
+
+    for (int32 PendingIndex = PendingSkillShotEnds.Num() - 1; PendingIndex >= 0; --PendingIndex)
+    {
+        FPendingSkillShotEnd& Pending = PendingSkillShotEnds[PendingIndex];
+        if (Pending.Epoch != PelletEpoch || Pending.SourceEntityId != PelletSource || Pending.ShotId != PelletShotId)
+        {
+            continue;
+        }
+        --Pending.LivePellets;
+        if (Pending.LivePellets <= 0)
+        {
+            SkillProjectileLedger.EndShot(Pending.Epoch, Pending.SourceEntityId, Pending.ShotId);
+            PendingSkillShotEnds.RemoveAtSwap(PendingIndex);
+        }
+        break;
+    }
 }

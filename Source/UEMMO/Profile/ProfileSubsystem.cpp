@@ -107,6 +107,20 @@ int32 UProfileSubsystem::GetDefenseForLevel(int32 Level)
 	return FExperienceCurve::GetDefenseForLevel(Level);
 }
 
+// M7-003: the profession-catalog resolvers (see the header). Static by the
+// same justification as the other GameInstance-level singletons of this
+// subsystem: one active character per game instance. Unset = legacy 0.
+static TFunction<int32(FName, int32)> M7_003_MaxMPResolver;
+static TFunction<int32(FName, int32)> M7_003_SkillPointsResolver;
+
+void UProfileSubsystem::SetProfessionProgressionResolvers(
+	TFunction<int32(FName, int32)> InMaxMPResolver,
+	TFunction<int32(FName, int32)> InSkillPointsResolver)
+{
+	M7_003_MaxMPResolver = MoveTemp(InMaxMPResolver);
+	M7_003_SkillPointsResolver = MoveTemp(InSkillPointsResolver);
+}
+
 bool UProfileSubsystem::AddXP(int32 Amount)
 {
 	// Without a profile there is nothing to grow; a non-positive amount can
@@ -143,6 +157,14 @@ bool UProfileSubsystem::AddXP(int32 Amount)
 		XP -= NextRequirement;
 		++Level;
 		bLeveledUp = true;
+		// M7-003: skill points accrue per REACHED level from the profession's
+		// level curve (02 文档 §5: 按职业 level_curves 给的 skill_points 累积
+		// 获取 SP). The legacy prototype curve carries 0 everywhere, so every
+		// pre-M7 result is verbatim; SP is never back-filled for past levels.
+		if (M7_003_SkillPointsResolver)
+		{
+			UnspentSP += M7_003_SkillPointsResolver(ProfessionId, Level);
+		}
 	}
 	// M3-023: the XP/level state row (the levelUp flag IS the UI hook result).
 	if (UOperationLogSubsystem* OpLog = M3_023_OpLog(*this))
@@ -405,6 +427,9 @@ FProfileSnapshot UProfileSubsystem::GetProfileSnapshot() const
 	// M7-002: the active profession rides the snapshot (the skill-rank table
 	// stays out - the save/service layer passes it explicitly).
 	Snapshot.ProfessionId = ProfessionId;
+	// M7-003: the profession curve's base MP pool (0 for the legacy
+	// prototype, whose curve carries none - every pre-M7 number is verbatim).
+	Snapshot.MaxMP = M7_003_MaxMPResolver ? M7_003_MaxMPResolver(ProfessionId, Level) : 0;
 	// The derived stats are recomputed at copy time - never copied out of a
 	// World's HealthComponent - so a snapshot can never fossilize temporary
 	// in-combat HP as the permanent base.
@@ -467,4 +492,85 @@ void UProfileSubsystem::SetEquippedStatBonus(const FItemStats& Bonus)
 const FItemStats& UProfileSubsystem::GetEquippedStatBonus() const
 {
 	return EquippedStatBonus;
+}
+
+// -- M7-003: skill learning (SP purchase) -------------------------------------
+
+bool UProfileSubsystem::HasLearnedSkill(FName SkillId) const
+{
+	return GetSkillRank(SkillId) >= 1;
+}
+
+int32 UProfileSubsystem::GetSkillRank(FName SkillId) const
+{
+	for (const FSkillRankSaveEntry& Entry : SkillRanks)
+	{
+		if (Entry.SkillId == SkillId)
+		{
+			return Entry.Rank;
+		}
+	}
+	return 0;
+}
+
+bool UProfileSubsystem::TryPurchaseSkillRank(FName SkillId, int32 TargetRank, int32 MaxRank,
+	int32 RequiredCharacterLevel, int32 SPCost, FString& OutProblem)
+{
+	OutProblem.Reset();
+	// The rank row numbers come from the published catalog (the caller's
+	// gate); the purchase validates them against the live profile state.
+	if (!bHasProfile)
+	{
+		OutProblem = TEXT("no active profile");
+		return false;
+	}
+	if (SkillId.IsNone() || TargetRank < 1 || MaxRank < 1)
+	{
+		OutProblem = TEXT("the skill or rank numbers are invalid");
+		return false;
+	}
+	if (TargetRank > MaxRank)
+	{
+		OutProblem = FString::Printf(
+			TEXT("rank %d exceeds the skill's max rank %d"), TargetRank, MaxRank);
+		return false;
+	}
+	const int32 CurrentRank = GetSkillRank(SkillId);
+	if (TargetRank != CurrentRank + 1)
+	{
+		OutProblem = FString::Printf(
+			TEXT("rank %d is not purchasable from the current rank %d (ranks are continuous; no skipping, no re-purchase)"),
+			TargetRank, CurrentRank);
+		return false;
+	}
+	if (Level < RequiredCharacterLevel)
+	{
+		OutProblem = FString::Printf(
+			TEXT("rank %d requires character level %d (current %d)"),
+			TargetRank, RequiredCharacterLevel, Level);
+		return false;
+	}
+	if (UnspentSP < SPCost)
+	{
+		OutProblem = FString::Printf(
+			TEXT("rank %d costs %d SP (unspent %d)"), TargetRank, SPCost, UnspentSP);
+		return false;
+	}
+
+	// Success: exactly one rank row per skill, written in place.
+	// (失败事务不扣 SP - a refusal above never reaches this write.)
+	UnspentSP -= SPCost;
+	for (FSkillRankSaveEntry& Entry : SkillRanks)
+	{
+		if (Entry.SkillId == SkillId)
+		{
+			Entry.Rank = TargetRank;
+			return true;
+		}
+	}
+	FSkillRankSaveEntry NewRow;
+	NewRow.SkillId = SkillId;
+	NewRow.Rank = TargetRank;
+	SkillRanks.Add(NewRow);
+	return true;
 }

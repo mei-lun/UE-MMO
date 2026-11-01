@@ -105,7 +105,13 @@ bool FUEMMOTasksM1_010CatalogSequenceMatchesContractValues::RunTest(const FStrin
 	}
 
 	const TArray<TObjectPtr<UAttackDefinition>>& Entries = Catalog->GetEntries();
-	if (!TestEqual(TEXT("catalog holds exactly the four configured definitions"), Entries.Num(), ExpectedEntryCount))
+	// M7-003: the ini catalog grew to the frozen four plus the five wired
+	// skill attacks. The contract sequence still pins the LEGACY four in
+	// their original order (the ini keeps them first); the new rows append
+	// after them and are asserted by presence.
+	TestTrue(TEXT("catalog holds the frozen four plus the five skill attacks"),
+		Entries.Num() >= ExpectedEntryCount + 5);
+	if (Entries.Num() < ExpectedEntryCount)
 	{
 		return true;
 	}
