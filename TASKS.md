@@ -222,6 +222,6 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M6-008 | [DNFArt Blender 交付包 UE 导入验收](Docs/Tasks/M6-008.md) | DONE | M6-007 | ZCode-20261101-DNFArt | 2026-11-01T14:20:00+08:00 | [report](Docs/Tasks/Reports/M6-008.md) |
 | M7-001 | [职业与等级配置底座](Docs/Tasks/M7-001.md) | DONE | M6-008 | ZCode-20261101-DNFArt | 2026-11-01T16:40:00+08:00 | [report](Docs/Tasks/Reports/M7-001.md) |
 | M7-002 | [多角色存档与旧档迁移](Docs/Tasks/M7-002.md) | DONE | M7-001 | ZCode-20261101-DNFArt | 2026-11-01T21:32:00+08:00 | [report](Docs/Tasks/Reports/M7-002.md) |
-| M7-003 | [首职业六技能](Docs/Tasks/M7-003.md) | TODO | M7-001,M7-002 | — | — | — |
+| M7-003 | [首职业六技能](Docs/Tasks/M7-003.md) | DONE | M7-001,M7-002 | ZCode-20261101-DNFArt | 2026-11-01T23:32:00+08:00 | [report](Docs/Tasks/Reports/M7-003.md) |
 | M7-004 | [连续双房间地城](Docs/Tasks/M7-004.md) | TODO | M7-003 | — | — | — |
 | M7-005 | [第二职业证明](Docs/Tasks/M7-005.md) | TODO | M7-004 | — | — | — |

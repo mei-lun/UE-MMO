@@ -1,3 +1,28 @@
+# 最近一轮交接：M7-002 存档迁移 + M7-003 首职业六技能（2026-11-01）
+
+> 本轮新完成 DONE 2 项：M7-002、M7-003。任务板 203 项、197 DONE、0 IN_PROGRESS、TODO 2
+> （M7-004/005）+ M5-H04；M5-H03 仍等用户试玩签收。延续会话指令：继续 M7-004～005。
+
+- Owner：ZCode-20261101-DNFArt。M7-002 实现提交 `ec5705b`（+收口 962634f）；M7-003 实现提交
+  `cb9bf57`。[M7-002 报告](Docs/Tasks/Reports/M7-002.md)、[M7-003 报告](Docs/Tasks/Reports/M7-003.md)。
+- **M7-002 多角色存档与旧档迁移**：URosterService 三槽事务（staging→读回→索引提交）、
+  `Char_<32hex>` 前缀、一次性 ImportLegacyProfile（旧档只读迁移/全新安装引导/坏档保留）；
+  schema v4 六新列 + 摘要仅 schema 4 覆盖；迁移链修复三个真缺口（Validate 漏 v3 门、迁移输出
+  必须播种职业状态、LoadActiveProfile 静默丢 RoomClears）；GameFlow roster-first 启动通道。
+- **M7-003 首职业六技能**：USkillLoadoutComponent（8 槽/MP/冷却/预检-提交九类拒绝原因）+
+  UProfessionCatalogSubsystem 发布门 + TryPurchaseSkillRank/SP 累积/MaxMP resolver +
+  CombatComponent 逐实例伤害系数 + 四策略白名单（弹体复用 ACombatProjectile+统一命中+M5-077
+  退役；SelfBuff 无消费者已实现）+ Z 经济门（连段付费底 0）+ HUD 五槽条。DNF 五条技能动画导入
+  并第二进程 verify；combat-attacks 五新招行（命中窗取自 actions_manifest）+ sand_throw +
+  DataAsset 全量重生成（profession rev `874037eca0cc664a`）。
+- **验证**：M7_002 10/10、M7_003 7/7；**全量回归 915/915** 0 失败（含 M1_008/M1_010/M5_004/
+  M5_005 四处陈旧钉的诚实更新——攻击清单 4→9、弹体行 5→6、合同箱限定旧四招）。
+- **限制**：技能帧截图两条自动化路（编辑器 SceneCapture/自动化 FScreenshotRequest）在本工作区
+  均出不了图（M6-008 同类限制已记录），真实动作帧留给用户试玩；技能图标/Montage 留空为
+  placeholder。
+- **未动项**：旧存档/M5-H03 判定/固定包未触碰；ArtValidation 与 blender-work 保持本机不入库。
+- **下一步**：M7-004 连续双房间地城（依赖已满足）；随后 M7-005 第二职业证明。
+
 # 最近一轮交接：M7-002 多角色存档与旧档迁移（2026-11-01）
 
 > 本轮新完成 DONE 1 项：M7-002。任务板 203 项、196 DONE、0 IN_PROGRESS、TODO 3（M7-003..005）；
