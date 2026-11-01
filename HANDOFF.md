@@ -1,3 +1,26 @@
+# 最近一轮交接：M7-002 多角色存档与旧档迁移（2026-11-01）
+
+> 本轮新完成 DONE 1 项：M7-002。任务板 203 项、196 DONE、0 IN_PROGRESS、TODO 3（M7-003..005）；
+> M5-H03 仍等用户试玩签收。延续会话指令：M7-002 完成后继续 M7-003～005。
+
+- Owner：ZCode-20261101-DNFArt；实现提交 `ec5705b`（21 文件 +3773）；[M7-002 报告](Docs/Tasks/Reports/M7-002.md)。
+- **Roster 事务**：URosterService 三槽 staging→读回→索引提交；`Char_<32hex>` 前缀派生；一次性
+  ImportLegacyProfile（旧档只读迁移保留 CharacterId/全部 v3 字段；全新安装引导 prototype；坏档
+  LegacyRecoveryError 保留文件；健康 Roster 拒绝重复导入）。
+- **schema v4**：ProfessionId/SkillRanks/UnspentSP/SkillLoadout/ProfessionConfigRevision/
+  DungeonClears；摘要 v4 覆盖仅限 schema 4（v1/v2/v3 摘要冻结）；ToSaveGame 缺省盖章
+  MakeLegacyPrototype。
+- **迁移链修复（测试暴露的三个真缺口）**：Validate 可迁移集合漏 v3（会孤立全部 M6 存档）；
+  三条迁移通道统一播种职业状态（"一步到当前 schema"契约下输出必为 v4 载荷）；
+  LoadActiveProfile 此前静默丢弃 RoomClears（M6 遗留缺口，导入路径暴露后补透传）。
+- **GameFlow**：启动先探测 Roster → 一次性旧档导入 → 损坏报错不 wipe；16 参数 RestoreFromSave
+  把职业状态推进 ProfileSubsystem；UI 角色列表属后续功能卡。
+- **验证**：M7_002 套件 10/10；全量回归 **908/908** 0 失败（regression6 曾 907/908，M3_013
+  原始档补职业 id 后全绿）；Build Succeeded。
+- **未动项**：旧存档/M5-H03 判定/固定包未触碰；Content/UEMMO/ArtValidation 与 blender-work
+  保持本机不入库。
+- **下一步**：M7-003 首职业六技能（依赖已满足）；之后 M7-004 连续双房间、M7-005 第二职业。
+
 # 最近一轮交接：M7-001 职业与等级配置底座 + DNFArt 资源 A/B 验收（2026-11-01）
 
 > 本轮新完成 DONE 2 项：DNFArt-AB-Acceptance（验收记录，非任务卡）与 M7-001。任务板 203 项、195 DONE、
