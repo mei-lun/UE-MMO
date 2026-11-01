@@ -44,6 +44,16 @@ ACTIONS = {
     'throwsand': 0.30,
     'earthbreak': 0.35,
     'stomp': 0.40,
+    # M7-004 visual integration: the legacy four + the locomotion set on the
+    # SAME DNF skeleton (the player mesh swap invalidates the mannequin AnimBP;
+    # the montages for light_01/02/launcher/aerial_01 build from these).
+    'attack_01': 0.35,
+    'attack_02': 0.40,
+    'aerial': 0.40,
+    'jump_start': 0.3,
+    'jump_fall': 0.5,
+    'jump_land': 0.6,
+    'walk_y': 0.4,
 }
 
 REPORT = {'mode': MODE, 'actions': {}, 'success': False}

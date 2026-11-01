@@ -578,6 +578,25 @@ bool FUEMMOTasksM3_024RealCharacterMontagePlaysDuringAttack::RunTest(const FStri
 	// The real AnimBP drives the mesh (the constructor class finder wired
 	// /Game/UEMMO/Animation/ABP_Prototype; a native fallback would not prove
 	// the montage routes through the shipped graph).
+	// M7-004: the pawn spawns as the DNF hero (single-node) now; this test
+	// verifies the LEGACY AnimBP + montage contract, so restore the
+	// mannequin presentation on the spawned pawn first.
+	if (USkeletalMeshComponent* TestMesh = Player->GetMesh())
+	{
+		if (USkeletalMesh* Manny = Cast<USkeletalMesh>(
+			StaticLoadObject(USkeletalMesh::StaticClass(), nullptr,
+				TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple"))))
+		{
+			TestMesh->SetSkeletalMesh(Manny);
+		}
+		if (UClass* AnimBP = Cast<UClass>(
+			StaticLoadObject(UClass::StaticClass(), nullptr,
+				TEXT("/Game/UEMMO/Animation/ABP_Prototype.ABP_Prototype_C"))))
+		{
+			TestMesh->SetAnimationMode(EAnimationMode::AnimationBlueprint);
+			TestMesh->SetAnimInstanceClass(AnimBP);
+		}
+	}
 	USkeletalMeshComponent* Mesh = Player->GetMesh();
 	UAnimInstance* Anim = Mesh != nullptr ? Mesh->GetAnimInstance() : nullptr;
 	if (!TestNotNull(TEXT("the character mesh runs an anim instance"), Anim))

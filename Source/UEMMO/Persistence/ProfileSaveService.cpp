@@ -635,6 +635,14 @@ FProfileLoadOutcome UProfileSaveService::LoadActiveProfile()
 		}
 		if (Slot->PayloadDigest != M3_014_ComputePayloadDigest(*Slot))
 		{
+			// M7-004 instrumentation: the packaged-vs-editor recovery
+			// divergence - always log the exact slot state on a digest
+			// mismatch before deciding.
+			UE_LOG(LogTemp, Warning,
+				TEXT("UEMMO M7-002 digest mismatch on '%s': schema=%d prof='%s' ranks=%d loadout=%d stored=%08X recomputed=%08X"),
+				*SlotNames[SlotIndex], Slot->SchemaVersion, *Slot->ProfessionId.ToString(),
+				Slot->SkillRanks.Num(), Slot->SkillLoadout.Num(),
+				Slot->PayloadDigest, M3_014_ComputePayloadDigest(*Slot));
 			// M7-004 recovery: the FIRST packaged M7 build's fresh-bootstrap
 			// path wrote a known malformed artifact - ProfessionId None with
 			// no rank rows and a digest stamped over a divergent in-memory

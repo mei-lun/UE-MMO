@@ -337,13 +337,37 @@ APrototypeCharacter::APrototypeCharacter()
     GetMesh()->SetRelativeLocation(FVector(0, 0, -96));
     GetMesh()->SetRelativeRotation(FRotator(0, -90, 0));
     GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    static ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshAsset(TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple"));
-    if (MeshAsset.Succeeded()) GetMesh()->SetSkeletalMesh(MeshAsset.Object);
+    // M7-004 visual integration: the player wears the imported DNF fighter
+    // (the M6-008 ArtValidation hero) with single-node animations - the
+    // mannequin AnimBP cannot drive the DNF skeleton. The attack VISUALS
+    // ride the MNT_<attack_id> montages (rebuilt on the same skeleton);
+    // locomotion switches idle/run in Tick (M7_004_LocomotionAnimSwitch).
+    static ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshAsset(TEXT("/Game/UEMMO/ArtValidation/DNFArt/Hero/hero_skm.hero_skm"));
+    if (MeshAsset.Succeeded())
+    {
+        GetMesh()->SetSkeletalMesh(MeshAsset.Object);
+    }
+    else
+    {
+        static ConstructorHelpers::FObjectFinder<USkeletalMesh> FallbackMesh(TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple"));
+        if (FallbackMesh.Succeeded()) GetMesh()->SetSkeletalMesh(FallbackMesh.Object);
+    }
     // M1-031: the generated AnimBP owns all animation state (locomotion
     // BlendSpace plus jump/fall/land poses). The M0 per-frame PlayAnimation
     // override is gone, so idle/move switching never restarts from time zero.
     static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBPClass(TEXT("/Game/UEMMO/Animation/ABP_Prototype.ABP_Prototype_C"));
-    if (AnimBPClass.Succeeded())
+    static ConstructorHelpers::FObjectFinder<UAnimationAsset> HeroIdleAsset(TEXT("/Game/UEMMO/ArtValidation/DNFArt/Hero/hero_idle_Anim.hero_idle_Anim"));
+    if (HeroIdleAsset.Succeeded() && GetMesh()->GetSkeletalMeshAsset() != nullptr
+        && GetMesh()->GetSkeletalMeshAsset()->GetFName() == FName(TEXT("hero_skm")))
+    {
+        // The DNF hero: single-node looping idle; Tick switches to the run
+        // clip on movement (the montage playback overrides for attacks).
+        GetMesh()->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+        GetMesh()->AnimationData.AnimToPlay = HeroIdleAsset.Object;
+        GetMesh()->AnimationData.bSavedLooping = true;
+        GetMesh()->AnimationData.bSavedPlaying = true;
+    }
+    else if (AnimBPClass.Succeeded())
     {
         GetMesh()->SetAnimationMode(EAnimationMode::AnimationBlueprint);
         GetMesh()->SetAnimInstanceClass(AnimBPClass.Class);
@@ -2355,6 +2379,7 @@ void APrototypeCharacter::Tick(float DeltaSeconds)
     {
         SkillLoadout->TickSkillBuffs();
     }
+    M7_004_LocomotionAnimSwitch(DeltaSeconds);
     ApplyPlanarMovement(*this, PlanarAxes);
     if (GetActorLocation().Z < -1000.f) ResetPosition();
 }
@@ -2597,4 +2622,49 @@ bool APrototypeCharacter::DevApplySkillDemo()
     }
     UE_LOG(LogTemp, Display, TEXT("UEMMO M7DEMO: the active character is now a fighter with all six skills at rank 1 (MP refilled)."));
     return true;
+}
+
+// -- M7-004: the DNF hero's single-node locomotion switch ----------------------
+
+void APrototypeCharacter::M7_004_LocomotionAnimSwitch(float DeltaSeconds)
+{
+    USkeletalMeshComponent* MeshComponent = GetMesh();
+    if (MeshComponent == nullptr
+        || MeshComponent->GetAnimationMode() != EAnimationMode::AnimationSingleNode)
+    {
+        return;
+    }
+    // While a montage plays (the attack visuals) or the hit stop freezes the
+    // mesh, leave the node alone - the montage owns the pose.
+    // A montage overrides the single node while it plays (the attack pose):
+    // the presentation component drives the mesh's anim instance; the node
+    // itself only carries the looping locomotion clips. Skip while the
+    // combat is NOT Free (an attack/stun owns the pose) or a montage is
+    // active on the anim instance.
+    if (Combat != nullptr && Combat->GetSnapshot().ActionState != ECombatActionState::Free)
+    {
+        return;
+    }
+    if (UAnimInstance* Anim = MeshComponent->GetAnimInstance())
+    {
+        if (Anim->Montage_IsActive(nullptr))
+        {
+            return;
+        }
+    }
+    const float PlanarSpeed = FVector(GetVelocity().X, GetVelocity().Y, 0.f).Size();
+    const bool bMoving = PlanarSpeed > 20.f;
+    const TCHAR* Wanted = bMoving ? TEXT("hero_run_x_Anim") : TEXT("hero_idle_Anim");
+    if (M7_004_CurrentLocomotionAnim != Wanted)
+    {
+        if (UAnimationAsset* Asset = Cast<UAnimationAsset>(
+            StaticLoadObject(UAnimationAsset::StaticClass(), nullptr,
+                *FString::Printf(TEXT("/Game/UEMMO/ArtValidation/DNFArt/Hero/%s.%s"), Wanted, Wanted))))
+        {
+            MeshComponent->AnimationData.AnimToPlay = Asset;
+            MeshComponent->AnimationData.bSavedLooping = true;
+            MeshComponent->AnimationData.bSavedPlaying = true;
+            M7_004_CurrentLocomotionAnim = Wanted;
+        }
+    }
 }

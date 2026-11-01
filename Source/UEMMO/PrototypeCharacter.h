@@ -292,6 +292,13 @@ public:
     USkillLoadoutComponent* GetSkillLoadout() const { return SkillLoadout; }
 
     /**
+     * M7-004: the DNF hero's single-node idle/run switch (the mannequin
+     * AnimBP cannot drive the DNF skeleton; montages still own the attack
+     * poses). No-op on a mannequin-fallback mesh.
+     */
+    void M7_004_LocomotionAnimSwitch(float DeltaSeconds);
+
+    /**
      * M1-028: the runtime mapping context built by EnsureCombatInputActions,
      * read-only. The automation smoke asserts the F1 debug-toggle mapping
      * exists on it exactly once.
@@ -483,6 +490,8 @@ private:
     // M2-004: the locomotion AnimBP class captured at death so the revive can
     // re-attach it (death detaches the animation drive; reset restores it).
     UPROPERTY(Transient) TObjectPtr<UClass> SavedAnimInstanceClass = nullptr;
+    /** M7-004: the currently applied single-node locomotion clip (no restarts). */
+    UPROPERTY(Transient) FName M7_004_CurrentLocomotionAnim;
     // -- M5-033: the input-layer weapon wiring -----------------------------
     // The T reload action (the Q trigger stays SkillSlotActions[0], rebound
     // onto the fire handlers; the skill-slot 1 intent keeps its fallback).

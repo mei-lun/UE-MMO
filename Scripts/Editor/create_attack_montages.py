@@ -164,6 +164,7 @@ def create_mode():
                 raise RuntimeError(
                     'clip_start_seconds %r is not a full clip start (0.0); sub-clip entries are rejected by this generator' % clip_start)
             if abs(clip_end - length) > FULL_CLIP_TOLERANCE:
+                unreal.log_warning('MONTAGE %s: clip_end %r vs asset length %r' % (attack_id, clip_end, length))
                 raise RuntimeError(
                     'clip_end_seconds %r does not match the asset length %r; sub-clip entries are rejected by this generator' % (clip_end, length))
             record.update({

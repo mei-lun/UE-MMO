@@ -355,6 +355,22 @@ namespace UE::UEMMO::Tasks::M3_028
 			{
 				return false;
 			}
+			// M7-004: restore the legacy mannequin presentation (the DNF
+			// hero spawns single-node now; THIS test verifies the AnimBP
+			// state machine, which only drives the mannequin skeleton).
+			if (USkeletalMesh* Manny = Cast<USkeletalMesh>(
+				StaticLoadObject(USkeletalMesh::StaticClass(), nullptr,
+					TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple"))))
+			{
+				Mesh->SetSkeletalMesh(Manny);
+			}
+			if (UClass* AnimBP = Cast<UClass>(
+				StaticLoadObject(UClass::StaticClass(), nullptr,
+					TEXT("/Game/UEMMO/Animation/ABP_Prototype.ABP_Prototype_C"))))
+			{
+				Mesh->SetAnimationMode(EAnimationMode::AnimationBlueprint);
+				Mesh->SetAnimInstanceClass(AnimBP);
+			}
 			UAnimInstance* BaseAnim = Mesh->GetAnimInstance();
 			if (!Test.TestNotNull(TEXT("the mesh runs an anim instance"), BaseAnim))
 			{

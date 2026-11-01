@@ -34,9 +34,9 @@
    "launch_cm_per_s": 0,
    "hit_stun_seconds": 0.22,
    "hit_stop_seconds": 0.04,
-   "animation_path": "/Game/Characters/Mannequins/Anims/Unarmed/Attack/MM_Attack_01",
+   "animation_path": "/Game/UEMMO/ArtValidation/DNFArt/Hero/hero_attack_01_Anim",
    "clip_start_seconds": 0,
-   "clip_end_seconds": 1.0,
+   "clip_end_seconds": 0.35,
    "placeholder_animation": false
   },
   {
@@ -68,9 +68,9 @@
    "launch_cm_per_s": 0,
    "hit_stun_seconds": 0.28,
    "hit_stop_seconds": 0.04,
-   "animation_path": "/Game/Characters/Mannequins/Anims/Unarmed/Attack/MM_Attack_02",
+   "animation_path": "/Game/UEMMO/ArtValidation/DNFArt/Hero/hero_attack_02_Anim",
    "clip_start_seconds": 0,
-   "clip_end_seconds": 1.0,
+   "clip_end_seconds": 0.4167,
    "placeholder_animation": false
   },
   {
@@ -103,10 +103,10 @@
    "launch_cm_per_s": 700,
    "hit_stun_seconds": 1.0,
    "hit_stop_seconds": 0.04,
-   "animation_path": "/Game/Characters/Mannequins/Anims/Unarmed/Attack/MM_ChargedAttack",
+   "animation_path": "/Game/UEMMO/ArtValidation/DNFArt/Hero/hero_launcher_Anim",
    "clip_start_seconds": 0,
-   "clip_end_seconds": 1.8333333730697632,
-   "placeholder_animation": true
+   "clip_end_seconds": 0.4833,
+   "placeholder_animation": false
   },
   {
    "attack_id": "aerial_01",
@@ -135,10 +135,10 @@
    "launch_cm_per_s": 60,
    "hit_stun_seconds": 0.18,
    "hit_stop_seconds": 0.04,
-   "animation_path": "/Game/Characters/Mannequins/Anims/Unarmed/Attack/MM_Attack_03",
+   "animation_path": "/Game/UEMMO/ArtValidation/DNFArt/Hero/hero_aerial_Anim",
    "clip_start_seconds": 0,
-   "clip_end_seconds": 1.6666666269302368,
-   "placeholder_animation": true
+   "clip_end_seconds": 0.3167,
+   "placeholder_animation": false
   },
   {
    "attack_id": "singlekick",
@@ -167,7 +167,7 @@
    "hit_stop_seconds": 0.04,
    "animation_path": "/Game/UEMMO/ArtValidation/DNFArt/Hero/hero_singlekick_Anim",
    "clip_start_seconds": 0,
-   "clip_end_seconds": 0.4,
+   "clip_end_seconds": 0.3833,
    "placeholder_animation": false
   },
   {
@@ -197,7 +197,7 @@
    "hit_stop_seconds": 0.04,
    "animation_path": "/Game/UEMMO/ArtValidation/DNFArt/Hero/hero_damagelowkick_Anim",
    "clip_start_seconds": 0,
-   "clip_end_seconds": 0.4,
+   "clip_end_seconds": 0.3833,
    "placeholder_animation": false
   },
   {
@@ -227,7 +227,7 @@
    "hit_stop_seconds": 0.0,
    "animation_path": "/Game/UEMMO/ArtValidation/DNFArt/Hero/hero_throwsand_Anim",
    "clip_start_seconds": 0,
-   "clip_end_seconds": 0.467,
+   "clip_end_seconds": 0.45,
    "placeholder_animation": false
   },
   {
@@ -257,7 +257,7 @@
    "hit_stop_seconds": 0.05,
    "animation_path": "/Game/UEMMO/ArtValidation/DNFArt/Hero/hero_earthbreak_Anim",
    "clip_start_seconds": 0,
-   "clip_end_seconds": 0.5,
+   "clip_end_seconds": 0.4833,
    "placeholder_animation": false
   },
   {
@@ -287,7 +287,7 @@
    "hit_stop_seconds": 0.05,
    "animation_path": "/Game/UEMMO/ArtValidation/DNFArt/Hero/hero_stomp_Anim",
    "clip_start_seconds": 0,
-   "clip_end_seconds": 0.367,
+   "clip_end_seconds": 0.35,
    "placeholder_animation": false
   }
  ]

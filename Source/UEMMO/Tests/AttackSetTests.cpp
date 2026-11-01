@@ -944,13 +944,13 @@ bool FUEMMOTasksM1_008PlaceholderFlagsMatchDesignMapping::RunTest(const FString&
 		return true;
 	}
 
-	// Design section 7: the two lights use the existing MM_Attack_01/02 (real),
-	// launcher and aerial_01 are declared placeholders.
+	// M7-004: the placeholder DECISION unlocked - every attack (the legacy
+	// four included) wears a real DNF clip; none stays a placeholder.
 	TMap<FString, bool> ExpectedPlaceholder;
 	ExpectedPlaceholder.Add(TEXT("light_01"), false);
 	ExpectedPlaceholder.Add(TEXT("light_02"), false);
-	ExpectedPlaceholder.Add(TEXT("launcher"), true);
-	ExpectedPlaceholder.Add(TEXT("aerial_01"), true);
+	ExpectedPlaceholder.Add(TEXT("launcher"), false);
+	ExpectedPlaceholder.Add(TEXT("aerial_01"), false);
 
 	for (int32 Index = 0; Index < Attacks.Num(); ++Index)
 	{

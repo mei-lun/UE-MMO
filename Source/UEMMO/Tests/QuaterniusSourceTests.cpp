@@ -234,25 +234,29 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FUEMMOTasksM3_032PlaceholderDecisionLocked::RunTest(const FString& Parameters)
 {
-	struct FPlaceholderAttack
+	// M7-004: the placeholder DECISION UNLOCKED - the real DNF clips (the
+	// M6-008/M7-003 imports) replaced the mannequin placeholders for the
+	// launcher and the aerial follow-up. The pin now locks the REAL-clip
+	// decision (the same definitions, the same montage names, the DNF
+	// segments) so a silent regression back to placeholders still trips.
+	struct FRealClipAttack
 	{
 		const TCHAR* DefinitionPath;
 		const TCHAR* AnimationPath;
 		const TCHAR* MontagePath;
 		const TCHAR* Label;
 	};
-
-	static const FPlaceholderAttack PlaceholderAttacks[2] =
+	static const FRealClipAttack RealClipAttacks[2] =
 	{
 		{
 			TEXT("/Game/UEMMO/Combat/Definitions/DA_launcher.DA_launcher"),
-			TEXT("/Game/Characters/Mannequins/Anims/Unarmed/Attack/MM_ChargedAttack"),
+			TEXT("/Game/UEMMO/ArtValidation/DNFArt/Hero/hero_launcher_Anim"),
 			TEXT("/Game/UEMMO/Animation/Montages/MNT_launcher.MNT_launcher"),
 			TEXT("launcher")
 		},
 		{
 			TEXT("/Game/UEMMO/Combat/Definitions/DA_aerial_01.DA_aerial_01"),
-			TEXT("/Game/Characters/Mannequins/Anims/Unarmed/Attack/MM_Attack_03"),
+			TEXT("/Game/UEMMO/ArtValidation/DNFArt/Hero/hero_aerial_Anim"),
 			TEXT("/Game/UEMMO/Animation/Montages/MNT_aerial_01.MNT_aerial_01"),
 			TEXT("aerial_01")
 		}
@@ -260,20 +264,18 @@ bool FUEMMOTasksM3_032PlaceholderDecisionLocked::RunTest(const FString& Paramete
 
 	for (int32 Index = 0; Index < 2; ++Index)
 	{
-		const FPlaceholderAttack& Entry = PlaceholderAttacks[Index];
+		const FRealClipAttack& Entry = RealClipAttacks[Index];
 		UAttackDefinition* Attack = LoadObject<UAttackDefinition>(nullptr, Entry.DefinitionPath);
 		if (!TestNotNull(FString::Printf(TEXT("%s definition loads"), Entry.Label), Attack))
 		{
 			continue;
 		}
-		TestTrue(FString::Printf(TEXT("%s stays flagged placeholder_animation=true after the upgrade attempt"),
-			Entry.Label), Attack->bPlaceholderAnimation);
-
+		TestFalse(FString::Printf(TEXT("%s no longer flagged placeholder_animation"), Entry.Label),
+			Attack->bPlaceholderAnimation);
 		const FSoftObjectPath StoredAnimation = Attack->Animation.ToSoftObjectPath();
-		TestEqual(FString::Printf(TEXT("%s still references the placeholder clip %s"),
+		TestEqual(FString::Printf(TEXT("%s references the real DNF clip %s"),
 			Entry.Label, Entry.AnimationPath),
 			StoredAnimation.GetAssetPath().GetPackageName().ToString(), FString(Entry.AnimationPath));
-
 		UAnimMontage* Montage = LoadObject<UAnimMontage>(nullptr, Entry.MontagePath);
 		TestNotNull(FString::Printf(TEXT("%s montage loads"), Entry.Label), Montage);
 		if (Montage != nullptr)

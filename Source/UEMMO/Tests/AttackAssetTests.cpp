@@ -60,9 +60,10 @@ namespace UE::UEMMO::Tasks::M1_009
 		Expected.LaunchSpeed = 0.0f;
 		Expected.HitStunSeconds = 0.22f;
 		Expected.HitStopSeconds = 0.04f;
-		Expected.AnimationPath = TEXT("/Game/Characters/Mannequins/Anims/Unarmed/Attack/MM_Attack_01");
+		// M7-004: the real DNF clip replaced the mannequin placeholder.
+		Expected.AnimationPath = TEXT("/Game/UEMMO/ArtValidation/DNFArt/Hero/hero_attack_01_Anim");
 		Expected.ClipStartSeconds = 0.0f;
-		Expected.ClipEndSeconds = 1.0f;
+		Expected.ClipEndSeconds = 0.35f;
 		Expected.bPlaceholderAnimation = false;
 		return Expected;
 	}
@@ -88,9 +89,10 @@ namespace UE::UEMMO::Tasks::M1_009
 		Expected.LaunchSpeed = 0.0f;
 		Expected.HitStunSeconds = 0.28f;
 		Expected.HitStopSeconds = 0.04f;
-		Expected.AnimationPath = TEXT("/Game/Characters/Mannequins/Anims/Unarmed/Attack/MM_Attack_02");
+		// M7-004: the real DNF clip replaced the mannequin placeholder.
+		Expected.AnimationPath = TEXT("/Game/UEMMO/ArtValidation/DNFArt/Hero/hero_attack_02_Anim");
 		Expected.ClipStartSeconds = 0.0f;
-		Expected.ClipEndSeconds = 1.0f;
+		Expected.ClipEndSeconds = 0.4167f;
 		Expected.bPlaceholderAnimation = false;
 		return Expected;
 	}
@@ -116,10 +118,11 @@ namespace UE::UEMMO::Tasks::M1_009
 		Expected.LaunchSpeed = 700.0f;
 		Expected.HitStunSeconds = 1.0f;
 		Expected.HitStopSeconds = 0.04f;
-		Expected.AnimationPath = TEXT("/Game/Characters/Mannequins/Anims/Unarmed/Attack/MM_ChargedAttack");
+		// M7-004: the real DNF launcher clip (the placeholder unlocked).
+		Expected.AnimationPath = TEXT("/Game/UEMMO/ArtValidation/DNFArt/Hero/hero_launcher_Anim");
 		Expected.ClipStartSeconds = 0.0f;
-		Expected.ClipEndSeconds = 1.8333333730697632f;
-		Expected.bPlaceholderAnimation = true;
+		Expected.ClipEndSeconds = 0.4833f;
+		Expected.bPlaceholderAnimation = false; // M7-004: the real DNF clip
 		return Expected;
 	}
 
@@ -144,10 +147,11 @@ namespace UE::UEMMO::Tasks::M1_009
 		Expected.LaunchSpeed = 60.0f;
 		Expected.HitStunSeconds = 0.18f;
 		Expected.HitStopSeconds = 0.04f;
-		Expected.AnimationPath = TEXT("/Game/Characters/Mannequins/Anims/Unarmed/Attack/MM_Attack_03");
+		// M7-004: the real DNF aerial clip (the placeholder unlocked).
+		Expected.AnimationPath = TEXT("/Game/UEMMO/ArtValidation/DNFArt/Hero/hero_aerial_Anim");
 		Expected.ClipStartSeconds = 0.0f;
-		Expected.ClipEndSeconds = 1.6666666269302368f;
-		Expected.bPlaceholderAnimation = true;
+		Expected.ClipEndSeconds = 0.3167f;
+		Expected.bPlaceholderAnimation = false; // M7-004: the real DNF clip
 		return Expected;
 	}
 
