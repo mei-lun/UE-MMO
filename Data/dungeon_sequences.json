@@ -1,0 +1,15 @@
+{
+ "schema_version": 1,
+ "table": "dungeon_sequences",
+ "rows": [
+  {
+   "dungeon_id": "dungeon_lorien_double",
+   "room_ids": [
+    "room_combat_01",
+    "room_combat_02"
+   ],
+   "xp_reward": 120,
+   "comment": "M7-004: the continuous mode - two cleared rooms settle ONCE (120 XP, the sum shape of the two per-room 50s plus the dungeon bonus 20; per-room flows untouched). The room order IS the sequence; room ids must exist in Data/rooms.json (the coordinator resolves them through the selectable definitions)."
+  }
+ ]
+}

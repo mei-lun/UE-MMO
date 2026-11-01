@@ -374,6 +374,18 @@ void USkillLoadoutComponent::CommitLauncherPayment(FName StartedAttackId)
 	OnSkillActivated.Broadcast(Out);
 }
 
+void USkillLoadoutComponent::RestoreCooldownRemainders(const TMap<FName, float>& Remainders)
+{
+	const double Now = NowSeconds();
+	for (const TPair<FName, float>& Pair : Remainders)
+	{
+		if (Pair.Value > 0.f)
+		{
+			CooldownDeadlineSeconds.Add(Pair.Key, Now + static_cast<double>(Pair.Value));
+		}
+	}
+}
+
 void USkillLoadoutComponent::ResetTransientCombatState()
 {
 	CooldownDeadlineSeconds.Reset();

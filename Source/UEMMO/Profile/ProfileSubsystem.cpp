@@ -494,6 +494,14 @@ const FItemStats& UProfileSubsystem::GetEquippedStatBonus() const
 	return EquippedStatBonus;
 }
 
+void UProfileSubsystem::RecordDungeonCleared()
+{
+	if (bHasProfile)
+	{
+		++DungeonClears;
+	}
+}
+
 // -- M7-003: skill learning (SP purchase) -------------------------------------
 
 bool UProfileSubsystem::HasLearnedSkill(FName SkillId) const

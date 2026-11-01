@@ -44,6 +44,13 @@ public:
 	 */
 	void SetMaxHealth(float NewMaxHealth);
 
+	/**
+	 * M7-004: restores the carried HP (the dungeon run state) clamped to
+	 * [0, MaxHealth]. A positive value never fires OnDied; the death binding
+	 * stays the ApplyDamage/lethal path's.
+	 */
+	void SetHealth(float NewHealth);
+
 	bool IsAlive() const;
 
 	float GetHealth() const;

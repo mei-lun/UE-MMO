@@ -317,6 +317,14 @@ public:
 	/** Completed continuous dungeon runs (0 before the first profile). */
 	int32 GetDungeonClears() const { return DungeonClears; }
 
+	/**
+	 * M7-004: increments the completed-dungeon counter exactly once per call
+	 * (the coordinator owns the one-settlement guard; this function does not
+	 * deduplicate). No-op without a profile. The v4 A/B digest covers the
+	 * value.
+	 */
+	void RecordDungeonCleared();
+
 	// -- M7-003: profession-driven progression seams ---------------------------
 
 	/**

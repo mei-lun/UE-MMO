@@ -135,6 +135,13 @@ public:
 	void ResetTransientCombatState();
 
 	/**
+	 * M7-004: restores carried cooldown REMAINDERS (the dungeon run state)
+	 * re-based on the CURRENT world's clock (deadline = now + remainder;
+	 * never a cross-world absolute timestamp). Only extends existing rows.
+	 */
+	void RestoreCooldownRemainders(const TMap<FName, float>& Remainders);
+
+	/**
 	 * Expires an active SelfBuff at its deadline (called per game frame from
 	 * the owner's tick, on the same clock). No-op without an active buff.
 	 */

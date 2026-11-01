@@ -1,5 +1,6 @@
 #include "PrototypeCharacter.h"
 #include "Animation/AnimInstance.h"
+#include "Dungeon/DungeonCoordinatorSubsystem.h"
 #include "Profession/ProfessionCatalogSubsystem.h"
 #include "Skills/SkillLoadoutComponent.h"
 #include "Character/AttackMovementGate.h"
@@ -580,6 +581,15 @@ void APrototypeCharacter::BeginPlay()
             {
                 HandleRoomRunStarted();
             });
+            // M7-004: the dungeon coordinator consumes THIS world's session
+            // (a UWorldSubsystem - every room's world rebinds its own).
+            if (UGameInstance* DungeonGameInstance = GetGameInstance())
+            {
+                if (UDungeonCoordinatorSubsystem* Coordinator = DungeonGameInstance->GetSubsystem<UDungeonCoordinatorSubsystem>())
+                {
+                    Coordinator->BindSession(Session);
+                }
+            }
         }
     }
     // M3-023: register this pawn with the operation log subsystem (the
@@ -922,6 +932,35 @@ void APrototypeCharacter::HandleRoomRunStarted()
     if (SkillLoadout != nullptr)
     {
         SkillLoadout->ResetTransientCombatState();
+    }
+    // M7-004: a continuous dungeon run carries the previous room's HP/MP/
+    // cooldown remainders into THIS room (exactly once per advance; the
+    // HP restore clamps to the current max and never heals above it).
+    if (UGameInstance* DungeonGameInstance = GetGameInstance())
+    {
+        if (UDungeonCoordinatorSubsystem* Coordinator = DungeonGameInstance->GetSubsystem<UDungeonCoordinatorSubsystem>())
+        {
+            float CarriedHP = -1.f;
+            int32 CarriedMP = -1;
+            TMap<FName, float> CarriedCooldowns;
+            if (Coordinator->ConsumePendingRoomSnapshot(CarriedHP, CarriedMP, CarriedCooldowns))
+            {
+                if (CarriedHP >= 0.f && Health != nullptr)
+                {
+                    Health->SetHealth(FMath::Min(CarriedHP, Health->GetMaxHealth()));
+                }
+                if (SkillLoadout != nullptr)
+                {
+                    if (CarriedMP >= 0)
+                    {
+                        SkillLoadout->SetCurrentMP(CarriedMP);
+                    }
+                    SkillLoadout->RestoreCooldownRemainders(CarriedCooldowns);
+                }
+                UE_LOG(LogTemp, Display, TEXT("UEMMO M7-004: the carried room snapshot restored (hp %.1f mp %d, %d cooldown(s))."),
+                    CarriedHP, CarriedMP, CarriedCooldowns.Num());
+            }
+        }
     }
 }
 

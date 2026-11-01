@@ -40,6 +40,13 @@ enum class ERoomSessionState : uint8
 DECLARE_MULTICAST_DELEGATE(FOnRoomSessionRunStarted);
 
 /**
+ * M7-004: fired on every SUCCESSFUL BeginExit with the session's current
+ * room id and the run id at exit time (the dungeon coordinator consumes it
+ * as the "player reached the door" trigger for the next leg).
+ */
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnRoomSessionExitAccepted, FName /*RoomId*/, uint64 /*RunId*/);
+
+/**
  * M5-073: fires on every accepted clock injection, AFTER the wave progression
  * pump ran - the injected-clock time source of the rule evaluator (it must
  * never read a wall clock).
@@ -294,6 +301,9 @@ public:
 	/** Fires exactly once per accepted StartRoom. */
 	FOnRoomSessionRunStarted& OnRunStarted();
 
+	/** M7-004: fired on every successful BeginExit (see the delegate type). */
+	FOnRoomSessionExitAccepted& OnExitAccepted();
+
 	/** Fires exactly once per run, at its first terminal transition. */
 	FOnRoomSessionRunEnded& OnRunEnded();
 
@@ -497,6 +507,8 @@ private:
 
 	/** Events; Deinitialize clears them so world teardown never dangles. */
 	FOnRoomSessionRunStarted RunStartedDelegate;
+	/** M7-004: the exit-door trigger (see FOnRoomSessionExitAccepted). */
+	FOnRoomSessionExitAccepted ExitAcceptedDelegate;
 	FOnRoomSessionRunEnded RunEndedDelegate;
 	FOnRoomClockInjected ClockInjectedDelegate;
 	FOnRoomWaveCleared WaveClearedDelegate;

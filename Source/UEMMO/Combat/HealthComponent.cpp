@@ -58,6 +58,11 @@ void UHealthComponent::SetMaxHealth(float NewMaxHealth)
 	Health = FStatCalculator::ClampHealthOnMaxChange(Health, OldMax, NewMaxHealth);
 }
 
+void UHealthComponent::SetHealth(float NewHealth)
+{
+	Health = FMath::Clamp(NewHealth, 0.f, MaxHealth);
+}
+
 bool UHealthComponent::IsAlive() const
 {
 	return !bDied && Health > 0.0f;

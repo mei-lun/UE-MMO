@@ -1,16 +1,28 @@
 {
-  "schema_version": 1,
-  "enemies": [
-    {
-      "enemy_id": "melee_grunt",
-      "max_hp": 60,
-      "attack_power": 0,
-      "move_speed": 220,
-      "attack_range_x": 160,
-      "align_y_tolerance": 35,
-      "telegraph_seconds": 0.35,
-      "spawn_grace_seconds": 0.5,
-      "melee_attack_id": "light_01"
-    }
-  ]
+ "schema_version": 1,
+ "enemies": [
+  {
+   "enemy_id": "melee_grunt",
+   "max_hp": 60,
+   "attack_power": 0,
+   "move_speed": 220,
+   "attack_range_x": 160,
+   "align_y_tolerance": 35,
+   "telegraph_seconds": 0.35,
+   "spawn_grace_seconds": 0.5,
+   "melee_attack_id": "light_01"
+  },
+  {
+   "enemy_id": "dungeon_goblin_proto",
+   "max_hp": 80,
+   "attack_power": 8,
+   "move_speed": 260,
+   "attack_range_x": 150,
+   "align_y_tolerance": 40,
+   "telegraph_seconds": 0.45,
+   "spawn_grace_seconds": 0.5,
+   "melee_attack_id": "light_01"
+  }
+ ],
+ "comment": "M7-004: dungeon_goblin_proto carries the dungeon's real damage pressure (attack_power 8); melee_grunt keeps 0 for the old rooms. The goblin visual wires in MeleeEnemy's BeginPlay definition swap (ArtValidation DNF assets; Quinn fallback)."
 }

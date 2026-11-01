@@ -298,6 +298,29 @@ void AMeleeEnemy::Tick(float DeltaSeconds)
 void AMeleeEnemy::SetEnemyDefinition(const UEnemyDefinition* InDefinition)
 {
 	EnemyDefinition = InDefinition;
+	// M7-004: the dungeon goblin wears the imported DNF goblin (mesh +
+	// idle anims from the M6-008 ArtValidation namespace; the Quinn template
+	// stays the fallback whenever the DNF assets are absent).
+	const FName M7_004_GoblinId(TEXT("dungeon_goblin_proto"));
+	if (InDefinition != nullptr && InDefinition->EnemyId == M7_004_GoblinId)
+	{
+		if (USkeletalMesh* GoblinMesh = Cast<USkeletalMesh>(
+			StaticLoadObject(USkeletalMesh::StaticClass(), nullptr,
+				TEXT("/Game/UEMMO/ArtValidation/DNFArt/Goblin/goblin_skm.goblin_skm"))))
+		{
+			GetMesh()->SetSkeletalMeshAsset(GoblinMesh);
+		}
+		GetMesh()->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+		if (UAnimationAsset* GoblinIdle = Cast<UAnimationAsset>(
+			StaticLoadObject(UAnimationAsset::StaticClass(), nullptr,
+				TEXT("/Game/UEMMO/ArtValidation/DNFArt/Goblin/goblin_idle_Anim.goblin_idle_Anim"))))
+		{
+			GetMesh()->AnimationData.AnimToPlay = GoblinIdle;
+			GetMesh()->AnimationData.bSavedLooping = true;
+			GetMesh()->AnimationData.bSavedPlaying = true;
+		}
+	}
+
 	if (InDefinition != nullptr && GetCharacterMovement() != nullptr)
 	{
 		GetCharacterMovement()->MaxWalkSpeed = InDefinition->MoveSpeed;

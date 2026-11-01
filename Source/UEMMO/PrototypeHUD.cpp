@@ -1,5 +1,6 @@
 #include "PrototypeHUD.h"
 #include "Engine/Canvas.h"
+#include "Dungeon/DungeonCoordinatorSubsystem.h"
 #include "Profession/ProfessionTypes.h"
 #include "Skills/SkillLoadoutComponent.h"
 
@@ -928,6 +929,30 @@ bool APrototypeHUD::EnsureResultWidget()
 
 void APrototypeHUD::HandleRunEnded(const FRoomResult& Result)
 {
+    // M7-004: inside a continuous dungeon run the per-room victory flow is
+    // the dungeon's: an internal room shows NO settlement (the door chain
+    // advances the run); the final room binds the SYNTHESIZED dungeon
+    // result (the one settlement, "完整地城结算" semantics).
+    if (UGameInstance* DungeonGameInstance = GetGameInstance())
+    {
+        if (UDungeonCoordinatorSubsystem* Coordinator = DungeonGameInstance->GetSubsystem<UDungeonCoordinatorSubsystem>())
+        {
+            if (Coordinator->IsRunActive())
+            {
+                const FRoomResult* DungeonResult = Coordinator->GetDungeonDisplayResult();
+                if (DungeonResult != nullptr && Coordinator->IsDungeonRunRoom(Result.RoomId, Result.RunId))
+                {
+                    UE_LOG(LogTemp, Display, TEXT("UEMMO M7-004: the final dungeon clear binds the synthesized settlement %llu."),
+                        DungeonResult->SettlementId);
+                    PrepareRoomRewardDraft(*DungeonResult);
+                    return;
+                }
+                UE_LOG(LogTemp, Display, TEXT("UEMMO M7-004: the room clear is dungeon-internal; the per-room settlement is suppressed."));
+                return;
+            }
+        }
+    }
+
     // Pure display fill from the session's real terminal result; the action
     // guards re-arm with the fresh screen and the input-focus tracker moves
     // exactly once. The M1 debug overlay and the M1-035 damage feed are

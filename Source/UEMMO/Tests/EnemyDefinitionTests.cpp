@@ -572,8 +572,8 @@ bool FUEMMOTasksM2_001MeleeGruntLoadsAsSingleValidEntry::RunTest(const FString& 
 		AddError(TEXT("missing required top-level array 'enemies'"));
 		return true;
 	}
-	TestEqual(TEXT("enemies holds exactly 1 entry"), (*Enemies)->Array.Num(), 1);
-	if ((*Enemies)->Array.Num() != 1)
+	TestEqual(TEXT("enemies holds exactly 2 entries"), (*Enemies)->Array.Num(), 2);
+	if ((*Enemies)->Array.Num() < 1)
 	{
 		return true;
 	}
@@ -669,12 +669,32 @@ bool FUEMMOTasksM2_001MeleeGruntAttackIdExistsInM1Catalog::RunTest(const FString
 	}
 
 	const TSharedPtr<FEnemyJsonValue>* Enemies = FindTyped(EnemiesRoot, TEXT("enemies"), FEnemyJsonValue::EKind::Array);
-	if (!Enemies || (*Enemies)->Array.Num() != 1)
+	if (!Enemies || (*Enemies)->Array.Num() < 1)
 	{
-		AddError(TEXT("enemies must hold exactly 1 entry for this check"));
+		AddError(TEXT("enemies must hold at least one entry for this check"));
 		return true;
 	}
-	const TSharedPtr<FEnemyJsonValue>& Entry = (*Enemies)->Array[0];
+	// M7-004: the goblin row joined the table; this check pins melee_grunt
+	// BY ID, never by position.
+	const TSharedPtr<FEnemyJsonValue>* MeleeEntry = nullptr;
+	for (const TSharedPtr<FEnemyJsonValue>& Row : (*Enemies)->Array)
+	{
+		if (Row.IsValid() && Row->Kind == FEnemyJsonValue::EKind::Object)
+		{
+			const TSharedPtr<FEnemyJsonValue>* Id = FindTyped(Row, TEXT("enemy_id"), FEnemyJsonValue::EKind::String);
+			if (Id != nullptr && (*Id)->String == TEXT("melee_grunt"))
+			{
+				MeleeEntry = &Row;
+				break;
+			}
+		}
+	}
+	if (MeleeEntry == nullptr)
+	{
+		AddError(TEXT("the melee_grunt entry is missing from the table"));
+		return true;
+	}
+	const TSharedPtr<FEnemyJsonValue>& Entry = *MeleeEntry;
 	FString MeleeAttackId;
 	if (!GetStringOrReport(*this, Entry, TEXT("melee_attack_id"), MeleeAttackId))
 	{

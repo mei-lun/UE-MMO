@@ -298,6 +298,9 @@ bool URoomSessionSubsystem::BeginExit()
 	// M3-023: the exit-flow transition row (unfinished runs keep their ids).
 	M3_023_LogRoom(*this, /*bResponse*/ false, FString::Printf(
 		TEXT("Room BeginExit: run=%llu"), CurrentRunId));
+	// M7-004: the door trigger for the dungeon coordinator (the room id is
+	// the session's current room, the run id the one at exit time).
+	ExitAcceptedDelegate.Broadcast(CurrentRoomId, CurrentRunId);
 	return true;
 }
 
@@ -432,6 +435,11 @@ bool URoomSessionSubsystem::NotifyEnemyKilled(FName EnemyId)
 		CheckWaveProgressionAfterKill();
 	}
 	return true;
+}
+
+FOnRoomSessionExitAccepted& URoomSessionSubsystem::OnExitAccepted()
+{
+	return ExitAcceptedDelegate;
 }
 
 FOnRoomSessionRunStarted& URoomSessionSubsystem::OnRunStarted()
