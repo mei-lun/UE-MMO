@@ -2,6 +2,7 @@
 #include "Misc/Guid.h"
 #include "UObject/UObjectGlobals.h"
 
+#include "Kismet/GameplayStatics.h"
 #include "../Persistence/ProfileSaveGame.h"
 #include "../Persistence/ProfileSaveService.h"
 #include "../Persistence/ProfileSerializer.h"
@@ -755,6 +756,162 @@ bool FUEMMOTasksM7_002RealStorageRoundTrip::RunTest(const FString& Parameters)
 
 	Service->DeleteTestSlots();
 	Restarted->DeleteTestSlots();
+	return true;
+}
+
+// M7-002 packaged-followup: the REAL user save files (the old package's v3
+// trio) migrate through the real file storage. This is the exact path the
+// packaged startup takes and the synthetic fixtures cannot reach: the .sav
+// bytes were written by the OLD build.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FUEMMOTasksM7_002RealUserSaveMigration,
+	"UEMMO.Tasks.M7_002.RealUserSaveMigration",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+
+bool FUEMMOTasksM7_002RealUserSaveMigration::RunTest(const FString& Parameters)
+{
+	FAutomationTestBase& Test = *this;
+	using namespace UE::UEMMO::Tasks::M7_002;
+	const FString BackupDir = FPaths::Combine(FPaths::ProjectDir(), TEXT("Artifacts/Tasks/M7-Package/user-saves-backup"));
+	const FString SaveDir = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("SaveGames"));
+	IFileManager::Get().MakeDirectory(*SaveDir, true);
+	bool bAnyCopied = false;
+	for (const TCHAR* Name : { TEXT("Profile_A.sav"), TEXT("Profile_B.sav"), TEXT("Profile_Index.sav") })
+	{
+		const FString From = FPaths::Combine(BackupDir, Name);
+		if (IFileManager::Get().FileExists(*From))
+		{
+			Test.TestTrue(FString::Printf(TEXT("fixture: %s copied"), Name),
+				IFileManager::Get().Copy(*FPaths::Combine(SaveDir, Name), *From, 1) >= 0);
+			bAnyCopied = true;
+		}
+	}
+	if (!bAnyCopied)
+	{
+		AddError(TEXT("no real user save files found; the packaged-followup test cannot run here"));
+		return true;
+	}
+
+	// Raw-slot forensics: what did the OLD build actually stamp?
+	if (UGameplayStatics::DoesSaveGameExist(TEXT("Profile_A"), 0))
+	{
+		if (USaveGame* Raw = UGameplayStatics::LoadGameFromSlot(TEXT("Profile_A"), 0))
+		{
+			if (UProfileSlotSaveGame* Slot = Cast<UProfileSlotSaveGame>(Raw))
+			{
+				// UProfileSlotSaveGame derives from UProfileSaveGame: the
+				// digest reads the base payload face directly. The canonical
+				// string dumps too - the field that diverges from the write
+				// path shows up line by line.
+				FString Canonical;
+				Canonical += FString::Printf(TEXT("schema=%d|id=%s|level=%d|xp=%d|volume=%s|"),
+					Slot->SchemaVersion, *Slot->CharacterId.ToString(), Slot->Level, Slot->XP,
+					*FString::SanitizeFloat(Slot->MasterVolume));
+				for (const FString& Snapshot : Slot->InventoryInstanceSnapshots)
+				{
+					Canonical += FString::Printf(TEXT("item=%s|"), *Snapshot);
+				}
+				for (const FEquippedSlotSavePair& Pair : Slot->EquippedIds)
+				{
+					Canonical += FString::Printf(TEXT("equip=%u:%s|"), Pair.Slot, *Pair.InstanceId.ToString());
+				}
+				for (const FPendingRewardSaveEntry& Entry : Slot->PendingRewards)
+				{
+					Canonical += FString::Printf(TEXT("draft=%llu:%d|"), Entry.SettlementId, Entry.XP);
+					for (const FString& Item : Entry.ItemSnapshots)
+					{
+						Canonical += FString::Printf(TEXT("draftitem=%s|"), *Item);
+					}
+				}
+				for (const uint64 AppliedId : Slot->AppliedSettlementIds)
+				{
+					Canonical += FString::Printf(TEXT("applied=%llu|"), AppliedId);
+				}
+				for (const FWeaponMagazineSaveEntry& Magazine : Slot->WeaponMagazines)
+				{
+					Canonical += FString::Printf(TEXT("mag=%s:%s:%d:%d|"),
+						*Magazine.InstanceId.ToString(), *Magazine.AmmoId.ToString(),
+						Magazine.Capacity, Magazine.LoadedRounds);
+				}
+				for (const FAmmoReserveSaveEntry& Pool : Slot->ReserveAmmoPools)
+				{
+					Canonical += FString::Printf(TEXT("pool=%s:%d:%d|"),
+						*Pool.AmmoId.ToString(), Pool.MaxReserve, Pool.Rounds);
+				}
+				if (Slot->bWeaponStateInitialized)
+				{
+					Canonical += TEXT("winit=1|");
+				}
+				if (!Slot->ConfigRevision.IsEmpty())
+				{
+					Canonical += FString::Printf(TEXT("rev=%s|"), *Slot->ConfigRevision);
+				}
+				for (const FRoomClearSaveEntry& Clear : Slot->RoomClears)
+				{
+					Canonical += FString::Printf(TEXT("room=%s:%d:%lld|"),
+						*Clear.RoomId.ToString(), Clear.ClearCount, Clear.LastClearUnixSeconds);
+				}
+				Canonical += FString::Printf(TEXT("prof=%s|sp=%d|dc=%d|prev=%s|"),
+					*Slot->ProfessionId.ToString(), Slot->UnspentSP, Slot->DungeonClears,
+					*Slot->ProfessionConfigRevision);
+				for (const FSkillRankSaveEntry& Rank : Slot->SkillRanks)
+				{
+					Canonical += FString::Printf(TEXT("rank=%s:%d|"), *Rank.SkillId.ToString(), Rank.Rank);
+				}
+				for (const FSkillSlotSaveEntry& SlotEntry : Slot->SkillLoadout)
+				{
+					Canonical += FString::Printf(TEXT("slot=%d:%s|"), SlotEntry.SlotIndex, *SlotEntry.SkillId.ToString());
+				}
+				AddInfo(FString::Printf(TEXT("RAW Profile_A: schema=%d storedDigest=%08X recomputed=%08X production=%08X inst=%d/%d idOk=%d"),
+					Slot->SchemaVersion, Slot->PayloadDigest,
+					M7_002_ComputeCanonicalDigest(*Slot),
+					UProfileSaveService::M3_014_ComputePayloadDigest(*Slot),
+					Slot->PayloadInstanceCount, Slot->InventoryInstanceSnapshots.Num(),
+					static_cast<int32>(Slot->CharacterIdSummary == Slot->CharacterId.ToString())));
+				AddInfo(FString::Printf(TEXT("RAW canonical: %s"), *Canonical));
+			}
+		}
+	}
+
+	UProfileSaveService* LegacyService = NewObject<UProfileSaveService>(GetTransientPackage());
+	if (!Test.TestTrue(TEXT("the legacy service initializes on the real files"),
+		LegacyService->Initialize(TEXT("Profile_"))))
+	{
+		return true;
+	}
+	const FProfileLoadOutcome Legacy = LegacyService->LoadActiveProfile();
+	// THE evidence line: the exact result and problem the packaged startup hit.
+	AddInfo(FString::Printf(TEXT("REAL-FILE legacy load: result=%d message=%s"),
+		static_cast<int32>(Legacy.Result), *Legacy.Message));
+	Test.TestTrue(TEXT("the real v3 save loads"),
+		Legacy.Result == EProfileLoadResult::Success || Legacy.Result == EProfileLoadResult::SuccessFallback);
+	Test.TestTrue(TEXT("the real legacy identity is valid"), Legacy.Snapshot.CharacterId.IsValid());
+
+	// The import over the REAL legacy service (the roster slots ride the
+	// test prefix; the legacy "Profile_" prefix above is the real one).
+	UGameInstance* Owner = NewObject<UGameInstance>(GetTransientPackage());
+	Owner->AddToRoot();
+	UProfileSubsystem* Profile = NewObject<UProfileSubsystem>(Owner);
+	Profile->AddToRoot();
+	URosterService* Roster = NewObject<URosterService>(GetTransientPackage());
+	Test.TestTrue(TEXT("the roster service initializes"), Roster->Initialize(TEXT("TestRoster_RealMig_")));
+	// Hermetic: earlier runs of THIS test persisted a roster under the test
+	// prefix; the import's healthy-roster guard would refuse. Clear first.
+	Roster->DeleteTestSlots();
+	const FRosterImportOutcome Import = Roster->ImportLegacyProfile(*LegacyService, Profile);
+	AddInfo(FString::Printf(TEXT("REAL-FILE import: result=%d message=%s"),
+		static_cast<int32>(Import.Result), *Import.Message));
+	Test.TestTrue(TEXT("the real legacy save imports"),
+		Import.Result == ERosterImportResult::Imported);
+	Profile->RemoveFromRoot();
+	Owner->RemoveFromRoot();
+	// Hermetic cleanup: the copied REAL saves must not leak into the shared
+	// project Saved dir (a later GameInstance's startup would restore them
+	// and skew every following test's save-state assumptions).
+	for (const TCHAR* Name : { TEXT("Profile_A.sav"), TEXT("Profile_B.sav"), TEXT("Profile_Index.sav") })
+	{
+		IFileManager::Get().Delete(*FPaths::Combine(SaveDir, Name));
+	}
 	return true;
 }
 

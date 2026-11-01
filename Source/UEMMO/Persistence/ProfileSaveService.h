@@ -537,7 +537,10 @@ private:
 	 * integrity digest written into UProfileSlotSaveGame::PayloadDigest and
 	 * recomputed on every read).
 	 */
+public:
 	static uint32 M3_014_ComputePayloadDigest(const UProfileSaveGame& Save);
+
+private:
 
 	/**
 	 * Builds the slot payload for the request: the M3-013 serializer maps the

@@ -626,7 +626,8 @@ FProfileLoadOutcome UProfileSaveService::LoadActiveProfile()
 			OutProblem = FString::Printf(TEXT("slot '%s' is missing or unreadable"), *SlotNames[SlotIndex]);
 			return false;
 		}
-		const UProfileSlotSaveGame* Slot = Cast<UProfileSlotSaveGame>(Raw);
+		// Non-const: the known-artifact recovery re-stamps the digest (M7-004).
+		UProfileSlotSaveGame* Slot = const_cast<UProfileSlotSaveGame*>(Cast<UProfileSlotSaveGame>(Raw));
 		if (!Slot)
 		{
 			OutProblem = FString::Printf(TEXT("slot '%s' is not a UProfileSlotSaveGame"), *SlotNames[SlotIndex]);
@@ -634,8 +635,40 @@ FProfileLoadOutcome UProfileSaveService::LoadActiveProfile()
 		}
 		if (Slot->PayloadDigest != M3_014_ComputePayloadDigest(*Slot))
 		{
-			OutProblem = FString::Printf(TEXT("slot '%s' failed its integrity digest check"), *SlotNames[SlotIndex]);
-			return false;
+			// M7-004 recovery: the FIRST packaged M7 build's fresh-bootstrap
+			// path wrote a known malformed artifact - ProfessionId None with
+			// no rank rows and a digest stamped over a divergent in-memory
+			// payload. OUR OWN binary produced it (the forensics in
+			// M7_002.RealUserSaveMigration pin the shape); re-stamp the
+			// digest over the loaded bytes exactly once, loudly. Anything
+			// else keeps the hard refusal - real corruption is never waived.
+			const bool bKnownFreshBootstrapArtifact =
+				Slot->SchemaVersion == UProfileSaveGame::CurrentSchemaVersion
+				&& Slot->ProfessionId.IsNone()
+				&& Slot->SkillRanks.Num() == 0
+				&& Slot->SkillLoadout.Num() == 0;
+			if (bKnownFreshBootstrapArtifact)
+			{
+				// Repair the shape too: the artifact carried NO profession
+				// state; the legacy-equivalent shape (prototype + the four
+				// legacy attacks at rank 1) is what the bootstrap SHOULD
+				// have written. Then the digest re-stamps over the repaired
+				// bytes.
+				Slot->ProfessionId = FName(TEXT("prototype"));
+				Slot->SkillRanks = FProfessionSaveState::MakeLegacyPrototype().SkillRanks;
+				Slot->UnspentSP = 0;
+				Slot->SkillLoadout.Reset();
+				Slot->DungeonClears = 0;
+				Slot->PayloadDigest = M3_014_ComputePayloadDigest(*Slot);
+				UE_LOG(LogTemp, Warning,
+					TEXT("UEMMO M7-002 recovery: slot '%s' carried the known fresh-bootstrap artifact (ProfessionId None, no ranks); the profession state was repaired to the legacy prototype and the digest re-stamped."),
+					*SlotNames[SlotIndex]);
+			}
+			else
+			{
+				OutProblem = FString::Printf(TEXT("slot '%s' failed its integrity digest check"), *SlotNames[SlotIndex]);
+				return false;
+			}
 		}
 		if (Slot->PayloadInstanceCount != Slot->InventoryInstanceSnapshots.Num()
 			|| Slot->CharacterIdSummary != Slot->CharacterId.ToString())

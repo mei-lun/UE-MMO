@@ -2571,13 +2571,13 @@ void APrototypeCharacter::RetireSkillProjectilePellet(int32 LiveIndex)
 
 // -- M7-003 acceptance dev command ---------------------------------------------
 
-void APrototypeCharacter::UEMMOSkillDemo()
+bool APrototypeCharacter::DevApplySkillDemo()
 {
     UProfileSubsystem* Profile = ProfilePtr.Get();
     if (Profile == nullptr || !Profile->HasProfile())
     {
         UE_LOG(LogTemp, Warning, TEXT("UEMMO SkillDemo: no active profile; nothing to switch."));
-        return;
+        return false;
     }
     TMap<FName, int32> Ranks;
     for (const TCHAR* SkillId : { TEXT("launcher_z"), TEXT("singlekick_w"), TEXT("damagelowkick_e"),
@@ -2595,5 +2595,6 @@ void APrototypeCharacter::UEMMOSkillDemo()
         SkillLoadout->RefreshMaxMPFromProfile();
         SkillLoadout->RestoreFullMP();
     }
-    UE_LOG(LogTemp, Display, TEXT("UEMMO SkillDemo: the active character is now a fighter with all six skills at rank 1 (MP refilled)."));
+    UE_LOG(LogTemp, Display, TEXT("UEMMO M7DEMO: the active character is now a fighter with all six skills at rank 1 (MP refilled)."));
+    return true;
 }

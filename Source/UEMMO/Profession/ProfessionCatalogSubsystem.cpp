@@ -34,6 +34,30 @@ namespace
 	}
 }
 
+namespace
+{
+	// M7-004 fix: the profession catalog is PROCESS-lifetime state. The
+	// UProfileSubsystem resolvers are static TFunctions; capturing a subsystem
+	// instance (per-GameInstance lifetime) left them dangling across the test
+	// harness's GameInstance churn (the M5_018 crash). Publishing into these
+	// function-local statics makes every resolver capture-free.
+	FProfessionCatalog& StaticCatalog()
+	{
+		static FProfessionCatalog Catalog;
+		return Catalog;
+	}
+	FString& StaticRevision()
+	{
+		static FString Revision;
+		return Revision;
+	}
+	bool& StaticPublished()
+	{
+		static bool bPublished = false;
+		return bPublished;
+	}
+}
+
 void UProfessionCatalogSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -66,7 +90,7 @@ void UProfessionCatalogSubsystem::Initialize(FSubsystemCollectionBase& Collectio
 		Tables.Loadouts = Asset->Loadouts;
 
 		TArray<FString> Problems;
-		if (Catalog.Build(Tables, Problems))
+		if (StaticCatalog().Build(Tables, Problems))
 		{
 			// The asset carries the revision it was generated from; the
 			// rebuild's own digest must agree or the asset is stale.
@@ -76,15 +100,15 @@ void UProfessionCatalogSubsystem::Initialize(FSubsystemCollectionBase& Collectio
 			// stays catalog-free while the curve numbers (MP pool, SP gains)
 			// flow through these read-only lambdas.
 			UProfileSubsystem::SetProfessionProgressionResolvers(
-				[this](FName ProfessionId, int32 Level)
+				[](FName ProfessionId, int32 Level)
 				{
 					int32 OutHP = 0, OutAttack = 0, OutDefense = 0, OutMP = 0;
-					return Catalog.GetBaseStats(ProfessionId, Level, OutHP, OutAttack, OutDefense, OutMP)
+					return StaticCatalog().GetBaseStats(ProfessionId, Level, OutHP, OutAttack, OutDefense, OutMP)
 						? OutMP : 0;
 				},
-				[this](FName ProfessionId, int32 LevelReached)
+				[](FName ProfessionId, int32 LevelReached)
 				{
-					return M7_003_ResolveSkillPoints(Catalog, ProfessionId, LevelReached);
+					return M7_003_ResolveSkillPoints(StaticCatalog(), ProfessionId, LevelReached);
 				});
 			UE_LOG(LogTemp, Verbose,
 				TEXT("UEMMO M7-003: profession catalog published from DA_ProfessionConfig (revision %s)"),
@@ -104,7 +128,7 @@ void UProfessionCatalogSubsystem::Initialize(FSubsystemCollectionBase& Collectio
 	}
 	else
 	{
-		bPublished = false;
+		StaticPublished() = false;
 		UE_LOG(LogTemp, Error,
 			TEXT("UEMMO M7-003: no profession catalog could be published; skill activation reports InvalidContext"));
 	}
@@ -119,39 +143,39 @@ bool UProfessionCatalogSubsystem::BuildFromSourceDirectory()
 		return false;
 	}
 	TArray<FString> Problems;
-	if (!Catalog.Build(Source.Tables, Problems))
+	if (!StaticCatalog().Build(Source.Tables, Problems))
 	{
 		return false;
 	}
-	ConfigRevision = Source.ConfigRevision;
-	bPublished = true;
+	StaticRevision() = Source.ConfigRevision;
+	StaticPublished() = true;
 	UProfileSubsystem::SetProfessionProgressionResolvers(
-		[this](FName ProfessionId, int32 Level)
+		[](FName ProfessionId, int32 Level)
 		{
 			int32 OutHP = 0, OutAttack = 0, OutDefense = 0, OutMP = 0;
-			return Catalog.GetBaseStats(ProfessionId, Level, OutHP, OutAttack, OutDefense, OutMP)
+			return StaticCatalog().GetBaseStats(ProfessionId, Level, OutHP, OutAttack, OutDefense, OutMP)
 				? OutMP : 0;
 		},
-		[this](FName ProfessionId, int32 LevelReached)
+		[](FName ProfessionId, int32 LevelReached)
 		{
-			return M7_003_ResolveSkillPoints(Catalog, ProfessionId, LevelReached);
+			return M7_003_ResolveSkillPoints(StaticCatalog(), ProfessionId, LevelReached);
 		});
 	return true;
 }
 
 bool UProfessionCatalogSubsystem::IsPublished() const
 {
-	return bPublished && Catalog.IsPublished();
+	return StaticPublished() && StaticCatalog().IsPublished();
 }
 
 const FProfessionCatalog& UProfessionCatalogSubsystem::GetCatalog() const
 {
-	return Catalog;
+	return StaticCatalog();
 }
 
 const FString& UProfessionCatalogSubsystem::GetConfigRevision() const
 {
-	return ConfigRevision;
+	return StaticRevision();
 }
 
 const FSkillLevelRow* UProfessionCatalogSubsystem::FindSkillLevelRow(FName SkillId, int32 Rank) const
@@ -181,5 +205,5 @@ const FSkillRow* UProfessionCatalogSubsystem::FindSkill(FName SkillId) const
 	{
 		return nullptr;
 	}
-	return Catalog.FindSkill(SkillId);
+	return StaticCatalog().FindSkill(SkillId);
 }

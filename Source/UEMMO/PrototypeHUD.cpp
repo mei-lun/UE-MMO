@@ -1,6 +1,9 @@
 #include "PrototypeHUD.h"
 #include "Engine/Canvas.h"
 #include "Dungeon/DungeonCoordinatorSubsystem.h"
+#include "Misc/CommandLine.h"
+#include "TimerManager.h"
+#include "UnrealClient.h"
 #include "Profession/ProfessionTypes.h"
 #include "Skills/SkillLoadoutComponent.h"
 
@@ -112,6 +115,30 @@ void APrototypeHUD::DrawHUD()
     // Z launcher, C jump (Space stays a jump alias), F2 resets, QWERASDF are
     // the reserved skill slots (no skill effect yet), F1 the debug overlay.
     DrawText(TEXT("Arrows: move  X: attack  Z: launcher  C: jump  F2: reset  QWERASDF: skills (reserved)  F1: debug"), FLinearColor(0.6f, 0.85f, 1.f), 32, 53);
+    // M7-004/M7-003: the SkillDemo banner (visible console-command feedback;
+    // the packaged run's evidence screenshot rides the first banner frame).
+    if (!SkillDemoBanner.IsEmpty())
+    {
+        const double BannerNow = FPlatformTime::Seconds();
+        if (BannerNow < SkillDemoBannerUntilSeconds)
+        {
+            DrawRect(FLinearColor(0.05f, 0.25f, 0.1f, 0.9f), 18, 150, 560, 34);
+            DrawText(SkillDemoBanner, FLinearColor(0.5f, 1.f, 0.6f), 32, 158, nullptr, 1.3f);
+            if (bSkillDemoScreenshotPending)
+            {
+                bSkillDemoScreenshotPending = false;
+                const FString ShotPath = FPaths::Combine(FPaths::ProjectSavedDir(),
+                    TEXT("Screenshots/M7DemoSkillBar.png"));
+                IFileManager::Get().MakeDirectory(*FPaths::GetPath(ShotPath), true);
+                FScreenshotRequest::RequestScreenshot(ShotPath, false, false);
+                UE_LOG(LogTemp, Display, TEXT("UEMMO M7DEMO: evidence screenshot requested: %s"), *ShotPath);
+            }
+        }
+        else
+        {
+            SkillDemoBanner.Reset();
+        }
+    }
     // M7-003: the fighter skill bar - the five hotbar slots with the skill
     // name, the MP cost and the live cooldown remaining (empty slots show a
     // dash); the Z launcher keeps its standing hint. Drawn from the pawn's
@@ -312,6 +339,58 @@ void APrototypeHUD::DrawSharedHitBox(const FVector& FeetLocation, int32 Facing, 
     {
         DrawLine(Screen[Edge[0]].X, Screen[Edge[0]].Y, Screen[Edge[1]].X, Screen[Edge[1]].Y, M1_028_BoxColor, 2.0f);
     }
+}
+
+void APrototypeHUD::HandleM7DemoSelfTest()
+{
+    UGameFlowSubsystem* Flow = const_cast<UGameFlowSubsystem*>(ResolveGameFlowSubsystem());
+    if (Flow == nullptr)
+    {
+        UE_LOG(LogTemp, Error, TEXT("UEMMO M7DEMO: no GameFlow subsystem; the self-test stops."));
+        return;
+    }
+    if (ResolveSkillBarPlayer() != nullptr)
+    {
+        UEMMOSkillDemo();
+        return;
+    }
+    for (URoomDefinition* Definition : Flow->GetSelectableRoomDefinitions())
+    {
+        if (Definition != nullptr && Definition->RoomId == FName(TEXT("room_training_01")))
+        {
+            UE_LOG(LogTemp, Display, TEXT("UEMMO M7DEMO: the self-test enters room_training_01."));
+            Flow->EnterRoom(Definition);
+            return;
+        }
+    }
+    UE_LOG(LogTemp, Error, TEXT("UEMMO M7DEMO: room_training_01 is not in the selectable catalog."));
+}
+
+void APrototypeHUD::UEMMOSkillDemo()
+{
+    // M7DEMO log tag: the packaged-run evidence grep looks for exactly this.
+    APrototypeCharacter* Player = const_cast<APrototypeCharacter*>(ResolveSkillBarPlayer());
+    if (Player == nullptr)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UEMMO M7DEMO: no player pawn; the command did nothing."));
+        SkillDemoBanner = TEXT("SkillDemo: 没有找到玩家角色");
+        SkillDemoBannerUntilSeconds = FPlatformTime::Seconds() + 5.0;
+        return;
+    }
+    const bool bApplied = Player->DevApplySkillDemo();
+    if (bApplied)
+    {
+        SkillDemoBanner = TEXT("SkillDemo 已生效：格斗家 / 六技能 rank1 / MP 回满");
+        UE_LOG(LogTemp, Display, TEXT("UEMMO M7DEMO: applied through the HUD exec (banner shown)."));
+    }
+    else
+    {
+        SkillDemoBanner = TEXT("SkillDemo 失败：没有活动存档");
+    }
+    SkillDemoBannerUntilSeconds = FPlatformTime::Seconds() + 8.0;
+    // One evidence screenshot into the package's Saved dir (the automated
+    // verification greps the log and this file).
+    bSkillDemoScreenshotPending = true;
 }
 
 const APrototypeCharacter* APrototypeHUD::ResolveSkillBarPlayer()
@@ -820,6 +899,16 @@ void APrototypeHUD::StartDebugRepeatStrike()
 
 void APrototypeHUD::BeginPlay()
 {
+    // M7-003 packaged self-test: -M7DemoSelfTest drives the exact acceptance
+    // path (menu -> the training room -> the same UEMMOSkillDemo the console
+    // command uses). Production never passes the switch.
+    if (FParse::Param(FCommandLine::Get(), TEXT("M7DemoSelfTest")))
+    {
+        FTimerHandle M7DemoHandle;
+        GetWorldTimerManager().SetTimer(M7DemoHandle, this,
+            &APrototypeHUD::HandleM7DemoSelfTest, 4.0f, false);
+    }
+
     Super::BeginPlay();
     BindRoomSessionEvents();
     // M3-030: the game-flow surface presentation. The flow starts in the menu

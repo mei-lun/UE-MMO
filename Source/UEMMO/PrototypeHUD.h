@@ -405,6 +405,30 @@ private:
     /** M7-003: the debug player pawn for the skill bar (null-safe). */
     const APrototypeCharacter* ResolveSkillBarPlayer();
 
+    /**
+     * M7-003 acceptance dev command (console: UEMMOSkillDemo). The HUD is in
+     * the console-exec routing chain (the UEMMODebugCombatOverlay precedent);
+     * a pawn exec is NOT. Switches the active character to the fighter with
+     * all six skills at rank 1 + 30 SP, shows an on-screen banner and takes
+     * one evidence screenshot into the package's Saved dir.
+     */
+    UFUNCTION(Exec)
+    void UEMMOSkillDemo();
+
+    /** The on-screen confirmation banner (DrawHUD consumes and expires it). */
+    FString SkillDemoBanner;
+    double SkillDemoBannerUntilSeconds = 0.0;
+    bool bSkillDemoScreenshotPending = false;
+
+    /**
+     * M7-003 packaged self-test: launch the PACKAGE with -M7DemoSelfTest and
+     * the HUD drives the exact acceptance path automatically (enter the
+     * combat room through the GameFlow, wait for the pawn, fire the same
+     * UEMMOSkillDemo routine, banner + screenshot). The verification greps
+     * the M7DEMO log lines; production users never pass the switch.
+     */
+    void HandleM7DemoSelfTest();
+
     /** M7-003: the rank row of the skill (null when unknown/unpublished). */
     const FSkillLevelRow* ResolveSkillRankRow(const USkillLoadoutComponent* Loadout, FName SkillId);
 

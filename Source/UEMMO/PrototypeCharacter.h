@@ -102,13 +102,12 @@ public:
     virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
     /**
-     * M7-003 acceptance dev command (console: UEMMOSkillDemo): switches the
-     * active character to the fighter profession with all six skills at
-     * rank 1 plus 30 unspent SP, so a manual session can exercise the skill
-     * chain without the profession-selection UI. No-op without a profile.
+     * M7-003 acceptance dev path (the HUD's UEMMOSkillDemo exec routes
+     * here - console exec does NOT reach pawns): switches the active
+     * character to the fighter profession with all six skills at rank 1
+     * plus 30 unspent SP. Returns false when there is no profile.
      */
-    UFUNCTION(Exec)
-    void UEMMOSkillDemo();
+    bool DevApplySkillDemo();
 
     /**
      * M1-027: the reset entry is the public reset surface (M1-040: bound to

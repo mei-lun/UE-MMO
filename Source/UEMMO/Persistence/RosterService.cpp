@@ -450,8 +450,11 @@ FRosterImportOutcome URosterService::ImportLegacyProfile(UProfileSaveService& Le
 		FProfileSaveRequest Request;
 		Request.Snapshot = Profile->GetProfileSnapshot();
 		Request.Inventory = Profile->GetInventory();
-		// The legacy-equivalent profession shape (prototype + the four legacy
-		// attacks at rank 1) is the serializer's default; nothing to stamp.
+		// M7-004 fix: the request MUST carry the legacy-equivalent profession
+		// state explicitly. The struct default left the fresh payload with
+		// ProfessionId None and no rank rows - the exact artifact the first
+		// packaged launch wrote over the user's legacy slots.
+		Request.ProfessionState = FProfessionSaveState::MakeLegacyPrototype();
 		FRosterCreateOutcome Created;
 		if (!CreateCharacterInternal(Profile->GetCharacterId(), FName(TEXT("prototype")),
 			TEXT("原型战士"), Request, Created))
