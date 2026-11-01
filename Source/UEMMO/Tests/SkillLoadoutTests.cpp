@@ -417,6 +417,74 @@ bool FUEMMOTasksM7_003ConfigRefusals::RunTest(const FString& Parameters)
 	return true;
 }
 
+// -- 2b: the PROTOTYPE character keeps the legacy free launcher (the Z gate
+//       must NOT refuse a profession without a launcher skill) -----------------
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FUEMMOTasksM7_003PrototypeLauncherUngated,
+	"UEMMO.Tasks.M7_003.PrototypeLauncherUngated",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+
+bool FUEMMOTasksM7_003PrototypeLauncherUngated::RunTest(const FString& Parameters)
+{
+	FAutomationTestBase& Test = *this;
+	UAttackCatalog* Attacks = NewObject<UAttackCatalog>();
+	FText CatalogError;
+	if (!Test.TestTrue(TEXT("fixture: the attack catalog builds"),
+		Attacks->BuildFromDefinitions(MakeAttackDefinitions(GetTransientPackage()), CatalogError)))
+	{
+		return false;
+	}
+	FProfessionCatalog CatalogStorage;
+	const FProfessionCatalog* Catalog = MakeCatalog(Test, CatalogStorage);
+	if (Catalog == nullptr)
+	{
+		return false;
+	}
+	// A legacy-migrated PROTOTYPE character (the four legacy attacks, no
+	// fighter skills) - the shape every real migrated save carries.
+	UProfileSubsystem* Profile = NewObject<UProfileSubsystem>(NewSubsystemOwner());
+	Profile->AddToRoot();
+	FProfileSnapshot Snapshot;
+	Snapshot.CharacterId = FGuid(0x07A30000u, 9u, 9u, 9u);
+	Snapshot.Level = 3;
+	Snapshot.ProfessionId = FName(TEXT("prototype"));
+	TArray<FSkillRankSaveEntry> Ranks;
+	for (const TCHAR* Legacy : { TEXT("light_01"), TEXT("light_02"), TEXT("launcher"), TEXT("aerial_01") })
+	{
+		FSkillRankSaveEntry Row;
+		Row.SkillId = FName(Legacy);
+		Row.Rank = 1;
+		Ranks.Add(Row);
+	}
+	Test.TestTrue(TEXT("fixture: the prototype profile restores"),
+		Profile->RestoreFromSave(Snapshot, Profile->GetInventory(), {}, {}, {}, {}, {}, false,
+			FString(), {}, FName(TEXT("prototype")), Ranks, 0, {}, FString(), 0));
+	UCombatComponent* Combat = MakeCombat(GetTransientPackage(), Attacks);
+	USkillLoadoutComponent* Loadout = NewObject<USkillLoadoutComponent>(GetTransientPackage());
+	Loadout->Initialize(Combat, Profile, Catalog, TEXT("fixture-revision"));
+	Loadout->SetAttackCatalog(Attacks);
+
+	// The launcher precheck reports "no launcher skill for this profession"
+	// (InvalidContext) - NEVER WrongProfession/Cooldown, which the input
+	// layer's Z gate would honor and the legacy launcher would die.
+	const FSkillActivationOutcome Pre = Loadout->PrecheckLauncherSkill();
+	Test.TestEqual(TEXT("the prototype launcher precheck is ungated"),
+		Pre.Error, ESkillActivationError::InvalidContext);
+
+	// The hotbar slots stay counting-only (the prototype loadout is empty).
+	const FSkillActivationOutcome Slot = Loadout->TryActivateSkill(2);
+	Test.TestEqual(TEXT("the prototype hotbar stays empty"), Slot.Error, ESkillActivationError::InvalidSlot);
+
+	// The payment path is a no-op for the prototype (the legacy launcher
+	// never pays MP or cooldown).
+	Loadout->CommitLauncherPayment(FName(TEXT("launcher")));
+	Test.TestFalse(TEXT("no cooldown was written for the prototype"),
+		Loadout->IsOnCooldown(FName(TEXT("launcher_z"))));
+	Profile->RemoveFromRoot();
+	return true;
+}
+
 // -- 3: the launcher economy (precheck, payment on the started attack) --------
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(

@@ -494,6 +494,39 @@ const FItemStats& UProfileSubsystem::GetEquippedStatBonus() const
 	return EquippedStatBonus;
 }
 
+void UProfileSubsystem::DevApplyAcceptanceProfession(FName InProfessionId, const TMap<FName, int32>& Ranks, int32 BonusSP)
+{
+	if (!bHasProfile)
+	{
+		return;
+	}
+	if (!InProfessionId.IsNone())
+	{
+		ProfessionId = InProfessionId;
+	}
+	for (const TPair<FName, int32>& Pair : Ranks)
+	{
+		bool bFound = false;
+		for (FSkillRankSaveEntry& Entry : SkillRanks)
+		{
+			if (Entry.SkillId == Pair.Key)
+			{
+				Entry.Rank = Pair.Value;
+				bFound = true;
+				break;
+			}
+		}
+		if (!bFound && Pair.Value >= 1)
+		{
+			FSkillRankSaveEntry NewRow;
+			NewRow.SkillId = Pair.Key;
+			NewRow.Rank = Pair.Value;
+			SkillRanks.Add(NewRow);
+		}
+	}
+	UnspentSP += BonusSP;
+}
+
 void UProfileSubsystem::RecordDungeonCleared()
 {
 	if (bHasProfile)

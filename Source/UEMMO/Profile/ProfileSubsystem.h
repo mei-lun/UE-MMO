@@ -318,6 +318,16 @@ public:
 	int32 GetDungeonClears() const { return DungeonClears; }
 
 	/**
+	 * M7-003 acceptance dev path (NOT a gameplay feature): switches the
+	 * active profile's profession in-session and grants the given ranks plus
+	 * bonus SP, so a manual play session can exercise a non-prototype
+	 * profession without the profession-selection UI (M7-002's remaining UI
+	 * card). The mutation uses the same fields the save path serializes, so
+	 * the next explicit save persists it.
+	 */
+	void DevApplyAcceptanceProfession(FName ProfessionId, const TMap<FName, int32>& Ranks, int32 BonusSP);
+
+	/**
 	 * M7-004: increments the completed-dungeon counter exactly once per call
 	 * (the coordinator owns the one-settlement guard; this function does not
 	 * deduplicate). No-op without a profile. The v4 A/B digest covers the

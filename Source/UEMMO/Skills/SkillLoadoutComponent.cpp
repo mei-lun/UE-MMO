@@ -56,15 +56,19 @@ void USkillLoadoutComponent::RefreshLoadout()
 	{
 		Slot = NAME_None;
 	}
-	if (Catalog == nullptr)
+	UProfileSubsystem* P = Profile.Get();
+	if (Catalog == nullptr || P == nullptr)
 	{
 		return;
 	}
-	// The mapping is the profession's default loadout (Data/Professions/
-	// loadouts.json): one row per filled slot, Q stays the weapon slot.
+	// The mapping is the ACTIVE profession's default loadout (Data/
+	// Professions/loadouts.json): one row per filled slot, Q stays the
+	// weapon slot. A profession without loadout rows (the migrated
+	// prototype) maps an entirely empty hotbar - the counting-only legacy.
 	for (const FLoadoutRow& Row : Catalog->Tables.Loadouts)
 	{
-		if (Row.SlotIndex >= 1 && Row.SlotIndex <= 8)
+		if (Row.ProfessionId == P->GetProfessionId()
+			&& Row.SlotIndex >= 1 && Row.SlotIndex <= 8)
 		{
 			SlotSkills[Row.SlotIndex - 1] = Row.SkillId;
 		}
@@ -130,9 +134,16 @@ const FSkillRow* USkillLoadoutComponent::FindLauncherSkillRow() const
 	{
 		return nullptr;
 	}
+	// The launcher skill must belong to the ACTIVE profession: a prototype
+	// (legacy-migrated) character declares no launcher skill at all, so the
+	// Z press stays ungated and the pre-M7 free launcher attack keeps
+	// working verbatim (旧四招不从技能栏消费 MP).
+	UProfileSubsystem* P = Profile.Get();
+	const FName ActiveProfession = P ? P->GetProfessionId() : FName(NAME_None);
 	for (const TPair<FName, FSkillRow>& Pair : Catalog->Tables.Skills)
 	{
-		if (Pair.Value.SlotEligibility == FName(TEXT("launcher")))
+		if (Pair.Value.SlotEligibility == FName(TEXT("launcher"))
+			&& Pair.Value.ProfessionId == ActiveProfession)
 		{
 			return &Pair.Value;
 		}
