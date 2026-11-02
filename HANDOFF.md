@@ -1,3 +1,31 @@
+# 最近一轮交付：试玩包三个运行时缺陷修复 + 实机验收（2026-11-03 深夜）
+
+> 本轮 0 张任务卡：用户报告"人物模型不正常、需实际验证技能释放"。实机自测发现并修复**三个独立
+> 运行时缺陷 + 一处动画架构缺陷**（全部编辑器 919/919 不可见——它们不断言实机渲染与包内发布路径）。
+> 交付包：`Artifacts/Package/Windows`（源码 `5fe9fcb`，exe SHA 前 16 位 `F9C61FF0AADD859D`）。
+
+- **缺陷 1·材质全灰**：M6-008 Interchange 导入的 M_DNFArtBase 缺 `bUsedWithSkeletalMesh` 使用标志，
+  包内 24 个英雄/哥布林材质实例全部回落默认灰材质（编辑器里不触发）。修复：`Scripts/Editor/
+  fix_dnf_material_usage.py` 打标志+保存+二进程验证。
+- **缺陷 2·技能层失活**：`UProfessionCatalogSubsystem` 资产发布路径只写**实例成员**，而
+  `IsPublished()/GetConfigRevision()` 读**进程级静态**——包内永远"未发布"，技能槽全 None、拒绝
+  一切释放。编辑器走源目录回退（正确设静态）所以全绿。修复：资产路径补设静态（`5fe9fcb`）。
+- **缺陷 3·资产重生成静默失效**：职业 DA builder 先 `NewObject` 再 `Package->FullyLoad()`——磁盘
+  旧对象影子胜出，M7-001 之后每次"重生成"都保留旧数据（盘上烙着 `attack_pending=true` 的五行
+  M7-003 技能，而源表是 false；生成报告里的新 revision 从未落盘）。修复：builder 改为先
+  `LoadObject` 再改同一对象；DA_ProfessionConfig 重生成并验证（rev `874037eca0cc664a`，pending 全 false）。
+- **缺陷 4·玩家动画冻结**：构造器 `AnimationSingleNode` + 运行时改 `AnimationData` 在包内完全不播
+  （运行时写 AnimationData 不重启节点；Montage 无法经 UAnimSingleNodeInstance 渲染）——玩家恒定
+  一个姿势。修复：为 DNF 骨架建 `ABP_DNFHero`+`BS_DNFHero_Locomotion`（idle/run 采样 + 原生
+  EditorBuildLocomotionGraph 的跳跃三态 + MNT_* 走的 DefaultSlot），复用 mannequin ABP 管线；
+  死代码 M7_004 单节点切换在 ABP 模式下自禁用。
+- **验收工具**：HUD `UEMMOSkillCast <槽>` exec + `-M7SkillCastTest` 包内序列（idle/run 截图 +
+  五槽真实 SubmitSkillSlot + M7DEMO 状态日志）。
+- **验证**：编辑器全量 919/919 ×3（builder 修复、AnimBP 切换各一轮 + 收尾）；包内实机 cast test
+  （最终包）：wired=true、四技能接受（MP 115→69、冷却 1.5/2.5/4.0/6.0s、OpLog Skill Activated 四行）、
+  截图证实彩色格斗家站立/跑步/出招三种不同姿势、HUD 技能条带实时冷却。用户存档逐字节还原。
+- **下一步**：用户重新人工验收（模型/动画/六技能/地城）；M5-H03、M7-005 仍等用户。
+
 # 最近一轮交付：人工验收包重打与包级缺口修复（2026-11-03）
 
 > 本轮 0 张任务卡：按用户指令重打人工验收包。期间包内全量 gate 暴露 6 个意外失败，
