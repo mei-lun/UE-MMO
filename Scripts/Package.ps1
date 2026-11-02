@@ -72,6 +72,30 @@ if (Test-Path -LiteralPath $RepoRoomsSource) {
 else {
     Write-Warning 'Data/rooms.json not found; the packaged menu will list no catalog levels.'
 }
+# M7-001/M7-004: the profession catalog (six JSON tables under Data/Professions)
+# and the dungeon sequences ship as runtime config (the catalog publisher and
+# the dungeon sequence parser read FPaths::ProjectDir()/Data per run; the
+# profession/room DataAssets ride the always-cooked directories). Without this
+# carry the packaged profession catalog refuses and no dungeon can start - the
+# 2026-11-02 trial package only worked because the files were staged by hand.
+$RepoProfessionsDir = Join-Path $ProjectRoot 'Data\Professions'
+if (Test-Path -LiteralPath $RepoProfessionsDir) {
+    $StagedProfessionsDir = Join-Path $ArchiveDirectory 'Windows\UEMMO\Data\Professions'
+    New-Item -ItemType Directory -Path $StagedProfessionsDir -Force | Out-Null
+    Copy-Item -Path (Join-Path $RepoProfessionsDir '*.json') -Destination $StagedProfessionsDir -Force
+}
+else {
+    Write-Warning 'Data/Professions not found; the packaged profession catalog will refuse and no profession can start.'
+}
+$RepoDungeonSource = Join-Path $ProjectRoot 'Data\dungeon_sequences.json'
+if (Test-Path -LiteralPath $RepoDungeonSource) {
+    $StagedDungeonSource = Join-Path $ArchiveDirectory 'Windows\UEMMO\Data\dungeon_sequences.json'
+    New-Item -ItemType Directory -Path (Split-Path -Parent $StagedDungeonSource) -Force | Out-Null
+    Copy-Item -LiteralPath $RepoDungeonSource -Destination $StagedDungeonSource -Force
+}
+else {
+    Write-Warning 'Data/dungeon_sequences.json not found; the packaged menu will list no dungeon sequences.'
+}
 if (-not (Test-Path -LiteralPath $DevelopmentPackageExecutable)) { throw 'Packaging did not produce the fixed development executable.' }
 $SourceRevision = & git -C $ProjectRoot rev-parse HEAD
 Assert-NativeSuccess 'Reading source revision'
