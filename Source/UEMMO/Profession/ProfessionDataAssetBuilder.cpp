@@ -36,12 +36,14 @@ bool UProfessionDataAssetBuilderLibrary::BuildFromSourceDirectory(const FString&
 		return false;
 	}
 	const FString PackagePath = DestPackagePath / AssetName.ToString();
-	UPackage* Package = FindPackage(nullptr, *PackagePath);
-	if (!Package)
-	{
-		Package = CreatePackage(*PackagePath);
-	}
-	UProfessionConfigAsset* Asset = FindObject<UProfessionConfigAsset>(Package, *AssetName.ToString());
+	UPackage* Package = CreatePackage(*PackagePath);
+	// Load the existing asset FIRST (CreatePackage does not load it): the
+	// rebuild must mutate the same object the save serializes. The previous
+	// FindObject->NewObject order followed by Package->FullyLoad() let the
+	// disk copy shadow the rebuilt rows - every regeneration after the first
+	// silently kept the stale M7-001 asset (the packaged pending-attack rows
+	// came from exactly this).
+	UProfessionConfigAsset* Asset = LoadObject<UProfessionConfigAsset>(Package, *AssetName.ToString());
 	if (Asset)
 	{
 		OutUpdated = true;
@@ -88,7 +90,6 @@ bool UProfessionDataAssetBuilderLibrary::BuildFromSourceDirectory(const FString&
 	// 4) Persist. A headless process must be able to save; a save problem is a
 	//    failure (M5-008 precedent: the graph stays correct, but this entry
 	//    treats the disk write as part of the contract).
-	Package->FullyLoad();
 	Asset->MarkPackageDirty();
 	FSavePackageArgs SaveArgs;
 	SaveArgs.TopLevelFlags = RF_Public | RF_Standalone;

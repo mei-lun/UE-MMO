@@ -1,5 +1,6 @@
 #include "PrototypeHUD.h"
 #include "Engine/Canvas.h"
+#include "InputActionValue.h"
 #include "Dungeon/DungeonCoordinatorSubsystem.h"
 #include "Misc/CommandLine.h"
 #include "TimerManager.h"
@@ -351,6 +352,11 @@ void APrototypeHUD::HandleM7DemoSelfTest()
     }
     if (ResolveSkillBarPlayer() != nullptr)
     {
+        if (FParse::Param(FCommandLine::Get(), TEXT("M7SkillCastTest")))
+        {
+            StartM7SkillCastSequence();
+            return;
+        }
         UEMMOSkillDemo();
         return;
     }
@@ -391,6 +397,102 @@ void APrototypeHUD::UEMMOSkillDemo()
     // One evidence screenshot into the package's Saved dir (the automated
     // verification greps the log and this file).
     bSkillDemoScreenshotPending = true;
+}
+
+void APrototypeHUD::StartM7SkillCastSequence()
+{
+    // The demo first (banner + the fighter switch + MP refill + the skill-bar
+    // shot), then the 1 s step chain drives the visual/cast evidence.
+    UEMMOSkillDemo();
+    M7CastStep = 0;
+    GetWorldTimerManager().SetTimer(M7CastStepHandle, this,
+        &APrototypeHUD::HandleM7CastStep, 1.0f, true);
+}
+
+void APrototypeHUD::M7CastScreenshot(const FString& Name)
+{
+    const FString ShotPath = FPaths::Combine(FPaths::ProjectSavedDir(),
+        FString::Printf(TEXT("Screenshots/%s.png"), *Name));
+    IFileManager::Get().MakeDirectory(*FPaths::GetPath(ShotPath), true);
+    FScreenshotRequest::RequestScreenshot(ShotPath, false, false);
+    UE_LOG(LogTemp, Display, TEXT("UEMMO M7DEMO: screenshot requested: %s"), *ShotPath);
+}
+
+void APrototypeHUD::HandleM7CastStep()
+{
+    APrototypeCharacter* Player = const_cast<APrototypeCharacter*>(ResolveSkillBarPlayer());
+    if (Player == nullptr)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UEMMO M7DEMO: cast step %d has no pawn; the sequence stops."), M7CastStep);
+        GetWorldTimerManager().ClearTimer(M7CastStepHandle);
+        return;
+    }
+    USkillLoadoutComponent* Loadout = Player->GetSkillLoadout();
+    ++M7CastStep;
+    if (M7CastStep == 1)
+    {
+        // One second after the demo: the fighter's looping idle pose + the
+        // loadout sanity row the verification greps.
+        UE_LOG(LogTemp, Display, TEXT("UEMMO M7DEMO: idle shot; MP=%d wired=%s"),
+            Loadout ? Loadout->GetCurrentMP() : -1,
+            Loadout && Loadout->IsWired() ? TEXT("true") : TEXT("false"));
+        M7CastScreenshot(TEXT("M7Cast_idle"));
+        // Drive the same central planar axes the move input actions feed; the
+        // run shot lands on the next step while the axis is held.
+        Player->DevSetMoveAxes(1.0f, 0.0f);
+    }
+    else if (M7CastStep == 2)
+    {
+        UE_LOG(LogTemp, Display, TEXT("UEMMO M7DEMO: run shot; speed=%.1f"),
+            Player->GetVelocity().Size());
+        M7CastScreenshot(TEXT("M7Cast_run"));
+        Player->DevSetMoveAxes(0.0f, 0.0f);
+    }
+    else if (M7CastStep >= 3 && M7CastStep <= 7)
+    {
+        // The five hotbar slots, one per second: the press rides the exact
+        // SubmitSkillSlot path the QWERASDF input actions use; MP delta and
+        // the post-cast cooldown are the acceptance evidence (a refused cast
+        // keeps MP flat and the cooldown at 0 - the reason rides the OpLog).
+        const int32 Slot = M7CastStep - 2;
+        const int32 MpBefore = Loadout ? Loadout->GetCurrentMP() : -1;
+        Player->SubmitSkillSlot(Slot);
+        const FName Skill = Loadout ? Loadout->GetSlotSkill(Slot) : FName();
+        const float Cooldown = (Loadout && !Skill.IsNone())
+            ? Loadout->GetCooldownRemaining(Skill) : -1.0f;
+        const int32 MpAfter = Loadout ? Loadout->GetCurrentMP() : -1;
+        UE_LOG(LogTemp, Display, TEXT("UEMMO M7DEMO: cast slot %d -> skill '%s' | MP %d -> %d | cooldown %.2f"),
+            Slot, *Skill.ToString(), MpBefore, MpAfter, Cooldown);
+        M7CastScreenshot(FString::Printf(TEXT("M7Cast_slot%d"), Slot));
+    }
+    else if (M7CastStep == 8)
+    {
+        UE_LOG(LogTemp, Display, TEXT("UEMMO M7DEMO: cast test complete M7CASTDONE"));
+        GetWorldTimerManager().ClearTimer(M7CastStepHandle);
+    }
+}
+
+void APrototypeHUD::UEMMOSkillCast(int32 SlotIndex)
+{
+    APrototypeCharacter* Player = const_cast<APrototypeCharacter*>(ResolveSkillBarPlayer());
+    if (Player == nullptr)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UEMMO M7DEMO: UEMMOSkillCast %d: no player pawn."), SlotIndex);
+        SkillDemoBanner = FString::Printf(TEXT("SkillCast %d: 没有玩家角色"), SlotIndex);
+        SkillDemoBannerUntilSeconds = FPlatformTime::Seconds() + 4.0;
+        return;
+    }
+    Player->SubmitSkillSlot(SlotIndex);
+    USkillLoadoutComponent* Loadout = Player->GetSkillLoadout();
+    const FName Skill = Loadout ? Loadout->GetSlotSkill(SlotIndex) : FName();
+    const float Cooldown = (Loadout && !Skill.IsNone())
+        ? Loadout->GetCooldownRemaining(Skill) : -1.0f;
+    UE_LOG(LogTemp, Display, TEXT("UEMMO M7DEMO: UEMMOSkillCast slot %d -> skill '%s' | MP %d | cooldown %.2f"),
+        SlotIndex, *Skill.ToString(), Loadout ? Loadout->GetCurrentMP() : -1, Cooldown);
+    SkillDemoBanner = FString::Printf(TEXT("SkillCast %d -> %s (MP %d, CD %.1fs)"),
+        SlotIndex, *Skill.ToString(), Loadout ? Loadout->GetCurrentMP() : -1, Cooldown);
+    SkillDemoBannerUntilSeconds = FPlatformTime::Seconds() + 4.0;
+    M7CastScreenshot(FString::Printf(TEXT("M7Cast_slot%d"), SlotIndex));
 }
 
 const APrototypeCharacter* APrototypeHUD::ResolveSkillBarPlayer()

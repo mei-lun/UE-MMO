@@ -161,6 +161,13 @@ public:
     void SubmitSkillSlot(int32 SlotIndex);
 
     /**
+     * M7-visual acceptance: set the same central planar axes the move input
+     * actions feed (MoveHorizontal/MoveDepth are private binding targets).
+     * Only the packaged cast-test sequence calls it; production never does.
+     */
+    void DevSetMoveAxes(float AxisX, float AxisY);
+
+    /**
      * M3-010: the player-side equip/unequip entry. NewEquippedBonus REPLACES
      * the whole equipped stat bonus row of the profile (a zero row means
      * "nothing equipped", the M3-005 SetEquippedStatBonus semantics), so the

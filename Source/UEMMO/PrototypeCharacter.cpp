@@ -343,9 +343,12 @@ APrototypeCharacter::APrototypeCharacter()
     // ride the MNT_<attack_id> montages (rebuilt on the same skeleton);
     // locomotion switches idle/run in Tick (M7_004_LocomotionAnimSwitch).
     static ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshAsset(TEXT("/Game/UEMMO/ArtValidation/DNFArt/Hero/hero_skm.hero_skm"));
+    static ConstructorHelpers::FClassFinder<UAnimInstance> DnfAnimBPClass(TEXT("/Game/UEMMO/ArtValidation/DNFArt/Hero/ABP_DNFHero.ABP_DNFHero_C"));
+    bool bDnfMesh = false;
     if (MeshAsset.Succeeded())
     {
         GetMesh()->SetSkeletalMesh(MeshAsset.Object);
+        bDnfMesh = MeshAsset.Object->GetFName() == FName(TEXT("hero_skm"));
     }
     else
     {
@@ -355,17 +358,17 @@ APrototypeCharacter::APrototypeCharacter()
     // M1-031: the generated AnimBP owns all animation state (locomotion
     // BlendSpace plus jump/fall/land poses). The M0 per-frame PlayAnimation
     // override is gone, so idle/move switching never restarts from time zero.
+    // M7-visual fix: the DNF hero runs its OWN AnimBP on the DNF skeleton
+    // (ABP_DNFHero, built by Scripts/Editor/create_dnf_hero_animbp.py). The
+    // constructor-era single-node setup never played in the packaged game -
+    // runtime AnimationData writes do not restart the node and montages
+    // cannot render through UAnimSingleNodeInstance - so the player froze on
+    // one pose. ABP_DNFHero routes locomotion AND the MNT_* montage slot.
     static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBPClass(TEXT("/Game/UEMMO/Animation/ABP_Prototype.ABP_Prototype_C"));
-    static ConstructorHelpers::FObjectFinder<UAnimationAsset> HeroIdleAsset(TEXT("/Game/UEMMO/ArtValidation/DNFArt/Hero/hero_idle_Anim.hero_idle_Anim"));
-    if (HeroIdleAsset.Succeeded() && GetMesh()->GetSkeletalMeshAsset() != nullptr
-        && GetMesh()->GetSkeletalMeshAsset()->GetFName() == FName(TEXT("hero_skm")))
+    if (bDnfMesh && DnfAnimBPClass.Succeeded())
     {
-        // The DNF hero: single-node looping idle; Tick switches to the run
-        // clip on movement (the montage playback overrides for attacks).
-        GetMesh()->SetAnimationMode(EAnimationMode::AnimationSingleNode);
-        GetMesh()->AnimationData.AnimToPlay = HeroIdleAsset.Object;
-        GetMesh()->AnimationData.bSavedLooping = true;
-        GetMesh()->AnimationData.bSavedPlaying = true;
+        GetMesh()->SetAnimationMode(EAnimationMode::AnimationBlueprint);
+        GetMesh()->SetAnimInstanceClass(DnfAnimBPClass.Class);
     }
     else if (AnimBPClass.Succeeded())
     {
@@ -1257,6 +1260,15 @@ void APrototypeCharacter::SubmitSkillSlot(int32 SlotIndex)
         UE_LOG(LogTemp, Verbose, TEXT("UEMMO: skill slot %d pressed (no effect; M2+ placeholder)."), SlotIndex);
     }
 }
+void APrototypeCharacter::DevSetMoveAxes(float AxisX, float AxisY)
+{
+    // M7-visual acceptance: the exact writes MoveHorizontal/MoveDepth perform
+    // (the central Tick applies them; no operation-log rows by design - the
+    // cast-test sequence is choreography, not user input).
+    PlanarAxes.SetAxisX(AxisX);
+    PlanarAxes.SetAxisY(AxisY);
+}
+
 int32 APrototypeCharacter::GetSkillSlotPressCount(int32 SlotIndex) const
 {
     return (SlotIndex >= 1 && SlotIndex <= 8) ? SkillSlotPressCounts[SlotIndex - 1] : 0;

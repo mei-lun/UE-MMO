@@ -429,6 +429,28 @@ private:
      */
     void HandleM7DemoSelfTest();
 
+    /**
+     * M7-visual acceptance: with BOTH -M7DemoSelfTest and -M7SkillCastTest
+     * the room-side invocation extends into a timed evidence sequence — an
+     * idle shot, a run-driven shot, then one real SubmitSkillSlot per hotbar
+     * slot with a per-cast screenshot and M7DEMO state logs (MP before/after
+     * + cooldown). Production never passes the switch.
+     */
+    void StartM7SkillCastSequence();
+    void HandleM7CastStep();
+    void M7CastScreenshot(const FString& Name);
+    int32 M7CastStep = 0;
+    FTimerHandle M7CastStepHandle;
+
+    /**
+     * M7-visual acceptance dev command (console: UEMMOSkillCast <slot 1..8>).
+     * Routes through the SAME SubmitSkillSlot the QWERASDF input actions use,
+     * then logs the slot's skill, MP and cooldown under the M7DEMO tag and
+     * takes one evidence screenshot into the package's Saved dir.
+     */
+    UFUNCTION(Exec)
+    void UEMMOSkillCast(int32 SlotIndex);
+
     /** M7-003: the rank row of the skill (null when unknown/unpublished). */
     const FSkillLevelRow* ResolveSkillRankRow(const USkillLoadoutComponent* Loadout, FName SkillId);
 

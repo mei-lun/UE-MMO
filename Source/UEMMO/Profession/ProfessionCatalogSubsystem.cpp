@@ -95,6 +95,14 @@ void UProfessionCatalogSubsystem::Initialize(FSubsystemCollectionBase& Collectio
 			// The asset carries the revision it was generated from; the
 			// rebuild's own digest must agree or the asset is stale.
 			ConfigRevision = Asset->ConfigRevision;
+			// M7-visual fix: IsPublished()/GetConfigRevision() read the
+			// PROCESS-lifetime statics - the asset path only ever set the
+			// instance members, so every packaged run reported unpublished
+			// and the whole skill layer stayed inert (the editor never saw
+			// it: its DA_ProfessionConfig load fails validation and the
+			// source fallback sets the same statics correctly).
+			StaticRevision() = Asset->ConfigRevision;
+			StaticPublished() = true;
 			bPublished = true;
 			// M7-003: the one-time resolver wiring - the profile subsystem
 			// stays catalog-free while the curve numbers (MP pool, SP gains)
