@@ -112,6 +112,16 @@ bool FUEMMOTasksM5_018BPackagedReactionEvidence::RunTest(const FString& Paramete
 			Charm.BaseStats.MaxHP = 20.0f;
 			Charm.Rarity = EItemRarity::Normal;
 			TestTrue("the fallback catalog accepts the mirrored charm", Catalog.AddDefinition(Charm));
+			// The mirrored starter table references item_scatter_training
+			// (M5-048); the catalog must register every definition the table
+			// can roll or GenerateReward's completeness check refuses it all.
+			FItemDefinition Scatter;
+			Scatter.DefinitionId = FName(TEXT("item_scatter_training"));
+			Scatter.DisplayName = TEXT("Training Scatter");
+			Scatter.Slot = EItemSlot::Weapon;
+			Scatter.BaseStats.Attack = 5.0f;
+			Scatter.Rarity = EItemRarity::Normal;
+			TestTrue("the fallback catalog accepts the mirrored scatter", Catalog.AddDefinition(Scatter));
 			const FDropRewardResult Drop = FDropGenerator::GenerateReward(
 				/*RewardSeed*/ 9001, /*SettlementId*/ 1, Table, Catalog);
 			TestTrue("the fallback table still rolls a real reward", Drop.bSuccess);

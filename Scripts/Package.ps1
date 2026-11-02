@@ -96,6 +96,33 @@ if (Test-Path -LiteralPath $RepoDungeonSource) {
 else {
     Write-Warning 'Data/dungeon_sequences.json not found; the packaged menu will list no dungeon sequences.'
 }
+# M2-016/M5-069: the production enemy rows are read per run from
+# FPaths::ProjectDir()/Data/enemies.json (the room trigger's single-enemy
+# resolution); without this carry the packaged combat rooms refuse their
+# enemy rows and spawn nothing.
+$RepoEnemiesSource = Join-Path $ProjectRoot 'Data\enemies.json'
+if (Test-Path -LiteralPath $RepoEnemiesSource) {
+    $StagedEnemiesSource = Join-Path $ArchiveDirectory 'Windows\UEMMO\Data\enemies.json'
+    New-Item -ItemType Directory -Path (Split-Path -Parent $StagedEnemiesSource) -Force | Out-Null
+    Copy-Item -LiteralPath $RepoEnemiesSource -Destination $StagedEnemiesSource -Force
+}
+else {
+    Write-Warning 'Data/enemies.json not found; the packaged rooms will refuse their enemy rows.'
+}
+# M7-001: the profession catalog's pending-attack gate reads
+# FPaths::ProjectDir()/Data/combat-attacks.json per run (the attack catalog
+# itself loads cooked assets and never reads it). Without this carry the
+# packaged profession catalog refuses. Data/drops.json must stay unstaged:
+# the packaged reward-fallback proof (M5-018B) asserts its refusal.
+$RepoAttacksSource = Join-Path $ProjectRoot 'Data\combat-attacks.json'
+if (Test-Path -LiteralPath $RepoAttacksSource) {
+    $StagedAttacksSource = Join-Path $ArchiveDirectory 'Windows\UEMMO\Data\combat-attacks.json'
+    New-Item -ItemType Directory -Path (Split-Path -Parent $StagedAttacksSource) -Force | Out-Null
+    Copy-Item -LiteralPath $RepoAttacksSource -Destination $StagedAttacksSource -Force
+}
+else {
+    Write-Warning 'Data/combat-attacks.json not found; the packaged profession catalog will refuse.'
+}
 if (-not (Test-Path -LiteralPath $DevelopmentPackageExecutable)) { throw 'Packaging did not produce the fixed development executable.' }
 $SourceRevision = & git -C $ProjectRoot rev-parse HEAD
 Assert-NativeSuccess 'Reading source revision'
