@@ -1,3 +1,28 @@
+# 最近一轮交付：人工验收包重打与包级缺口修复（2026-11-03）
+
+> 本轮 0 张任务卡：按用户指令重打人工验收包。期间包内全量 gate 暴露 6 个意外失败，
+> 全部为包级缺口（非游戏逻辑缺陷），已修复并两次复验全绿。任务板 203 项、198 DONE、
+> 0 IN_PROGRESS、TODO 1（M5-H04）；M5-H03 REVIEW、M7-005 BLOCKED 仍等用户。
+
+- **交付包**：`Artifacts/Package/Windows`（唯一开发包目录），源码 `285f573`，exe SHA-256 前 16 位
+  `9B0239F17A7E0FA2`。包内 Data 运行时配置齐全：test_room/CombatSystem/items/rooms/Professions/
+  dungeon_sequences/**enemies/combat-attacks**（后两个本轮新增；drops.json 有意不进包——M5-018B
+  断言包内拒绝）。用户存档（Profile_A/B/Index + 已迁移 Roster/Char）逐字节还原回包内，首启继续
+  原进度、不重复迁移；备份在 Artifacts/Tasks/Accept-Package-20261103/saves-backup。
+- **修复（提交 e48ccb6 + 285f573）**：①`Package.ps1` 补 Data/Professions 与 dungeon_sequences 搬运
+  （5fe27b5 提交信息声称过但 diff 从未落地，v3 包靠手工补齐）+ 新增 enemies/combat-attacks 搬运；
+  ②`M5PackagedReactionTests` 镜像回退目录补 item_scatter_training（M5-048 给启动表加第四行时
+  测试内第三份拷贝漏同步——目录完整性检查拒绝整表；该分支编辑器下跳过，只有包内全量能暴露）。
+  ③M7-002 真实存档夹具照旧由验收流程放入包内 `UEMMO/Artifacts/Tasks/M7-Package/`。
+- **验证**：Build Succeeded；编辑器全量回归 **919/919** ×2（audit-main-regression、
+  audit-package-fix-regression）；包内全量 gate（TestPackage -IncludeCombat，最终包
+  Accept-Package-20261103-Final）**912 通过 + 5 个文档化容忍失败**（M3_005/M3_007/M3_019×2/
+  M5_020A——读开发树源 JSON 的测试族，包内按设计失败）+ M0 渲染冒烟 success + 暂存打击证据 8 行。
+- **教训**：提交信息声称的脚本改动要对着脚本正文核实；新增"按运行时读 Data/*.json"的测试时，
+  TestPackage 的容忍名单与包内搬运集合要同步扩展。
+- **下一步**：用户按包内 README 的 M7 试玩清单人工验收（`UEMMOSkillDemo` 六技能 + 老四招 +
+  地城）；M5-H03 载具试玩签收仍待用户。
+
 # 最近一轮交接：M7-002 迁移 + M7-003 六技能 + M7-004 连续地城（2026-11-01/02）
 
 > 本轮新完成 DONE 3 项：M7-002、M7-003、M7-004。任务板 203 项、198 DONE、0 IN_PROGRESS、
