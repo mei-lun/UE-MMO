@@ -224,8 +224,8 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M6-010 | [DNFM 模型与地图素材接手包](Docs/Tasks/M6-010.md) | DONE | M6-009 | Codex-20261104-DNFM-Handoff | 2026-11-04T01:24:00+08:00 | [report](Docs/Tasks/Reports/M6-010.md) |
 | M6-011 | [DNFM 公会场景布局还原管线与中间数据](Docs/Tasks/M6-011.md) | DONE | M6-010 | ZCode-20261104-A | 2026-11-04T03:05:00+08:00 | [report](Docs/Tasks/Reports/M6-011.md) |
 | M6-012 | [Guildagit 公会场景 UE 关卡构建](Docs/Tasks/M6-012.md) | DONE | M6-011 | ZCode-20261104-A | 2026-11-04T04:06:00+08:00 | [report](Docs/Tasks/Reports/M6-012.md) |
-| M6-013 | [新公会场景关卡接入游戏流程](Docs/Tasks/M6-013.md) | TODO | M6-012 | — | — | — |
-| M6-014 | [原版 Spine 格斗家 UE 视觉资产入库](Docs/Tasks/M6-014.md) | TODO | M6-010 | — | — | — |
+| M6-013 | [新公会场景关卡接入游戏流程](Docs/Tasks/M6-013.md) | IN_PROGRESS | M6-012 | ZCode-20261104-A | 2026-11-04T04:08:00+08:00 | [report](Docs/Tasks/Reports/M6-013.md) |
+| M6-014 | [原版 Spine 格斗家 UE 视觉资产入库](Docs/Tasks/M6-014.md) | DONE | M6-010 | ZCode-20261104-A | 2026-11-04T04:32:00+08:00 | [report](Docs/Tasks/Reports/M6-014.md) |
 | M6-015 | [玩家视觉替换为原版 2D 格斗家（配置门）](Docs/Tasks/M6-015.md) | TODO | M6-014 | — | — | — |
 | M7-001 | [职业与等级配置底座](Docs/Tasks/M7-001.md) | DONE | M6-008 | ZCode-20261101-DNFArt | 2026-11-01T16:40:00+08:00 | [report](Docs/Tasks/Reports/M7-001.md) |
 | M7-002 | [多角色存档与旧档迁移](Docs/Tasks/M7-002.md) | DONE | M7-001 | ZCode-20261101-DNFArt | 2026-11-01T21:32:00+08:00 | [report](Docs/Tasks/Reports/M7-002.md) |
