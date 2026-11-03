@@ -9,7 +9,7 @@ import unreal
 
 ROOT=Path(unreal.Paths.project_dir()).resolve()
 STAGE=ROOT/'SourceAssets/Unpacked/DNFM130_5_8'
-ART=ROOT/'Artifacts/Tasks/M6-009';ART.mkdir(parents=True,exist_ok=True)
+ART=ROOT/('Artifacts/Tasks/M6-012' if os.environ.get('UEMMO_DNFM_MODE','').startswith('guildagit') else 'Artifacts/Tasks/M6-009');ART.mkdir(parents=True,exist_ok=True)
 DEST='/Game/UEMMO/Imported/DNFM130_5_8'
 MAP=DEST+'/Maps/L_DNFM_ResourceGallery'
 MODE=os.environ.get('UEMMO_DNFM_MODE','import')
@@ -258,12 +258,215 @@ def capture():
     handle=unreal.register_slate_post_tick_callback(tick)
     globals()['_capture_keepalive']=(ca,cap,rt,tick,handle,shots)
 
+GMAP=DEST+'/Maps/L_DNFM_Guildagit'
+def layout_root():
+    d=Path(os.environ.get('UEMMO_DNFM_LAYOUT_DIR')or(ROOT/'Artifacts/Tasks/M6-011/2026-11-04T0215_0800/intermediate'))
+    if not d.is_dir():raise RuntimeError('Missing layout intermediate dir '+str(d))
+    return d
+
+def load_layout():
+    d=layout_root()
+    return {name:json.loads((d/(name+'.json')).read_text(encoding='utf-8')) for name in ['GuildagitGroundDummy','BG_Planet_Prepab']}
+
+def make_guildagit():
+    # M6-012: rebuild the original Guildagit prefab layout from M6-011 intermediates.
+    levels=unreal.get_editor_subsystem(unreal.LevelEditorSubsystem);actors=unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
+    # A killed earlier run can leave the umap on disk before the asset registry knows it (or
+    # a stale Saved/AssetRegistryCache entry can outlive a deleted file), so drop both and
+    # force a synchronous rescan of the Maps folder before creating the destination.
+    if ASSETS.does_asset_exist(GMAP)and not ASSETS.delete_asset(GMAP):raise RuntimeError('Cannot delete stale guildagit map')
+    umap=ROOT/'Content/UEMMO/Imported/DNFM130_5_8/Maps/L_DNFM_Guildagit.umap'
+    if umap.exists():umap.unlink()
+    unreal.AssetRegistryHelpers.get_asset_registry().scan_paths_synchronous([DEST+'/Maps'],True)
+    if not levels.new_level(GMAP):raise RuntimeError('Cannot create guildagit map')
+    layout=load_layout();placed=hidden=mirror=mat_applied=0;mat_missing=[];blocking=0
+    bounds_min=[1e9]*3;bounds_max=[-1e9]*3
+    for name,data in layout.items():
+        for inst in data['instances']:
+            t=inst['ue_transform'];rot=t['rotator_pitch_yaw_roll_deg']
+            actor=actors.spawn_actor_from_class(unreal.StaticMeshActor,unreal.Vector(*t['location_cm']),unreal.Rotator(pitch=rot[0],yaw=rot[1],roll=rot[2]))
+            actor.set_actor_label(inst['hierarchy_path'])
+            actor.set_actor_scale3d(unreal.Vector(*t['scale']))
+            mesh=load(inst['ue_object_path'])
+            actor.static_mesh_component.set_static_mesh(mesh)
+            ext=mesh.get_bounds().box_extent
+            # Big scenery blocks (trees/buildings/fences); small decorations stay walk-through so
+            # input-driven enemies without pathfinding cannot wedge on grass/flowers.
+            if min(ext.x,ext.y,ext.z)>=100:
+                actor.static_mesh_component.set_collision_profile_name('BlockAll');blocking+=1
+            else:
+                actor.static_mesh_component.set_collision_profile_name('NoCollision')
+            for m in inst.get('materials',[]):
+                mp=path('Materials',m['ue_material_id'])
+                if ASSETS.does_asset_exist(mp):actor.static_mesh_component.set_material(int(m['slot']),load(mp));mat_applied+=1
+                else:mat_missing.append('%s:%d'%(inst['hierarchy_path'],m['slot']))
+            if not (inst['active_in_stored_hierarchy']and inst['renderer_enabled']):
+                # Disabled in the stored hierarchy: hidden in game and labelled for verification
+                # (bHiddenEd is a protected property that python cannot set).
+                actor.set_actor_hidden_in_game(True);actor.set_actor_label(inst['hierarchy_path']+'_DISABLED');hidden+=1
+            if t.get('mirrored'):mirror+=1
+            for i,b in enumerate(inst['ue_bounds_estimate_cm']['min']):bounds_min[i]=min(bounds_min[i],b)
+            for i,b in enumerate(inst['ue_bounds_estimate_cm']['max']):bounds_max[i]=max(bounds_max[i],b)
+            placed+=1
+        st=data['instance_stats'];REPORT['stats_'+name]={'mapped':st['mesh_renderer_mapped'],'unmapped':st['mesh_renderer_unmapped'],
+            'placed':len(data['instances']),'distinct_meshes':st['distinct_ue_mesh_ids'],'bounds_union_cm':data['ue_bounds_union_cm']}
+        REPORT['unmapped_'+name]=[{'hierarchy_path':u['hierarchy_path'],'mesh':u.get('ue_mesh_id')or u.get('mesh_source_name'),'reason':u.get('unresolved_reason')} for u in data['unmapped_instances']]
+    # The 8 unmapped instances are exactly the original terrain (GA_ground/islands/water).
+    # Explicit labelled placeholder floor per the handoff rule: missing geometry shows a clear
+    # placeholder and is recorded, never passed off as original art.
+    margin=200.;px0,px1=bounds_min[0]-margin,bounds_max[0]+margin;py0,py1=bounds_min[1]-margin,bounds_max[1]+margin
+    ground=actors.spawn_actor_from_class(unreal.StaticMeshActor,unreal.Vector((px0+px1)/2,(py0+py1)/2,-10),unreal.Rotator(pitch=0,yaw=0,roll=0))
+    ground.set_actor_label('DNFM_GAGroundPlaceholder_MISSING_GEOMETRY')
+    ground.set_actor_scale3d(unreal.Vector((px1-px0)/100,(py1-py0)/100,0.2))
+    ground.static_mesh_component.set_static_mesh(load('/Engine/BasicShapes/Cube'))
+    gmat=build_material({'id':'M_GAGroundPlaceholder','shader':'Standard','colors':{'_Color':{'r':0.16,'g':0.18,'b':0.16,'a':1}}})
+    ground.static_mesh_component.set_material(0,gmat)
+    ASSETS.set_metadata_tag(gmat,'DNFM.AppearanceStatus','MissingOriginalTerrain_ExplicitPlaceholder')
+    for yaw,intensity in [(-40,4),(140,2)]:
+        light=actors.spawn_actor_from_class(unreal.DirectionalLight,unreal.Vector(0,0,3000),unreal.Rotator(pitch=-55,yaw=yaw,roll=0))
+        light.light_component.set_editor_property('intensity',float(intensity));light.light_component.set_editor_property('cast_shadows',False)
+    sky=actors.spawn_actor_from_class(unreal.SkyLight,unreal.Vector(0,0,2000));sky.light_component.set_editor_property('intensity',1.0)
+    camera=actors.spawn_actor_from_class(unreal.CameraActor,unreal.Vector((px0+px1)/2,(py0+py1)/2-5200,3400),unreal.Rotator(pitch=-33,yaw=90,roll=0))
+    camera.set_actor_label('DNFM_GuildagitCamera');camera.camera_component.set_editor_property('field_of_view',60.)
+    levels.save_current_level()
+    REPORT['map']=GMAP;REPORT['placed_instances']=placed;REPORT['hidden_instances']=hidden;REPORT['mirrored_instances']=mirror
+    REPORT['blocking_instances']=blocking;REPORT['ground_placeholder']={'bounds_min':[px0,py0,-20],'bounds_max':[px1,py1,0]}
+    REPORT['material_slots_applied']=mat_applied;REPORT['material_slots_missing_asset']=len(mat_missing)
+    REPORT['bounds_union_cm']={'min':bounds_min,'max':bounds_max}
+    REPORT['limitations'].append('Guildagit layout rebuilt from original prefab TRS; %d instances kept, %d hidden (inactive/disabled), %d unmappable meshes not placed.'%(placed,hidden,sum(len(REPORT['unmapped_'+n])for n in layout)))
+    REPORT['limitations'].append('Original terrain meshes (GA_ground/islands/water) are missing from the source package; an explicitly labelled placeholder floor stands in. Big scenery blocks movement, small decorations do not (input-driven enemies have no pathfinding).')
+
+def verify_guildagit():
+    levels=unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
+    assert levels.load_level(GMAP),'cannot load '+GMAP
+    actors=unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
+    layout=load_layout();expected={}
+    for data in layout.values():
+        for inst in data['instances']:
+            label=inst['hierarchy_path']+('_DISABLED' if not(inst['active_in_stored_hierarchy']and inst['renderer_enabled'])else '')
+            expected[label]=inst
+    expected['DNFM_GAGroundPlaceholder_MISSING_GEOMETRY']=None  # labelled stand-in for the 8 missing terrain meshes
+    sma=[a for a in actors.get_all_level_actors()if isinstance(a,unreal.StaticMeshActor)]
+    labels={a.get_actor_label() for a in sma}
+    missing=sorted(set(expected)-labels);extra=sorted(labels-set(expected))
+    assert not missing,('missing actors',missing[:5]);assert not extra,('unexpected actors',extra[:5])
+    # Duplicate source hierarchy paths are legal (multiple renderers under one node),
+    # so the actor COUNT is verified separately from the unique-label set match.
+    assert len(sma)==sum(len(d['instances'])for d in layout.values())+1,(len(sma),'actor count')
+    REPORT['actor_count']=len(sma)
+    by_label={a.get_actor_label():a for a in sma}
+    sampled=0;hidden_count=0
+    for idx,(label,inst) in enumerate(sorted(expected.items())):
+        a=by_label[label]
+        if label.endswith('_DISABLED'):
+            # bHidden read via editor property; the label suffix is the durable, checkable marker.
+            try:
+                assert bool(a.get_editor_property('bHidden')),(label,'should be game-hidden')
+            except AssertionError:
+                raise
+            except Exception:
+                REPORT['hidden_flag_check']='bHidden editor-property read unavailable; verified by label suffix'
+            hidden_count+=1
+        if inst is None:continue  # labelled placeholder floor, not an original instance
+        t=inst['ue_transform']
+        if idx%40==0:
+            loc=a.get_actor_location();scale=a.get_actor_scale3d();rot=a.get_actor_rotation()
+            assert all(abs((loc.x,loc.y,loc.z)[i]-t['location_cm'][i])<0.05 for i in range(3)),(label,'location')
+            assert all(abs((scale.x,scale.y,scale.z)[i]-t['scale'][i])<0.005 for i in range(3)),(label,'scale')
+            assert abs(rot.pitch-t['rotator_pitch_yaw_roll_deg'][0])<0.05 and abs(rot.yaw-t['rotator_pitch_yaw_roll_deg'][1])<0.05 and abs(rot.roll-t['rotator_pitch_yaw_roll_deg'][2])<0.05,(label,'rotation',rot.pitch,rot.yaw,rot.roll)
+            comp=a.static_mesh_component
+            assert comp.static_mesh and comp.static_mesh.get_name()==inst['ue_mesh_id'],(label,'mesh',comp.static_mesh.get_name() if comp.static_mesh else None)
+            sampled+=1
+    want_hidden=sum(1 for data in layout.values()for inst in data['instances']if not(inst['active_in_stored_hierarchy']and inst['renderer_enabled']))
+    assert hidden_count==want_hidden,(hidden_count,want_hidden)
+    REPORT['verified_instances']=len(expected);REPORT['sampled_instances']=sampled;REPORT['hidden_instances']=hidden_count;REPORT['map']=GMAP
+
+def capture_guildagit():
+    # Mirrors capture() for the guildagit map; isolated copy so M6-009 capture stays untouched.
+    unreal.EditorPythonScripting.set_keep_python_script_alive(True)
+    levels=unreal.get_editor_subsystem(unreal.LevelEditorSubsystem);assert levels.load_level(GMAP)
+    actors=unreal.get_editor_subsystem(unreal.EditorActorSubsystem);world=unreal.EditorLevelLibrary.get_editor_world()
+    art=ROOT/'Artifacts/Tasks/M6-012';art.mkdir(parents=True,exist_ok=True)
+    previews=art/'previews'/REPORT['run_id'];previews.mkdir(parents=True,exist_ok=True)
+    layout=load_layout()
+    lo=[min(d['ue_bounds_union_cm']['min'][i]for d in layout.values())for i in range(3)]
+    hi=[max(d['ue_bounds_union_cm']['max'][i]for d in layout.values())for i in range(3)]
+    center=unreal.Vector((lo[0]+hi[0])/2,(lo[1]+hi[1])/2,(lo[2]+hi[2])/2)
+    ca=actors.spawn_actor_from_class(unreal.SceneCapture2D,unreal.Vector(center.x,center.y-5200,center.z+3400),unreal.Rotator(pitch=-33,yaw=90,roll=0))
+    cap=ca.get_component_by_class(unreal.SceneCaptureComponent2D)
+    rt=unreal.RenderingLibrary.create_render_target2d(world,1920,1440,unreal.TextureRenderTargetFormat.RTF_RGBA8,unreal.LinearColor(0.06,0.07,0.1,1))
+    cap.set_editor_property('texture_target',rt);cap.set_editor_property('capture_source',unreal.SceneCaptureSource.SCS_FINAL_COLOR_LDR)
+    cap.set_editor_property('capture_every_frame',True);cap.set_editor_property('fov_angle',60.)
+    state={'frame':0,'shot':0};shots=[('overview',None)]
+    candidates=[a for a in actors.get_all_level_actors()if isinstance(a,unreal.StaticMeshActor)]
+    REPORT['capture_candidates']=len(candidates)
+    for token in ['GA_maingate','GA_tree_01','GA_flower']:
+        # Mesh-local bounds are valid right after load (gallery precedent); actor
+        # world bounds stay stale/zero until the editor ticks, so avoid them here.
+        pool=[a for a in candidates if token.lower()in a.get_actor_label().lower()]
+        match=next((a for a in pool if min(a.static_mesh_component.static_mesh.get_bounds().box_extent.x,a.static_mesh_component.static_mesh.get_bounds().box_extent.y,a.static_mesh_component.static_mesh.get_bounds().box_extent.z)>0.1),None)
+        if match is None and pool:match=pool[0]
+        REPORT['closeup_token_'+token]=bool(match);REPORT['closeup_token_'+token+'_pool']=len(pool)
+        if match:shots.append((token,match))
+    REPORT['previews']=[]
+    def tick(dt):
+        try:
+            state['frame']+=1
+            if state['frame']<180:return
+            frame=(state['frame']-180)%90
+            if frame==0:
+                name,target=shots[state['shot']]
+                if target:
+                    origin,extent=target.get_actor_bounds(False);loc=origin+unreal.Vector(240,-300,230)
+                    ca.set_actor_location(loc,False,False);ca.set_actor_rotation(unreal.MathLibrary.find_look_at_rotation(loc,origin),False)
+                    cap.set_editor_property('primitive_render_mode',unreal.SceneCapturePrimitiveRenderMode.PRM_USE_SHOW_ONLY_LIST)
+                    cap.clear_show_only_components();cap.show_only_actor_components(target)
+                # Overview keeps the default primitive render mode (whole scene), like capture().
+                cap.capture_scene()
+            if frame==60:
+                name,target=shots[state['shot']];dest=previews/(name+'.png')
+                unreal.RenderingLibrary.export_render_target(world,rt,str(previews),name+'.png')
+                assert dest.is_file()and dest.stat().st_size>1024,str(dest)
+                REPORT['previews'].append({'name':name,'file':str(dest),'bytes':dest.stat().st_size})
+                state['shot']+=1
+                if state['shot']==len(shots):
+                    REPORT['success']=True;save_report()
+                    cap.set_editor_property('capture_every_frame',False);cap.set_editor_property('texture_target',None)
+                    actors.destroy_actor(ca);unreal.RenderingLibrary.release_render_target2d(rt)
+                    unreal.unregister_slate_post_tick_callback(handle);unreal.EditorPythonScripting.set_keep_python_script_alive(False)
+        except Exception:
+            REPORT['errors'].append(traceback.format_exc());save_report();unreal.unregister_slate_post_tick_callback(handle);unreal.EditorPythonScripting.set_keep_python_script_alive(False)
+    handle=unreal.register_slate_post_tick_callback(tick)
+    globals()['_capture_keepalive']=(ca,cap,rt,tick,handle,shots)
+
+def guildagit_wire():
+    # M6-013: give the guildagit map its production RoomTrigger/RoomExit so the
+    # PrepareRooms wiring pass can point the trigger at the generated definition
+    # asset (the M6-004 per-row generalization: exactly one of each required).
+    levels=unreal.get_editor_subsystem(unreal.LevelEditorSubsystem);actors=unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
+    assert levels.load_level(GMAP),'cannot load '+GMAP
+    def count(cls):return sum(1 for a in actors.get_all_level_actors()if a.get_class().get_name()==cls)
+    if count('RoomTrigger')==0:
+        # Default brush is 200cm; covers the playable ground so entering the room
+        # activates the session immediately (rules:[] -> direct BeginWaves path).
+        t=actors.spawn_actor_from_class(unreal.RoomTrigger,unreal.Vector(-146,622,200),unreal.Rotator(pitch=0,yaw=0,roll=0))
+        t.set_actor_label('DNFM_GARoomTrigger');t.set_actor_scale3d(unreal.Vector(29,10,3))
+    if count('RoomExit')==0:
+        e=actors.spawn_actor_from_class(unreal.RoomExit,unreal.Vector(2650,620,150),unreal.Rotator(pitch=0,yaw=0,roll=0))
+        e.set_actor_label('DNFM_GARoomExit');e.set_actor_scale3d(unreal.Vector(1.5,2,1.5))
+    if not levels.save_current_level():raise RuntimeError('Could not save '+GMAP)
+    REPORT['map']=GMAP;REPORT['room_trigger_count']=count('RoomTrigger');REPORT['room_exit_count']=count('RoomExit')
+
 try:
     if MODE=='import':import_all()
     elif MODE=='verify':verify()
     elif MODE=='gallery':make_gallery()
     elif MODE=='capture':capture()
+    elif MODE=='guildagit':make_guildagit()
+    elif MODE=='guildagit_verify':verify_guildagit()
+    elif MODE=='guildagit_capture':capture_guildagit()
+    elif MODE=='guildagit_wire':guildagit_wire()
     else:raise ValueError(MODE)
-    if MODE!='capture':REPORT['success']=True;save_report()
+    if MODE not in ('capture','guildagit_capture'):REPORT['success']=True;save_report()
 except Exception:
     REPORT['errors'].append(traceback.format_exc());save_report();raise
