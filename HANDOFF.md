@@ -1,3 +1,12 @@
+# 最近一轮交付：DNFM 模型与地图素材接手包（2026-11-04）
+
+- Owner：Codex-20261104-DNFM-Handoff；本轮新增DONE **1项 M6-010**。基线`c3aa251`，实现`57fd19e`，main本机提交未推送。现有模型未重复导入、视觉资产未改。
+- 用户将自行安排其他Agent执行后续任务，入口是 [06-Agent资源接手入口](Docs/DNF-Research/06-Agent资源接手入口.md)。内容浏览器 `/Game/UEMMO/Imported/DNFM130_5_8` 已有全部279模型（含183地图/背景件）、137来源材质+2辅助、39纹理和展示图。
+- 本轮补入项目本地297份可获得的原始依赖（45.9MB）与2份导航原件；`SourceAssets/Unpacked/DNFM130_5_8/handoff` 包含逐模型JSON/CSV、地图子集和缺失依赖清单，后续Agent可按UE object_path直接加载。
+- 验证：新UE进程重载279/137/39通过；所有副本SHA256+长度一致；1,385不同项目文件路径与10个文档链接无失效。证据 `Artifacts/Tasks/M6-010/2026-11-04T012301_0800`；[报告](Docs/Tasks/Reports/M6-010.md)。
+- 限制：154模型仍缺原底色；依赖闭包有56缺失CAB，已明确列出。导航不是UE NavMesh，原地图布局未组装，特殊Shader仍为近似。本轮不代替M6-009历史渲染验证、不重打包、不代签人工门。
+- 下一步：用户安排Agent按接手文档选资产实施；无需再整批导入。资产/原始副本是本机Git忽略数据，跨机器需随项目另行复制。历史交接 [2026-11-04-Codex-DNFM-Handoff](Docs/Tasks/Handoffs/2026-11-04-Codex-DNFM-Handoff.md)。
+
 # 最近一轮交付：DNFM 静态资源适配（2026-11-04）
 
 - Owner：Codex-20261104-DNFM-UE；本轮新增 DONE **1 项 M6-009**。基线 `51c9d38`，实现 `4d96388`，main 本机提交、未推送。当前任务表 204 项、199 DONE、0 IN_PROGRESS；M5-H03 REVIEW、M7-005 BLOCKED 保持用户人工关状态。
