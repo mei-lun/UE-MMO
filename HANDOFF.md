@@ -1,3 +1,12 @@
+# 最近一轮交付：DNFM 静态资源适配（2026-11-04）
+
+- Owner：Codex-20261104-DNFM-UE；本轮新增 DONE **1 项 M6-009**。基线 `51c9d38`，实现 `4d96388`，main 本机提交、未推送。当前任务表 204 项、199 DONE、0 IN_PROGRESS；M5-H03 REVIEW、M7-005 BLOCKED 保持用户人工关状态。
+- 已导入 `/Game/UEMMO/Imported/DNFM130_5_8`：279 Static Mesh、137 来源材质 + 2 辅助材质、39 Texture、独立 `Maps/L_DNFM_ResourceGallery`。资产和源素材在本机忽略目录，脚本/文档已提交。
+- 验证：279 FBX 新 Blender 进程回读（顶点/面/UV/实际RGBA）；UE 导入→新进程重载全部279；39纹理寻址（23Clamp/16Repeat）；渲染展示与3个近景共4张新PNG已查看；Test -Render success=true（X421.415/Y-463.878/跳高130.743cm）。无C++变更，未重打开发包。独立代码复查问题已修复。
+- **内容限制**：154 网格有缺失底色引用，公会36材质依赖首包缺失CAB；中性占位明确标记。自定义Shader为参数可追溯的UE近似，不是原效果完整复现；原动画/Spine/粒子未转换为UE运行逻辑。静态资源适配完成，不冒充完整原版地图或模型外观已还原。
+- [任务报告](Docs/Tasks/Reports/M6-009.md)、[使用与重跑说明](Docs/DNF-Research/05-DNFM静态资源UE适配.md)。证据：`Artifacts/Tasks/M6-009/20261104T005828+0800`；预览 `Artifacts/Tasks/M6-009/DNFM_UE_Gallery.jpg`。历史本轮记录见 [handoff](Docs/Tasks/Handoffs/2026-11-04-Codex-DNFM-UE.md)。
+- 下一步：可直接打开展示图检查或拖网格入自己的地图；若继续恢复原色，需要提供缺失纹理包。既有人工试玩仍由用户签收。本任务无需新授权即可使用已落盘素材。
+
 # 最近一轮交付：试玩包三个运行时缺陷修复 + 实机验收（2026-11-03 深夜）
 
 > 本轮 0 张任务卡：用户报告"人物模型不正常、需实际验证技能释放"。实机自测发现并修复**三个独立
