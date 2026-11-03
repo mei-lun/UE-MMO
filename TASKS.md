@@ -222,6 +222,9 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M6-008 | [DNFArt Blender 交付包 UE 导入验收](Docs/Tasks/M6-008.md) | DONE | M6-007 | ZCode-20261101-DNFArt | 2026-11-01T14:20:00+08:00 | [report](Docs/Tasks/Reports/M6-008.md) |
 | M6-009 | [DNFM 静态资源适配 UE5](Docs/Tasks/M6-009.md) | DONE | M6-008 | Codex-20261104-DNFM-UE | 2026-11-04T00:59:00+08:00 | [report](Docs/Tasks/Reports/M6-009.md) |
 | M6-010 | [DNFM 模型与地图素材接手包](Docs/Tasks/M6-010.md) | DONE | M6-009 | Codex-20261104-DNFM-Handoff | 2026-11-04T01:24:00+08:00 | [report](Docs/Tasks/Reports/M6-010.md) |
+| M6-011 | [DNFM 公会场景布局还原管线与中间数据](Docs/Tasks/M6-011.md) | DONE | M6-010 | ZCode-20261104-A | 2026-11-04T03:05:00+08:00 | [report](Docs/Tasks/Reports/M6-011.md) |
+| M6-012 | [Guildagit 公会场景 UE 关卡构建](Docs/Tasks/M6-012.md) | TODO | M6-011 | — | — | — |
+| M6-013 | [新公会场景关卡接入游戏流程](Docs/Tasks/M6-013.md) | TODO | M6-012 | — | — | — |
 | M7-001 | [职业与等级配置底座](Docs/Tasks/M7-001.md) | DONE | M6-008 | ZCode-20261101-DNFArt | 2026-11-01T16:40:00+08:00 | [report](Docs/Tasks/Reports/M7-001.md) |
 | M7-002 | [多角色存档与旧档迁移](Docs/Tasks/M7-002.md) | DONE | M7-001 | ZCode-20261101-DNFArt | 2026-11-01T21:32:00+08:00 | [report](Docs/Tasks/Reports/M7-002.md) |
 | M7-003 | [首职业六技能](Docs/Tasks/M7-003.md) | DONE | M7-001,M7-002 | ZCode-20261101-DNFArt | 2026-11-01T23:32:00+08:00 | [report](Docs/Tasks/Reports/M7-003.md) |
