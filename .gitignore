@@ -25,5 +25,7 @@ Artifacts/
 
 # User-authorized DNFM imported assets; reproducible from local source and scripts.
 Content/UEMMO/Imported/DNFM130_5_8/
+# Original private Spine exports are rebuilt from the local import pipeline.
+Content/UEMMO/ArtValidation/DNFMSpine/
 Scripts/**/__pycache__/
 Scripts/__pycache__/

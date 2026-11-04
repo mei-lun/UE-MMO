@@ -4,6 +4,10 @@
 #include "GameFramework/Character.h"
 #include "Character/PlanarMovement.h"
 #include "Combat/CombatInputBuffer.h"
+
+class UMaterialInstanceDynamic;
+class UMaterialInterface;
+class UStaticMeshComponent;
 // M5-020: the pawn owns the session catalog VALUES the weapon component mounts
 // (non-owning pointers there), so the full value types are needed here.
 #include "Combat/Data/CombatCatalog.h"
@@ -306,6 +310,18 @@ public:
     void M7_004_LocomotionAnimSwitch(float DeltaSeconds);
 
     /**
+     * M6-015: shows the original 2D Spine fighter flipbook instead of the 3D
+     * hero when the UEMMO.PlayerVisual2D gate is on (default 1). Hides the
+     * skeletal mesh (its AnimInstance keeps running, so the montage and
+     * presentation contracts stay intact) and drives the M6-014 atlas Frame
+     * parameter from Tick. No-op when the gate is off or the material or the
+     * engine plane is missing (the documented 3D fallback).
+     */
+    void ApplyOriginal2DVisualIfEnabled();
+    /** M6-015: the per-frame flipbook frame advance (no-op on the 3D branch). */
+    void TickOriginal2DVisual(float DeltaSeconds);
+
+    /**
      * M1-028: the runtime mapping context built by EnsureCombatInputActions,
      * read-only. The automation smoke asserts the F1 debug-toggle mapping
      * exists on it exactly once.
@@ -511,6 +527,16 @@ private:
     // Deliberately NOT Transient: the cook reachability rides the serialized
     // CDO reference - a Transient property never reaches the pak.
     UPROPERTY() TObjectPtr<USoundWave> FireFeedbackSound;
+    // -- M6-015: the original 2D fighter visual ------------------------------
+    // The plane wearing the M6-014 idle flipbook (created always, shown only
+    // through the UEMMO.PlayerVisual2D gate; the M1-029 actor-yaw facing flip
+    // mirrors the two-sided sprite for free).
+    UPROPERTY(VisibleAnywhere) TObjectPtr<UStaticMeshComponent> Original2DVisual;
+    UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> Original2DMaterial;
+    // The M6-014 material as a constructor hard reference (the cook
+    // reachability rides the serialized CDO reference, M5-059 precedent).
+    UPROPERTY() TObjectPtr<UMaterialInterface> Original2DFighterMaterial;
+    bool bOriginal2DVisualActive = false;
     // True between the fire-authorized Q press and its release.
     bool bWeaponFireHeld = false;
     // M5-059: the press-edge refusal trace - the first TryFire outcome after

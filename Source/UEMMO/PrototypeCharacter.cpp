@@ -13,6 +13,11 @@
 #include "Combat/System/TestRoomConfigDriver.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
+#include "HAL/IConsoleManager.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "Materials/MaterialInterface.h"
 #include "Engine/GameInstance.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
@@ -57,6 +62,18 @@
 // in BeginPlay; the V key routing and the pause gates resolve it through
 // FindComponentByClass, so this shared hot file needs no new header member).
 #include "Vehicles/VehicleInteractionComponent.h"
+
+namespace
+{
+    // M6-015: 1 = the original 2D Spine fighter flipbook replaces the 3D hero
+    // visual (the extracted DNFM data carries no combat-action frames for the
+    // player, so the sprite loops the original idle; documented limitation),
+    // 0 = the legacy 3D hero pipeline stays visible (tests and rollback).
+    TAutoConsoleVariable<int32> CVarUEMMOPlayerVisual2D(
+        TEXT("UEMMO.PlayerVisual2D"), 1,
+        TEXT("M6-015 player visual: 1 = original 2D fighter flipbook (default), 0 = legacy 3D hero pipeline."),
+        ECVF_Default);
+}
 
 using namespace UE::UEMMO::Tasks::M1_029;
 
@@ -379,6 +396,33 @@ APrototypeCharacter::APrototypeCharacter()
     {
         UE_LOG(LogTemp, Warning, TEXT("UEMMO: /Game/UEMMO/Animation/ABP_Prototype missing; run Scripts/Editor/create_locomotion_assets.py."));
     }
+    // M6-015: the original 2D fighter visual plane (created always, shown only
+    // through the BeginPlay config gate; hard references follow the M5-059
+    // cook-reachability precedent). The sprite plane stands upright facing the
+    // side-view camera; the M1-029 actor-yaw facing flip mirrors the two-sided
+    // material for free. No collision: the capsule owns the gameplay body.
+    Original2DVisual = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Original2DVisual"));
+    Original2DVisual->SetupAttachment(RootComponent);
+    Original2DVisual->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    Original2DVisual->SetVisibility(false);
+    // Engine Plane lies in local XY. Roll makes X the sprite width and Y
+    // world-up, with the normal along Y toward the fixed side-view camera.
+    // Pitch would turn it edge-on and make the player effectively invisible.
+    Original2DVisual->SetRelativeRotation(FRotator(0.f, 0.f, 90.f));
+    // Frame aspect 527x640 (the M6-014 atlas manifest): 180 cm tall, 148 cm wide,
+    // centered so the sprite's feet land on the capsule bottom (half-height 96).
+    Original2DVisual->SetRelativeScale3D(FVector(1.48f, 1.8f, 1.f));
+    Original2DVisual->SetRelativeLocation(FVector(0.f, 0.f, -6.f));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> Original2DPlaneFinder(TEXT("/Engine/BasicShapes/Plane.Plane"));
+    if (Original2DPlaneFinder.Succeeded())
+    {
+        Original2DVisual->SetStaticMesh(Original2DPlaneFinder.Object);
+    }
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> Original2DMaterialFinder(TEXT("/Game/UEMMO/ArtValidation/DNFMSpine/Fighter/Materials/M_FighterIdle0.M_FighterIdle0"));
+    if (Original2DMaterialFinder.Succeeded())
+    {
+        Original2DFighterMaterial = Original2DMaterialFinder.Object;
+    }
     // M1-030: the fixed side-view framing (yaw -90, pitch -18, FOV 55, arm
     // 1700 cm) and the ground-anchor follow moved into SideViewCameraComponent;
     // those values are preserved as the component's defaults.
@@ -408,6 +452,9 @@ void APrototypeCharacter::BeginPlay()
 {
     Super::BeginPlay();
     SpawnLocation = GetActorLocation();
+    // The visual gate leaves the skeletal animation pipeline available to
+    // the combat presenter wired below.
+    ApplyOriginal2DVisualIfEnabled();
     // M1-027: the unified reset restores this facing alongside the spawn
     // position (interface contract section 6: the reset covers facing).
     SpawnRotation = GetActorRotation();
@@ -2324,9 +2371,48 @@ void APrototypeCharacter::ApplyTrainingRoomReset()
         }
     }
 }
+void APrototypeCharacter::ApplyOriginal2DVisualIfEnabled()
+{
+    if (CVarUEMMOPlayerVisual2D.GetValueOnGameThread() == 0)
+    {
+        return; // M6-015: the legacy 3D hero pipeline stays (tests and rollback).
+    }
+    if (Original2DVisual == nullptr || Original2DVisual->GetStaticMesh() == nullptr || Original2DFighterMaterial == nullptr)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UEMMO: M6-015 2D fighter visual unavailable (plane/material missing); the 3D hero stays."));
+        return;
+    }
+    bOriginal2DVisualActive = true;
+    // The 3D hero mesh hides but keeps animating: CombatPresentation and the
+    // montage contracts stay intact. The M6-015 limitation stands - the
+    // extracted DNFM data carries no combat-action frames, so the visible body
+    // loops the original idle while attacks keep their sound/number/effect
+    // feedback (the M6-015 task card records this).
+    GetMesh()->SetVisibility(false, true);
+    Original2DMaterial = UMaterialInstanceDynamic::Create(Original2DFighterMaterial, this);
+    Original2DMaterial->SetScalarParameterValue(TEXT("Frame"), 0.f);
+    Original2DVisual->SetMaterial(0, Original2DMaterial);
+    Original2DVisual->SetVisibility(true);
+}
+
+void APrototypeCharacter::TickOriginal2DVisual(float DeltaSeconds)
+{
+    if (!bOriginal2DVisualActive || Original2DMaterial == nullptr)
+    {
+        return;
+    }
+    // The original idle loop: 101 frames at 30 fps (the M6-014 manifest).
+    // A fractional index scrolls between adjacent atlas cells instead of
+    // selecting an animation frame (and blends unrelated character pieces).
+    const float Frame = FMath::FloorToFloat(FMath::Fmod(GetGameTimeSinceCreation() * 30.f, 101.f));
+    Original2DMaterial->SetScalarParameterValue(TEXT("Frame"), Frame);
+}
+
 void APrototypeCharacter::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+    // M6-015: the 2D fighter flipbook frame advance (no-op on the 3D branch).
+    TickOriginal2DVisual(DeltaSeconds);
     // M2-016: the room session clock injection at the M1-041 injection point.
     // The owner's second per-frame duty - hand the World game clock to this
     // world's URoomSessionSubsystem every game frame, so the M2-008 wave pump
