@@ -429,6 +429,9 @@ private:
      */
     void HandleM7DemoSelfTest();
 
+    /** Explicit local playtest launch, using the real room-travel path. */
+    void HandleGuildPlaytestEntry();
+
     /**
      * M7-visual acceptance: with BOTH -M7DemoSelfTest and -M7SkillCastTest
      * the room-side invocation extends into a timed evidence sequence — an

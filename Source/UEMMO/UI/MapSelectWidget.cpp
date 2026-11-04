@@ -169,7 +169,7 @@ void UMapSelectWidget::BuildControls()
 
 	SystemTestRoomEnterButton = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass());
 	SystemTestRoomEnterLabel = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
-	SystemTestRoomEnterLabel->SetText(FText::FromString(GM3_017_EnterLabelText));
+	SystemTestRoomEnterLabel->SetText(FText::FromString(TEXT("Open SystemTestRoom (old test map)")));
 	SystemTestRoomEnterButton->AddChild(SystemTestRoomEnterLabel);
 	SystemTestRoomEnterButton->OnClicked.AddDynamic(this, &UMapSelectWidget::HandleSystemTestRoomClicked);
 

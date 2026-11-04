@@ -111,7 +111,8 @@ void APrototypeHUD::DrawHUD()
     DrawRect(FLinearColor(0.02f, 0.03f, 0.05f, 0.86f), 18, 18, 630, 110);
     // M2-017: stage copy refreshed for the M2 room combat prototype (pending
     // playtest); the M1-only line is obsolete now that M2 rooms are in.
-    DrawText(TEXT("UE-MMO | M3: single-player prototype (pending playtest)"), FLinearColor::White, 32, 28, nullptr, 1.2f);
+    const FString CurrentMap = GetWorld() ? GetWorld()->GetMapName() : TEXT("No World");
+    DrawText(FString::Printf(TEXT("UE-MMO | Map: %s"), *CurrentMap), FLinearColor::White, 32, 28, nullptr, 1.2f);
     // M1-040: DNF-style keymap hints. Arrows move (X/Y incl. depth), X attack,
     // Z launcher, C jump (Space stays a jump alias), F2 resets, QWERASDF are
     // the reserved skill slots (no skill effect yet), F1 the debug overlay.
@@ -407,6 +408,26 @@ void APrototypeHUD::StartM7SkillCastSequence()
     M7CastStep = 0;
     GetWorldTimerManager().SetTimer(M7CastStepHandle, this,
         &APrototypeHUD::HandleM7CastStep, 1.0f, true);
+}
+
+void APrototypeHUD::HandleGuildPlaytestEntry()
+{
+    UGameFlowSubsystem* Flow = ResolveGameFlowSubsystem();
+    if (!Flow || Flow->GetState() != EGameFlowState::Menu) return;
+    for (const URoomDefinition* Room : Flow->GetSelectableRoomDefinitions())
+    {
+        if (Room && Room->RoomId == FName(TEXT("room_guildagit_01")))
+        {
+            if (Flow->EnterRoom(Room))
+            {
+                StageStarterLoadoutForGameplay();
+                HideMenuOverlay();
+                UE_LOG(LogTemp, Display, TEXT("UEMMO PLAYTEST: entered Guildagit through production GameFlow."));
+            }
+            return;
+        }
+    }
+    UE_LOG(LogTemp, Error, TEXT("UEMMO PLAYTEST: Guildagit is missing from the room catalog."));
 }
 
 void APrototypeHUD::M7CastScreenshot(const FString& Name)
@@ -1001,6 +1022,14 @@ void APrototypeHUD::StartDebugRepeatStrike()
 
 void APrototypeHUD::BeginPlay()
 {
+    if (FParse::Param(FCommandLine::Get(), TEXT("UEMMOPlaytestGuild")))
+    {
+        if (UGameFlowSubsystem* Flow = ResolveGameFlowSubsystem(); Flow && Flow->GetState()==EGameFlowState::Menu)
+        {
+            FTimerHandle EntryTimer;
+            GetWorldTimerManager().SetTimer(EntryTimer,this,&APrototypeHUD::HandleGuildPlaytestEntry,0.5f,false);
+        }
+    }
     // M7-003 packaged self-test: -M7DemoSelfTest drives the exact acceptance
     // path (menu -> the training room -> the same UEMMOSkillDemo the console
     // command uses). Production never passes the switch.

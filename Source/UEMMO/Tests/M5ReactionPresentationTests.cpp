@@ -972,7 +972,7 @@ bool FUEMMOTasksM5_017ReactionPoseScreenshots::RunTest(const FString& Parameters
 		Hit.Impulse = FVector(90.0f, 0.0f, 0.0f);
 		Capture.Player->GetCombat()->NotifyHitReceived(Hit);
 	}));
-	ADD_LATENT_AUTOMATION_COMMAND(FM5_017_WaitReactionMontageLatentCommand(State, TEXT("RCT_Hit")));
+	ADD_LATENT_AUTOMATION_COMMAND(FM5_017_WaitReactionMontageLatentCommand(State, TEXT("RCT_Hero_Hit")));
 	// The screenshot runs in the SAME automation tick the active montage was
 	// detected (a hold would drift past the 0.77 s clip at a few fps). The
 	// probe asserts run after it in the same tick, so the montage is still
@@ -999,7 +999,7 @@ bool FUEMMOTasksM5_017ReactionPoseScreenshots::RunTest(const FString& Parameters
 		{
 			const UAnimMontage* Montage = AnimInstance->GetCurrentActiveMontage();
 			TestTrue(TEXT("capture probe: a montage is active on the player mesh"),
-				Montage != nullptr && Montage->GetName().Contains(TEXT("RCT_Hit")));
+				Montage != nullptr && Montage->GetName()==TEXT("RCT_Hero_Hit"));
 		}
 	}));
 	ADD_LATENT_AUTOMATION_COMMAND(FM5_017_ScreenshotLatentCommand(Directory / TEXT("reaction-hit.png")));

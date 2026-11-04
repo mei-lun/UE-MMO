@@ -6,6 +6,7 @@
 #include "Animation/AnimMontage.h"
 #include "Animation/AnimSingleNodeInstance.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Engine/SkeletalMesh.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -182,6 +183,7 @@ void UCombatPresentationComponent::SetSources(UCombatComponent* InCombatSource, 
 	UnbindDelegates();
 	CombatSource = InCombatSource;
 	MeshTarget = InMeshTarget;
+	ReactionMontageCache.Reset();
 	// Forget what the previous source was presenting so the next sync re-reads
 	// the (new) source snapshot from scratch.
 	PresentingInstanceId = 0;
@@ -752,6 +754,16 @@ void UCombatPresentationComponent::DispatchVictimReaction(FName PresentationId)
 
 UAnimMontage* UCombatPresentationComponent::FindMontageForReaction(FName PresentationId)
 {
+	const USkeletalMeshComponent* Mesh = MeshTarget.Get();
+	const USkeletalMesh* Asset = Mesh ? Mesh->GetSkeletalMeshAsset() : nullptr;
+	if (Asset && Asset->GetPathName().StartsWith(TEXT("/Game/UEMMO/ArtValidation/DNFArt/Hero/")))
+	{
+		// Death currently freezes the pose through HandlePlayerDied. Keep it an
+		// explicit gap instead of dispatching an immediately cancelled montage.
+		const TCHAR* HeroReaction = PresentationId == FName(TEXT("react_hit"))
+			? TEXT("/Game/UEMMO/Animation/Reactions/RCT_Hero_Hit.RCT_Hero_Hit") : nullptr;
+		return HeroReaction ? LoadObject<UAnimMontage>(nullptr, HeroReaction) : nullptr;
+	}
 	if (TSoftObjectPtr<UAnimMontage>* Cached = ReactionMontageCache.Find(PresentationId))
 	{
 		return Cached->LoadSynchronous();
@@ -778,7 +790,8 @@ void UCombatPresentationComponent::PlayVictimReactionMontage(FName PresentationI
 	StopPresentedMontage();
 	USkeletalMeshComponent* Mesh = MeshTarget.Get();
 	UAnimInstance* AnimInstance = Mesh ? Mesh->GetAnimInstance() : nullptr;
-	if (AnimInstance != nullptr && Montage != nullptr)
+	if (AnimInstance != nullptr && Montage != nullptr && Mesh->GetSkeletalMeshAsset() != nullptr
+		&& Montage->GetSkeleton() == Mesh->GetSkeletalMeshAsset()->GetSkeleton())
 	{
 		AnimInstance->Montage_Play(Montage, 1.0f);
 	}

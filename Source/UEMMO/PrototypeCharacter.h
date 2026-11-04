@@ -311,7 +311,7 @@ public:
 
     /**
      * M6-015: shows the original 2D Spine fighter flipbook instead of the 3D
-     * hero when the UEMMO.PlayerVisual2D gate is on (default 1). Hides the
+     * hero when the optional UEMMO.PlayerVisual2D gate is on (default 0). Hides the
      * skeletal mesh (its AnimInstance keeps running, so the montage and
      * presentation contracts stay intact) and drives the M6-014 atlas Frame
      * parameter from Tick. No-op when the gate is off or the material or the

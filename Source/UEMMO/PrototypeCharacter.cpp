@@ -68,10 +68,10 @@ namespace
     // M6-015: 1 = the original 2D Spine fighter flipbook replaces the 3D hero
     // visual (the extracted DNFM data carries no combat-action frames for the
     // player, so the sprite loops the original idle; documented limitation),
-    // 0 = the legacy 3D hero pipeline stays visible (tests and rollback).
+    // 0 = the animated 3D hero remains visible (the production default).
     TAutoConsoleVariable<int32> CVarUEMMOPlayerVisual2D(
-        TEXT("UEMMO.PlayerVisual2D"), 1,
-        TEXT("M6-015 player visual: 1 = original 2D fighter flipbook (default), 0 = legacy 3D hero pipeline."),
+        TEXT("UEMMO.PlayerVisual2D"), 0,
+        TEXT("Player visual: 0 = animated 3D hero (default), 1 = optional original 2D idle preview."),
         ECVF_Default);
 }
 
@@ -366,6 +366,9 @@ APrototypeCharacter::APrototypeCharacter()
     {
         GetMesh()->SetSkeletalMesh(MeshAsset.Object);
         bDnfMesh = MeshAsset.Object->GetFName() == FName(TEXT("hero_skm"));
+        // DNFArt was authored facing +X. The mannequin's -90 yaw calibration
+        // turns this independent skeleton toward the camera instead of travel.
+        if (bDnfMesh) GetMesh()->SetRelativeRotation(FRotator::ZeroRotator);
     }
     else
     {

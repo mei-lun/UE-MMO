@@ -4,8 +4,12 @@ UE-MMO 开发包
 启动：UEMMO.exe，或 UEMMO\Binaries\Win64\UEMMO.exe。
 也可在仓库根目录运行 Scripts/Run.ps1；加 -Editor 打开源码工程编辑器。
 
-默认体验新地图：点菜单顶部 Play GuildagitScene，向右走进入公会场景的演示波次。
-玩家显示原版 2D 格斗家；当前只有待机动画，移动/攻击时身体仍使用该待机。
+默认体验新地图：运行 Scripts/Run.ps1 会直接通过正式切图流程进入公会场景；
+加 -Menu 可打开选关菜单，或在菜单顶部点 Play GuildagitScene。向右走进入演示波次。
+左上角 Map: L_DNFM_Guildagit 表示公会图；SystemTestRoom 是旧系统测试房。
+玩家默认恢复已有 DNFArt 3D 骨骼模型，支持待机、跑动、跳跃、普攻和受击动作。
+这是程序化制作的学习原型模型，不是原版精细角色。2D待机图集仅保留为可选预览。
+死亡目前冻结末姿势，专用死亡播放仍未完成；完整美术/动作质量待用户验收。
 公会地图使用已导入原版场景件；缺失源贴图的景物仍呈灰色，地形为占位。
 旧训练场/CombatRoom01/02 仍在下方列表，可分别选择。
 枪械测试可点 CombatRoom01 的 Enter，向右走进房间，Q射击。
