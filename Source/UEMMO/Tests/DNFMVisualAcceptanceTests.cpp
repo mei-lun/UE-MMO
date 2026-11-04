@@ -280,11 +280,18 @@ bool FDNFMPlayerVisualAcceptance::RunTest(const FString& Parameters)
         const UPrototypeAnimInstance* Anim=Cast<UPrototypeAnimInstance>(Pawn->GetMesh()->GetAnimInstance());
         TestTrue(TEXT("jump animation state is actually selected"),Anim && Anim->IsFalling
             && Anim->PoseIndex==UPrototypeAnimInstance::Pose_Jump);
-        const int32 Calf=Pawn->GetMesh()->GetBoneIndex(TEXT("calf_l"));
         const auto& JumpPose=Pawn->GetMesh()->GetComponentSpaceTransforms();
-        TestTrue(TEXT("jump bends the knee beyond idle breathing"),JumpPose.IsValidIndex(Calf)
-            && State->Pose.IsValidIndex(Calf)
-            && JumpPose[Calf].GetRotation().AngularDistance(State->Pose[Calf].GetRotation())>0.1);
+        // The authored jump extends its knees after takeoff and raises the
+        // arms. Either limb change must exceed idle's 2-degree breathing;
+        // requiring only a bent knee wrongly rejects the extension phase.
+        bool JumpLimbChanged=false;
+        for(const TCHAR* Bone:{TEXT("upperarm_l"),TEXT("upperarm_r"),TEXT("thigh_l"),TEXT("calf_l")})
+        {
+            const int32 Index=Pawn->GetMesh()->GetBoneIndex(Bone);
+            if(JumpPose.IsValidIndex(Index) && State->Pose.IsValidIndex(Index))
+                JumpLimbChanged|=JumpPose[Index].GetRotation().AngularDistance(State->Pose[Index].GetRotation())>0.3;
+        }
+        TestTrue(TEXT("jump limb pose differs from idle breathing"),JumpLimbChanged);
         FScreenshotRequest::RequestScreenshot(Output/TEXT("player-jump.png"),true,false);
         PoseLog(Pawn,TEXT("jump"));
         Pawn->StopJumping();
