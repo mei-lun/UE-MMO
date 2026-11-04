@@ -226,8 +226,11 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M6-012 | [Guildagit 公会场景 UE 关卡构建](Docs/Tasks/M6-012.md) | DONE | M6-011 | ZCode-20261104-A | 2026-11-04T04:06:00+08:00 | [report](Docs/Tasks/Reports/M6-012.md) |
 | M6-013 | [新公会场景关卡接入游戏流程](Docs/Tasks/M6-013.md) | DONE | M6-012 | Codex-20261104-VisualFix | 2026-11-04T11:09:23+08:00 | [report](Docs/Tasks/Reports/M6-013.md) |
 | M6-014 | [原版 Spine 格斗家 UE 视觉资产入库](Docs/Tasks/M6-014.md) | DONE | M6-010 | ZCode-20261104-A | 2026-11-04T04:32:00+08:00 | [report](Docs/Tasks/Reports/M6-014.md) |
-| M6-015 | [玩家视觉替换为原版 2D 格斗家（配置门）](Docs/Tasks/M6-015.md) | DONE | M6-014 | Codex-20261104-VisualFix | 2026-11-04T10:45:08+08:00 | [report](Docs/Tasks/Reports/M6-015.md) |
+| M6-015 | [玩家视觉替换为原版 2D 格斗家（配置门）](Docs/Tasks/M6-015.md) | SUPERSEDED | M6-014 | Codex-20261104-VisualFix | 2026-11-04T15:50:29+08:00 | [report](Docs/Tasks/Reports/M6-015.md) |
 | M7-001 | [职业与等级配置底座](Docs/Tasks/M7-001.md) | DONE | M6-008 | ZCode-20261101-DNFArt | 2026-11-01T16:40:00+08:00 | [report](Docs/Tasks/Reports/M7-001.md) |
+| M6-016 | [恢复3D角色动作与明确新地图入口](Docs/Tasks/M6-016.md) | DONE | M6-008,M6-013 | Codex-20261104-3DRestore | 2026-11-04T15:50:29+08:00 | [report](Docs/Tasks/Reports/M6-016.md) |
+| M6-017 | [公会地图完整外观资源补齐](Docs/Tasks/M6-017.md) | BLOCKED | M6-012,M6-013 | Codex-20261104-3DRestore | 2026-11-04T15:50:29+08:00 | [report](Docs/Tasks/Reports/M6-017.md) |
+| M6-018 | [3D角色完整动作与视觉质量收尾](Docs/Tasks/M6-018.md) | TODO | M6-016 | — | — | — |
 | M7-002 | [多角色存档与旧档迁移](Docs/Tasks/M7-002.md) | DONE | M7-001 | ZCode-20261101-DNFArt | 2026-11-01T21:32:00+08:00 | [report](Docs/Tasks/Reports/M7-002.md) |
 | M7-003 | [首职业六技能](Docs/Tasks/M7-003.md) | DONE | M7-001,M7-002 | ZCode-20261101-DNFArt | 2026-11-01T23:32:00+08:00 | [report](Docs/Tasks/Reports/M7-003.md) |
 | M7-004 | [连续双房间地城](Docs/Tasks/M7-004.md) | DONE | M7-003 | ZCode-20261101-DNFArt | 2026-11-02T00:22:00+08:00 | [report](Docs/Tasks/Reports/M7-004.md) |
