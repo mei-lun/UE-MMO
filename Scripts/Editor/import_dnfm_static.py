@@ -9,7 +9,8 @@ import unreal
 
 ROOT=Path(unreal.Paths.project_dir()).resolve()
 STAGE=ROOT/'SourceAssets/Unpacked/DNFM130_5_8'
-ART=ROOT/('Artifacts/Tasks/M6-012' if os.environ.get('UEMMO_DNFM_MODE','').startswith('guildagit') else 'Artifacts/Tasks/M6-009');ART.mkdir(parents=True,exist_ok=True)
+_MODE_ENV=os.environ.get('UEMMO_DNFM_MODE','')
+ART=ROOT/('Artifacts/Tasks/M6-013' if _MODE_ENV=='guildagit_wire' else 'Artifacts/Tasks/M6-012' if _MODE_ENV.startswith('guildagit') else 'Artifacts/Tasks/M6-009');ART.mkdir(parents=True,exist_ok=True)
 DEST='/Game/UEMMO/Imported/DNFM130_5_8'
 MAP=DEST+'/Maps/L_DNFM_ResourceGallery'
 MODE=os.environ.get('UEMMO_DNFM_MODE','import')
@@ -445,17 +446,37 @@ def guildagit_wire():
     # asset (the M6-004 per-row generalization: exactly one of each required).
     levels=unreal.get_editor_subsystem(unreal.LevelEditorSubsystem);actors=unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
     assert levels.load_level(GMAP),'cannot load '+GMAP
+    row=next(r for r in json.loads((ROOT/'Data/rooms.json').read_text(encoding='utf-8-sig'))['rooms'] if r['room_id']=='room_guildagit_01')
+    spawn=row['player_spawn_location_cm']
+    starts=[a for a in actors.get_all_level_actors() if isinstance(a,unreal.PlayerStart)]
+    if len(starts)>1:raise RuntimeError('Ambiguous Guildagit PlayerStart count: '+str(len(starts)))
+    start=starts[0] if starts else actors.spawn_actor_from_class(unreal.PlayerStart,unreal.Vector(spawn['x'],spawn['y'],spawn['z']),unreal.Rotator(pitch=0,yaw=row['player_spawn_yaw_degrees'],roll=0))
+    start.set_actor_location(unreal.Vector(spawn['x'],spawn['y'],spawn['z']),False,False)
+    start.set_actor_rotation(unreal.Rotator(pitch=0,yaw=row['player_spawn_yaw_degrees'],roll=0),False)
+    start.set_actor_label('DNFM_GuildagitPlayerStart')
+    # Only one directional light may be the main light for translucent assets.
+    lights=sorted([a for a in actors.get_all_level_actors() if isinstance(a,unreal.DirectionalLight)],key=lambda a:a.get_name())
+    for i,light in enumerate(lights):light.light_component.set_editor_property('forward_shading_priority',1 if i==0 else 0)
     def count(cls):return sum(1 for a in actors.get_all_level_actors()if a.get_class().get_name()==cls)
     if count('RoomTrigger')==0:
         # Default brush is 200cm; covers the playable ground so entering the room
         # activates the session immediately (rules:[] -> direct BeginWaves path).
         t=actors.spawn_actor_from_class(unreal.RoomTrigger,unreal.Vector(-146,622,200),unreal.Rotator(pitch=0,yaw=0,roll=0))
         t.set_actor_label('DNFM_GARoomTrigger');t.set_actor_scale3d(unreal.Vector(29,10,3))
+    # Start outside the overlap: placed actors may register their initial
+    # overlap before ARoomTrigger binds BeginPlay. A real walk-in crosses
+    # X=-350 (spawn X=-400), matching the existing combat-room contract.
+    triggers=[a for a in actors.get_all_level_actors() if a.get_class().get_name()=='RoomTrigger']
+    if len(triggers)!=1:raise RuntimeError('Guildagit requires exactly one RoomTrigger')
+    triggers[0].set_actor_location(unreal.Vector(1450,622,200),False,False)
+    triggers[0].set_actor_scale3d(unreal.Vector(12,10,3))
     if count('RoomExit')==0:
         e=actors.spawn_actor_from_class(unreal.RoomExit,unreal.Vector(2650,620,150),unreal.Rotator(pitch=0,yaw=0,roll=0))
         e.set_actor_label('DNFM_GARoomExit');e.set_actor_scale3d(unreal.Vector(1.5,2,1.5))
     if not levels.save_current_level():raise RuntimeError('Could not save '+GMAP)
     REPORT['map']=GMAP;REPORT['room_trigger_count']=count('RoomTrigger');REPORT['room_exit_count']=count('RoomExit')
+    REPORT['player_start']={'location_cm':[spawn['x'],spawn['y'],spawn['z']],'yaw':row['player_spawn_yaw_degrees']}
+    REPORT['activation_entry_x_cm']=-350
 
 try:
     if MODE=='import':import_all()

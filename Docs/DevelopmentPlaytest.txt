@@ -4,7 +4,11 @@ UE-MMO 开发包
 启动：UEMMO.exe，或 UEMMO\Binaries\Win64\UEMMO.exe。
 也可在仓库根目录运行 Scripts/Run.ps1；加 -Editor 打开源码工程编辑器。
 
-点上方 CombatRoom01 的 Enter，向右走进房间，Q射击。
+默认体验新地图：点菜单顶部 Play GuildagitScene，向右走进入公会场景的演示波次。
+玩家显示原版 2D 格斗家；当前只有待机动画，移动/攻击时身体仍使用该待机。
+公会地图使用已导入原版场景件；缺失源贴图的景物仍呈灰色，地形为占位。
+旧训练场/CombatRoom01/02 仍在下方列表，可分别选择。
+枪械测试可点 CombatRoom01 的 Enter，向右走进房间，Q射击。
 橙色实体弹头逐帧飞行，碰撞后敌人掉血、子弹销毁。
 普通弹速12米/秒、寿命2秒；当前无拖尾。
 

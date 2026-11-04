@@ -255,6 +255,47 @@
      ]
     }
    ]
+  },
+  {
+   "room_id": "room_guildagit_01",
+   "display_name": "GuildagitScene",
+   "map_path": "/Game/UEMMO/Imported/DNFM130_5_8/Maps/L_DNFM_Guildagit",
+   "player_spawn_location_cm": {
+    "x": -400,
+    "y": 620,
+    "z": 100
+   },
+   "player_spawn_yaw_degrees": 0,
+   "bounds_center_cm": {
+    "x": -146,
+    "y": 622,
+    "z": 124
+   },
+   "bounds_size_cm": {
+    "x": 5810,
+    "y": 1879,
+    "z": 409
+   },
+   "reward_table_id": "starter",
+   "rules": [],
+   "waves": [
+    {
+     "enemy_id": "melee_grunt",
+     "count": 2,
+     "spawn_locations_cm": [
+      {
+       "x": 200,
+       "y": 800,
+       "z": 100
+      },
+      {
+       "x": 450,
+       "y": 420,
+       "z": 100
+      }
+     ]
+    }
+   ]
   }
  ],
  "comment": "M7-004 note: dungeon_goblin_proto is a validated enemy row (Data/enemies.json + DA asset + MeleeEnemy visual swap) awaiting the per-room enemy resolution in ARoomTrigger (the M2-016 single-enemy-path loads one fixed asset for every wave); the wave redirect lands with that refactor. The 02 doc's execution default (首期敌人行为可基于当前 melee_grunt 配置调整) sanctions this first slice."

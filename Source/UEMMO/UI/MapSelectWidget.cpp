@@ -187,8 +187,8 @@ void UMapSelectWidget::BuildControls()
 	SettingsPlaceholderBlock->SetText(FText::FromString(GM3_017_SettingsPlaceholderText));
 
 	Stack->AddChildToVerticalBox(TitleBlock);
-	Stack->AddChildToVerticalBox(CatalogListBox);
 	Stack->AddChildToVerticalBox(EnterButton);
+	Stack->AddChildToVerticalBox(CatalogListBox);
 	Stack->AddChildToVerticalBox(SystemTestRoomRow);
 	Stack->AddChildToVerticalBox(SystemTestRoomEnterButton);
 	Stack->AddChildToVerticalBox(ErrorBlock);
@@ -213,6 +213,12 @@ void UMapSelectWidget::BindMenu()
 	// M6-002: every presentation mirrors the current catalog and the current
 	// clear records (a cleared room re-arms with its new "cleared x N" line).
 	RebuildCatalogRows();
+	if (EnterLabel != nullptr)
+	{
+		const URoomDefinition* Primary = EnterRoomDefinitionOverride.Get();
+		EnterLabel->SetText(FText::FromString(Primary && Primary->RoomId == FName(TEXT("room_guildagit_01"))
+			? TEXT("Play GuildagitScene") : GM3_017_EnterLabelText));
+	}
 }
 
 UGameFlowSubsystem* UMapSelectWidget::GetGameFlowSubsystem() const

@@ -1609,13 +1609,20 @@ void APrototypeHUD::ShowMenuOverlay()
     }
     UMapSelectWidget* Widget = MenuWidgetPtr.Get();
 
-    // The mount's enter target: the wave-combat room of the boot world (its
-    // trigger chain starts the run there), NOT the M3-017 selectable entry's
-    // training-map identity. Without a flow the widget keeps the selectable
-    // default (the M3-017 form).
+    // M6-013: make the imported scene the primary playtest destination. The
+    // legacy rooms remain individually selectable in the catalog.
     if (UGameFlowSubsystem* Flow = ResolveGameFlowSubsystem())
     {
-        Widget->SetEnterRoomDefinition(Flow->GetCombatRoomDefinition());
+        const URoomDefinition* PrimaryRoom = Flow->GetCombatRoomDefinition();
+        for (const URoomDefinition* Candidate : Flow->GetSelectableRoomDefinitions())
+        {
+            if (Candidate && Candidate->RoomId == FName(TEXT("room_guildagit_01")))
+            {
+                PrimaryRoom = Candidate;
+                break;
+            }
+        }
+        Widget->SetEnterRoomDefinition(PrimaryRoom);
     }
     // A fresh presentation re-arms the enter button and clears a stale error
     // line (the M3-017 BindMenu re-presentation contract).

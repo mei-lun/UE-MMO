@@ -785,7 +785,9 @@ bool FUEMMOTasksM2_005RoomTraining01LoadsAndPassesValidation::RunTest(const FStr
 	}
 	// M5-069 added the production combat row; M6-004 added the multi-level
 	// room_combat_02 row (the free-select catalog grows by table row).
-	TestEqual(TEXT("rooms holds exactly 3 entries"), (*Rooms)->Array.Num(), 3);
+	// M6-013: the guildagit scene room joins as the fourth row (the honest
+	// stale-pin update of the same growth pattern).
+	TestEqual(TEXT("rooms holds exactly 4 entries"), (*Rooms)->Array.Num(), 4);
 	TSharedPtr<FRoomJsonValue> Entry;
 	if (!TestTrue(TEXT("the room_training_01 entry is found by its id"),
 		FindRoomEntryById(Root, TEXT("room_training_01"), Entry)) || !Entry.IsValid())

@@ -33,7 +33,7 @@ try {
     $Summary.passed = $Parsed.Passed
     $Summary.failed = $Parsed.Failed
     if (-not $Parsed.Ok -or $Parsed.Matched -ne 1) { throw "Visual acceptance failed: $($Parsed.Error)" }
-    foreach ($Name in @('player-idle.png','player-right.png','player-depth.png','player-left.png')) {
+    foreach ($Name in @('menu.png','player-idle.png','player-right.png','player-depth.png','player-left.png','menu-return.png')) {
         $Shot = Join-Path $Evidence $Name
         if (-not (Test-Path -LiteralPath $Shot)) { throw "Missing screenshot: $Name" }
         $Bytes = [IO.File]::ReadAllBytes($Shot)

@@ -75,8 +75,10 @@ namespace UE::UEMMO::Tasks::M3_030
 	// menu's enter opens (the trigger chain starts the run there) and the
 	// M3-017 training-map identity the raw selectable entry carries (the mount
 	// must NOT open it - the training map carries no wave trigger).
-	const TCHAR* M3_030_CombatRoomMapPath = TEXT("/Game/UEMMO/Maps/L_CombatRoom01");
-	const TCHAR* M3_030_CombatRoomId = TEXT("room_combat_01");
+	// M6-013 intentionally promotes the imported scene to the primary button.
+	// The existing combat-room catalog rows retain their own destinations.
+	const TCHAR* M3_030_CombatRoomMapPath = TEXT("/Game/UEMMO/Imported/DNFM130_5_8/Maps/L_DNFM_Guildagit");
+	const TCHAR* M3_030_CombatRoomId = TEXT("room_guildagit_01");
 
 	// Deterministic item instance (the M3-003/M3-017 fixture style, M3_030 ids).
 	static FItemInstance M3_030_MakeTestInstance(uint32 Seed)
@@ -309,8 +311,8 @@ bool FUEMMOTasksM3_030BootMenuPresentsAndEntersCombatRoom::RunTest(const FString
 		return true;
 	}
 	TestEqual(TEXT("the mounted menu click requested exactly one world switch"), Scene.OpenCount, 1);
-	TestEqual(TEXT("the mounted enter opened the wave-combat room map"),
-		Scene.LastOpenedPath, FString(M3_030_CombatRoomMapPath));
+	TestEqual(TEXT("the mounted enter opened the imported scene package"),
+		FSoftObjectPath(Scene.LastOpenedPath).GetLongPackageName(), FString(M3_030_CombatRoomMapPath));
 	TestTrue(TEXT("the flow entered the room state through the mounted menu"),
 		Scene.Flow->GetState() == EGameFlowState::Room);
 	const URoomDefinition* Entered = Scene.Flow->GetCurrentRoomDefinition();

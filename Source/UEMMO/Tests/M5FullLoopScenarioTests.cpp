@@ -1,7 +1,8 @@
 // M5-054: the full production loop over the M5/M6 content, one continuous
 // run on an EMPTY test save - the release-candidate chain the card pins:
 //
-//   empty save -> first boot bootstrap -> the M6 catalog menu (three levels)
+//   empty save -> first boot bootstrap -> the M6 catalog menu (four levels
+//   since M6-013)
 //   -> the loadout grant (the real M5-056 staging face; the M5-047 weapon
 //   state pushes on the equipment change) -> the M5-049 armored vehicle
 //   segment (stage from the real tables, enter, the production rigging arms
@@ -427,10 +428,11 @@ bool FUEMMOTasksM5_054FullLoopMenuLoadoutVehicleClearClaimEquipSaveRestore::RunT
 		return true;
 	}
 
-	// -- The M6 catalog menu: three levels, the combat row enters --------------
+	// -- The M6 catalog menu: the combat row enters; M6-013 adds the guildagit
+	// scene room as the fourth level (honest stale-pin update).
 	const TArray<URoomDefinition*>& Catalog = Scene.Flow->GetSelectableRoomDefinitions();
-	if (!Test.TestEqual(TEXT("the free-select menu carries the three catalog levels"),
-		Catalog.Num(), 3))
+	if (!Test.TestEqual(TEXT("the free-select menu carries the four catalog levels"),
+		Catalog.Num(), 4))
 	{
 		Scene.TearDown();
 		return true;
@@ -666,8 +668,10 @@ bool FUEMMOTasksM5_054FullLoopMenuLoadoutVehicleClearClaimEquipSaveRestore::RunT
 		Test.TestEqual(TEXT("restart: the restored record counts one clear"),
 			RestoredClear.ClearCount, 1);
 		// The M6 catalog serves the restarted menu identically.
-		Test.TestEqual(TEXT("restart: the free-select menu still carries three levels"),
-			Restart.Flow->GetSelectableRoomDefinitions().Num(), 3);
+		// M6-013: the restart pass sees the same four-level catalog (honest
+		// stale-pin update alongside the line-432 fix).
+		Test.TestEqual(TEXT("restart: the free-select menu still carries four levels"),
+			Restart.Flow->GetSelectableRoomDefinitions().Num(), 4);
 		// The restart: the equipped binding resolves via Find (the outcome's
 		// map is const).
 		const FGuid* EquippedId = Loaded.EquippedMap.Find(Resolved->Slot);
