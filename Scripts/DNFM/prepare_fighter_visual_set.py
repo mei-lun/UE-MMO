@@ -834,7 +834,12 @@ def frame_manifest_entry(plan):
         events.append({'type': 'audio_loop', 'name': tag.get('tag')})
     out = {
         'index': plan['frame_index'],
-        'duration_ms': int(frame['delay_ms']),
+        # M6-022: the M6-021 import contract refuses zero-duration frames (a
+        # frame owning no instant can never be current; validation-first). The
+        # source data carries delay_ms=0 on exactly one row (earthbreak frame
+        # 5), so the manifest clamps it to 1ms: same frame order, same pixels,
+        # honest "negligible instant" playback semantics.
+        'duration_ms': max(int(frame['delay_ms']), 1),
         'page': plan['page'],
         'uv_rect_px': list(plan['uv_rect_px']),
         'canvas_size_px': list(plan['cell'].size),
