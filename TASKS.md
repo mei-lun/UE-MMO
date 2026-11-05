@@ -240,5 +240,5 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M6-021 | [DNFM 角色画面组件与数据资产类型（C++）](Docs/Tasks/M6-021.md) | DONE | — | ZCode-20261106-D | 2026-11-06T02:40:00+08:00 | [report](Docs/Tasks/Reports/M6-021.md) |
 | M6-022 | [UE 编辑器导入纹理/材质/数据资产](Docs/Tasks/M6-022.md) | DONE | M6-020,M6-021 | ZCode-20261106-F | 2026-11-06T05:55:00+08:00 | [report](Docs/Tasks/Reports/M6-022.md) |
 | M6-023 | [CombatPresentation 统一显示目标与战斗同步](Docs/Tasks/M6-023.md) | DONE | M6-021,M6-022 | ZCode-20261106-E | 2026-11-06T05:55:00+08:00 | [report](Docs/Tasks/Reports/M6-023.md) |
-| M6-024 | [完整状态与技能补齐](Docs/Tasks/M6-024.md) | TODO | M6-023 | — | — | — |
+| M6-024 | [完整状态与技能补齐](Docs/Tasks/M6-024.md) | DONE | M6-023 | ZCode-20261106-G | 2026-11-06T06:40:00+08:00 | [report](Docs/Tasks/Reports/M6-024.md) |
 | M6-025 | [固定开发包验收](Docs/Tasks/M6-025.md) | TODO | M6-024 | — | — | — |
