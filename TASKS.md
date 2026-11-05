@@ -236,7 +236,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M7-004 | [连续双房间地城](Docs/Tasks/M7-004.md) | DONE | M7-003 | ZCode-20261101-DNFArt | 2026-11-02T00:22:00+08:00 | [report](Docs/Tasks/Reports/M7-004.md) |
 | M7-005 | [第二职业证明](Docs/Tasks/M7-005.md) | BLOCKED | M7-004 | ZCode-20261101-DNFArt | 2026-11-02T00:30:00+08:00 | [report](Docs/Tasks/Reports/M7-005.md) |
 | M6-019 | [格斗家完整衣装层映射核实与技能动画定位](Docs/Tasks/M6-019.md) | DONE | M6-014 | ZCode-20261106-A | 2026-11-06T02:24:00+08:00 | [report](Docs/Tasks/Reports/M6-019.md) |
-| M6-020 | [离线衣装合成管线与全套动作图集](Docs/Tasks/M6-020.md) | IN_PROGRESS | M6-019 | ZCode-20261106-C | 2026-11-06T02:40:00+08:00 | [report](Docs/Tasks/Reports/M6-020.md) |
+| M6-020 | [离线衣装合成管线与全套动作图集](Docs/Tasks/M6-020.md) | DONE | M6-019 | ZCode-20261106-C | 2026-11-06T03:55:00+08:00 | [report](Docs/Tasks/Reports/M6-020.md) |
 | M6-021 | [DNFM 角色画面组件与数据资产类型（C++）](Docs/Tasks/M6-021.md) | DONE | — | ZCode-20261106-D | 2026-11-06T02:40:00+08:00 | [report](Docs/Tasks/Reports/M6-021.md) |
 | M6-022 | [UE 编辑器导入纹理/材质/数据资产](Docs/Tasks/M6-022.md) | TODO | M6-020,M6-021 | — | — | — |
 | M6-023 | [CombatPresentation 统一显示目标与战斗同步](Docs/Tasks/M6-023.md) | TODO | M6-021,M6-022 | — | — | — |
