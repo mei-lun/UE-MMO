@@ -1,4 +1,16 @@
-# 最新交付：DNFM 固定视角角色接入——检查点 1/2（2026-11-06）
+# 最新交付：DNFM 固定视角角色接入 全链完成（2026-11-06，检查点 2 后续 + M6-025）
+
+- Owner：ZCode-20261106-A（协调者，6 个并行子代理执行）；本轮累计新增 DONE **7 项：M6-019～M6-025**。起止 `9bdea2e`→当前 HEAD，main 本机提交未推送。
+- **M6-022 编辑器导入**（`395ce7ff`）：页纹理 Nearest/Clamp/无mip、Unlit+TwoSided+Masked（alpha 直方图证据）、DA_DNFMFighterVisualSet 136 帧全量 0 错配；s=1.7615cm/px；修复材质 SM6 编译与精灵垂直翻转。
+- **M6-023 战斗同步**（`09da4cf`）：DNFMCombatVisualPresenter 独立协调类；9 攻击分段映射（bHitPose==active 窗）；事件去重/HitStop/死亡复位不残留。
+- **M6-024 状态与技能**（`7a37bbb8`）：9 攻击按真实帧时长校准；受击交替/倒地/起身序列（播完再回）/死亡持末帧/复活复位；跳跃三段状态驱动；12 张实机姿势截图。
+- **M6-025 固定包验收**：Build/Package/TestPackage 通过；**全量回归 946/946**；包内公会图/训练场专项通过；exe SHA256 `88A099E3…84C4B`（源码 `9b27808`）；性能 gate0 vs gate1 帧时间持平（2.35~2.39ms）；**7 份用户存档 SHA256 逐一比对完好**。
+- **自动验收通过 ≠ 用户试玩通过**。用户事项：① 真实试玩（`Scripts/Run.ps1` 默认进公会图；gate 开关 `-DPCVars=UEMMO.PlayerDNFMVisual=1`，默认 0 保持 3D）；② 决定验收后的默认显示模式；③ M6-018（3D 动作收尾）与本系列并存，不冲突。
+- [检查点1](Docs/Tasks/Handoffs/2026-11-06-ZCode-20261106-A-checkpoint1.md)、[检查点2](Docs/Tasks/Handoffs/2026-11-06-ZCode-20261106-A-checkpoint2.md)；报告 [M6-019](Docs/Tasks/Reports/M6-019.md)～[M6-025](Docs/Tasks/Reports/M6-025.md)。人工验收未代签，未推送。
+
+---
+
+# 上轮批次：DNFM 固定视角角色接入——检查点 1/2（2026-11-06）
 
 - Owner：ZCode-20261106-A（协调者，4 个并行子代理执行）；本轮新增 DONE **3 项：M6-019、M6-020、M6-021**。起止 `9bdea2e`→`09da4cf`，main 本机提交未推送。
 - 用户目标：按 2026-11-06《UE-MMO固定视角角色接入方案》并行执行资源替换与自动验收（拆卡 M6-019..M6-025）。
