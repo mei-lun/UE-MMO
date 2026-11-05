@@ -29,3 +29,6 @@ Content/UEMMO/Imported/DNFM130_5_8/
 Content/UEMMO/ArtValidation/DNFMSpine/
 Scripts/**/__pycache__/
 Scripts/__pycache__/
+
+# M6-019..M6-025: DNFM 130.5.8.202 imported character visuals (regenerable from scripts + manifest)
+Content/UEMMO/Imported/DNFM130_5_8_202/
