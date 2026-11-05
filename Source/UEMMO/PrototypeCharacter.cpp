@@ -4,6 +4,7 @@
 #include "Profession/ProfessionCatalogSubsystem.h"
 #include "Skills/SkillLoadoutComponent.h"
 #include "Character/AttackMovementGate.h"
+#include "Character/DNFMCharacterVisualComponent.h"
 #include "Character/SideViewCameraComponent.h"
 #include "Combat/AttackCatalog.h"
 #include "Combat/CombatComponent.h"
@@ -72,6 +73,14 @@ namespace
     TAutoConsoleVariable<int32> CVarUEMMOPlayerVisual2D(
         TEXT("UEMMO.PlayerVisual2D"), 0,
         TEXT("Player visual: 0 = animated 3D hero (default), 1 = optional original 2D idle preview."),
+        ECVF_Default);
+    // M6-021: 1 = the DNFM picture mode (the M6-020/M6-022 composite action
+    // atlas played by UDNFMCharacterVisualComponent on a camera-facing plane,
+    // plan sections 3/5); 0 = the animated 3D hero (default; the rollback
+    // path). Mutually exclusive with the M6-015 Spine idle preview above.
+    TAutoConsoleVariable<int32> CVarUEMMOPlayerDNFMVisual(
+        TEXT("UEMMO.PlayerDNFMVisual"), 0,
+        TEXT("Player visual: 0 = animated 3D hero (default), 1 = DNFM composite picture mode (M6-021)."),
         ECVF_Default);
 }
 
@@ -449,15 +458,21 @@ APrototypeCharacter::APrototypeCharacter()
     // M7-003: the skill chain's loadout half (BeginPlay binds the
     // collaborators; the bare-component defaults stay inert).
     SkillLoadout = CreateDefaultSubobject<USkillLoadoutComponent>(TEXT("SkillLoadout"));
+    // M6-021: the DNFM picture component (frame playback + section 5.1
+    // placement on its own camera-facing plane). Created always, enabled only
+    // through the UEMMO.PlayerDNFMVisual gate; it owns no gameplay state.
+    DNFMVisual = CreateDefaultSubobject<UDNFMCharacterVisualComponent>(TEXT("DNFMCharacterVisual"));
 }
 
 void APrototypeCharacter::BeginPlay()
 {
     Super::BeginPlay();
     SpawnLocation = GetActorLocation();
-    // The visual gate leaves the skeletal animation pipeline available to
-    // the combat presenter wired below.
+    // The visual gates leave the skeletal animation pipeline available to
+    // the combat presenter wired below. The M6-021 DNFM picture mode is
+    // mutually exclusive with the M6-015 Spine idle preview (it wins).
     ApplyOriginal2DVisualIfEnabled();
+    ApplyDNFMVisualIfEnabled();
     // M1-027: the unified reset restores this facing alongside the spawn
     // position (interface contract section 6: the reset covers facing).
     SpawnRotation = GetActorRotation();
@@ -2380,6 +2395,13 @@ void APrototypeCharacter::ApplyOriginal2DVisualIfEnabled()
     {
         return; // M6-015: the legacy 3D hero pipeline stays (tests and rollback).
     }
+    // M6-021: mutual exclusion - the DNFM picture mode owns the pawn display
+    // when its gate is on; the Spine idle preview stays dormant (capability
+    // retained for the M6-015 preview evidence).
+    if (CVarUEMMOPlayerDNFMVisual.GetValueOnGameThread() != 0)
+    {
+        return;
+    }
     if (Original2DVisual == nullptr || Original2DVisual->GetStaticMesh() == nullptr || Original2DFighterMaterial == nullptr)
     {
         UE_LOG(LogTemp, Warning, TEXT("UEMMO: M6-015 2D fighter visual unavailable (plane/material missing); the 3D hero stays."));
@@ -2400,7 +2422,10 @@ void APrototypeCharacter::ApplyOriginal2DVisualIfEnabled()
 
 void APrototypeCharacter::TickOriginal2DVisual(float DeltaSeconds)
 {
-    if (!bOriginal2DVisualActive || Original2DMaterial == nullptr)
+    // M6-021: the old 30 FPS Spine idle loop yields entirely to the DNFM
+    // picture mode (the new M6-021 action playback replaces this path as the
+    // combat display; the preview loop keeps working in the M6-015 mode).
+    if (bDNFMVisualActive || !bOriginal2DVisualActive || Original2DMaterial == nullptr)
     {
         return;
     }
@@ -2409,6 +2434,56 @@ void APrototypeCharacter::TickOriginal2DVisual(float DeltaSeconds)
     // selecting an animation frame (and blends unrelated character pieces).
     const float Frame = FMath::FloorToFloat(FMath::Fmod(GetGameTimeSinceCreation() * 30.f, 101.f));
     Original2DMaterial->SetScalarParameterValue(TEXT("Frame"), Frame);
+}
+
+void APrototypeCharacter::ApplyDNFMVisualIfEnabled()
+{
+    if (DNFMVisual == nullptr)
+    {
+        return;
+    }
+    if (CVarUEMMOPlayerDNFMVisual.GetValueOnGameThread() == 0)
+    {
+        // M6-021: the gate-off path (BeginPlay default and the runtime flip
+        // back) is the clean reset: playback stops, the picture plane hides,
+        // and the 3D hero returns. The M6-015 preview gate decides the Spine
+        // path on its own (mutual exclusion keeps them apart).
+        if (bDNFMVisualActive)
+        {
+            bDNFMVisualActive = false;
+            DNFMVisual->ResetVisual();
+            DNFMVisual->SetComponentTickEnabled(false);
+            GetMesh()->SetVisibility(true, true);
+        }
+        return;
+    }
+    if (bDNFMVisualActive)
+    {
+        return; // already active
+    }
+    if (bOriginal2DVisualActive)
+    {
+        // M6-021: the DNFM gate wins the display; the M6-015 preview that a
+        // runtime flip left active is shut down here (its plane hides and
+        // the flag drops; the 3D mesh stays hidden for the picture mode).
+        bOriginal2DVisualActive = false;
+        if (Original2DVisual != nullptr)
+        {
+            Original2DVisual->SetVisibility(false);
+        }
+        UE_LOG(LogTemp, Display, TEXT("UEMMO: M6-021 DNFM picture mode replaces the M6-015 Spine preview."));
+    }
+    bDNFMVisualActive = true;
+    // The 3D hero mesh hides but keeps animating (the M6-015 precedent): the
+    // montage/presentation contracts stay intact while the picture plane
+    // owns the visible body. The capsule, movement and combat continue
+    // untouched - the picture component reads state, it never writes it.
+    GetMesh()->SetVisibility(false, true);
+    DNFMVisual->SetComponentTickEnabled(true);
+    // The visual set arrives with the M6-022 import (the component's
+    // DefaultVisualSet binding); until then the mode activates with no
+    // visible plane - the component logs its own uncalibrated/no-set state.
+    UE_LOG(LogTemp, Display, TEXT("UEMMO: M6-021 DNFM picture mode active (UEMMO.PlayerDNFMVisual=1); the 3D hero mesh is hidden."));
 }
 
 void APrototypeCharacter::Tick(float DeltaSeconds)

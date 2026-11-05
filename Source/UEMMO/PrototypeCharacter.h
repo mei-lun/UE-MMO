@@ -28,6 +28,7 @@ class UStaticMeshComponent;
 class ACombatProjectile;
 class USkillLoadoutComponent;
 class UProfessionCatalogSubsystem;
+class UDNFMCharacterVisualComponent;
 struct FSkillActivationOutcome;
 class USideViewCameraComponent;
 class UCombatComponent;
@@ -322,6 +323,22 @@ public:
     void TickOriginal2DVisual(float DeltaSeconds);
 
     /**
+     * M6-021: the DNFM picture mode entry (the UEMMO.PlayerDNFMVisual gate,
+     * default 0 = the 3D hero stays). Gate 1 activates the picture component
+     * (its camera-facing plane) and hides the 3D mesh while the capsule and
+     * movement keep running; gate 0 (also applied at runtime) tears the
+     * picture back down and restores the mesh. Mutually exclusive with the
+     * M6-015 Spine idle preview: the DNFM gate wins and keeps that preview
+     * off (the preview capability itself is retained for M6-015 evidence).
+     */
+    void ApplyDNFMVisualIfEnabled();
+
+    /** M6-021: read-only access for the tests and the M6-023 presenter wiring. */
+    UDNFMCharacterVisualComponent* GetDNFMVisual() const { return DNFMVisual; }
+    /** M6-021: whether the DNFM picture mode currently holds the mesh. */
+    bool IsDNFMVisualActive() const { return bDNFMVisualActive; }
+
+    /**
      * M1-028: the runtime mapping context built by EnsureCombatInputActions,
      * read-only. The automation smoke asserts the F1 debug-toggle mapping
      * exists on it exactly once.
@@ -537,6 +554,12 @@ private:
     // reachability rides the serialized CDO reference, M5-059 precedent).
     UPROPERTY() TObjectPtr<UMaterialInterface> Original2DFighterMaterial;
     bool bOriginal2DVisualActive = false;
+    // -- M6-021: the DNFM picture mode --------------------------------------
+    // The picture component (frame playback + section 5.1 placement) created
+    // always, enabled only through the UEMMO.PlayerDNFMVisual gate; the 3D
+    // mesh hides while it holds (mutually exclusive with the M6-015 preview).
+    UPROPERTY(VisibleAnywhere) TObjectPtr<UDNFMCharacterVisualComponent> DNFMVisual;
+    bool bDNFMVisualActive = false;
     // True between the fire-authorized Q press and its release.
     bool bWeaponFireHeld = false;
     // M5-059: the press-edge refusal trace - the first TryFire outcome after
