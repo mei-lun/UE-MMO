@@ -314,6 +314,13 @@ public:
 	void SetDNFMFactProviders(TFunction<bool()> InAirborneProvider, TFunction<bool()> InGroundMovingProvider);
 
 	/**
+	 * M6-024: overrides the DNFM rising fact provider (the jump display's
+	 * takeoff/fall phase switch). An empty function restores the owner-derived
+	 * default (the movement component's upward velocity while airborne).
+	 */
+	void SetDNFMRisingProvider(TFunction<bool()> InRisingProvider) { DNFMVisualRisingProvider = MoveTemp(InRisingProvider); }
+
+	/**
 	 * M5-017: the one victim-side reaction entry point - detects the owner's
 	 * combat-state transitions (Free/Attacking -> HitStun with or without a
 	 * rising launch, -> Knockdown, -> Recovering) and dispatches exactly one
@@ -583,6 +590,9 @@ private:
 	/** M6-023: injected fact providers (empty = owner-derived defaults). */
 	TFunction<bool()> DNFMVisualAirborneProvider;
 	TFunction<bool()> DNFMVisualGroundMovingProvider;
+
+	/** M6-024: the rising fact provider (empty = the movement's upward velocity). */
+	TFunction<bool()> DNFMVisualRisingProvider;
 
 	/** M6-023: gathers the facts and steps the DNFM display coordinator. */
 	void SyncDNFMVisualDisplay(float DeltaSeconds);

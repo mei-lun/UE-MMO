@@ -83,25 +83,38 @@ namespace UE::UEMMO::Tasks::M6_023
 	// located facts (Docs/Tasks/Reports/M6-019.md): hit = damage1/damage2
 	// (1-frame holds), knockdown = down.ani, getup = overturn.ani, death =
 	// die.ani (2 frames 570 ms), idle = rest.ani, move = move.ani, jump =
-	// jump.ani. Per-frame durations/phase mapping are calibrated against the
-	// M6-020 manifest after the M6-022 import ("以 manifest 导入后校准").
+	// jump.ani. M6-024 calibrated every phase walk against the frozen M6-020
+	// manifest (composite/manifest.json, real per-frame durations).
 	UEMMO_API extern const FName IdleActionId;      // rest.ani (loop)
 	UEMMO_API extern const FName MoveActionId;      // move.ani (loop)
-	UEMMO_API extern const FName JumpActionId;      // jump.ani (takeoff/air/landing phases; placeholder: once-clip hold)
+	UEMMO_API extern const FName JumpActionId;      // jump.ani (takeoff/air/landing phases; M6-024 state-driven walk)
 	UEMMO_API extern const FName HitActionId;       // damage1.ani (1-frame hold)
-	UEMMO_API extern const FName HitAltActionId;    // damage2.ani (fallback hit pose)
+	UEMMO_API extern const FName HitAltActionId;    // damage2.ani (alternating hit pose)
 	UEMMO_API extern const FName DownActionId;      // down.ani (lying holds)
 	UEMMO_API extern const FName RecoverActionId;   // overturn.ani (1-frame getup start)
 	UEMMO_API extern const FName DeathActionId;     // die.ani (holds the end frame)
 
+	// M6-024: the two getup roll clips of the Recovering sequence (the M6-020
+	// manifest carries both directions, 8 frames 630 ms each). The presenter's
+	// direction choice is documented at the Recovering branch: the display
+	// layer receives no per-hit direction fact (the victim-side snapshot and
+	// health component carry none), so the deterministic default is the back
+	// roll - every current knockdown source pushes the victim away from the
+	// attacker, and the DNF-style getup roll continues in that knockback
+	// direction. The front roll stays wired for a future direction fact.
+	UEMMO_API extern const FName RecoverRollBackActionId;   // ftrecoveryrollback_body.ani
+	UEMMO_API extern const FName RecoverRollFrontActionId;  // ftrecoveryrollfront_body.ani
+
 	/**
 	 * The default attack display mapping table (plan section 6.2/6.3). The
-	 * source frame counts and totals are the M6-019 db_queries facts; every
-	 * bHitPose row covers its attack's active window exactly, so the visual
-	 * hit pose always falls inside the existing damage window. Segment splits
-	 * inside the startup/recovery regions are placeholders calibrated after
-	 * the M6-022 import ("以 manifest 导入后校准"); combat-attacks.json is
-	 * never read or written here.
+	 * source frame counts AND per-frame durations are the frozen M6-020
+	 * manifest facts (composite/manifest.json); every bHitPose row covers its
+	 * attack's active window exactly, so the visual hit pose always falls
+	 * inside the existing damage window. The M6-024 calibration walks each
+	 * startup/recovery logic region proportionally through the source frames'
+	 * stored durations (logic frame = 1/60 s, midpoint sampling, both regions
+	 * clamped), which REPLACED the M6-023 placeholder splits. combat-attacks.
+	 * json is never read or written here.
 	 */
 	UEMMO_API TArray<FDNFMAttackDisplayMapping> MakeDefaultAttackDisplayMappings();
 
@@ -167,7 +180,18 @@ inline uint32 GetTypeHash(const FDNFMVisualEventKey& Key)
  * Display priority (plan section 6.1, exact):
  *   death -> down/getup/hit -> current attack -> jump phase -> ground
  *   move/idle. Every input is an existing fact (combat snapshot, health,
- *   movement); interrupts stay with Combat/Health judgment.
+ *   movement); interrupts stay with Combat/Health judgment. M6-024 refines
+ *   two slots without moving the priority lines:
+ *   - hit = damage1/damage2 alternating per HitStun episode (no per-hit
+ *     direction fact reaches the display; alternation is the deterministic
+ *     per-hit variety), and the getup is the SEQUENCE overturn -> roll clip
+ *     (the roll keeps playing to its end even after Recovering ends - plan
+ *     6.2 "序列播完回待机" - unless a new reaction, an attack or death takes
+ *     the picture first);
+ *   - the jump display is the state-driven three-phase walk takeoff (rising)
+ *     -> air/fall frames -> landing tail, advanced ONLY by the tick delta -
+ *     the jump.ani 34464 ms air-hold and 10000 ms landing-hold storage frames
+ *     never gate the display (plan 6.2: 不能按存储等待值僵等).
  *
  * Timing contract: the attack display is sampled from
  * (AttackId, InstanceId, Frame) - the combat component's 60 Hz logic frame -
@@ -176,7 +200,10 @@ inline uint32 GetTypeHash(const FDNFMVisualEventKey& Key)
  * which the presenter freezes for the HitStop span (OnHitStopChanged); a
  * presented attack keeps its time external for its whole life, so HitStop and
  * attack sampling compose (frozen logic frame -> frozen display frame, no
- * wall-clock drift, no frozen-span event replay).
+ * wall-clock drift, no frozen-span event replay). The M6-024 sequence walks
+ * (jump phases, getup overturn+roll) pin the clip time entirely: the visual
+ * playback is frozen and the presenter seeks the walked frame, so the
+ * pathological stored hold frames cannot stall the picture.
  */
 class FDNFMCombatVisualPresenter
 {
@@ -195,6 +222,23 @@ public:
 
 		/** The owner's ground-move fact (horizontal speed above threshold). */
 		bool bGroundMoving = false;
+
+		/**
+		 * M6-024: the delta seconds of the tick that gathered these facts.
+		 * The jump phase walk and the getup sequence advance ONLY by this
+		 * amount (plan section 6.2: the display is pushed by the movement
+		 * state, never by the stored >=10 s wait frames). Unit tests that
+		 * call Step directly without a clock leave it 0, which keeps every
+		 * phase walk exactly where it is.
+		 */
+		float DeltaSeconds = 0.0f;
+
+		/**
+		 * M6-024: true while the airborne owner still rises (the movement
+		 * component's upward velocity). The jump display's takeoff -> fall
+		 * phase switch reads it; it is meaningless while grounded.
+		 */
+		bool bAirborneRising = false;
 	};
 
 	FDNFMCombatVisualPresenter();
@@ -259,6 +303,69 @@ public:
 
 private:
 	/**
+	 * M6-024: the jump display's phase (plan section 6.2's takeoff/air/landing
+	 * split). Takeoff walks the rising frames, Falling walks the fall frames,
+	 * Landing walks the ground-edge tail; None means no jump display. The
+	 * phase survives a higher-priority display (an aerial attack) and resumes
+	 * when the priority returns, but a ground edge missed under a higher
+	 * display is stale and clears instead of playing a late tail.
+	 */
+	enum class EDNFMJumpPhase : uint8
+	{
+		None = 0,
+		Takeoff = 1,
+		Falling = 2,
+		Landing = 3
+	};
+
+	/**
+	 * M6-024: the Recovering sequence phase (overturn pose hold, then the getup
+	 * roll clip). The sequence starts on the Recovering edge and keeps playing
+	 * to its end even after the combat state left Recovering (plan 6.2
+	 * "序列播完回待机"); a new reaction/attack/death abandons it.
+	 */
+	enum class EDNFMRecoverPhase : uint8
+	{
+		None = 0,
+		Overturn = 1,
+		Roll = 2
+	};
+
+	/** The whole priority walk of one Step (Step does the edge bookkeeping). */
+	void StepDisplay(const FVisualFacts& Facts);
+
+	/**
+	 * M6-024: the airborne jump display (Takeoff/Falling walk). bTakeoffEdge
+	 * starts a fresh jump display instance; a stolen display rebuilds from the
+	 * phase's current elapsed.
+	 */
+	void ApplyJumpAirDisplay(const FVisualFacts& Facts, bool bTakeoffEdge);
+
+	/**
+	 * M6-024: the grounded landing tail (frame 12 hold cap -> 13 -> 14).
+	 * Returns true while the tail still owns the picture.
+	 */
+	bool ApplyJumpLandingDisplay(const FVisualFacts& Facts);
+
+	/** M6-024: advances the overturn -> roll sequence by the tick delta. */
+	void ApplyRecoverSequence(const FVisualFacts& Facts);
+
+	/** M6-024: abandons the getup sequence (new reaction/attack/death/revive). */
+	void ResetRecoverSequence();
+
+	/**
+	 * M6-024: the walked frame of DurationsMs at ElapsedMs (the frame covering
+	 * the accumulated time; past the total holds the last walked frame).
+	 */
+	static int32 WalkFramesByElapsedMs(const int32* DurationsMs, int32 Count, double ElapsedMs);
+
+	/** True while a jump phase or getup sequence currently pins the clip time. */
+	bool HasPresenterPinnedDisplay() const
+	{
+		return JumpPhase != EDNFMJumpPhase::None || RecoverPhase != EDNFMRecoverPhase::None;
+	}
+
+	/**
 	 * One deduplicated event row: accepts only events of the action the
 	 * presenter actually presented, dedups on the plan tuple, records and
 	 * forwards the first occurrence.
@@ -297,6 +404,23 @@ private:
 
 	/** The dead edge (the revive cleanup reads true -> false). */
 	bool bObservedDead = false;
+
+	/** M6-024: the jump display phase and its walked elapsed time. */
+	EDNFMJumpPhase JumpPhase = EDNFMJumpPhase::None;
+	double JumpPhaseElapsedMs = 0.0;
+
+	/** M6-024: the getup sequence phase, its elapsed time and chosen roll clip. */
+	EDNFMRecoverPhase RecoverPhase = EDNFMRecoverPhase::None;
+	double RecoverPhaseElapsedMs = 0.0;
+	FName RecoverRollActionId = NAME_None;
+	bool bRecoverSequenceDone = false;
+
+	/** M6-024: the alternating hit pose flip (the first flip yields damage1). */
+	bool bNextHitUsesAltPose = true;
+
+	/** M6-024: the previous tick's facts (the takeoff/landing edges and the reaction edges). */
+	bool bObservedAirborne = false;
+	ECombatActionState PrevObservedState = ECombatActionState::Free;
 
 	/** The dedup set of the CURRENT instance (cleared on instance change). */
 	TSet<FDNFMVisualEventKey> InstanceEventKeys;

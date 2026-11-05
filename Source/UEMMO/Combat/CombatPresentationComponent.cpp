@@ -680,6 +680,18 @@ void UCombatPresentationComponent::SyncDNFMVisualDisplay(float DeltaSeconds)
 		Facts.bGroundMoving = Movement != nullptr && !Facts.bAirborne
 			&& Movement->Velocity.SizeSquared2D() > FMath::Square(DNFMGroundMovingSpeedThreshold);
 	}
+	// M6-024: the sequence facts - the tick delta drives the jump/getup walks
+	// (plan 6.2: state-driven, never the stored hold values) and the rising
+	// fact switches the jump display's takeoff/fall phase.
+	Facts.DeltaSeconds = DeltaSeconds;
+	if (DNFMVisualRisingProvider)
+	{
+		Facts.bAirborneRising = DNFMVisualRisingProvider();
+	}
+	else
+	{
+		Facts.bAirborneRising = Movement != nullptr && Movement->Velocity.Z > 0.0f;
+	}
 	DNFMVisualPresenter->Step(Facts);
 }
 
