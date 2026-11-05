@@ -5,6 +5,7 @@
 #include "UObject/SoftObjectPtr.h"
 
 #include "CombatComponent.h"
+#include "DNFMCombatVisualPresenter.h"
 #include "HealthComponent.h"
 
 #include "CombatPresentationComponent.generated.h"
@@ -12,6 +13,7 @@
 class UAttackDefinition;
 class UAnimInstance;
 class UAnimMontage;
+class UDNFMCharacterVisualComponent;
 class USkeletalMeshComponent;
 class USoundWave;
 
@@ -288,6 +290,30 @@ public:
 	const TArray<FName>& GetReactionDispatchHistory() const { return ReactionDispatchHistory; }
 
 	/**
+	 * M6-023: binds/unbinds the DNFM picture surface (the UEMMO.PlayerDNFMVisual
+	 * gate face; the pawn calls this from ApplyDNFMVisualIfEnabled). While
+	 * bound, every tick feeds the DNFM display coordinator from the existing
+	 * facts (combat snapshot, owner health, owner movement) and the component
+	 * owns its event feed + HitStop freeze. Null unbinds: the whole DNFM
+	 * display path becomes a no-op and the 3D montage path keeps its exact
+	 * pre-M6-023 behavior (the gate=0 zero-regression face).
+	 */
+	void SetDNFMVisualTarget(UDNFMCharacterVisualComponent* InVisual);
+
+	/** M6-023: the bound picture surface (null while the DNFM path is a no-op). */
+	UDNFMCharacterVisualComponent* GetDNFMVisualTarget() const { return DNFMVisualTarget.Get(); }
+
+	/** M6-023: the display coordinator (never null; observation and tests). */
+	FDNFMCombatVisualPresenter& GetDNFMVisualPresenter() { return *DNFMVisualPresenter; }
+
+	/**
+	 * M6-023: overrides the DNFM airborne/ground-move fact providers (tests
+	 * pin both without a world). Empty functions restore the owner-derived
+	 * defaults (the movement component's IsFalling / horizontal speed).
+	 */
+	void SetDNFMFactProviders(TFunction<bool()> InAirborneProvider, TFunction<bool()> InGroundMovingProvider);
+
+	/**
 	 * M5-017: the one victim-side reaction entry point - detects the owner's
 	 * combat-state transitions (Free/Attacking -> HitStun with or without a
 	 * rising launch, -> Knockdown, -> Recovering) and dispatches exactly one
@@ -540,4 +566,24 @@ private:
 
 	/** M5-017: presentation ids already diagnosed as placeholders (one log each). */
 	TSet<FName> LoggedPlaceholderReactionIds;
+
+	/**
+	 * M6-023: the DNFM display coordinator (plan section 6.1 keeps this
+	 * component the presentation dispatch entry; the plain-C++ presenter owns
+	 * the DNFM branch so the 3D montage path stays untouched).
+	 */
+	TUniquePtr<FDNFMCombatVisualPresenter> DNFMVisualPresenter;
+
+	/** M6-023: the bound picture surface (weak; the pawn owns the component). */
+	TWeakObjectPtr<UDNFMCharacterVisualComponent> DNFMVisualTarget;
+
+	/** M6-023: the owner's health component (lazily resolved, death fact). */
+	TWeakObjectPtr<UHealthComponent> CachedDNFMHealth;
+
+	/** M6-023: injected fact providers (empty = owner-derived defaults). */
+	TFunction<bool()> DNFMVisualAirborneProvider;
+	TFunction<bool()> DNFMVisualGroundMovingProvider;
+
+	/** M6-023: gathers the facts and steps the DNFM display coordinator. */
+	void SyncDNFMVisualDisplay(float DeltaSeconds);
 };

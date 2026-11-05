@@ -1,6 +1,7 @@
 #include "CombatPresentationComponent.h"
 
 #include "AttackDefinition.h"
+#include "../Character/DNFMCharacterVisualComponent.h"
 
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
@@ -36,6 +37,11 @@ namespace
 	// diagnostics state without bound.
 	constexpr int32 MaxTrackedAudioKeys = 256;
 	constexpr int32 MaxAudioHistoryEntries = 64;
+
+	// M6-023: the horizontal speed above which the ground display switches
+	// from the idle loop to the move loop (cm/s; a walk starts well above
+	// this, controller drift/jitter stays below).
+	constexpr float DNFMGroundMovingSpeedThreshold = 10.0f;
 }
 
 void FCombatAudioDispatcher::SetConfig(const FCombatAudioDispatchConfig& InConfig)
@@ -156,6 +162,10 @@ UCombatPresentationComponent::UCombatPresentationComponent()
 	// M5-017: the default victim-side reaction table (the runtime mirror of
 	// Data/CombatSystem/presentations.json schema 2).
 	ReactionTable = MakeDefaultReactionPresentationTable();
+
+	// M6-023: the DNFM display coordinator (inert until SetDNFMVisualTarget
+	// binds a picture surface through the UEMMO.PlayerDNFMVisual gate).
+	DNFMVisualPresenter = MakeUnique<FDNFMCombatVisualPresenter>();
 }
 
 float UCombatPresentationComponent::ComputeMontagePlayRate(const UAttackDefinition& Definition, float MontageLengthSeconds)
@@ -218,6 +228,13 @@ void UCombatPresentationComponent::BeginPlay()
 void UCombatPresentationComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	UnbindDelegates();
+	// M6-023: the level-teardown/switch face (plan 6.2: 切关取消旧实例) - the
+	// coordinator unbinds its event feed and forgets the display state.
+	if (DNFMVisualPresenter.IsValid())
+	{
+		DNFMVisualPresenter->SetVisualTarget(nullptr);
+	}
+	DNFMVisualTarget = nullptr;
 	CombatSource = nullptr;
 	MeshTarget = nullptr;
 	Super::EndPlay(EndPlayReason);
@@ -238,6 +255,12 @@ void UCombatPresentationComponent::TickComponent(float DeltaTime, ELevelTick Tic
 		// consumes, so both layers see the same state).
 		PollVictimReactions();
 		ApplySnapshot(CombatSource->GetSnapshot());
+	}
+	// M6-023: the DNFM display branch (inert without a bound picture surface,
+	// so the gate=0 path above keeps its exact pre-M6-023 behavior).
+	if (DNFMVisualTarget.IsValid())
+	{
+		SyncDNFMVisualDisplay(DeltaTime);
 	}
 	// The sync itself is registration-independent (tests drive this component
 	// directly without a world); Super's tick bookkeeping only applies to a
@@ -564,6 +587,12 @@ void UCombatPresentationComponent::SetHitStopPaused(bool bPaused)
 void UCombatPresentationComponent::HandleHitStopChanged(bool bFrozen)
 {
 	SetHitStopPaused(bFrozen);
+	// M6-023: the DNFM display freezes with the same event (the picture and
+	// the 3D montage never advance through a hit stop; plan section 6.2).
+	if (DNFMVisualPresenter.IsValid())
+	{
+		DNFMVisualPresenter->NotifyHitStopFrozen(bFrozen);
+	}
 }
 
 void UCombatPresentationComponent::UnbindDelegates()
@@ -579,6 +608,79 @@ void UCombatPresentationComponent::UnbindDelegates()
 		}
 		bDelegatesBound = false;
 	}
+}
+
+// ---------------------------------------------------------------------------
+// M6-023: the DNFM display-target branch. The coordinator (a plain C++
+// presenter) owns the display priority, the attack segment sampling and the
+// event dedup; this component only gathers the existing facts (combat
+// snapshot, owner health, owner movement) and forwards the HitStop event. No
+// second clock: the attack display is sampled from the combat 60 Hz frame.
+// ---------------------------------------------------------------------------
+
+void UCombatPresentationComponent::SetDNFMVisualTarget(UDNFMCharacterVisualComponent* InVisual)
+{
+	if (DNFMVisualTarget.Get() == InVisual)
+	{
+		return;
+	}
+	DNFMVisualTarget = InVisual;
+	CachedDNFMHealth = nullptr;
+	// SetVisualTarget rebinds the event feed and forgets the previous display
+	// state (the clean bind/unbind order for a presenter switch).
+	DNFMVisualPresenter->SetVisualTarget(InVisual);
+}
+
+void UCombatPresentationComponent::SetDNFMFactProviders(TFunction<bool()> InAirborneProvider,
+	TFunction<bool()> InGroundMovingProvider)
+{
+	DNFMVisualAirborneProvider = MoveTemp(InAirborneProvider);
+	DNFMVisualGroundMovingProvider = MoveTemp(InGroundMovingProvider);
+}
+
+void UCombatPresentationComponent::SyncDNFMVisualDisplay(float DeltaSeconds)
+{
+	FDNFMCombatVisualPresenter::FVisualFacts Facts;
+	if (const UCombatComponent* Source = CombatSource.Get())
+	{
+		Facts.Combat = Source->GetSnapshot();
+		Facts.bDead = Source->IsDead();
+	}
+	// The death fact (plan priority 1): health dead OR combat dead. The
+	// owner's component set is fixed, so the lazily resolved reference holds.
+	if (!CachedDNFMHealth.IsValid())
+	{
+		if (const AActor* OwnerActor = GetOwner())
+		{
+			CachedDNFMHealth = OwnerActor->FindComponentByClass<UHealthComponent>();
+		}
+	}
+	if (const UHealthComponent* Health = CachedDNFMHealth.Get())
+	{
+		Facts.bDead = Facts.bDead || !Health->IsAlive();
+	}
+	// The jump/move facts: the injected providers first (tests), then the
+	// owner character's movement (the same reads PollVictimReactions uses).
+	const ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
+	const UCharacterMovementComponent* Movement = OwnerCharacter ? OwnerCharacter->GetCharacterMovement() : nullptr;
+	if (DNFMVisualAirborneProvider)
+	{
+		Facts.bAirborne = DNFMVisualAirborneProvider();
+	}
+	else
+	{
+		Facts.bAirborne = Movement != nullptr && Movement->IsFalling();
+	}
+	if (DNFMVisualGroundMovingProvider)
+	{
+		Facts.bGroundMoving = DNFMVisualGroundMovingProvider();
+	}
+	else
+	{
+		Facts.bGroundMoving = Movement != nullptr && !Facts.bAirborne
+			&& Movement->Velocity.SizeSquared2D() > FMath::Square(DNFMGroundMovingSpeedThreshold);
+	}
+	DNFMVisualPresenter->Step(Facts);
 }
 
 // ---------------------------------------------------------------------------

@@ -2451,6 +2451,13 @@ void APrototypeCharacter::ApplyDNFMVisualIfEnabled()
         if (bDNFMVisualActive)
         {
             bDNFMVisualActive = false;
+            // M6-023: the presenter unbinds the picture surface first (the
+            // whole DNFM display path becomes a no-op; the 3D montage path
+            // keeps its exact behavior), then the clean visual reset follows.
+            if (CombatPresentation != nullptr)
+            {
+                CombatPresentation->SetDNFMVisualTarget(nullptr);
+            }
             DNFMVisual->ResetVisual();
             DNFMVisual->SetComponentTickEnabled(false);
             GetMesh()->SetVisibility(true, true);
@@ -2480,6 +2487,13 @@ void APrototypeCharacter::ApplyDNFMVisualIfEnabled()
     // untouched - the picture component reads state, it never writes it.
     GetMesh()->SetVisibility(false, true);
     DNFMVisual->SetComponentTickEnabled(true);
+    // M6-023: the presentation component becomes the display dispatcher (plan
+    // section 6.1): it feeds the DNFM coordinator from the combat/health/
+    // movement facts and drives the picture through the attack segment table.
+    if (CombatPresentation != nullptr)
+    {
+        CombatPresentation->SetDNFMVisualTarget(DNFMVisual);
+    }
     // The visual set arrives with the M6-022 import (the component's
     // DefaultVisualSet binding); until then the mode activates with no
     // visible plane - the component logs its own uncalibrated/no-set state.

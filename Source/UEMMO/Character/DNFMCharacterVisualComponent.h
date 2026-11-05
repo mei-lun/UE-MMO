@@ -122,6 +122,33 @@ public:
      */
     void TickVisual(float DeltaSeconds);
 
+    /**
+     * M6-023: freezes/unfreezes the playback-time advance (the HitStop face).
+     * While frozen, TickVisual advances no elapsed time, crosses no frames and
+     * fires no events (nothing is replayed when the freeze lifts - the frozen
+     * span is skipped, plan section 6.2); the placement still refreshes, so
+     * the picture keeps following the real capsule through the freeze. Only
+     * the TIME is frozen: SetAction/SeekToDisplayFrame stay available (a death
+     * switch during a freeze must still apply).
+     */
+    void SetPlaybackFrozen(bool bNewFrozen);
+
+    /** True while the playback time is frozen (the M6-023 presenter state). */
+    bool IsPlaybackFrozen() const { return bPlaybackFrozen; }
+
+    /**
+     * M6-023: positions the current action at DisplayFrameIndex without any
+     * wall-clock advance (the (AttackId, InstanceId, Frame) sampling face).
+     * Every newly crossed frame between the current and the target index is
+     * reported in time order (the M6-021 crossing walk), so the presenter's
+     * dedup sees the honest interval on low framerates; a backward seek on a
+     * non-loop clip applies the frame change without events. Elapsed time is
+     * pinned to the target frame's start so a later real-time advance
+     * continues from there. Returns false (unchanged) when idle or the index
+     * is out of range; true (idempotent) when already there.
+     */
+    bool SeekToDisplayFrame(int32 DisplayFrameIndex);
+
     /** Recomputes the plane world transform for the current frame now. */
     void ApplyPlacementNow();
 
@@ -196,6 +223,9 @@ private:
     double ElapsedMs = 0.0;
     bool bActive = false;
     bool bLoopCurrent = false;
+
+    /** M6-023: true while the playback time is frozen (HitStop / external time). */
+    bool bPlaybackFrozen = false;
 
     /** The section 5.1 calibration (0 = uncalibrated, plane stays hidden). */
     float CmPerPixel = 0.0f;

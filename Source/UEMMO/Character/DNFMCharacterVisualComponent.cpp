@@ -257,25 +257,74 @@ void UDNFMCharacterVisualComponent::TickVisual(float DeltaSeconds)
     {
         return; // degenerate clip: the hold-last-frame state needs no time
     }
-    ElapsedMs += FMath::Max(DeltaSeconds, 0.0f) * 1000.0;
-    const int32 NewIndex = SampleFrameIndexByElapsedMs(Clip.Frames, ElapsedMs, bLoopCurrent);
-    if (NewIndex != CurrentFrameIndex)
+    // M6-023: a frozen playback advances no time, crosses no frames and fires
+    // no events; the placement below still refreshes (the anchor follows the
+    // real capsule through the freeze).
+    if (!bPlaybackFrozen)
     {
-        // Low-framerate crossings walk every newly reached frame in time
-        // order and report each one's events (the M6-023 dedup consumes the
-        // honest interval; nothing here dedups on its own).
-        const TArray<int32> Crossed = ComputeCrossedFrameIndices(Clip.Frames, CurrentFrameIndex, NewIndex, bLoopCurrent);
-        for (const int32 CrossedIndex : Crossed)
+        ElapsedMs += FMath::Max(DeltaSeconds, 0.0f) * 1000.0;
+        const int32 NewIndex = SampleFrameIndexByElapsedMs(Clip.Frames, ElapsedMs, bLoopCurrent);
+        if (NewIndex != CurrentFrameIndex)
         {
-            FireFrameEvents(Clip, CrossedIndex);
+            // Low-framerate crossings walk every newly reached frame in time
+            // order and report each one's events (the M6-023 dedup consumes the
+            // honest interval; nothing here dedups on its own).
+            const TArray<int32> Crossed = ComputeCrossedFrameIndices(Clip.Frames, CurrentFrameIndex, NewIndex, bLoopCurrent);
+            for (const int32 CrossedIndex : Crossed)
+            {
+                FireFrameEvents(Clip, CrossedIndex);
+            }
+            CurrentFrameIndex = NewIndex;
+            ApplyCurrentFrame();
         }
-        CurrentFrameIndex = NewIndex;
-        ApplyCurrentFrame();
     }
     // Placement runs EVERY tick: the foot anchor follows the real capsule
     // (walking, jumping), so the plane pose is refreshed per frame even when
     // the display frame did not change (plan section 5.1).
     ApplyPlacementNow();
+}
+
+void UDNFMCharacterVisualComponent::SetPlaybackFrozen(bool bNewFrozen)
+{
+    bPlaybackFrozen = bNewFrozen;
+}
+
+bool UDNFMCharacterVisualComponent::SeekToDisplayFrame(int32 DisplayFrameIndex)
+{
+    if (!IsVisualActive())
+    {
+        return false;
+    }
+    const FDNFMActionClip& Clip = VisualSet->Actions[CurrentActionIndex];
+    if (!Clip.Frames.IsValidIndex(DisplayFrameIndex))
+    {
+        return false;
+    }
+    if (DisplayFrameIndex == CurrentFrameIndex)
+    {
+        return true; // already there (idempotent)
+    }
+    // The honest crossing interval: every newly reached frame in time order
+    // reports its events (a low-framerate logic jump may cross several). A
+    // backward seek on a non-loop clip walks nothing (no fake re-fires); a
+    // loop clip walks the wrap the long way (the M6-021 frozen walk rule).
+    const TArray<int32> Crossed = ComputeCrossedFrameIndices(Clip.Frames, CurrentFrameIndex, DisplayFrameIndex, bLoopCurrent);
+    for (const int32 CrossedIndex : Crossed)
+    {
+        FireFrameEvents(Clip, CrossedIndex);
+    }
+    // Pin the elapsed time to the target frame's START, so a later real-time
+    // advance continues from the seeked pose (never from a stale position).
+    double StartMs = 0.0;
+    for (int32 Index = 0; Index < DisplayFrameIndex; ++Index)
+    {
+        StartMs += FMath::Max(Clip.Frames[Index].DurationMs, 0);
+    }
+    ElapsedMs = StartMs;
+    CurrentFrameIndex = DisplayFrameIndex;
+    ApplyCurrentFrame();
+    ApplyPlacementNow();
+    return true;
 }
 
 void UDNFMCharacterVisualComponent::ApplyPlacementNow()
