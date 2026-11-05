@@ -138,6 +138,20 @@ bool UDNFMCharacterVisualSet::BuildFromManifestJson(const FString& ManifestJson,
     return true;
 }
 
+FString UDNFMCharacterVisualSet::BuildManifestIntoSet(const FString& ManifestJson,
+    const TArray<UTexture2D*>& ResolvedPageTextures,
+    UDNFMCharacterVisualSet* OutSet)
+{
+    FString OutError;
+    if (OutSet == nullptr)
+    {
+        OutError = TEXT("OutSet data asset is null");
+        return OutError;
+    }
+    BuildFromManifestJson(ManifestJson, ResolvedPageTextures, *OutSet, OutError);
+    return OutError;
+}
+
 bool UDNFMCharacterVisualSet::ParseManifestInto(const FString& ManifestJson,
     const TArray<UTexture2D*>& ResolvedPageTextures,
     UDNFMCharacterVisualSet& OutSet, FString& OutError)

@@ -462,6 +462,14 @@ APrototypeCharacter::APrototypeCharacter()
     // placement on its own camera-facing plane). Created always, enabled only
     // through the UEMMO.PlayerDNFMVisual gate; it owns no gameplay state.
     DNFMVisual = CreateDefaultSubobject<UDNFMCharacterVisualComponent>(TEXT("DNFMCharacterVisual"));
+    // M6-022: the imported production picture set binds by soft path (asset
+    // side only - the gate stays 0, nothing loads until BeginPlay). The
+    // project has no player Blueprint (PrototypeGameMode spawns this C++
+    // class directly), so the component default is the binding point. The
+    // asset lives in the git-ignored Imported/ tree: a fresh checkout without
+    // it keeps the M6-021 documented no-set fallback (uncalibrated, no plane).
+    DNFMVisual->DefaultVisualSet = TSoftObjectPtr<UDNFMCharacterVisualSet>(FSoftObjectPath(
+        TEXT("/Game/UEMMO/Imported/DNFM130_5_8_202/Characters/Fighter/DA_DNFMFighterVisualSet.DA_DNFMFighterVisualSet")));
 }
 
 void APrototypeCharacter::BeginPlay()
@@ -2487,6 +2495,36 @@ void APrototypeCharacter::ApplyDNFMVisualIfEnabled()
     // untouched - the picture component reads state, it never writes it.
     GetMesh()->SetVisibility(false, true);
     DNFMVisual->SetComponentTickEnabled(true);
+    // M6-022: production wiring for the imported assets. The material binds
+    // by soft path so a checkout without the git-ignored Imported/ tree keeps
+    // the M6-021 honest degradation (warned, never crashing); the calibration
+    // reads the imported manifest data (rest frame 0, canvas y-down: the
+    // pivot IS the foot anchor and the canvas top is the head top) against
+    // the pawn's own capsule height. Activation runs once per pawn, so these
+    // warnings are naturally once per spawn, not per frame.
+    if (UMaterialInterface* ImportedMaterial = LoadObject<UMaterialInterface>(nullptr,
+        TEXT("/Game/UEMMO/Imported/DNFM130_5_8_202/Characters/Fighter/Materials/M_DNFMFighterVisual.M_DNFMFighterVisual")))
+    {
+        DNFMVisual->SetMaterialInterface(ImportedMaterial);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning,
+            TEXT("UEMMO M6-022: /Game/UEMMO/Imported/DNFM130_5_8_202/Characters/Fighter/Materials/M_DNFMFighterVisual missing; run Scripts/RunDNFMCharacterVisualImport.ps1. The picture mode runs without a material."));
+    }
+    if (const UDNFMCharacterVisualSet* ImportedSet = DNFMVisual->GetVisualSet())
+    {
+        const FDNFMActionClip* Rest = ImportedSet->FindAction(FName(TEXT("rest")));
+        if (Rest != nullptr && Rest->Frames.Num() > 0)
+        {
+            const float StandingHeadTopPx = static_cast<float>(Rest->Frames[0].PivotPx.Y);
+            const float TargetStandingHeightCm = GetCapsuleComponent()->GetScaledCapsuleHalfHeight() * 2.0f;
+            DNFMVisual->SetWorldScaleFromStandingHeight(StandingHeadTopPx, TargetStandingHeightCm);
+            UE_LOG(LogTemp, Display,
+                TEXT("UEMMO M6-022: DNFM visual calibrated s=%.4f cm/px (head-top %g px, target %g cm from rest frame 0)."),
+                DNFMVisual->GetCmPerPixel(), StandingHeadTopPx, TargetStandingHeightCm);
+        }
+    }
     // M6-023: the presentation component becomes the display dispatcher (plan
     // section 6.1): it feeds the DNFM coordinator from the combat/health/
     // movement facts and drives the picture through the attack segment table.

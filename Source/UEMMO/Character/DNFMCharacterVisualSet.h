@@ -182,6 +182,26 @@ public:
         const TArray<UTexture2D*>& ResolvedPageTextures,
         UDNFMCharacterVisualSet& OutSet, FString& OutError);
 
+    /**
+     * M6-022: scripting entry for the editor import script
+     * (Scripts/Editor/import_dnfm_character_visuals.py) - Python can only
+     * call UFUNCTIONs, and UHT forbids non-const object-reference params on
+     * BlueprintCallable functions (hence the pointer here and the exact
+     * delegate into the validated builder above; the M6-021 reference API
+     * stays untouched for its tests). The refusal reason travels as the
+     * RETURN value (empty = success): the probed 5.8.3 python binding drops
+     * plain bool returns and mis-maps a FString& out param on this
+     * closure-marshal path (bool return + FString& out + TArray in), so the
+     * error text must not depend on either. OutSet is mutated in place;
+     * Python passes the freshly created data asset and reads it back. A null
+     * OutSet refuses with the error text.
+     */
+    UFUNCTION(BlueprintCallable, Category = "DNFM Visual",
+        meta = (DisplayName = "Build Manifest Into Set"))
+    static FString BuildManifestIntoSet(const FString& ManifestJson,
+        const TArray<UTexture2D*>& ResolvedPageTextures,
+        UDNFMCharacterVisualSet* OutSet);
+
 private:
     /** The raw parser behind BuildFromManifestJson (leaves rows on refusal). */
     static bool ParseManifestInto(const FString& ManifestJson,

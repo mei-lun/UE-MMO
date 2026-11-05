@@ -59,9 +59,12 @@ DECLARE_MULTICAST_DELEGATE_FiveParams(FDNFMVisualFrameEventBroadcast,
  * parameters "PageTex" (the frame's page texture), "UVRectMin" (rect
  * top-left in page UV) and "UVRectSize" (rect size in page UV) on a dynamic
  * material instance; page switching is the texture parameter swap. The
- * material maps quad UV -> pageUV = UVRectMin + quadUV * UVRectSize, the
- * same linear structure the M6-015 flipbook used (whose upright rendering
- * was screenshot-verified), so orientation carries over unchanged.
+ * material maps quad UV -> pageUV = UVRectMin + vec(u, 1-v) * UVRectSize:
+ * the V flip is the M6-022 screenshot finding that the engine Plane's UVs
+ * run v=0 on the quad's world-DOWN side, so the page's top row must sample
+ * at quadUV.y=1 to land on quad local +Y = camera Up (the first rendered
+ * M6-022 screenshot proved the un-flipped mapping upside down; the M6-015
+ * acceptance never asserted vertical orientation).
  */
 UCLASS(ClassGroup = (Character), meta = (BlueprintSpawnableComponent))
 class UEMMO_API UDNFMCharacterVisualComponent : public UActorComponent
