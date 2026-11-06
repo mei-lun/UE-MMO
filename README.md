@@ -40,6 +40,7 @@ Package 的 UAT archive 根是 Artifacts/Package，由 UAT 追加 Windows；不�
 
 ## 文档
 
+- [DNFM资源替换与最小复刻计划](Docs/DNF-Research/07-DNFM资源替换与最小复刻计划.md)：三角色、两地图、小怪、Boss及完整战斗的实施范围、源资源核查与验收标准；计划不等于已实现。
 - [本轮体验包报告](Docs/Tasks/Reports/M6-026.md)与[试玩说明](Docs/DevelopmentPlaytest.txt)。
 - [项目审计](Docs/Audit-2026-11-06.md)：本次入口收敛前的进度快照。
 - [开发交付与修复汇总](Docs/开发交付与修复汇总.md)。
