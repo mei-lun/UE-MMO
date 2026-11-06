@@ -261,5 +261,8 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M8-015 | [P03-C 竹林全图源对照验收](Docs/Tasks/M8-015.md) | IN_PROGRESS | M8-013,M8-014 | ZCode-20261107-M,ZCode-20261107-A | 2026-11-07T04:03:00+08:00 | [report](Docs/Tasks/Reports/M8-015.md) |
 | M8-016 | [P04-A 三职业离线衣装/动作 manifest 合成](Docs/Tasks/M8-016.md) | DONE | M8-002,M8-003,M8-004 | ZCode-20261107-L | 2026-11-07T04:20:00+08:00 | [report](Docs/Tasks/Reports/M8-016.md) |
 | M8-017 | [P04-B 鬼剑士/神枪手 UE 视觉资产导入与重载](Docs/Tasks/M8-017.md) | DONE | M8-016 | ZCode-20261107-A | 2026-11-07T04:33:00+08:00 | [report](Docs/Tasks/Reports/M8-017.md) |
-| M8-018 | [P04-C 怪物显示资源（哥布林+taubeast）](Docs/Tasks/M8-018.md) | TODO | M8-007,M8-008 | — | — | [report](Docs/Tasks/Reports/M8-018.md) |
-| M8-019 | [P05-A 哥布林投掷兵完整敌人](Docs/Tasks/M8-019.md) | TODO | M8-018 | — | — | [report](Docs/Tasks/Reports/M8-019.md) |
+| M8-018 | [P04-C 怪物显示资源（哥布林+taubeast）](Docs/Tasks/M8-018.md) | DONE | M8-007,M8-008 | ZCode-20261107-N,ZCode-20261107-A | 2026-11-07T04:55:00+08:00 | [report](Docs/Tasks/Reports/M8-018.md) |
+| M8-019 | [P05-A 哥布林投掷兵完整敌人](Docs/Tasks/M8-019.md) | SUPERSEDED | M8-018 | — | — | [report](Docs/Tasks/Reports/M8-019.md) |
+| M8-019A | [P05-A1 哥布林敌人实体与显示](Docs/Tasks/M8-019A.md) | IN_PROGRESS | M8-018 | ZCode-20261107-A | 2026-11-07T05:00:00+08:00 | [report](Docs/Tasks/Reports/M8-019A.md) |
+| M8-019B | [P05-A2 哥布林投掷 AI 与投射物](Docs/Tasks/M8-019B.md) | TODO | M8-019A | — | — | [report](Docs/Tasks/Reports/M8-019B.md) |
+| M8-019C | [P05-A3 竹林生产波次接线与计数](Docs/Tasks/M8-019C.md) | TODO | M8-019A,M8-019B | — | — | [report](Docs/Tasks/Reports/M8-019C.md) |
