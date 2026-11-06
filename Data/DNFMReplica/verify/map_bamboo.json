@@ -1,0 +1,3695 @@
+{
+  "calibration_inputs": {
+    "depth_axis_note": "scene_json.units：原始 2D 像素坐标，非 Unity 米；z 用作 y 修正（y-z 投影，见预览生成器）",
+    "floor_height_i32_per_tile": 120,
+    "floor_height_source": "STTileScript.fhegfaehaeaagae（类型表 i32），两块唯一地砖均为 120",
+    "foot_point_definition": "对象脚点近似=首帧图像底边 y（top_left[1]+image_size[1]）；位置为 STAssignAnimation 的 x,y,z",
+    "ground_extent_pixels": {
+      "x": [
+        0,
+        896
+      ],
+      "y_top": 40
+    },
+    "monster_spawn_points": [
+      [
+        659,
+        201,
+        0
+      ],
+      [
+        574,
+        201,
+        0
+      ],
+      [
+        622,
+        260,
+        0
+      ],
+      [
+        540,
+        261,
+        0
+      ]
+    ],
+    "object_foot_points": [
+      {
+        "draw_layer": 1,
+        "first_frame_image_bottom_y": 116,
+        "index": 0,
+        "position_xy": [
+          106,
+          -64
+        ],
+        "top_left": [
+          -239,
+          -239
+        ]
+      },
+      {
+        "draw_layer": 1,
+        "first_frame_image_bottom_y": 116,
+        "index": 1,
+        "position_xy": [
+          736,
+          -64
+        ],
+        "top_left": [
+          391,
+          -239
+        ]
+      },
+      {
+        "draw_layer": 1,
+        "first_frame_image_bottom_y": 116,
+        "index": 2,
+        "position_xy": [
+          1366,
+          -64
+        ],
+        "top_left": [
+          1021,
+          -239
+        ]
+      },
+      {
+        "draw_layer": 2,
+        "first_frame_image_bottom_y": 157,
+        "index": 3,
+        "position_xy": [
+          160,
+          -31
+        ],
+        "top_left": [
+          -60,
+          -284
+        ]
+      },
+      {
+        "draw_layer": 2,
+        "first_frame_image_bottom_y": 177,
+        "index": 4,
+        "position_xy": [
+          913,
+          -11
+        ],
+        "top_left": [
+          693,
+          -264
+        ]
+      },
+      {
+        "draw_layer": 2,
+        "first_frame_image_bottom_y": 151,
+        "index": 5,
+        "position_xy": [
+          406,
+          12
+        ],
+        "top_left": [
+          186,
+          -241
+        ]
+      },
+      {
+        "draw_layer": 2,
+        "first_frame_image_bottom_y": 149,
+        "index": 25,
+        "position_xy": [
+          194,
+          -51
+        ],
+        "top_left": [
+          -151,
+          -226
+        ]
+      },
+      {
+        "draw_layer": 2,
+        "first_frame_image_bottom_y": 469,
+        "index": 46,
+        "position_xy": [
+          -150,
+          100
+        ],
+        "top_left": [
+          -150,
+          100
+        ]
+      },
+      {
+        "draw_layer": 2,
+        "first_frame_image_bottom_y": 469,
+        "index": 47,
+        "position_xy": [
+          -150,
+          100
+        ],
+        "top_left": [
+          -150,
+          100
+        ]
+      },
+      {
+        "draw_layer": 2,
+        "first_frame_image_bottom_y": 469,
+        "index": 48,
+        "position_xy": [
+          1346,
+          100
+        ],
+        "top_left": [
+          1346,
+          100
+        ]
+      },
+      {
+        "draw_layer": 2,
+        "first_frame_image_bottom_y": 469,
+        "index": 49,
+        "position_xy": [
+          1346,
+          100
+        ],
+        "top_left": [
+          1346,
+          100
+        ]
+      },
+      {
+        "draw_layer": 4,
+        "first_frame_image_bottom_y": 155,
+        "index": 6,
+        "position_xy": [
+          541,
+          -10
+        ],
+        "top_left": [
+          321,
+          -263
+        ]
+      },
+      {
+        "draw_layer": 5,
+        "first_frame_image_bottom_y": 160,
+        "index": 14,
+        "position_xy": [
+          260,
+          104
+        ],
+        "top_left": [
+          60,
+          54
+        ]
+      },
+      {
+        "draw_layer": 5,
+        "first_frame_image_bottom_y": 417,
+        "index": 15,
+        "position_xy": [
+          572,
+          367
+        ],
+        "top_left": [
+          447,
+          322
+        ]
+      },
+      {
+        "draw_layer": 5,
+        "first_frame_image_bottom_y": 339,
+        "index": 16,
+        "position_xy": [
+          621,
+          303
+        ],
+        "top_left": [
+          556,
+          273
+        ]
+      },
+      {
+        "draw_layer": 5,
+        "first_frame_image_bottom_y": 347,
+        "index": 17,
+        "position_xy": [
+          312,
+          311
+        ],
+        "top_left": [
+          247,
+          281
+        ]
+      },
+      {
+        "draw_layer": 5,
+        "first_frame_image_bottom_y": 397,
+        "index": 19,
+        "position_xy": [
+          68,
+          341
+        ],
+        "top_left": [
+          -132,
+          291
+        ]
+      },
+      {
+        "draw_layer": 5,
+        "first_frame_image_bottom_y": 213,
+        "index": 24,
+        "position_xy": [
+          126,
+          163
+        ],
+        "top_left": [
+          1,
+          118
+        ]
+      },
+      {
+        "draw_layer": 5,
+        "first_frame_image_bottom_y": 230,
+        "index": 26,
+        "position_xy": [
+          888,
+          180
+        ],
+        "top_left": [
+          763,
+          135
+        ]
+      },
+      {
+        "draw_layer": 5,
+        "first_frame_image_bottom_y": 291,
+        "index": 27,
+        "position_xy": [
+          793,
+          255
+        ],
+        "top_left": [
+          728,
+          225
+        ]
+      },
+      {
+        "draw_layer": 5,
+        "first_frame_image_bottom_y": 275,
+        "index": 28,
+        "position_xy": [
+          891,
+          239
+        ],
+        "top_left": [
+          826,
+          209
+        ]
+      },
+      {
+        "draw_layer": 5,
+        "first_frame_image_bottom_y": 336,
+        "index": 29,
+        "position_xy": [
+          874,
+          300
+        ],
+        "top_left": [
+          809,
+          270
+        ]
+      },
+      {
+        "draw_layer": 5,
+        "first_frame_image_bottom_y": 281,
+        "index": 32,
+        "position_xy": [
+          868,
+          231
+        ],
+        "top_left": [
+          743,
+          186
+        ]
+      },
+      {
+        "draw_layer": 5,
+        "first_frame_image_bottom_y": 161,
+        "index": 42,
+        "position_xy": [
+          93,
+          125
+        ],
+        "top_left": [
+          28,
+          95
+        ]
+      },
+      {
+        "draw_layer": 5,
+        "first_frame_image_bottom_y": 342,
+        "index": 44,
+        "position_xy": [
+          247,
+          330
+        ],
+        "top_left": [
+          222,
+          315
+        ]
+      },
+      {
+        "draw_layer": 6,
+        "first_frame_image_bottom_y": 129,
+        "index": 7,
+        "position_xy": [
+          832,
+          98
+        ],
+        "top_left": [
+          717,
+          -37
+        ]
+      },
+      {
+        "draw_layer": 6,
+        "first_frame_image_bottom_y": 126,
+        "index": 8,
+        "position_xy": [
+          50,
+          103
+        ],
+        "top_left": [
+          -35,
+          -7
+        ]
+      },
+      {
+        "draw_layer": 6,
+        "first_frame_image_bottom_y": 104,
+        "index": 9,
+        "position_xy": [
+          180,
+          92
+        ],
+        "top_left": [
+          155,
+          77
+        ]
+      },
+      {
+        "draw_layer": 6,
+        "first_frame_image_bottom_y": 99,
+        "index": 10,
+        "position_xy": [
+          722,
+          87
+        ],
+        "top_left": [
+          697,
+          72
+        ]
+      },
+      {
+        "draw_layer": 6,
+        "first_frame_image_bottom_y": 110,
+        "index": 11,
+        "position_xy": [
+          252,
+          98
+        ],
+        "top_left": [
+          227,
+          83
+        ]
+      },
+      {
+        "draw_layer": 6,
+        "first_frame_image_bottom_y": 111,
+        "index": 12,
+        "position_xy": [
+          124,
+          99
+        ],
+        "top_left": [
+          94,
+          29
+        ]
+      },
+      {
+        "draw_layer": 6,
+        "first_frame_image_bottom_y": 121,
+        "index": 13,
+        "position_xy": [
+          424,
+          109
+        ],
+        "top_left": [
+          394,
+          39
+        ]
+      },
+      {
+        "draw_layer": 6,
+        "first_frame_image_bottom_y": 214,
+        "index": 18,
+        "position_xy": [
+          449,
+          202
+        ],
+        "top_left": [
+          424,
+          187
+        ]
+      },
+      {
+        "draw_layer": 6,
+        "first_frame_image_bottom_y": 376,
+        "index": 23,
+        "position_xy": [
+          4,
+          353
+        ],
+        "top_left": [
+          -81,
+          243
+        ]
+      },
+      {
+        "draw_layer": 6,
+        "first_frame_image_bottom_y": 149,
+        "index": 31,
+        "position_xy": [
+          774,
+          137
+        ],
+        "top_left": [
+          744,
+          67
+        ]
+      },
+      {
+        "draw_layer": 6,
+        "first_frame_image_bottom_y": 241,
+        "index": 33,
+        "position_xy": [
+          873,
+          210
+        ],
+        "top_left": [
+          758,
+          75
+        ]
+      },
+      {
+        "draw_layer": 6,
+        "first_frame_image_bottom_y": 202,
+        "index": 34,
+        "position_xy": [
+          862,
+          183
+        ],
+        "top_left": [
+          817,
+          118
+        ]
+      },
+      {
+        "draw_layer": 6,
+        "first_frame_image_bottom_y": 236,
+        "index": 35,
+        "position_xy": [
+          835,
+          217
+        ],
+        "top_left": [
+          790,
+          152
+        ]
+      },
+      {
+        "draw_layer": 6,
+        "first_frame_image_bottom_y": 380,
+        "index": 36,
+        "position_xy": [
+          700,
+          361
+        ],
+        "top_left": [
+          655,
+          296
+        ]
+      },
+      {
+        "draw_layer": 6,
+        "first_frame_image_bottom_y": 274,
+        "index": 38,
+        "position_xy": [
+          887,
+          255
+        ],
+        "top_left": [
+          842,
+          190
+        ]
+      },
+      {
+        "draw_layer": 6,
+        "first_frame_image_bottom_y": 329,
+        "index": 39,
+        "position_xy": [
+          779,
+          310
+        ],
+        "top_left": [
+          734,
+          245
+        ]
+      },
+      {
+        "draw_layer": 6,
+        "first_frame_image_bottom_y": 342,
+        "index": 40,
+        "position_xy": [
+          740,
+          323
+        ],
+        "top_left": [
+          695,
+          258
+        ]
+      },
+      {
+        "draw_layer": 6,
+        "first_frame_image_bottom_y": 338,
+        "index": 41,
+        "position_xy": [
+          701,
+          326
+        ],
+        "top_left": [
+          671,
+          256
+        ]
+      },
+      {
+        "draw_layer": 6,
+        "first_frame_image_bottom_y": 104,
+        "index": 43,
+        "position_xy": [
+          740,
+          92
+        ],
+        "top_left": [
+          710,
+          22
+        ]
+      },
+      {
+        "draw_layer": 6,
+        "first_frame_image_bottom_y": 126,
+        "index": 45,
+        "position_xy": [
+          114,
+          114
+        ],
+        "top_left": [
+          89,
+          99
+        ]
+      },
+      {
+        "draw_layer": 7,
+        "first_frame_image_bottom_y": 400,
+        "index": 20,
+        "position_xy": [
+          871,
+          369
+        ],
+        "top_left": [
+          756,
+          234
+        ]
+      },
+      {
+        "draw_layer": 7,
+        "first_frame_image_bottom_y": 409,
+        "index": 21,
+        "position_xy": [
+          456,
+          386
+        ],
+        "top_left": [
+          371,
+          276
+        ]
+      },
+      {
+        "draw_layer": 7,
+        "first_frame_image_bottom_y": 427,
+        "index": 22,
+        "position_xy": [
+          75,
+          396
+        ],
+        "top_left": [
+          -40,
+          261
+        ]
+      },
+      {
+        "draw_layer": 7,
+        "first_frame_image_bottom_y": 443,
+        "index": 30,
+        "position_xy": [
+          764,
+          412
+        ],
+        "top_left": [
+          649,
+          277
+        ]
+      },
+      {
+        "draw_layer": 7,
+        "first_frame_image_bottom_y": 299,
+        "index": 37,
+        "position_xy": [
+          814,
+          276
+        ],
+        "top_left": [
+          729,
+          166
+        ]
+      }
+    ],
+    "passive_object_points": [
+      [
+        236,
+        86,
+        0
+      ],
+      [
+        2,
+        124,
+        0
+      ],
+      [
+        376,
+        375,
+        0
+      ],
+      [
+        575,
+        110,
+        0
+      ],
+      [
+        360,
+        103,
+        0
+      ],
+      [
+        324,
+        80,
+        0
+      ],
+      [
+        861,
+        216,
+        0
+      ],
+      [
+        301,
+        375,
+        0
+      ],
+      [
+        653,
+        123,
+        0
+      ],
+      [
+        769,
+        357,
+        0
+      ],
+      [
+        884,
+        140,
+        0
+      ],
+      [
+        745,
+        343,
+        0
+      ],
+      [
+        793,
+        311,
+        0
+      ],
+      [
+        887,
+        280,
+        0
+      ],
+      [
+        810,
+        132,
+        0
+      ],
+      [
+        847,
+        107,
+        0
+      ],
+      [
+        182,
+        394,
+        0
+      ],
+      [
+        803,
+        162,
+        0
+      ]
+    ],
+    "px_to_world_conversion": "本任务不定死换算；留待 P02 标定（07 计划 §6.3：先标定一段地面、脚点、前后边界、两个高低点）",
+    "rival_spawn_points": [
+      [
+        507,
+        230,
+        0
+      ],
+      [
+        580,
+        166,
+        0
+      ],
+      [
+        565,
+        210,
+        0
+      ],
+      [
+        498,
+        169,
+        0
+      ]
+    ],
+    "scene_content_bounds_pixels": [
+      -239,
+      -284,
+      2842,
+      560
+    ],
+    "tile_image_size": [
+      224,
+      600
+    ],
+    "tile_native_placement": "x=224*index+originX; Unity view y=floorHeight-80-originY",
+    "tile_native_placement_evidence": "MapViewManager.LoadBaseTile native method 242386 与 DNFSpriteData.GetOffsetAppliedTilePos（见离线预览 JSON 的 tile_placement_evidence）；controller origin 未恢复，预览用 (0,0)"
+  },
+  "effects": {
+    "animation_loop_profile": {
+      "loop_50100ms": 4,
+      "one_shot_80ms": 46
+    },
+    "background_animations_hgdchcafadgahgg": [],
+    "frame_level_effect_fields_totals": {},
+    "frame_level_effect_note": "50 个对象的全部已解码帧中 graphic_effect/shader_effect/prefab_info/audio_tags/flashes/shake_tag/ani_tag 均为空——本图对象层无内建特效引用",
+    "loop_profile_note": "4 个 50.1s 循环对象为 BossMap_fog 雾层（层2），其余 46 个为单帧 80ms",
+    "missing_image_note": "缺图对象为零：50/50 首帧合成成功；全部 16 个脚本键共 54 个含图帧逐一裁切成功（0 失败）；7 个被引用图集全部按 lookup_hash 解析，无 texture_path_missing 命中。无\"非绘制逻辑帧\"需要豁免。",
+    "missing_image_objects": [],
+    "prefab_objects_3d": [],
+    "shader_or_particle_dependencies": [],
+    "sound_conditions_afhhgbfgdgfcbca": [
+      {
+        "cgcddhcachgcbeb": {
+          "cheefeadacbghdd": "M_HELLMONSTER",
+          "dfgdbdhhbgdghhf": null
+        },
+        "dhcdahccegccggf": []
+      },
+      {
+        "cgcddhcachgcbeb": {
+          "cheefeadacbghdd": "AMB_DARKSTAGE_01",
+          "dfgdbdhhbgdghhf": null
+        },
+        "dhcdahccegccggf": []
+      }
+    ],
+    "sound_note": "两条声音条件：M_HELLMONSTER（怪叫）、AMB_DARKSTAGE_01（环境）；为字符串引用，音频资产定位不在本任务范围"
+  },
+  "entrances": {
+    "ccbhchbcbehegah_4x2_pairs": [
+      -199,
+      240,
+      1098,
+      245,
+      648,
+      106,
+      493,
+      420
+    ],
+    "ccbhchbcbehegah_note": "4 行×2 列数值对 (240,-199),(648,106),(420,493),(245,1098)；疑似成对坐标但未证实，不当碰撞/出入口结论",
+    "change_map_info_ggbaadcafdhhgag": {
+      "afhcdagfddbdghd": {
+        "a": 0.0,
+        "b": 0.0,
+        "g": 0.0,
+        "r": 0.0
+      },
+      "dabagaagfcdhebe": -1,
+      "hebcbhehhecfbdf": 5.0
+    },
+    "change_map_info_note": "dabagaagfcdhebe=-1（推断：无下一图目标，未证实）；hebcbhehhecfbdf=5.0（切换延迟/渐变时长，字段语义未证实）",
+    "door_or_arrow_note": "50 个对象首帧图片路径中无门/箭头/传送门类图像（全部为背景/雾/竹/石/底物）",
+    "door_or_arrow_objects": [],
+    "dungeon_dialog_tips": [],
+    "edge_candidates": {
+      "ground_strip": [
+        0,
+        896
+      ],
+      "left_gap_note": "对象与地砖延伸到 x<0（最小 -239）：左缘为超出地砖带的景层延伸，非地砖地面",
+      "right_gap_note": "x>896 仅雾与远景对象：地砖地面止于 896px，右侧无可站立地砖（推断，待 P02 标定）",
+      "scene_content_bounds": [
+        -239,
+        -284,
+        2842,
+        560
+      ]
+    },
+    "map_area_lists": {
+      "map_areas_ccbgfefehfahfgc": [],
+      "map_areas_dhacbcfdgahbcbh": [],
+      "map_areas_ebbhcdgacedegff": [],
+      "map_areas_fhfgahafhafgfhf": [],
+      "map_areas_hhbfbhfgdebchea": [
+        {
+          "ccccecfgfbagffd": 0.0,
+          "dhcdahccegccggf": [],
+          "fhdegecbacfbbfb": 0.0,
+          "hdhhbcgbcbhgdhe": 0.0,
+          "hfeebcgacafabgh": 0.0
+        },
+        {
+          "ccccecfgfbagffd": 0.0,
+          "dhcdahccegccggf": [],
+          "fhdegecbacfbbfb": 0.0,
+          "hdhhbcgbcbhgdhe": 0.0,
+          "hfeebcgacafabgh": 0.0
+        },
+        {
+          "ccccecfgfbagffd": 0.0,
+          "dhcdahccegccggf": [],
+          "fhdegecbacfbbfb": 0.0,
+          "hdhhbcgbcbhgdhe": 0.0,
+          "hfeebcgacafabgh": 0.0
+        },
+        {
+          "ccccecfgfbagffd": 0.0,
+          "dhcdahccegccggf": [],
+          "fhdegecbacfbbfb": 0.0,
+          "hdhhbcgbcbhgdhe": 0.0,
+          "hfeebcgacafabgh": 0.0
+        },
+        {
+          "ccccecfgfbagffd": 0.0,
+          "dhcdahccegccggf": [],
+          "fhdegecbacfbbfb": 0.0,
+          "hdhhbcgbcbhgdhe": 0.0,
+          "hfeebcgacafabgh": 0.0
+        }
+      ]
+    },
+    "map_area_note": "5 个 MapArea 四个 f32 全为 0 且无可见对象条件——未提供可用区域边界",
+    "map_rect_ceafgdacgfaafhb": {
+      "m_Height": 0.0,
+      "m_Width": 0.0,
+      "m_XMin": 0.0,
+      "m_YMin": 0.0
+    },
+    "map_rect_note": "Rect 全 0——未提供可用地图矩形",
+    "monster_spawn_note": "4 个 STAssignMonster（id 200701303x 系列，x=659/574/...，y=201）；怪物种类解析不在本任务范围",
+    "monster_spawns_fccgcaehfgfdacb": [
+      {
+        "accdbdhbfhcdhcf": false,
+        "aeafbheagfgceha": [
+          1,
+          1
+        ],
+        "bcacbfeecgcegbg": 0,
+        "ccdebagdfbedfff": 0,
+        "ccfehabegdecfeb": [
+          0,
+          0
+        ],
+        "cebbcfghcfgfahd": 2007013032,
+        "dbagcgdeefgffca": false,
+        "ddgaffgchgfgghf": true,
+        "dfhbfdfbdfbdbah": 0,
+        "dgdgccbchfhecga": 201,
+        "eaahhhegchcadeg": [],
+        "ecdfgaabhffahac": {},
+        "fcdedbdghhgdcbc": [],
+        "fchcdhgbbdheecc": 0,
+        "fegfffadafaeebc": false,
+        "ffbabbcadeddaff": [],
+        "fgcbdabfgedfebg": true,
+        "fhbcedcdhhadbcg": 0,
+        "gbcbcgffcadfdcd": 659,
+        "gdbgefehaefdabh": true,
+        "gecfbecbebcdccb": 100,
+        "gfgggbbgaefhhcb": false,
+        "hbbagghchcchfcg": -1,
+        "hdhcbcaegccgbbc": 0
+      },
+      {
+        "accdbdhbfhcdhcf": false,
+        "aeafbheagfgceha": [
+          1,
+          1
+        ],
+        "bcacbfeecgcegbg": 0,
+        "ccdebagdfbedfff": 0,
+        "ccfehabegdecfeb": [
+          0,
+          0
+        ],
+        "cebbcfghcfgfahd": 2007013031,
+        "dbagcgdeefgffca": false,
+        "ddgaffgchgfgghf": true,
+        "dfhbfdfbdfbdbah": 0,
+        "dgdgccbchfhecga": 201,
+        "eaahhhegchcadeg": [],
+        "ecdfgaabhffahac": {},
+        "fcdedbdghhgdcbc": [],
+        "fchcdhgbbdheecc": 0,
+        "fegfffadafaeebc": false,
+        "ffbabbcadeddaff": [],
+        "fgcbdabfgedfebg": true,
+        "fhbcedcdhhadbcg": 0,
+        "gbcbcgffcadfdcd": 574,
+        "gdbgefehaefdabh": true,
+        "gecfbecbebcdccb": 100,
+        "gfgggbbgaefhhcb": false,
+        "hbbagghchcchfcg": -1,
+        "hdhcbcaegccgbbc": 0
+      },
+      {
+        "accdbdhbfhcdhcf": false,
+        "aeafbheagfgceha": [
+          1,
+          1
+        ],
+        "bcacbfeecgcegbg": 0,
+        "ccdebagdfbedfff": 0,
+        "ccfehabegdecfeb": [
+          0,
+          0
+        ],
+        "cebbcfghcfgfahd": 2007013031,
+        "dbagcgdeefgffca": false,
+        "ddgaffgchgfgghf": true,
+        "dfhbfdfbdfbdbah": 0,
+        "dgdgccbchfhecga": 260,
+        "eaahhhegchcadeg": [],
+        "ecdfgaabhffahac": {},
+        "fcdedbdghhgdcbc": [],
+        "fchcdhgbbdheecc": 0,
+        "fegfffadafaeebc": false,
+        "ffbabbcadeddaff": [],
+        "fgcbdabfgedfebg": true,
+        "fhbcedcdhhadbcg": 0,
+        "gbcbcgffcadfdcd": 622,
+        "gdbgefehaefdabh": true,
+        "gecfbecbebcdccb": 100,
+        "gfgggbbgaefhhcb": false,
+        "hbbagghchcchfcg": -1,
+        "hdhcbcaegccgbbc": 0
+      },
+      {
+        "accdbdhbfhcdhcf": false,
+        "aeafbheagfgceha": [
+          1,
+          1
+        ],
+        "bcacbfeecgcegbg": 0,
+        "ccdebagdfbedfff": 0,
+        "ccfehabegdecfeb": [
+          0,
+          0
+        ],
+        "cebbcfghcfgfahd": 2007013032,
+        "dbagcgdeefgffca": false,
+        "ddgaffgchgfgghf": true,
+        "dfhbfdfbdfbdbah": 0,
+        "dgdgccbchfhecga": 261,
+        "eaahhhegchcadeg": [],
+        "ecdfgaabhffahac": {},
+        "fcdedbdghhgdcbc": [],
+        "fchcdhgbbdheecc": 0,
+        "fegfffadafaeebc": false,
+        "ffbabbcadeddaff": [],
+        "fgcbdabfgedfebg": true,
+        "fhbcedcdhhadbcg": 0,
+        "gbcbcgffcadfdcd": 540,
+        "gdbgefehaefdabh": true,
+        "gecfbecbebcdccb": 100,
+        "gfgggbbgaefhhcb": false,
+        "hbbagghchcchfcg": -1,
+        "hdhcbcaegccgbbc": 0
+      }
+    ],
+    "passive_objects_hcebdggbafdfeac": [
+      {
+        "dgdgccbchfhecga": 86,
+        "ecbcfcgbecbbfbf": 2009009615,
+        "fchcdhgbbdheecc": 0,
+        "gbcbcgffcadfdcd": 236
+      },
+      {
+        "dgdgccbchfhecga": 124,
+        "ecbcfcgbecbbfbf": 2009009630,
+        "fchcdhgbbdheecc": 0,
+        "gbcbcgffcadfdcd": 2
+      },
+      {
+        "dgdgccbchfhecga": 375,
+        "ecbcfcgbecbbfbf": 2009009631,
+        "fchcdhgbbdheecc": 0,
+        "gbcbcgffcadfdcd": 376
+      },
+      {
+        "dgdgccbchfhecga": 110,
+        "ecbcfcgbecbbfbf": 2009009632,
+        "fchcdhgbbdheecc": 0,
+        "gbcbcgffcadfdcd": 575
+      },
+      {
+        "dgdgccbchfhecga": 103,
+        "ecbcfcgbecbbfbf": 2009009615,
+        "fchcdhgbbdheecc": 0,
+        "gbcbcgffcadfdcd": 360
+      },
+      {
+        "dgdgccbchfhecga": 80,
+        "ecbcfcgbecbbfbf": 2009009631,
+        "fchcdhgbbdheecc": 0,
+        "gbcbcgffcadfdcd": 324
+      },
+      {
+        "dgdgccbchfhecga": 216,
+        "ecbcfcgbecbbfbf": 72232,
+        "fchcdhgbbdheecc": 0,
+        "gbcbcgffcadfdcd": 861
+      },
+      {
+        "dgdgccbchfhecga": 375,
+        "ecbcfcgbecbbfbf": 2009009629,
+        "fchcdhgbbdheecc": 0,
+        "gbcbcgffcadfdcd": 301
+      },
+      {
+        "dgdgccbchfhecga": 123,
+        "ecbcfcgbecbbfbf": 2009009634,
+        "fchcdhgbbdheecc": 0,
+        "gbcbcgffcadfdcd": 653
+      },
+      {
+        "dgdgccbchfhecga": 357,
+        "ecbcfcgbecbbfbf": 2009009629,
+        "fchcdhgbbdheecc": 0,
+        "gbcbcgffcadfdcd": 769
+      },
+      {
+        "dgdgccbchfhecga": 140,
+        "ecbcfcgbecbbfbf": 2009009615,
+        "fchcdhgbbdheecc": 0,
+        "gbcbcgffcadfdcd": 884
+      },
+      {
+        "dgdgccbchfhecga": 343,
+        "ecbcfcgbecbbfbf": 2009001762,
+        "fchcdhgbbdheecc": 0,
+        "gbcbcgffcadfdcd": 745
+      },
+      {
+        "dgdgccbchfhecga": 311,
+        "ecbcfcgbecbbfbf": 2009001762,
+        "fchcdhgbbdheecc": 0,
+        "gbcbcgffcadfdcd": 793
+      },
+      {
+        "dgdgccbchfhecga": 280,
+        "ecbcfcgbecbbfbf": 2009009629,
+        "fchcdhgbbdheecc": 0,
+        "gbcbcgffcadfdcd": 887
+      },
+      {
+        "dgdgccbchfhecga": 132,
+        "ecbcfcgbecbbfbf": 2009009631,
+        "fchcdhgbbdheecc": 0,
+        "gbcbcgffcadfdcd": 810
+      },
+      {
+        "dgdgccbchfhecga": 107,
+        "ecbcfcgbecbbfbf": 2009009632,
+        "fchcdhgbbdheecc": 0,
+        "gbcbcgffcadfdcd": 847
+      },
+      {
+        "dgdgccbchfhecga": 394,
+        "ecbcfcgbecbbfbf": 2009009615,
+        "fchcdhgbbdheecc": 0,
+        "gbcbcgffcadfdcd": 182
+      },
+      {
+        "dgdgccbchfhecga": 162,
+        "ecbcfcgbecbbfbf": 2009009616,
+        "fchcdhgbbdheecc": 0,
+        "gbcbcgffcadfdcd": 803
+      }
+    ],
+    "passive_objects_note": "18 个 STAssignPassiveObject（id+xyz），无路径名可解析；常用于触发区/出入口，但本图角色未证实（推断）",
+    "rival_spawn_note": "4 个 STRivalMapSpawnData（x,y,0），决斗图对手出生点候选，语义未证实",
+    "rival_spawns_dfecfegadffhdbb": [
+      {
+        "bedfbeeffbdcagg": 0,
+        "cbecbhbacfbdgfg": 230,
+        "hfhfdcdbafbhbcb": 507
+      },
+      {
+        "bedfbeeffbdcagg": 0,
+        "cbecbhbacfbdgfg": 166,
+        "hfhfdcdbafbhbcb": 580
+      },
+      {
+        "bedfbeeffbdcagg": 0,
+        "cbecbhbacfbdgfg": 210,
+        "hfhfdcdbafbhbcb": 565
+      },
+      {
+        "bedfbeeffbdcagg": 0,
+        "cbecbhbacfbdgfg": 169,
+        "hfhfdcdbafbhbcb": 498
+      }
+    ],
+    "town_paths": {
+      "left_efacdaehbghcefb": [],
+      "right_hfeegdhhdeaadef": []
+    }
+  },
+  "evidence_paths": {
+    "db_queries": [
+      "db_queries/schema_maps_atlas_script.json",
+      "db_queries/q2_map_row.json",
+      "db_queries/q3_scene_full.json",
+      "db_queries/q4_analysis.json",
+      "db_queries/q4_grids.json",
+      "db_queries/q5_deep_fields.json"
+    ],
+    "scripts": [
+      "scripts/q1_schema.py",
+      "scripts/q2_locate_map.py",
+      "scripts/q3_full_dump.py",
+      "scripts/q4_ground_objects.py",
+      "scripts/q5_deep_fields.py",
+      "scripts/q6_compose_layers.py",
+      "scripts/q7_build_json.py"
+    ],
+    "source_databases_read_only": [
+      "D:/Github-Poj/DNFM/DNFM_export_130.5.8.0/downloaded_130.5.8.202/restored/maps/maps.sqlite",
+      "D:/Github-Poj/DNFM/DNFM_export_130.5.8.0/downloaded_130.5.8.202/restored/atlas/atlas.sqlite",
+      "D:/Github-Poj/DNFM/DNFM_export_130.5.8.0/downloaded_130.5.8.202/restored/script_index.sqlite",
+      "D:/Github-Poj/DNFM/DNFM_export_130.5.8.0/downloaded_130.5.8.202/restored/animations/animations.sqlite"
+    ],
+    "source_reports_read": [
+      "D:/Github-Poj/DNFM/DNFM_export_130.5.8.0/downloaded_130.5.8.202/reports/map_semantic_index.json",
+      "D:/Github-Poj/DNFM/DNFM_export_130.5.8.0/downloaded_130.5.8.202/reports/map_schema.json",
+      "D:/Github-Poj/DNFM/DNFM_export_130.5.8.0/downloaded_130.5.8.202/reports/atlas_restore_validation.json",
+      "D:/Github-Poj/DNFM/DNFM_export_130.5.8.0/downloaded_130.5.8.202/reports/atlas_restore_summary.json",
+      "D:/Github-Poj/DNFM/DNFM_export_130.5.8.0/downloaded_130.5.8.202/reports/atlas_restore_unresolved_pages.jsonl",
+      "D:/Github-Poj/DNFM/DNFM_export_130.5.8.0/downloaded_130.5.8.202/restored/maps/catalog.json",
+      "D:/Github-Poj/DNFM/DNFM_export_130.5.8.0/downloaded_130.5.8.202/restored/maps/previews/map_013_00595.json"
+    ],
+    "spotcheck": [
+      "spotcheck/bamboo_00_panorama_all_layers.png",
+      "spotcheck/bamboo_01_ground_tiles_only.png",
+      "spotcheck/bamboo_01_layer01_distantback.png",
+      "spotcheck/bamboo_02_layer02_middleback.png",
+      "spotcheck/bamboo_04_layer04_closeback.png",
+      "spotcheck/bamboo_05_layer05_bottom.png",
+      "spotcheck/bamboo_06_layer06_normal.png",
+      "spotcheck/bamboo_07_layer07_contact.png",
+      "spotcheck/bamboo_08_ground_plus_near_layers.png",
+      "spotcheck/map_013_00595_official_preview.png"
+    ]
+  },
+  "gaps": [
+    {
+      "detail": "maps.paths 为空、script_index 无本图脚本路径；解码字符串字段 daeabbbhbaecegd=\"[决斗]无名\" 为新证据，但其运行时角色（显示名/内部名）未证实。正式引用维持 maps.hash=6816aad6b6cd4ced。",
+      "id": "G1",
+      "topic": "map_name"
+    },
+    {
+      "detail": "通行网格值 0/2 语义未恢复；空间分布已记录（行0-9=2，行10-29=0）。16×20px 单元尺寸为几何推断，非原生证据。",
+      "id": "G2",
+      "topic": "passage_value_semantics"
+    },
+    {
+      "detail": "adedcfecabhfbgb(2×3全100)、fhbcgbdcbeabcbh(4×3全-1)、hedccefffecfhff([2,8])、hbabfdacchfddfa([-1×4])、cehddgcbbghbbea({2:2})、cdeeeagbbgfeehc([2002400007])、ENUM_MAPTYPE=0 语义未解释，已逐项列于 walkability_fields.unexplained_value_list。",
+      "id": "G3",
+      "topic": "unexplained_numeric_fields"
+    },
+    {
+      "detail": "0-10 层名（DISTANTBACK…MAX）来自恢复工具内置名单，未经引擎元数据独立佐证；数值层号与分组为准。",
+      "id": "G4",
+      "topic": "draw_layer_enum_names"
+    },
+    {
+      "detail": "地砖/对象放置公式的 controller origin（originX/originY）未恢复；预览与本次合成用 (0,0)。P02 标定时需用脚点/相机基准重新锚定。",
+      "id": "G5",
+      "topic": "controller_origin"
+    },
+    {
+      "detail": "内容引用横跨 Map/Shonan_Hell、Map/event/2018_Hell/Step3、Map/event/2018_Hell/Step4、Map/KContents3/TheMineOfAbyss 四个目录；无法证明本图为某官方地图的完整副本，仅作素材线索。",
+      "id": "G6",
+      "topic": "identity_of_content_roots"
+    },
+    {
+      "detail": "18 个 STAssignPassiveObject 的 id（2009009615 等）与 4 个怪物 id（200701303x）未在本任务解析到实体/外观；触发与出场行为未知。",
+      "id": "G7",
+      "topic": "passive_object_identity"
+    },
+    {
+      "detail": "756 越界矩形全量键表未持久化于源报告（仅前 100 样本）；本任务对被引用图集重算为 0 命中，未全库重算。",
+      "id": "G8",
+      "topic": "rect_outside_page_full_list"
+    },
+    {
+      "detail": "ChangeMapInfo.dabagaagfcdhebe=-1 解释为\"无目标图\"、5.0 解释为延迟/渐变时长，均为推断。",
+      "id": "G9",
+      "topic": "change_map_info_semantics"
+    }
+  ],
+  "generated_at": "2026-11-07T01:20:00+08:00",
+  "ground": {
+    "base_tile_instance_count": 4,
+    "ground_strip_x_pixels": [
+      0,
+      896
+    ],
+    "ground_strip_y_top_pixels": 40,
+    "tile_canvas_y_range_inferred": [
+      40,
+      640
+    ],
+    "tile_canvas_y_range_status": "推断：由 y_top=40 与地砖 PNG 高 600 推算，非原生字段",
+    "tile_image_height": 600,
+    "unique_tile_hashes": [
+      "84368d266da2197b",
+      "8460768a44b09b76"
+    ],
+    "y_top_formula": "floorHeight-80-originY, origin=(0,0) used by offline preview; actual controller origin not recovered"
+  },
+  "identity": {
+    "block": 595,
+    "catalog_entry": {
+      "animation_count": 50,
+      "base_tile_count": 4,
+      "block": 595,
+      "hash64": "6816aad6b6cd4ced",
+      "paths": [],
+      "shard": 13
+    },
+    "image_content_references": {
+      "note": "计划文档 §4 记录的图片引用为 Map/Shonan_Hell 与 Map/event/2018_Hell/Step3；本次实测地砖引用为 Step4/tile/tile.img，另有 Map/KContents3/TheMineOfAbyss 雾层。这些引用只作内容线索，不证明本图是某官方副本的完整复刻。",
+      "objects": [
+        "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+        "Map/Shonan_Hell/BackGround/2nd_Far.img",
+        "Map/event/2018_Hell/Step3/background/back_middle.img",
+        "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "Map/event/2018_Hell/Step4/object/rock.img"
+      ],
+      "tiles": [
+        "Map/event/2018_Hell/Step4/tile/tile.img"
+      ]
+    },
+    "map_name_status": {
+      "decoded_string_field_daeabbbhbaecegd": "[决斗]无名",
+      "note": "maps.paths 为空、script_index 中无本图脚本路径名；但 STMapScript 解码字符串字段 daeabbbhbaecegd 含 \"[决斗]无名\"。该字段在类型表中标为 string，其运行时用途（显示名/内部名）未证实。正式引用仍用 maps.hash；此字符串按解码事实记录。",
+      "recovered_dot_map_path": null
+    },
+    "map_paths": [],
+    "maps_hash": "6816aad6b6cd4ced",
+    "maptype_enum_value": 0,
+    "maptype_semantics": "ENUM_MAPTYPE 仅存数值，符号名未在恢复数据中；值 0 语义未证实",
+    "payload_sha256": "8631fdb066ba0158f4b05b6b44b36634770a6174040e2fcf91a5ade3fe93934c",
+    "rows_with_hash_in_maps_table": 1,
+    "schema": "STMapScript",
+    "shard": 13,
+    "units": "Original game 2D coordinates/pixels; not Unity metres."
+  },
+  "known_issue_intersections": {
+    "page_dimension_mismatches_4": {
+      "hits_for_this_map": [],
+      "method": "对本图引用图集逐页比较声明尺寸与 PNG 实际尺寸（含调色板减半规则）",
+      "pages_checked": [
+        {
+          "declared": [
+            1500,
+            376
+          ],
+          "dimension_mismatch": false,
+          "image_path": "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+          "png_size": [
+            1500,
+            376
+          ],
+          "rect_outside_page_count": 0,
+          "texture_path": "Assets/Bundle/sprite/Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img_0.png"
+        },
+        {
+          "declared": [
+            636,
+            360
+          ],
+          "dimension_mismatch": false,
+          "image_path": "Map/Shonan_Hell/BackGround/2nd_Far.img",
+          "png_size": [
+            636,
+            360
+          ],
+          "rect_outside_page_count": 0,
+          "texture_path": "Assets/Bundle/Sprite/Map/Shonan_Hell/BackGround/2nd_Far.img_0.png"
+        },
+        {
+          "declared": [
+            572,
+            756
+          ],
+          "dimension_mismatch": false,
+          "image_path": "Map/event/2018_Hell/Step3/background/back_middle.img",
+          "png_size": [
+            572,
+            756
+          ],
+          "rect_outside_page_count": 0,
+          "texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/background/back_middle.img_0.png"
+        },
+        {
+          "declared": [
+            960,
+            816
+          ],
+          "dimension_mismatch": false,
+          "image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+          "png_size": [
+            960,
+            816
+          ],
+          "rect_outside_page_count": 0,
+          "texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bamboo.img_0.png"
+        },
+        {
+          "declared": [
+            1004,
+            500
+          ],
+          "dimension_mismatch": false,
+          "image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+          "png_size": [
+            1004,
+            500
+          ],
+          "rect_outside_page_count": 0,
+          "texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bottom_obj.img_0.png"
+        },
+        {
+          "declared": [
+            240,
+            144
+          ],
+          "dimension_mismatch": false,
+          "image_path": "Map/event/2018_Hell/Step4/object/rock.img",
+          "png_size": [
+            240,
+            144
+          ],
+          "rect_outside_page_count": 0,
+          "texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step4/object/rock.img_0.png"
+        },
+        {
+          "declared": [
+            456,
+            296
+          ],
+          "dimension_mismatch": false,
+          "image_path": "Map/event/2018_Hell/Step4/tile/tile.img",
+          "png_size": [
+            456,
+            296
+          ],
+          "rect_outside_page_count": 0,
+          "texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step4/tile/tile.img_0.png"
+        }
+      ],
+      "source": "D:/Github-Poj/DNFM/DNFM_export_130.5.8.0/downloaded_130.5.8.202/reports/atlas_restore_validation.json checks.page_dimension_mismatches=4"
+    },
+    "rect_outside_page_756": {
+      "hits_for_this_map": [],
+      "method": "按 verify() 同一谓词对本图引用的 7 个图集全帧重算",
+      "per_atlas_outside_counts": {
+        "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img": 0,
+        "Map/Shonan_Hell/BackGround/2nd_Far.img": 0,
+        "Map/event/2018_Hell/Step3/background/back_middle.img": 0,
+        "Map/event/2018_Hell/Step3/object/bamboo.img": 0,
+        "Map/event/2018_Hell/Step3/object/bottom_obj.img": 0,
+        "Map/event/2018_Hell/Step4/object/rock.img": 0,
+        "Map/event/2018_Hell/Step4/tile/tile.img": 0
+      },
+      "source": "D:/Github-Poj/DNFM/DNFM_export_130.5.8.0/downloaded_130.5.8.202/reports/atlas_restore_validation.json checks.rect_outside_page=756（报告仅存前 100 条样本，无全量键表）"
+    },
+    "summary": "本图命中四类全库坏账均为 0；可见依赖零未解释缺失",
+    "tile_key_misses_54": {
+      "evidence": "两个地砖 hash 均存在于 tiles 表（shard13/block1454、shard13/block1453）且可从 script header 解码，往返字节一致",
+      "hits_for_this_map": [],
+      "source": "D:/Github-Poj/DNFM/DNFM_export_130.5.8.0/downloaded_130.5.8.202/reports/map_semantic_index.json tile_definition_failures (54, all \"Key absent from script header\")"
+    },
+    "unresolved_nonempty_pages_41": {
+      "figure_drift": "汇总 41 与 jsonl 50 并存（jsonl 含后并入的数组层行）；两口径均无本图命中",
+      "hits_for_this_map": [],
+      "referenced_image_paths_checked": [
+        "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+        "Map/Shonan_Hell/BackGround/2nd_Far.img",
+        "Map/event/2018_Hell/Step3/background/back_middle.img",
+        "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "Map/event/2018_Hell/Step4/object/rock.img",
+        "Map/event/2018_Hell/Step4/tile/tile.img"
+      ],
+      "source": "D:/Github-Poj/DNFM/DNFM_export_130.5.8.0/downloaded_130.5.8.202/reports/atlas_restore_summary.json postprocessing.current_unresolved_non_none_pages=41; 同目录 atlas_restore_unresolved_pages.jsonl 现有 50 条非空行（37 个唯一 atlas+path）"
+    }
+  },
+  "objects_by_layer": {
+    "1": {
+      "count": 3,
+      "draw_layer_name": "DISTANTBACK",
+      "objects": [
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/Shonan_Hell/BackGround/2nd_Far.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 1,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 0,
+            "image_path": "Map/Shonan_Hell/BackGround/2nd_Far.img",
+            "image_size_scaled": [
+              630,
+              355
+            ],
+            "status": "composed",
+            "top_left": [
+              -239,
+              -239
+            ]
+          },
+          "index": 0,
+          "position_xyz": [
+            106,
+            -64,
+            0
+          ],
+          "script_block": 591,
+          "script_hash64": "222e81e501e7909f",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/Shonan_Hell/BackGround/2nd_Far.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 1,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 0,
+            "image_path": "Map/Shonan_Hell/BackGround/2nd_Far.img",
+            "image_size_scaled": [
+              630,
+              355
+            ],
+            "status": "composed",
+            "top_left": [
+              391,
+              -239
+            ]
+          },
+          "index": 1,
+          "position_xyz": [
+            736,
+            -64,
+            0
+          ],
+          "script_block": 591,
+          "script_hash64": "222e81e501e7909f",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/Shonan_Hell/BackGround/2nd_Far.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 1,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 0,
+            "image_path": "Map/Shonan_Hell/BackGround/2nd_Far.img",
+            "image_size_scaled": [
+              630,
+              355
+            ],
+            "status": "composed",
+            "top_left": [
+              1021,
+              -239
+            ]
+          },
+          "index": 2,
+          "position_xyz": [
+            1366,
+            -64,
+            0
+          ],
+          "script_block": 591,
+          "script_hash64": "222e81e501e7909f",
+          "script_shard": 21
+        }
+      ]
+    },
+    "2": {
+      "count": 8,
+      "draw_layer_name": "MIDDLEBACK",
+      "objects": [
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bamboo.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 2,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 0,
+            "image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+            "image_size_scaled": [
+              440,
+              441
+            ],
+            "status": "composed",
+            "top_left": [
+              -60,
+              -284
+            ]
+          },
+          "index": 3,
+          "position_xyz": [
+            160,
+            -31,
+            0
+          ],
+          "script_block": 581,
+          "script_hash64": "f484c71bdee0b60b",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bamboo.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 2,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 0,
+            "image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+            "image_size_scaled": [
+              440,
+              441
+            ],
+            "status": "composed",
+            "top_left": [
+              693,
+              -264
+            ]
+          },
+          "index": 4,
+          "position_xyz": [
+            913,
+            -11,
+            0
+          ],
+          "script_block": 581,
+          "script_hash64": "f484c71bdee0b60b",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bamboo.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 2,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 1,
+            "image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+            "image_size_scaled": [
+              399,
+              392
+            ],
+            "status": "composed",
+            "top_left": [
+              186,
+              -241
+            ]
+          },
+          "index": 5,
+          "position_xyz": [
+            406,
+            12,
+            0
+          ],
+          "script_block": 582,
+          "script_hash64": "fb71db553e200ada",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/background/back_middle.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 2,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 0,
+            "image_path": "Map/event/2018_Hell/Step3/background/back_middle.img",
+            "image_size_scaled": [
+              568,
+              375
+            ],
+            "status": "composed",
+            "top_left": [
+              -151,
+              -226
+            ]
+          },
+          "index": 25,
+          "position_xyz": [
+            194,
+            -51,
+            0
+          ],
+          "script_block": 593,
+          "script_hash64": "d4eaaf0a6481f98c",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 2,
+            "distinct_image_paths": [
+              "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img"
+            ],
+            "duration_ms": 50100,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 2,
+            "frames_with_image": 2,
+            "loop": true
+          },
+          "draw_layer": 2,
+          "first_frame": {
+            "delay_ms": 50000,
+            "frame_index": 0,
+            "image_path": "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+            "image_size_scaled": [
+              1496,
+              369
+            ],
+            "status": "composed",
+            "top_left": [
+              -150,
+              100
+            ]
+          },
+          "index": 46,
+          "position_xyz": [
+            -150,
+            100,
+            0
+          ],
+          "script_block": 596,
+          "script_hash64": "5b7b43a536fab1c1",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 2,
+            "distinct_image_paths": [
+              "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img"
+            ],
+            "duration_ms": 50100,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 2,
+            "frames_with_image": 2,
+            "loop": true
+          },
+          "draw_layer": 2,
+          "first_frame": {
+            "delay_ms": 50000,
+            "frame_index": 0,
+            "image_path": "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+            "image_size_scaled": [
+              1496,
+              369
+            ],
+            "status": "composed",
+            "top_left": [
+              -150,
+              100
+            ]
+          },
+          "index": 47,
+          "position_xyz": [
+            -150,
+            100,
+            0
+          ],
+          "script_block": 596,
+          "script_hash64": "5b7b43a536fab1c1",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 2,
+            "distinct_image_paths": [
+              "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img"
+            ],
+            "duration_ms": 50100,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 2,
+            "frames_with_image": 2,
+            "loop": true
+          },
+          "draw_layer": 2,
+          "first_frame": {
+            "delay_ms": 50000,
+            "frame_index": 0,
+            "image_path": "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+            "image_size_scaled": [
+              1496,
+              369
+            ],
+            "status": "composed",
+            "top_left": [
+              1346,
+              100
+            ]
+          },
+          "index": 48,
+          "position_xyz": [
+            1346,
+            100,
+            0
+          ],
+          "script_block": 596,
+          "script_hash64": "5b7b43a536fab1c1",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 2,
+            "distinct_image_paths": [
+              "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img"
+            ],
+            "duration_ms": 50100,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 2,
+            "frames_with_image": 2,
+            "loop": true
+          },
+          "draw_layer": 2,
+          "first_frame": {
+            "delay_ms": 50000,
+            "frame_index": 0,
+            "image_path": "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+            "image_size_scaled": [
+              1496,
+              369
+            ],
+            "status": "composed",
+            "top_left": [
+              1346,
+              100
+            ]
+          },
+          "index": 49,
+          "position_xyz": [
+            1346,
+            100,
+            0
+          ],
+          "script_block": 596,
+          "script_hash64": "5b7b43a536fab1c1",
+          "script_shard": 21
+        }
+      ]
+    },
+    "4": {
+      "count": 1,
+      "draw_layer_name": "CLOSEBACK",
+      "objects": [
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bamboo.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 4,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 2,
+            "image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+            "image_size_scaled": [
+              288,
+              418
+            ],
+            "status": "composed",
+            "top_left": [
+              321,
+              -263
+            ]
+          },
+          "index": 6,
+          "position_xyz": [
+            541,
+            -10,
+            0
+          ],
+          "script_block": 583,
+          "script_hash64": "ab07d46c5e7d96bd",
+          "script_shard": 21
+        }
+      ]
+    },
+    "5": {
+      "count": 13,
+      "draw_layer_name": "BOTTOM",
+      "objects": [
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bottom_obj.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 5,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 2,
+            "image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+            "image_size_scaled": [
+              399,
+              106
+            ],
+            "status": "composed",
+            "top_left": [
+              60,
+              54
+            ]
+          },
+          "index": 14,
+          "position_xyz": [
+            260,
+            104,
+            0
+          ],
+          "script_block": 587,
+          "script_hash64": "b1aee0412ee5e7fa",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bottom_obj.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 5,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 3,
+            "image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+            "image_size_scaled": [
+              280,
+              95
+            ],
+            "status": "composed",
+            "top_left": [
+              447,
+              322
+            ]
+          },
+          "index": 15,
+          "position_xyz": [
+            572,
+            367,
+            0
+          ],
+          "script_block": 588,
+          "script_hash64": "68fd2517044b759e",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bottom_obj.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 5,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 4,
+            "image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+            "image_size_scaled": [
+              160,
+              66
+            ],
+            "status": "composed",
+            "top_left": [
+              556,
+              273
+            ]
+          },
+          "index": 16,
+          "position_xyz": [
+            621,
+            303,
+            0
+          ],
+          "script_block": 589,
+          "script_hash64": "d6f50c5e011218a8",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bottom_obj.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 5,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 4,
+            "image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+            "image_size_scaled": [
+              160,
+              66
+            ],
+            "status": "composed",
+            "top_left": [
+              247,
+              281
+            ]
+          },
+          "index": 17,
+          "position_xyz": [
+            312,
+            311,
+            0
+          ],
+          "script_block": 589,
+          "script_hash64": "d6f50c5e011218a8",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bottom_obj.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 5,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 2,
+            "image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+            "image_size_scaled": [
+              399,
+              106
+            ],
+            "status": "composed",
+            "top_left": [
+              -132,
+              291
+            ]
+          },
+          "index": 19,
+          "position_xyz": [
+            68,
+            341,
+            0
+          ],
+          "script_block": 587,
+          "script_hash64": "b1aee0412ee5e7fa",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bottom_obj.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 5,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 3,
+            "image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+            "image_size_scaled": [
+              280,
+              95
+            ],
+            "status": "composed",
+            "top_left": [
+              1,
+              118
+            ]
+          },
+          "index": 24,
+          "position_xyz": [
+            126,
+            163,
+            0
+          ],
+          "script_block": 588,
+          "script_hash64": "68fd2517044b759e",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bottom_obj.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 5,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 3,
+            "image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+            "image_size_scaled": [
+              280,
+              95
+            ],
+            "status": "composed",
+            "top_left": [
+              763,
+              135
+            ]
+          },
+          "index": 26,
+          "position_xyz": [
+            888,
+            180,
+            0
+          ],
+          "script_block": 588,
+          "script_hash64": "68fd2517044b759e",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bottom_obj.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 5,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 4,
+            "image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+            "image_size_scaled": [
+              160,
+              66
+            ],
+            "status": "composed",
+            "top_left": [
+              728,
+              225
+            ]
+          },
+          "index": 27,
+          "position_xyz": [
+            793,
+            255,
+            0
+          ],
+          "script_block": 589,
+          "script_hash64": "d6f50c5e011218a8",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bottom_obj.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 5,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 4,
+            "image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+            "image_size_scaled": [
+              160,
+              66
+            ],
+            "status": "composed",
+            "top_left": [
+              826,
+              209
+            ]
+          },
+          "index": 28,
+          "position_xyz": [
+            891,
+            239,
+            0
+          ],
+          "script_block": 589,
+          "script_hash64": "d6f50c5e011218a8",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bottom_obj.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 5,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 4,
+            "image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+            "image_size_scaled": [
+              160,
+              66
+            ],
+            "status": "composed",
+            "top_left": [
+              809,
+              270
+            ]
+          },
+          "index": 29,
+          "position_xyz": [
+            874,
+            300,
+            0
+          ],
+          "script_block": 589,
+          "script_hash64": "d6f50c5e011218a8",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bottom_obj.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 5,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 3,
+            "image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+            "image_size_scaled": [
+              280,
+              95
+            ],
+            "status": "composed",
+            "top_left": [
+              743,
+              186
+            ]
+          },
+          "index": 32,
+          "position_xyz": [
+            868,
+            231,
+            0
+          ],
+          "script_block": 573,
+          "script_hash64": "9e0e589c8dcd0da1",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bottom_obj.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 5,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 4,
+            "image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+            "image_size_scaled": [
+              160,
+              66
+            ],
+            "status": "composed",
+            "top_left": [
+              28,
+              95
+            ]
+          },
+          "index": 42,
+          "position_xyz": [
+            93,
+            125,
+            0
+          ],
+          "script_block": 589,
+          "script_hash64": "d6f50c5e011218a8",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step4/object/rock.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 5,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 4,
+            "image_path": "Map/event/2018_Hell/Step4/object/rock.img",
+            "image_size_scaled": [
+              37,
+              27
+            ],
+            "status": "composed",
+            "top_left": [
+              222,
+              315
+            ]
+          },
+          "index": 44,
+          "position_xyz": [
+            247,
+            330,
+            0
+          ],
+          "script_block": 594,
+          "script_hash64": "8e997b55c7322be9",
+          "script_shard": 21
+        }
+      ]
+    },
+    "6": {
+      "count": 20,
+      "draw_layer_name": "NORMAL",
+      "objects": [
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bamboo.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 6,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 3,
+            "image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+            "image_size_scaled": [
+              223,
+              166
+            ],
+            "status": "composed",
+            "top_left": [
+              717,
+              -37
+            ]
+          },
+          "index": 7,
+          "position_xyz": [
+            832,
+            98,
+            0
+          ],
+          "script_block": 584,
+          "script_hash64": "b581298403321c9c",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bamboo.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 6,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 4,
+            "image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+            "image_size_scaled": [
+              189,
+              133
+            ],
+            "status": "composed",
+            "top_left": [
+              -35,
+              -7
+            ]
+          },
+          "index": 8,
+          "position_xyz": [
+            50,
+            103,
+            0
+          ],
+          "script_block": 585,
+          "script_hash64": "9277784de838585e",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step4/object/rock.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 6,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 4,
+            "image_path": "Map/event/2018_Hell/Step4/object/rock.img",
+            "image_size_scaled": [
+              37,
+              27
+            ],
+            "status": "composed",
+            "top_left": [
+              155,
+              77
+            ]
+          },
+          "index": 9,
+          "position_xyz": [
+            180,
+            92,
+            0
+          ],
+          "script_block": 594,
+          "script_hash64": "8e997b55c7322be9",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step4/object/rock.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 6,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 4,
+            "image_path": "Map/event/2018_Hell/Step4/object/rock.img",
+            "image_size_scaled": [
+              37,
+              27
+            ],
+            "status": "composed",
+            "top_left": [
+              697,
+              72
+            ]
+          },
+          "index": 10,
+          "position_xyz": [
+            722,
+            87,
+            0
+          ],
+          "script_block": 594,
+          "script_hash64": "8e997b55c7322be9",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step4/object/rock.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 6,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 4,
+            "image_path": "Map/event/2018_Hell/Step4/object/rock.img",
+            "image_size_scaled": [
+              37,
+              27
+            ],
+            "status": "composed",
+            "top_left": [
+              227,
+              83
+            ]
+          },
+          "index": 11,
+          "position_xyz": [
+            252,
+            98,
+            0
+          ],
+          "script_block": 594,
+          "script_hash64": "8e997b55c7322be9",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bamboo.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 6,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 5,
+            "image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+            "image_size_scaled": [
+              63,
+              82
+            ],
+            "status": "composed",
+            "top_left": [
+              94,
+              29
+            ]
+          },
+          "index": 12,
+          "position_xyz": [
+            124,
+            99,
+            0
+          ],
+          "script_block": 586,
+          "script_hash64": "802acb69ae657b15",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bamboo.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 6,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 5,
+            "image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+            "image_size_scaled": [
+              63,
+              82
+            ],
+            "status": "composed",
+            "top_left": [
+              394,
+              39
+            ]
+          },
+          "index": 13,
+          "position_xyz": [
+            424,
+            109,
+            0
+          ],
+          "script_block": 586,
+          "script_hash64": "802acb69ae657b15",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step4/object/rock.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 6,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 4,
+            "image_path": "Map/event/2018_Hell/Step4/object/rock.img",
+            "image_size_scaled": [
+              37,
+              27
+            ],
+            "status": "composed",
+            "top_left": [
+              424,
+              187
+            ]
+          },
+          "index": 18,
+          "position_xyz": [
+            449,
+            202,
+            0
+          ],
+          "script_block": 594,
+          "script_hash64": "8e997b55c7322be9",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bamboo.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 6,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 4,
+            "image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+            "image_size_scaled": [
+              189,
+              133
+            ],
+            "status": "composed",
+            "top_left": [
+              -81,
+              243
+            ]
+          },
+          "index": 23,
+          "position_xyz": [
+            4,
+            353,
+            0
+          ],
+          "script_block": 585,
+          "script_hash64": "9277784de838585e",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bamboo.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 6,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 5,
+            "image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+            "image_size_scaled": [
+              63,
+              82
+            ],
+            "status": "composed",
+            "top_left": [
+              744,
+              67
+            ]
+          },
+          "index": 31,
+          "position_xyz": [
+            774,
+            137,
+            0
+          ],
+          "script_block": 586,
+          "script_hash64": "802acb69ae657b15",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bamboo.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 6,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 3,
+            "image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+            "image_size_scaled": [
+              223,
+              166
+            ],
+            "status": "composed",
+            "top_left": [
+              758,
+              75
+            ]
+          },
+          "index": 33,
+          "position_xyz": [
+            873,
+            210,
+            0
+          ],
+          "script_block": 568,
+          "script_hash64": "7c0724676e267a43",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bottom_obj.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 6,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 5,
+            "image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+            "image_size_scaled": [
+              91,
+              84
+            ],
+            "status": "composed",
+            "top_left": [
+              817,
+              118
+            ]
+          },
+          "index": 34,
+          "position_xyz": [
+            862,
+            183,
+            0
+          ],
+          "script_block": 575,
+          "script_hash64": "23f46eb42bdac7dd",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bottom_obj.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 6,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 5,
+            "image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+            "image_size_scaled": [
+              91,
+              84
+            ],
+            "status": "composed",
+            "top_left": [
+              790,
+              152
+            ]
+          },
+          "index": 35,
+          "position_xyz": [
+            835,
+            217,
+            0
+          ],
+          "script_block": 575,
+          "script_hash64": "23f46eb42bdac7dd",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bottom_obj.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 6,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 5,
+            "image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+            "image_size_scaled": [
+              91,
+              84
+            ],
+            "status": "composed",
+            "top_left": [
+              655,
+              296
+            ]
+          },
+          "index": 36,
+          "position_xyz": [
+            700,
+            361,
+            0
+          ],
+          "script_block": 575,
+          "script_hash64": "23f46eb42bdac7dd",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bottom_obj.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 6,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 5,
+            "image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+            "image_size_scaled": [
+              91,
+              84
+            ],
+            "status": "composed",
+            "top_left": [
+              842,
+              190
+            ]
+          },
+          "index": 38,
+          "position_xyz": [
+            887,
+            255,
+            0
+          ],
+          "script_block": 575,
+          "script_hash64": "23f46eb42bdac7dd",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bottom_obj.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 6,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 5,
+            "image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+            "image_size_scaled": [
+              91,
+              84
+            ],
+            "status": "composed",
+            "top_left": [
+              734,
+              245
+            ]
+          },
+          "index": 39,
+          "position_xyz": [
+            779,
+            310,
+            0
+          ],
+          "script_block": 575,
+          "script_hash64": "23f46eb42bdac7dd",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bottom_obj.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 6,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 5,
+            "image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+            "image_size_scaled": [
+              91,
+              84
+            ],
+            "status": "composed",
+            "top_left": [
+              695,
+              258
+            ]
+          },
+          "index": 40,
+          "position_xyz": [
+            740,
+            323,
+            0
+          ],
+          "script_block": 575,
+          "script_hash64": "23f46eb42bdac7dd",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bamboo.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 6,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 5,
+            "image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+            "image_size_scaled": [
+              63,
+              82
+            ],
+            "status": "composed",
+            "top_left": [
+              671,
+              256
+            ]
+          },
+          "index": 41,
+          "position_xyz": [
+            701,
+            326,
+            0
+          ],
+          "script_block": 586,
+          "script_hash64": "802acb69ae657b15",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bamboo.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 6,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 5,
+            "image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+            "image_size_scaled": [
+              63,
+              82
+            ],
+            "status": "composed",
+            "top_left": [
+              710,
+              22
+            ]
+          },
+          "index": 43,
+          "position_xyz": [
+            740,
+            92,
+            0
+          ],
+          "script_block": 586,
+          "script_hash64": "802acb69ae657b15",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step4/object/rock.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 6,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 4,
+            "image_path": "Map/event/2018_Hell/Step4/object/rock.img",
+            "image_size_scaled": [
+              37,
+              27
+            ],
+            "status": "composed",
+            "top_left": [
+              89,
+              99
+            ]
+          },
+          "index": 45,
+          "position_xyz": [
+            114,
+            114,
+            0
+          ],
+          "script_block": 594,
+          "script_hash64": "8e997b55c7322be9",
+          "script_shard": 21
+        }
+      ]
+    },
+    "7": {
+      "count": 5,
+      "draw_layer_name": "CONTACT",
+      "objects": [
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bamboo.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 7,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 3,
+            "image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+            "image_size_scaled": [
+              223,
+              166
+            ],
+            "status": "composed",
+            "top_left": [
+              756,
+              234
+            ]
+          },
+          "index": 20,
+          "position_xyz": [
+            871,
+            369,
+            0
+          ],
+          "script_block": 584,
+          "script_hash64": "b581298403321c9c",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bamboo.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 7,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 4,
+            "image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+            "image_size_scaled": [
+              189,
+              133
+            ],
+            "status": "composed",
+            "top_left": [
+              371,
+              276
+            ]
+          },
+          "index": 21,
+          "position_xyz": [
+            456,
+            386,
+            0
+          ],
+          "script_block": 585,
+          "script_hash64": "9277784de838585e",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bamboo.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 7,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 3,
+            "image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+            "image_size_scaled": [
+              223,
+              166
+            ],
+            "status": "composed",
+            "top_left": [
+              -40,
+              261
+            ]
+          },
+          "index": 22,
+          "position_xyz": [
+            75,
+            396,
+            0
+          ],
+          "script_block": 584,
+          "script_hash64": "b581298403321c9c",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bamboo.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 7,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 3,
+            "image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+            "image_size_scaled": [
+              223,
+              166
+            ],
+            "status": "composed",
+            "top_left": [
+              649,
+              277
+            ]
+          },
+          "index": 30,
+          "position_xyz": [
+            764,
+            412,
+            0
+          ],
+          "script_block": 584,
+          "script_hash64": "b581298403321c9c",
+          "script_shard": 21
+        },
+        {
+          "animation_audit": {
+            "decoded_frame_count": 1,
+            "distinct_image_paths": [
+              "Map/event/2018_Hell/Step3/object/bamboo.img"
+            ],
+            "duration_ms": 80,
+            "effect_fields_present": {},
+            "frames_crop_failed": 0,
+            "frames_crop_ok": 1,
+            "frames_with_image": 1,
+            "loop": false
+          },
+          "draw_layer": 7,
+          "first_frame": {
+            "delay_ms": 80,
+            "frame_index": 4,
+            "image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+            "image_size_scaled": [
+              189,
+              133
+            ],
+            "status": "composed",
+            "top_left": [
+              729,
+              166
+            ]
+          },
+          "index": 37,
+          "position_xyz": [
+            814,
+            276,
+            0
+          ],
+          "script_block": 585,
+          "script_hash64": "9277784de838585e",
+          "script_shard": 21
+        }
+      ]
+    }
+  },
+  "objects_summary": {
+    "decode_rule": "draw_layer==9(INVISIBLE) 的对象离线预览不绘制；本图无 9 层对象",
+    "distinct_script_keys": 16,
+    "draw_layer_enum_names_indexer_provided": [
+      "DEFAULT",
+      "DISTANTBACK",
+      "MIDDLEBACK",
+      "TILE",
+      "CLOSEBACK",
+      "BOTTOM",
+      "NORMAL",
+      "CONTACT",
+      "COVER",
+      "INVISIBLE",
+      "MAX"
+    ],
+    "draw_layer_names_source": "tools/index_restored_maps.py 内置 0..10 名单；数值层号为准，名称未经引擎元数据独立佐证",
+    "first_frame_all_composed": true,
+    "layer_counts": {
+      "1": 3,
+      "2": 8,
+      "4": 1,
+      "5": 13,
+      "6": 20,
+      "7": 5
+    },
+    "total_animation_objects": 50
+  },
+  "read_only_statement": "全程 sqlite mode=ro 与文件只读；D:/Github-Poj/DNFM 零写入。",
+  "task": "M8-005 P01-D 竹林地图源依赖核实",
+  "tile_layers": [
+    {
+      "floor_height_i32": 120,
+      "image_layers": [
+        {
+          "image_frame_index": 1,
+          "image_path": "Map/event/2018_Hell/Step4/tile/tile.img"
+        }
+      ],
+      "passage_grid_cols": 14,
+      "passage_grid_full_dump": "db_queries/q4_grids.json",
+      "passage_grid_rows": 30,
+      "passage_value_census": {
+        "0": 280,
+        "2": 140
+      },
+      "passage_values_semantics": "Numeric flags preserved; no walkability meaning invented.",
+      "placement_formula": "x=224*index+originX; y=floorHeight-80-originY (preview used origin 0,0)",
+      "placement_index": 0,
+      "placement_x_pixels": 0,
+      "source_bool_dbeahbfebbbbdbd": false,
+      "tile_hash64": "84368d266da2197b",
+      "tile_horizontal_step": 224,
+      "tile_image_png_size": [
+        224,
+        600
+      ],
+      "tile_script_block": "[]",
+      "tile_script_paths": [],
+      "tile_script_shard": 1454
+    },
+    {
+      "floor_height_i32": 120,
+      "image_layers": [
+        {
+          "image_frame_index": 0,
+          "image_path": "Map/event/2018_Hell/Step4/tile/tile.img"
+        }
+      ],
+      "passage_grid_cols": 14,
+      "passage_grid_full_dump": "db_queries/q4_grids.json",
+      "passage_grid_rows": 30,
+      "passage_value_census": {
+        "0": 280,
+        "2": 140
+      },
+      "passage_values_semantics": "Numeric flags preserved; no walkability meaning invented.",
+      "placement_formula": "x=224*index+originX; y=floorHeight-80-originY (preview used origin 0,0)",
+      "placement_index": 1,
+      "placement_x_pixels": 224,
+      "source_bool_dbeahbfebbbbdbd": false,
+      "tile_hash64": "8460768a44b09b76",
+      "tile_horizontal_step": 224,
+      "tile_image_png_size": [
+        224,
+        600
+      ],
+      "tile_script_block": "[]",
+      "tile_script_paths": [],
+      "tile_script_shard": 1453
+    },
+    {
+      "floor_height_i32": 120,
+      "image_layers": [
+        {
+          "image_frame_index": 1,
+          "image_path": "Map/event/2018_Hell/Step4/tile/tile.img"
+        }
+      ],
+      "passage_grid_cols": 14,
+      "passage_grid_full_dump": "db_queries/q4_grids.json",
+      "passage_grid_rows": 30,
+      "passage_value_census": {
+        "0": 280,
+        "2": 140
+      },
+      "passage_values_semantics": "Numeric flags preserved; no walkability meaning invented.",
+      "placement_formula": "x=224*index+originX; y=floorHeight-80-originY (preview used origin 0,0)",
+      "placement_index": 2,
+      "placement_x_pixels": 448,
+      "source_bool_dbeahbfebbbbdbd": false,
+      "tile_hash64": "84368d266da2197b",
+      "tile_horizontal_step": 224,
+      "tile_image_png_size": [
+        224,
+        600
+      ],
+      "tile_script_block": "[]",
+      "tile_script_paths": [],
+      "tile_script_shard": 1454
+    },
+    {
+      "floor_height_i32": 120,
+      "image_layers": [
+        {
+          "image_frame_index": 0,
+          "image_path": "Map/event/2018_Hell/Step4/tile/tile.img"
+        }
+      ],
+      "passage_grid_cols": 14,
+      "passage_grid_full_dump": "db_queries/q4_grids.json",
+      "passage_grid_rows": 30,
+      "passage_value_census": {
+        "0": 280,
+        "2": 140
+      },
+      "passage_values_semantics": "Numeric flags preserved; no walkability meaning invented.",
+      "placement_formula": "x=224*index+originX; y=floorHeight-80-originY (preview used origin 0,0)",
+      "placement_index": 3,
+      "placement_x_pixels": 672,
+      "source_bool_dbeahbfebbbbdbd": false,
+      "tile_hash64": "8460768a44b09b76",
+      "tile_horizontal_step": 224,
+      "tile_image_png_size": [
+        224,
+        600
+      ],
+      "tile_script_block": "[]",
+      "tile_script_paths": [],
+      "tile_script_shard": 1453
+    }
+  ],
+  "walkability_fields": {
+    "other_numeric_grids_and_values": {
+      "adedcfecabhfbgb_array2d": {
+        "census": {
+          "100": 6
+        },
+        "dims": [
+          2,
+          3
+        ],
+        "semantics": "未解释：2×3 全为 100",
+        "values": [
+          100,
+          100,
+          100,
+          100,
+          100,
+          100
+        ]
+      },
+      "cdeeeagbbgfeehc_i32list": {
+        "semantics": "未解释：[2002400007]（疑似外部 ID）",
+        "values": [
+          2002400007
+        ]
+      },
+      "cehddgcbbghbbea_kvlist": {
+        "semantics": "未解释：[{key:2,value:2}]",
+        "values": [
+          {
+            "key": 2,
+            "value": 2
+          }
+        ]
+      },
+      "fhbcgbdcbeabcbh_array2d": {
+        "census": {
+          "-1": 12
+        },
+        "dims": [
+          4,
+          3
+        ],
+        "semantics": "未解释：4×3 全为 -1",
+        "values": [
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1
+        ]
+      },
+      "hbabfdacchfddfa_array": {
+        "semantics": "未解释：[-1,-1,-1,-1]",
+        "values": [
+          -1,
+          -1,
+          -1,
+          -1
+        ]
+      },
+      "hedccefffecfhff_array": {
+        "semantics": "未解释：[2,8]",
+        "values": [
+          2,
+          8
+        ]
+      },
+      "maptype_value": 0
+    },
+    "tile_passage_grid_field_dedagbefeafhgab": {
+      "cell_size_inference": "推断未证实：224px/14 列=16px 列宽、600px/30 行=20px 行高（若网格贴合地砖画布）",
+      "full_dump": "db_queries/q4_grids.json",
+      "shape": [
+        30,
+        14
+      ],
+      "spatial_pattern": "两块地砖相同：行 0-9 全为 2，行 10-29 全为 0",
+      "value_semantics": "未恢复：0 与 2 的含义无原生文档；不得映射为 UE 碰撞标志（07 计划 §6.3）",
+      "values_census": {
+        "0": 280,
+        "2": 140
+      }
+    },
+    "unexplained_value_list": [
+      "passage:0",
+      "passage:2",
+      "adedcfecabhfbgb:100",
+      "fhbcgbdcbeabcbh:-1",
+      "hedccefffecfhff:2",
+      "hedccefffecfhff:8",
+      "hbabfdacchfddfa:-1",
+      "cehddgcbbghbbea:2->2",
+      "cdeeeagbbgfeehc:2002400007",
+      "ENUM_MAPTYPE:0"
+    ]
+  }
+}

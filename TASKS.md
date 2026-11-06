@@ -248,7 +248,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M8-002 | [P01-A 格斗家源依赖核实](Docs/Tasks/M8-002.md) | DONE | M8-001 | ZCode-20261107-B | 2026-11-07T01:00:00+08:00 | [report](Docs/Tasks/Reports/M8-002.md) |
 | M8-003 | [P01-B 鬼剑士源依赖核实](Docs/Tasks/M8-003.md) | TODO | M8-001 | — | — | [report](Docs/Tasks/Reports/M8-003.md) |
 | M8-004 | [P01-C 神枪手源依赖核实](Docs/Tasks/M8-004.md) | TODO | M8-001 | — | — | [report](Docs/Tasks/Reports/M8-004.md) |
-| M8-005 | [P01-D 竹林地图源依赖核实](Docs/Tasks/M8-005.md) | TODO | M8-001 | — | — | [report](Docs/Tasks/Reports/M8-005.md) |
+| M8-005 | [P01-D 竹林地图源依赖核实](Docs/Tasks/M8-005.md) | DONE | M8-001 | ZCode-20261107-E | 2026-11-07T01:25:00+08:00 | [report](Docs/Tasks/Reports/M8-005.md) |
 | M8-006 | [P01-E 火山地图源依赖核实](Docs/Tasks/M8-006.md) | TODO | M8-001 | — | — | [report](Docs/Tasks/Reports/M8-006.md) |
 | M8-007 | [P01-F 哥布林投掷兵源依赖核实](Docs/Tasks/M8-007.md) | TODO | M8-001 | — | — | [report](Docs/Tasks/Reports/M8-007.md) |
 | M8-008 | [P01-G taubeast Boss 源依赖核实](Docs/Tasks/M8-008.md) | TODO | M8-001 | — | — | [report](Docs/Tasks/Reports/M8-008.md) |
