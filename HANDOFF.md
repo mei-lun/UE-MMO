@@ -1,3 +1,15 @@
+# 最新交付：单入口最新资源体验包（2026-11-06）
+
+- Owner：Codex-20261106-ResourcePlaytest；本轮新增 DONE **1项：M6-026**。基线567deab，实现2fce13c；本机提交未推送。
+- 双击固定包 UEMMO.exe 即自动进入公会图，默认最新 DNFM 格斗家、六技能可用；菜单仅保留同一体验入口。F2回复生命/MP并清冷却，体验存档独立于旧Profile/Roster/Char槽。
+- Build、946/946回归、Test及Test -Render、Package、TestPackage全部通过；默认体验专项在编辑器与包内各完成首次启动和领奖后重启2个进程，各1/1。已实看包内新人物、纵深、技能、单入口菜单截图。
+- 固定包生成于2026-11-06T10:35:21+08:00，源码2fce13c，exe SHA256 BBCE3C1F…F81B6CD；实算与清单一致。7份原存档逐SHA核验完好。
+- 地图贴图/地形和敌人占位仍未补齐；本轮不是完整美术、多职业或连续地城交付，也没有代签人工试玩。
+- [任务报告](Docs/Tasks/Reports/M6-026.md)、[历史交接](Docs/Tasks/Handoffs/2026-11-06-Codex-ResourcePlaytest.md)。原始证据在Artifacts/Tasks/M6-026；包内专项2026-11-06T10-36-12+0800-package-experience。
+- 任务板221项、213 DONE、0 IN_PROGRESS；下一可领取M6-018。M6-017仍资源阻塞，用户可先体验本包并反馈手感。
+
+---
+
 # 最新交付：DNFM 固定视角角色接入 全链完成（2026-11-06，检查点 2 后续 + M6-025）
 
 - Owner：ZCode-20261106-A（协调者，6 个并行子代理执行）；本轮累计新增 DONE **7 项：M6-019～M6-025**。起止 `9bdea2e`→当前 HEAD，main 本机提交未推送。
