@@ -1,0 +1,2654 @@
+{
+  "access_mode": "sqlite3 mode=ro on all databases; zero writes under D:/Github-Poj/DNFM",
+  "ai_hints": {
+    "ai_class": {
+      "evidence_offset": 3809,
+      "meaning": "ranged physical attacker behavior class name embedded in .mob (string evidence)",
+      "value": "PhysicalRangeAttacker"
+    },
+    "ai_scripts_referenced": {
+      "base_folder": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/",
+      "files": [
+        "ai/Event.ai",
+        "ai/DestinationSelect.ai",
+        "ai/Action.ai",
+        "ai/MoveMethod.ai"
+      ],
+      "groups": 4,
+      "note": "same 4-file group repeated 4 times in .mob (offsets ~1637-3334), presumably one group per AI state; NONE of the .ai files exist in script_index (no .ai extension anywhere in export)"
+    },
+    "move_speed_animation_evidence": "move.ani 6f x 100ms loop; move_speed_type=4 in all 8 .ani (enum semantics not decoded)",
+    "numeric_candidates": {
+      "cross_monster_diff": "mob_head_statdiff.json records 83+ differing word positions across 6 family mobs; word stream is bit-packed so per-field semantics are not asserted",
+      "head_words": {
+        "offset_101": 40,
+        "offset_105": 10,
+        "offset_109": 0,
+        "offset_113": 5,
+        "offset_117": 10,
+        "offset_121": 1,
+        "offset_125": 110
+      },
+      "raw_words_after_last_ai_group": {
+        "offset_3423": 22,
+        "offset_3427": 50
+      },
+      "status": "semantics UNVERIFIED - STMonsterScript.AutoCode_ReadBinary field order not disassembled in this task",
+      "tail_words_sample": {
+        "offset_4035": 100,
+        "offset_4039": 1000,
+        "offset_4043": 100,
+        "offset_4047": 1000
+      }
+    },
+    "sibling_variants": {
+      "beforeimpact/goblin/goblinthrower.mob": "ai_range/ subfolder + THROW_STONE animation key + 4 .equ equipment refs (tcc2/acc2/hcc3/gcc1.equ)",
+      "normal_goblinthrower(daydungeon)": "ai/Event.ai + DestinationSelect_Named.ai + Action_Named.ai + MoveMethod.ai"
+    }
+  },
+  "anchor_dir": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/",
+  "animations": [
+    {
+      "block": 4399,
+      "coordinate_mode": 0,
+      "duration_ms": 520,
+      "frame_count": 5,
+      "frames": [
+        {
+          "ani_tag": null,
+          "atlas": {
+            "atlas_id": 4661,
+            "atlas_name": "body0",
+            "canvas": [
+              200,
+              200
+            ],
+            "frame_index": 0,
+            "image": "monster/goblin/body0.img",
+            "offset": [
+              73,
+              76
+            ],
+            "page_index": 0,
+            "rect": [
+              62.0,
+              51.0,
+              50.0,
+              84.0
+            ]
+          },
+          "attack_boxes": [],
+          "audio_tags": [],
+          "damage_boxes": [
+            [
+              [
+                -9.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                58.0
+              ],
+              [
+                -9.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                58.0
+              ],
+              [
+                31.0,
+                10.0,
+                59.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ]
+            ]
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "image_frame_index": 0,
+          "index": 0,
+          "position": [
+            -91,
+            -152
+          ],
+          "rotation_degrees": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "ani_tag": null,
+          "atlas": {
+            "atlas_id": 4661,
+            "atlas_name": "body0",
+            "canvas": [
+              200,
+              200
+            ],
+            "frame_index": 1,
+            "image": "monster/goblin/body0.img",
+            "offset": [
+              70,
+              76
+            ],
+            "page_index": 0,
+            "rect": [
+              114.0,
+              59.0,
+              60.0,
+              84.0
+            ]
+          },
+          "attack_boxes": [],
+          "audio_tags": [],
+          "damage_boxes": [
+            [
+              [
+                -9.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                58.0
+              ],
+              [
+                -9.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                58.0
+              ],
+              [
+                31.0,
+                10.0,
+                59.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ]
+            ],
+            [
+              [
+                17.0,
+                -3.0,
+                26.0
+              ],
+              [
+                37.0,
+                4.0,
+                41.0
+              ],
+              [
+                17.0,
+                -3.0,
+                26.0
+              ],
+              [
+                37.0,
+                4.0,
+                41.0
+              ],
+              [
+                20.0,
+                7.0,
+                15.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ]
+            ]
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "image_frame_index": 1,
+          "index": 1,
+          "position": [
+            -91,
+            -152
+          ],
+          "rotation_degrees": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "ani_tag": null,
+          "atlas": {
+            "atlas_id": 4661,
+            "atlas_name": "body0",
+            "canvas": [
+              200,
+              200
+            ],
+            "frame_index": 2,
+            "image": "monster/goblin/body0.img",
+            "offset": [
+              62,
+              68
+            ],
+            "page_index": 0,
+            "rect": [
+              2.0,
+              51.0,
+              58.0,
+              91.0
+            ]
+          },
+          "attack_boxes": [],
+          "audio_tags": [],
+          "damage_boxes": [
+            [
+              [
+                -8.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                67.0
+              ],
+              [
+                -8.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                67.0
+              ],
+              [
+                30.0,
+                10.0,
+                68.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ]
+            ],
+            [
+              [
+                -22.0,
+                -4.0,
+                57.0
+              ],
+              [
+                -8.0,
+                4.0,
+                82.0
+              ],
+              [
+                -22.0,
+                -4.0,
+                57.0
+              ],
+              [
+                -8.0,
+                4.0,
+                82.0
+              ],
+              [
+                14.0,
+                8.0,
+                25.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ]
+            ]
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "image_frame_index": 2,
+          "index": 2,
+          "position": [
+            -91,
+            -152
+          ],
+          "rotation_degrees": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "ani_tag": null,
+          "atlas": {
+            "atlas_id": 4661,
+            "atlas_name": "body0",
+            "canvas": [
+              200,
+              200
+            ],
+            "frame_index": 3,
+            "image": "monster/goblin/body0.img",
+            "offset": [
+              71,
+              80
+            ],
+            "page_index": 0,
+            "rect": [
+              176.0,
+              226.0,
+              61.0,
+              80.0
+            ]
+          },
+          "attack_boxes": [],
+          "audio_tags": [],
+          "damage_boxes": [
+            [
+              [
+                -9.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                39.0,
+                5.0,
+                58.0
+              ],
+              [
+                -9.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                39.0,
+                5.0,
+                58.0
+              ],
+              [
+                48.0,
+                10.0,
+                59.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ]
+            ]
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "image_frame_index": 3,
+          "index": 3,
+          "position": [
+            -91,
+            -152
+          ],
+          "rotation_degrees": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "ani_tag": null,
+          "atlas": {
+            "atlas_id": 4661,
+            "atlas_name": "body0",
+            "canvas": [
+              200,
+              200
+            ],
+            "frame_index": 4,
+            "image": "monster/goblin/body0.img",
+            "offset": [
+              71,
+              81
+            ],
+            "page_index": 0,
+            "rect": [
+              169.0,
+              308.0,
+              56.0,
+              79.0
+            ]
+          },
+          "attack_boxes": [],
+          "audio_tags": [],
+          "damage_boxes": [
+            [
+              [
+                -9.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                58.0
+              ],
+              [
+                -9.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                58.0
+              ],
+              [
+                31.0,
+                10.0,
+                59.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ]
+            ],
+            [
+              [
+                15.0,
+                -4.0,
+                37.0
+              ],
+              [
+                35.0,
+                5.0,
+                57.0
+              ],
+              [
+                15.0,
+                -4.0,
+                37.0
+              ],
+              [
+                35.0,
+                5.0,
+                57.0
+              ],
+              [
+                20.0,
+                9.0,
+                20.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ]
+            ]
+          ],
+          "delay_ms": 200,
+          "flip_copy_type": 0,
+          "image_frame_index": 4,
+          "index": 4,
+          "position": [
+            -91,
+            -152
+          ],
+          "rotation_degrees": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        }
+      ],
+      "loop": false,
+      "move_speed_type": 4,
+      "name": "attack_0",
+      "next_animation": "",
+      "notes": "throw wind-up->release->recover; no attack_boxes (damage delivered by projectile), no ani_tag/create_objects in .ani",
+      "path": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/animation/attack_0.ani",
+      "shard": 63
+    },
+    {
+      "block": 4400,
+      "coordinate_mode": 0,
+      "duration_ms": 10000,
+      "frame_count": 1,
+      "frames": [
+        {
+          "ani_tag": null,
+          "atlas": {
+            "atlas_id": 4661,
+            "atlas_name": "body0",
+            "canvas": [
+              200,
+              200
+            ],
+            "frame_index": 5,
+            "image": "monster/goblin/body0.img",
+            "offset": [
+              67,
+              80
+            ],
+            "page_index": 0,
+            "rect": [
+              2.0,
+              303.0,
+              57.0,
+              76.0
+            ]
+          },
+          "attack_boxes": [],
+          "audio_tags": [],
+          "damage_boxes": [
+            [
+              [
+                -9.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                58.0
+              ],
+              [
+                -9.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                58.0
+              ],
+              [
+                31.0,
+                10.0,
+                59.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ]
+            ]
+          ],
+          "delay_ms": 10000,
+          "flip_copy_type": 0,
+          "image_frame_index": 5,
+          "index": 0,
+          "position": [
+            -91,
+            -152
+          ],
+          "rotation_degrees": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        }
+      ],
+      "loop": false,
+      "move_speed_type": 4,
+      "name": "damage_0",
+      "next_animation": "",
+      "notes": "single-frame 10000ms hit-stun hold (body0#5)",
+      "path": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/animation/damage_0.ani",
+      "shard": 63
+    },
+    {
+      "block": 4401,
+      "coordinate_mode": 0,
+      "duration_ms": 10000,
+      "frame_count": 1,
+      "frames": [
+        {
+          "ani_tag": null,
+          "atlas": {
+            "atlas_id": 4661,
+            "atlas_name": "body0",
+            "canvas": [
+              200,
+              200
+            ],
+            "frame_index": 6,
+            "image": "monster/goblin/body0.img",
+            "offset": [
+              46,
+              76
+            ],
+            "page_index": 0,
+            "rect": [
+              114.0,
+              145.0,
+              60.0,
+              80.0
+            ]
+          },
+          "attack_boxes": [],
+          "audio_tags": [],
+          "damage_boxes": [
+            [
+              [
+                -30.0,
+                -5.0,
+                17.0
+              ],
+              [
+                1.0,
+                5.0,
+                68.0
+              ],
+              [
+                -30.0,
+                -5.0,
+                17.0
+              ],
+              [
+                1.0,
+                5.0,
+                68.0
+              ],
+              [
+                31.0,
+                10.0,
+                51.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ]
+            ],
+            [
+              [
+                -12.0,
+                -3.0,
+                0.0
+              ],
+              [
+                11.0,
+                3.0,
+                20.0
+              ],
+              [
+                -12.0,
+                -3.0,
+                0.0
+              ],
+              [
+                11.0,
+                3.0,
+                20.0
+              ],
+              [
+                23.0,
+                6.0,
+                20.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ]
+            ]
+          ],
+          "delay_ms": 10000,
+          "flip_copy_type": 0,
+          "image_frame_index": 6,
+          "index": 0,
+          "position": [
+            -91,
+            -152
+          ],
+          "rotation_degrees": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        }
+      ],
+      "loop": false,
+      "move_speed_type": 4,
+      "name": "damage_1",
+      "next_animation": "",
+      "notes": "single-frame 10000ms hit-stun hold variant (body0#6)",
+      "path": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/animation/damage_1.ani",
+      "shard": 63
+    },
+    {
+      "block": 4402,
+      "coordinate_mode": 0,
+      "duration_ms": 20660,
+      "frame_count": 5,
+      "frames": [
+        {
+          "ani_tag": null,
+          "atlas": {
+            "atlas_id": 4661,
+            "atlas_name": "body0",
+            "canvas": [
+              200,
+              200
+            ],
+            "frame_index": 5,
+            "image": "monster/goblin/body0.img",
+            "offset": [
+              67,
+              80
+            ],
+            "page_index": 0,
+            "rect": [
+              2.0,
+              303.0,
+              57.0,
+              76.0
+            ]
+          },
+          "attack_boxes": [],
+          "audio_tags": [],
+          "damage_boxes": [
+            [
+              [
+                -9.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                58.0
+              ],
+              [
+                -9.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                58.0
+              ],
+              [
+                31.0,
+                10.0,
+                59.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ]
+            ]
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "image_frame_index": 5,
+          "index": 0,
+          "position": [
+            -91,
+            -152
+          ],
+          "rotation_degrees": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "ani_tag": null,
+          "atlas": {
+            "atlas_id": 4661,
+            "atlas_name": "body0",
+            "canvas": [
+              200,
+              200
+            ],
+            "frame_index": 6,
+            "image": "monster/goblin/body0.img",
+            "offset": [
+              46,
+              76
+            ],
+            "page_index": 0,
+            "rect": [
+              114.0,
+              145.0,
+              60.0,
+              80.0
+            ]
+          },
+          "attack_boxes": [],
+          "audio_tags": [],
+          "damage_boxes": [
+            [
+              [
+                -32.0,
+                -5.0,
+                17.0
+              ],
+              [
+                -1.0,
+                5.0,
+                68.0
+              ],
+              [
+                -32.0,
+                -5.0,
+                17.0
+              ],
+              [
+                -1.0,
+                5.0,
+                68.0
+              ],
+              [
+                31.0,
+                10.0,
+                51.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ]
+            ],
+            [
+              [
+                -11.0,
+                -3.0,
+                0.0
+              ],
+              [
+                9.0,
+                3.0,
+                20.0
+              ],
+              [
+                -11.0,
+                -3.0,
+                0.0
+              ],
+              [
+                9.0,
+                3.0,
+                20.0
+              ],
+              [
+                20.0,
+                6.0,
+                20.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ]
+            ]
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "image_frame_index": 6,
+          "index": 1,
+          "position": [
+            -91,
+            -152
+          ],
+          "rotation_degrees": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "ani_tag": null,
+          "atlas": {
+            "atlas_id": 4661,
+            "atlas_name": "body0",
+            "canvas": [
+              200,
+              200
+            ],
+            "frame_index": 7,
+            "image": "monster/goblin/body0.img",
+            "offset": [
+              40,
+              109
+            ],
+            "page_index": 0,
+            "rect": [
+              61.0,
+              309.0,
+              76.0,
+              57.0
+            ]
+          },
+          "attack_boxes": [],
+          "audio_tags": [],
+          "damage_boxes": [
+            [
+              [
+                -37.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                30.0
+              ],
+              [
+                -37.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                30.0
+              ],
+              [
+                59.0,
+                10.0,
+                31.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ]
+            ]
+          ],
+          "delay_ms": 10000,
+          "flip_copy_type": 0,
+          "image_frame_index": 7,
+          "index": 2,
+          "position": [
+            -91,
+            -152
+          ],
+          "rotation_degrees": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "ani_tag": null,
+          "atlas": {
+            "atlas_id": 4661,
+            "atlas_name": "body0",
+            "canvas": [
+              200,
+              200
+            ],
+            "frame_index": 8,
+            "image": "monster/goblin/body0.img",
+            "offset": [
+              25,
+              115
+            ],
+            "page_index": 0,
+            "rect": [
+              120.0,
+              2.0,
+              94.0,
+              55.0
+            ]
+          },
+          "attack_boxes": [],
+          "audio_tags": [],
+          "damage_boxes": [
+            [
+              [
+                -38.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                17.0
+              ],
+              [
+                -38.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                17.0
+              ],
+              [
+                60.0,
+                10.0,
+                18.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ]
+            ]
+          ],
+          "delay_ms": 10000,
+          "flip_copy_type": 0,
+          "image_frame_index": 8,
+          "index": 3,
+          "position": [
+            -91,
+            -152
+          ],
+          "rotation_degrees": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "ani_tag": null,
+          "atlas": {
+            "atlas_id": 4661,
+            "atlas_name": "body0",
+            "canvas": [
+              200,
+              200
+            ],
+            "frame_index": 9,
+            "image": "monster/goblin/body0.img",
+            "offset": [
+              11,
+              130
+            ],
+            "page_index": 0,
+            "rect": [
+              2.0,
+              2.0,
+              116.0,
+              47.0
+            ]
+          },
+          "attack_boxes": [],
+          "audio_tags": [],
+          "damage_boxes": [
+            [
+              [
+                -43.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                14.0
+              ],
+              [
+                -43.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                14.0
+              ],
+              [
+                65.0,
+                10.0,
+                15.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ]
+            ]
+          ],
+          "delay_ms": 500,
+          "flip_copy_type": 0,
+          "image_frame_index": 9,
+          "index": 4,
+          "position": [
+            -91,
+            -152
+          ],
+          "rotation_degrees": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        }
+      ],
+      "loop": false,
+      "move_speed_type": 4,
+      "name": "down",
+      "next_animation": "",
+      "notes": "knockdown->lying: 80+80ms fall, 2x10000ms ground hold, 500ms tail; total 20660ms",
+      "path": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/animation/down.ani",
+      "shard": 63
+    },
+    {
+      "block": 4403,
+      "coordinate_mode": 0,
+      "duration_ms": 600,
+      "frame_count": 6,
+      "frames": [
+        {
+          "ani_tag": null,
+          "atlas": {
+            "atlas_id": 4661,
+            "atlas_name": "body0",
+            "canvas": [
+              200,
+              200
+            ],
+            "frame_index": 11,
+            "image": "monster/goblin/body0.img",
+            "offset": [
+              69,
+              74
+            ],
+            "page_index": 0,
+            "rect": [
+              62.0,
+              137.0,
+              50.0,
+              82.0
+            ]
+          },
+          "attack_boxes": [],
+          "audio_tags": [],
+          "damage_boxes": [
+            [
+              [
+                -9.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                58.0
+              ],
+              [
+                -9.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                58.0
+              ],
+              [
+                31.0,
+                10.0,
+                59.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ]
+            ]
+          ],
+          "delay_ms": 100,
+          "flip_copy_type": 0,
+          "image_frame_index": 11,
+          "index": 0,
+          "position": [
+            -91,
+            -152
+          ],
+          "rotation_degrees": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "ani_tag": null,
+          "atlas": {
+            "atlas_id": 4661,
+            "atlas_name": "body0",
+            "canvas": [
+              200,
+              200
+            ],
+            "frame_index": 12,
+            "image": "monster/goblin/body0.img",
+            "offset": [
+              70,
+              75
+            ],
+            "page_index": 0,
+            "rect": [
+              176.0,
+              143.0,
+              49.0,
+              81.0
+            ]
+          },
+          "attack_boxes": [],
+          "audio_tags": [],
+          "damage_boxes": [
+            [
+              [
+                -9.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                58.0
+              ],
+              [
+                -9.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                58.0
+              ],
+              [
+                31.0,
+                10.0,
+                59.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ]
+            ]
+          ],
+          "delay_ms": 100,
+          "flip_copy_type": 0,
+          "image_frame_index": 12,
+          "index": 1,
+          "position": [
+            -91,
+            -152
+          ],
+          "rotation_degrees": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "ani_tag": null,
+          "atlas": {
+            "atlas_id": 4661,
+            "atlas_name": "body0",
+            "canvas": [
+              200,
+              200
+            ],
+            "frame_index": 13,
+            "image": "monster/goblin/body0.img",
+            "offset": [
+              69,
+              76
+            ],
+            "page_index": 0,
+            "rect": [
+              54.0,
+              221.0,
+              51.0,
+              80.0
+            ]
+          },
+          "attack_boxes": [],
+          "audio_tags": [],
+          "damage_boxes": [
+            [
+              [
+                -9.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                58.0
+              ],
+              [
+                -9.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                58.0
+              ],
+              [
+                31.0,
+                10.0,
+                59.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ]
+            ]
+          ],
+          "delay_ms": 100,
+          "flip_copy_type": 0,
+          "image_frame_index": 13,
+          "index": 2,
+          "position": [
+            -91,
+            -152
+          ],
+          "rotation_degrees": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "ani_tag": null,
+          "atlas": {
+            "atlas_id": 4661,
+            "atlas_name": "body0",
+            "canvas": [
+              200,
+              200
+            ],
+            "frame_index": 14,
+            "image": "monster/goblin/body0.img",
+            "offset": [
+              69,
+              75
+            ],
+            "page_index": 0,
+            "rect": [
+              2.0,
+              144.0,
+              50.0,
+              82.0
+            ]
+          },
+          "attack_boxes": [],
+          "audio_tags": [],
+          "damage_boxes": [
+            [
+              [
+                -9.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                58.0
+              ],
+              [
+                -9.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                58.0
+              ],
+              [
+                31.0,
+                10.0,
+                59.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ]
+            ]
+          ],
+          "delay_ms": 100,
+          "flip_copy_type": 0,
+          "image_frame_index": 14,
+          "index": 3,
+          "position": [
+            -91,
+            -152
+          ],
+          "rotation_degrees": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "ani_tag": null,
+          "atlas": {
+            "atlas_id": 4661,
+            "atlas_name": "body0",
+            "canvas": [
+              200,
+              200
+            ],
+            "frame_index": 15,
+            "image": "monster/goblin/body0.img",
+            "offset": [
+              70,
+              74
+            ],
+            "page_index": 0,
+            "rect": [
+              176.0,
+              59.0,
+              54.0,
+              82.0
+            ]
+          },
+          "attack_boxes": [],
+          "audio_tags": [],
+          "damage_boxes": [
+            [
+              [
+                -9.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                58.0
+              ],
+              [
+                -9.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                58.0
+              ],
+              [
+                31.0,
+                10.0,
+                59.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ]
+            ]
+          ],
+          "delay_ms": 100,
+          "flip_copy_type": 0,
+          "image_frame_index": 15,
+          "index": 4,
+          "position": [
+            -91,
+            -152
+          ],
+          "rotation_degrees": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "ani_tag": null,
+          "atlas": {
+            "atlas_id": 4661,
+            "atlas_name": "body0",
+            "canvas": [
+              200,
+              200
+            ],
+            "frame_index": 16,
+            "image": "monster/goblin/body0.img",
+            "offset": [
+              66,
+              76
+            ],
+            "page_index": 0,
+            "rect": [
+              107.0,
+              227.0,
+              60.0,
+              80.0
+            ]
+          },
+          "attack_boxes": [],
+          "audio_tags": [],
+          "damage_boxes": [
+            [
+              [
+                -9.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                58.0
+              ],
+              [
+                -9.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                58.0
+              ],
+              [
+                31.0,
+                10.0,
+                59.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ]
+            ]
+          ],
+          "delay_ms": 100,
+          "flip_copy_type": 0,
+          "image_frame_index": 16,
+          "index": 5,
+          "position": [
+            -91,
+            -152
+          ],
+          "rotation_degrees": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        }
+      ],
+      "loop": true,
+      "move_speed_type": 4,
+      "name": "move",
+      "next_animation": "",
+      "notes": "6-frame 100ms walk cycle, loop=true",
+      "path": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/animation/move.ani",
+      "shard": 63
+    },
+    {
+      "block": 4404,
+      "coordinate_mode": 0,
+      "duration_ms": 10000,
+      "frame_count": 1,
+      "frames": [
+        {
+          "ani_tag": null,
+          "atlas": {
+            "atlas_id": 4661,
+            "atlas_name": "body0",
+            "canvas": [
+              200,
+              200
+            ],
+            "frame_index": 5,
+            "image": "monster/goblin/body0.img",
+            "offset": [
+              67,
+              80
+            ],
+            "page_index": 0,
+            "rect": [
+              2.0,
+              303.0,
+              57.0,
+              76.0
+            ]
+          },
+          "attack_boxes": [],
+          "audio_tags": [],
+          "damage_boxes": [
+            [
+              [
+                -17.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                14.0,
+                5.0,
+                58.0
+              ],
+              [
+                -17.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                14.0,
+                5.0,
+                58.0
+              ],
+              [
+                31.0,
+                10.0,
+                59.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ]
+            ]
+          ],
+          "delay_ms": 10000,
+          "flip_copy_type": 0,
+          "image_frame_index": 5,
+          "index": 0,
+          "position": [
+            -95,
+            -97
+          ],
+          "rotation_degrees": 179.91001892089844,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        }
+      ],
+      "loop": false,
+      "move_speed_type": 4,
+      "name": "overturn",
+      "next_animation": "",
+      "notes": "single-frame 10000ms, rotation 179.91deg, anchor shifted to [-95,-97] (flipped-on-back variant of body0#5)",
+      "path": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/animation/overturn.ani",
+      "shard": 63
+    },
+    {
+      "block": 4405,
+      "coordinate_mode": 0,
+      "duration_ms": 150,
+      "frame_count": 1,
+      "frames": [
+        {
+          "ani_tag": null,
+          "atlas": {
+            "atlas_id": 4661,
+            "atlas_name": "body0",
+            "canvas": [
+              200,
+              200
+            ],
+            "frame_index": 10,
+            "image": "monster/goblin/body0.img",
+            "offset": [
+              68,
+              85
+            ],
+            "page_index": 0,
+            "rect": [
+              61.0,
+              368.0,
+              53.0,
+              69.0
+            ]
+          },
+          "attack_boxes": [],
+          "audio_tags": [],
+          "damage_boxes": [
+            [
+              [
+                -9.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                48.0
+              ],
+              [
+                -9.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                48.0
+              ],
+              [
+                31.0,
+                10.0,
+                49.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ]
+            ]
+          ],
+          "delay_ms": 150,
+          "flip_copy_type": 0,
+          "image_frame_index": 10,
+          "index": 0,
+          "position": [
+            -91,
+            -152
+          ],
+          "rotation_degrees": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        }
+      ],
+      "loop": false,
+      "move_speed_type": 4,
+      "name": "sit",
+      "next_animation": "",
+      "notes": "single-frame 150ms idle-sit pose (body0#10)",
+      "path": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/animation/sit.ani",
+      "shard": 63
+    },
+    {
+      "block": 4406,
+      "coordinate_mode": 0,
+      "duration_ms": 80,
+      "frame_count": 1,
+      "frames": [
+        {
+          "ani_tag": null,
+          "atlas": {
+            "atlas_id": 4661,
+            "atlas_name": "body0",
+            "canvas": [
+              200,
+              200
+            ],
+            "frame_index": 0,
+            "image": "monster/goblin/body0.img",
+            "offset": [
+              73,
+              76
+            ],
+            "page_index": 0,
+            "rect": [
+              62.0,
+              51.0,
+              50.0,
+              84.0
+            ]
+          },
+          "attack_boxes": [],
+          "audio_tags": [],
+          "damage_boxes": [
+            [
+              [
+                -9.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                58.0
+              ],
+              [
+                -9.0,
+                -5.0,
+                -1.0
+              ],
+              [
+                22.0,
+                5.0,
+                58.0
+              ],
+              [
+                31.0,
+                10.0,
+                59.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ],
+              [
+                1.0,
+                1.0,
+                1.0
+              ]
+            ]
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "image_frame_index": 0,
+          "index": 0,
+          "position": [
+            -91,
+            -152
+          ],
+          "rotation_degrees": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        }
+      ],
+      "loop": true,
+      "move_speed_type": 4,
+      "name": "stay",
+      "next_animation": "",
+      "notes": "single-frame 80ms idle loop",
+      "path": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/animation/stay.ani",
+      "shard": 63
+    }
+  ],
+  "atlas_body0": {
+    "animation_frame_slots": 21,
+    "atlas_id": 4661,
+    "atlas_name": "body0",
+    "distinct_frames_used": 17,
+    "frames": {
+      "0": {
+        "canvas": [
+          200,
+          200
+        ],
+        "offset": [
+          73,
+          76
+        ],
+        "rect": [
+          62.0,
+          51.0,
+          50.0,
+          84.0
+        ]
+      },
+      "1": {
+        "canvas": [
+          200,
+          200
+        ],
+        "offset": [
+          70,
+          76
+        ],
+        "rect": [
+          114.0,
+          59.0,
+          60.0,
+          84.0
+        ]
+      },
+      "10": {
+        "canvas": [
+          200,
+          200
+        ],
+        "offset": [
+          68,
+          85
+        ],
+        "rect": [
+          61.0,
+          368.0,
+          53.0,
+          69.0
+        ]
+      },
+      "11": {
+        "canvas": [
+          200,
+          200
+        ],
+        "offset": [
+          69,
+          74
+        ],
+        "rect": [
+          62.0,
+          137.0,
+          50.0,
+          82.0
+        ]
+      },
+      "12": {
+        "canvas": [
+          200,
+          200
+        ],
+        "offset": [
+          70,
+          75
+        ],
+        "rect": [
+          176.0,
+          143.0,
+          49.0,
+          81.0
+        ]
+      },
+      "13": {
+        "canvas": [
+          200,
+          200
+        ],
+        "offset": [
+          69,
+          76
+        ],
+        "rect": [
+          54.0,
+          221.0,
+          51.0,
+          80.0
+        ]
+      },
+      "14": {
+        "canvas": [
+          200,
+          200
+        ],
+        "offset": [
+          69,
+          75
+        ],
+        "rect": [
+          2.0,
+          144.0,
+          50.0,
+          82.0
+        ]
+      },
+      "15": {
+        "canvas": [
+          200,
+          200
+        ],
+        "offset": [
+          70,
+          74
+        ],
+        "rect": [
+          176.0,
+          59.0,
+          54.0,
+          82.0
+        ]
+      },
+      "16": {
+        "canvas": [
+          200,
+          200
+        ],
+        "offset": [
+          66,
+          76
+        ],
+        "rect": [
+          107.0,
+          227.0,
+          60.0,
+          80.0
+        ]
+      },
+      "2": {
+        "canvas": [
+          200,
+          200
+        ],
+        "offset": [
+          62,
+          68
+        ],
+        "rect": [
+          2.0,
+          51.0,
+          58.0,
+          91.0
+        ]
+      },
+      "3": {
+        "canvas": [
+          200,
+          200
+        ],
+        "offset": [
+          71,
+          80
+        ],
+        "rect": [
+          176.0,
+          226.0,
+          61.0,
+          80.0
+        ]
+      },
+      "4": {
+        "canvas": [
+          200,
+          200
+        ],
+        "offset": [
+          71,
+          81
+        ],
+        "rect": [
+          169.0,
+          308.0,
+          56.0,
+          79.0
+        ]
+      },
+      "5": {
+        "canvas": [
+          200,
+          200
+        ],
+        "offset": [
+          67,
+          80
+        ],
+        "rect": [
+          2.0,
+          303.0,
+          57.0,
+          76.0
+        ]
+      },
+      "6": {
+        "canvas": [
+          200,
+          200
+        ],
+        "offset": [
+          46,
+          76
+        ],
+        "rect": [
+          114.0,
+          145.0,
+          60.0,
+          80.0
+        ]
+      },
+      "7": {
+        "canvas": [
+          200,
+          200
+        ],
+        "offset": [
+          40,
+          109
+        ],
+        "rect": [
+          61.0,
+          309.0,
+          76.0,
+          57.0
+        ]
+      },
+      "8": {
+        "canvas": [
+          200,
+          200
+        ],
+        "offset": [
+          25,
+          115
+        ],
+        "rect": [
+          120.0,
+          2.0,
+          94.0,
+          55.0
+        ]
+      },
+      "9": {
+        "canvas": [
+          200,
+          200
+        ],
+        "offset": [
+          11,
+          130
+        ],
+        "rect": [
+          2.0,
+          2.0,
+          116.0,
+          47.0
+        ]
+      }
+    },
+    "image": "monster/goblin/body0.img",
+    "page_index": 0
+  },
+  "audio": {
+    "ani_audio_tags": "none of the 8 goblinthrower .ani frames carry audio_tags/audio_loop_tags (verified field-level)",
+    "voice_tags_in_mob": [
+      {
+        "evidence_offsets_in_mob": [
+          755,
+          3945
+        ],
+        "meaning": "damage/hit voice (naming convention, inferred)",
+        "tag": "GOBLIN_DMG_04"
+      },
+      {
+        "evidence_offsets_in_mob": [
+          769,
+          3959
+        ],
+        "meaning": "death voice (naming convention, inferred)",
+        "tag": "GOBLIN_DIE_01"
+      }
+    ],
+    "voice_tags_in_sibling_mobs": {
+      "goblin(goblinthrower)/beforeimpact": [
+        "THROW_STONE"
+      ],
+      "normal_goblinthrower(daydungeon)": [
+        "R_GOBLIN_TALK",
+        "GOBLIN_DMG_04",
+        "GOBLIN_DIE_01"
+      ]
+    },
+    "wav_located_in_export": null,
+    "wav_search_note": "audio/decoded contains 3413 decoded wavs named by original sound id; no GOBLIN_* voice wavs present (monster voice bank not in export)"
+  },
+  "death_chain": {
+    "act_references": {
+      "act_mechanism_sample": "sample .act elsewhere (high_boss_ranjerus/action/down.act, 173 bytes) is a binding record: 0x01 + len-prefixed .ani path + zero/-1 padded params",
+      "conclusion": "renewal granflawless monsters are mob-self-contained; .act binding layer not used for this monster",
+      "granflawless_dir": "0 .act and 0 .atk files under script/monster/mdnf_scenario/renewal_monster/granflawless/",
+      "in_this_mob": "none - full string scan of 2007006745_goblinthrower.mob shows no .act references"
+    },
+    "animation_inventory": "only 8 .ani in the monster dir; no die.ani/last.ani - death reuses down/overturn",
+    "dedicated_die_animation": null,
+    "down_ani": {
+      "structure": "f0 80ms stand -> f1 80ms stumble -> f2 10000ms on-back (basket spilled) -> f3 10000ms flat -> f4 500ms rest",
+      "total_ms": 20660,
+      "verified_visually": "spotcheck/monster_down.png"
+    },
+    "down_overturn_combination": "down.ani = knockdown-to-ground sequence ending in long ground hold; overturn.ani = 1-frame flipped variant; exact state-machine order (down vs overturn vs die transition) is driven by engine/AI code not present in data (inference: both are 10s hold states designed to persist until transition/removal)",
+    "overturn_ani": {
+      "interpretation": "flipped-on-belly corpse variant (inference from transform)",
+      "structure": "single 10000ms frame, body0#5 rotated 179.91deg, anchor [-95,-97] vs normal [-91,-152]"
+    },
+    "voice": "GOBLIN_DIE_01 referenced twice in 2007006745_goblinthrower.mob (head ~769, tail ~3959)"
+  },
+  "evidence_paths": {
+    "db_queries": [
+      "animations_detail.json",
+      "mob_raw_dump.txt",
+      "obj_ptl_raw_dump.txt",
+      "projectile_chain.json",
+      "hitbox_and_stone_atlas.json",
+      "mob_head_statdiff.json"
+    ],
+    "prior_evidence": "Artifacts/Tasks/M8-000/2026-11-06-resource-inventory/ (inventory.json, candidates.json, monster-candidates.png)",
+    "scripts": [
+      "a1_anim_detail.py",
+      "a2_mob_raw.py",
+      "a3_projectile_chain.py",
+      "a4_hitbox_stone.py",
+      "a5_mob_statdiff.py",
+      "a6_strips.py",
+      "b1_build_json.py"
+    ],
+    "scripts_dir": "Artifacts/Tasks/M8-007/2026-11-07T0030+0800/scripts/",
+    "spotcheck": [
+      "attack_0",
+      "damage_0",
+      "damage_1",
+      "daydungeon_flight",
+      "down",
+      "move",
+      "overturn",
+      "sit",
+      "stay",
+      "throwstone_frames",
+      "warningmark_sector"
+    ]
+  },
+  "gaps": [
+    "2007006745_goblinthrower.mob (STMonsterScript, 174 obfuscated fields) binary struct semantics not decoded: HP/attack/move-speed/aggro/throw-range values not extracted; raw word dump at db_queries/mob_raw_dump.txt and head diff at db_queries/mob_head_statdiff.json",
+    "AI behavior scripts ai/Event.ai, ai/DestinationSelect.ai, ai/Action.ai, ai/MoveMethod.ai are referenced 4x in the .mob but no .ai files exist anywhere in script_index (extension absent from export) - aggro range, throw distance decision, and interrupt rules live there",
+    "exact projectile spawn frame/anchor inside attack_0: .ani frames carry no ani_tag/create_objects; linkage to 2009020408_throwstone.obj is by family layout and naming (inference); release window 240-320ms is visual inference",
+    "throwstone .obj physics (initial velocity/gravity/flight time): binary struct not decoded; renewal flight duration not authored in any .ani (unlike daydungeon sibling 1400ms authored path)",
+    "monster voice wavs GOBLIN_DMG_04/GOBLIN_DIE_01 not present in audio/decoded (3413 wavs scanned, no GOBLIN_* names)",
+    "no .atk attack-info files for this monster (0 under granflawless) - damage values/hit windows of the throw are inside mob/obj structs, not extracted",
+    "down/overturn/death state-machine order and corpse despawn timing: driven by engine/AI code not present in export; only the animation-side evidence is recorded",
+    "throwstone.ptl particle fields (519 bytes) partially decoded: [animation] section marker found at offset 499; particle parameter semantics not extracted"
+  ],
+  "generated_at": "2026-11-07T01:45:24.905699+08:00",
+  "interruptible_stages": {
+    "ani_tag_presence": "no frame in any of the 8 animations carries ani_tag -> no cancel_impossible/cancel_section/skill flags in monster-owned data",
+    "attack_0": "520ms non-loop, no cancel flags stored in .ani",
+    "long_hold_states": [
+      "damage_0 (10000ms)",
+      "damage_1 (10000ms)",
+      "overturn (10000ms)",
+      "down f2/f3 (2x10000ms)"
+    ],
+    "verifiable_conclusion": "the 10s single-frame states are hold states that persist until external transition; they are the states a hit can replace (inference). Which exact stages are hit-cancelable is decided by AI scripts/engine, not present in export"
+  },
+  "mob": {
+    "block": 1287,
+    "full_string_dump": "Artifacts/Tasks/M8-007/2026-11-07T0030+0800/db_queries/mob_raw_dump.txt",
+    "monster_id": 2007006745,
+    "parser_class": "STMonsterScript (il2cpp type 11305, AutoCode_ReadBinary, 174 fields, names obfuscated)",
+    "path": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/2007006745_goblinthrower.mob",
+    "shard": 42,
+    "size_bytes": 4121,
+    "strings_found": [
+      "Monster/MonsterFace.img",
+      "GOBLIN_DMG_04",
+      "GOBLIN_DIE_01",
+      "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/ (base folder)",
+      "ai/Event.ai",
+      "ai/DestinationSelect.ai",
+      "ai/Action.ai",
+      "ai/MoveMethod.ai (x4 groups)",
+      "PhysicalRangeAttacker"
+    ]
+  },
+  "monster": "goblinthrower",
+  "projectile": {
+    "destroy_particle": "script/passiveobject/mdnf_monster/renewal_monster/granflowress/goblinthrower/particle/throwstonedestroy.ptl",
+    "family_corroboration": {
+      "daydungeon_normal_goblinthrower": {
+        "attack_0": {
+          "duration_ms": 1780,
+          "frames": 25,
+          "note": "25f/1780ms: 2f anticipation, 20f 50ms aim wobble on body0#2, 200ms hold, 80ms release, 300ms recover"
+        },
+        "monster_side_flight": {
+          "duration_ms": 1400,
+          "frames": 22,
+          "note": "22f/1400ms authored flight: 200ms in-hand at [-8,-8], 20x50ms cruise at [-27/-26,-89] with attack cube [-29,-91,71]..[-9,-71,91] (z 71..91 = chest height), 200ms tail"
+        },
+        "note": "older sibling variant keeps a monster-side authored flight path; renewal goblinthrower instead uses the passive-object stone (physics-driven, struct not decoded)"
+      },
+      "lorien_goblin_beforeimpact": {
+        "throw": "script/monster/beforeimpact/newmonsters/goblin/lorien_goblin/goblinthrower/animation/throw.ani (5f/1960ms, f2 hold 1500ms)",
+        "throwstone": "script/monster/beforeimpact/newmonsters/goblin/lorien_goblin/goblinthrower/animation/throwstone.ani (3f/1679ms, f2 1499ms, image Monster/Goblin/PassiveObject/ThrowStone.img)"
+      }
+    },
+    "flight_animation": {
+      "anchor_position_per_frame": [
+        -8,
+        -8
+      ],
+      "attack_box_note": "one attack cube per frame, 20x20x20 px centered on the stone; active during entire flight (loop)",
+      "attack_box_per_frame_cube": [
+        [
+          -10.0,
+          -10.0,
+          -10.0
+        ],
+        [
+          10.0,
+          10.0,
+          10.0
+        ]
+      ],
+      "block": 587,
+      "duration_ms": 120,
+      "frame_count": 4,
+      "hit_window": "contact damage every frame while flying (attack_boxes on all 4 frames)",
+      "image": "Monster/Goblin/PassiveObject/ThrowStone.img",
+      "image_frame_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "loop": true,
+      "path": "script/passiveobject/mdnf_monster/renewal_monster/granflowress/goblinthrower/animation/throwstone.ani",
+      "shard": 106
+    },
+    "monster_dir_particle": {
+      "block": 4407,
+      "evidence": "payload contains inline section header \"[animation]\" (offset 499) - particle script with animation section",
+      "path": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/particle/throwstone.ptl",
+      "shard": 63,
+      "size_bytes": 519
+    },
+    "passive_object": {
+      "identical_copies": [
+        "script/passiveobject/mdnf_monster/renewal_monster/granflowress/goblinthrower/throwstone/2009020408_throwstone.obj",
+        "script/passiveobject/lx/nightreign/forest/goblinthrower/2009020408_throwstone.obj",
+        "script/passiveobject/lx/nightreign/forest/goblinthrower/throwstone/2009020408_throwstone.obj"
+      ],
+      "note": "renewal-family throwstone passive object; binary struct semantics not decoded (see gaps); its sibling animation/throwstone.ani decoded below",
+      "numeric_reference_in_mob": "object id 2009020408 not found as int32/int16 literal inside 2007006745_goblinthrower.mob; linkage presumed via AI scripts or engine convention (inference)",
+      "object_id": 2009020408,
+      "primary_path": "script/passiveobject/mdnf_monster/renewal_monster/granflowress/goblinthrower/2009020408_throwstone.obj"
+    },
+    "release_timing_inference": "attack_0.ani frames f2 (raised arm with stone) -> f3 (follow-through) around 240-320ms of the 520ms animation (visual inference from spotcheck/monster_attack_0.png; exact spawn frame not stored in .ani)",
+    "throwstone_img_atlas": {
+      "atlas_id": 16665,
+      "atlas_name": "ThrowStone",
+      "frames": [
+        {
+          "canvas": [
+            17,
+            17
+          ],
+          "index": 0,
+          "offset": [
+            0,
+            0
+          ],
+          "origin": "Unity bottom-left, pixel units",
+          "rect": [
+            2.0,
+            2.0,
+            17.0,
+            17.0
+          ]
+        },
+        {
+          "canvas": [
+            17,
+            17
+          ],
+          "index": 1,
+          "offset": [
+            0,
+            0
+          ],
+          "origin": "Unity bottom-left, pixel units",
+          "rect": [
+            21.0,
+            2.0,
+            17.0,
+            17.0
+          ]
+        },
+        {
+          "canvas": [
+            17,
+            17
+          ],
+          "index": 2,
+          "offset": [
+            0,
+            0
+          ],
+          "origin": "Unity bottom-left, pixel units",
+          "rect": [
+            40.0,
+            2.0,
+            17.0,
+            17.0
+          ]
+        },
+        {
+          "canvas": [
+            17,
+            17
+          ],
+          "index": 3,
+          "offset": [
+            0,
+            0
+          ],
+          "origin": "Unity bottom-left, pixel units",
+          "rect": [
+            2.0,
+            21.0,
+            17.0,
+            17.0
+          ]
+        }
+      ],
+      "page_png": "2D/bundles/Texture2D/04425_bd6be11be8f2ce_5282818771942903707_ThrowStone.img_0.png",
+      "page_size": [
+        60,
+        40
+      ]
+    },
+    "warning_marks": {
+      "line_1": {
+        "animations": {
+          "duration_ms": 1000,
+          "frames": 18,
+          "image": "Monster/GContents/190307_Preyraid/CommonEffect/WarningFloor_Line.img",
+          "note": "3 variants (line_1_0/1/2.ani), 18f x 50ms = 1000ms floor line telegraph"
+        },
+        "obj": "script/passiveobject/mdnf_monster/renewal_monster/granflowress/goblinthrower/warningmark_line_1/2009031276_warningmark_line.obj"
+      },
+      "sector_1": {
+        "animations": [
+          {
+            "duration_ms": 2165,
+            "file": "warningmark_sector_1_0.ani",
+            "frames": 7,
+            "lead_frame_delay_ms": 1565,
+            "pulse_frames_ms": 100
+          },
+          {
+            "duration_ms": 2370,
+            "file": "warningmark_sector_1_1.ani",
+            "frames": 19
+          }
+        ],
+        "image": "Monster/WarningMark/Warning_Sector_normal.img",
+        "note": "ground sector telegraph; 1_0 holds 1565ms then pulses 6x100ms",
+        "obj": "script/passiveobject/mdnf_monster/renewal_monster/granflowress/goblinthrower/warningmark_sector_1/2009031708_warningmark_sector.obj"
+      }
+    }
+  },
+  "source_restored": "D:/Github-Poj/DNFM/DNFM_export_130.5.8.0/downloaded_130.5.8.202/restored",
+  "source_root": "D:/Github-Poj/DNFM/DNFM_export_130.5.8.0",
+  "spotcheck_strips": {
+    "attack_0": {
+      "duration_ms": 520,
+      "frames": 5,
+      "png": "D:\\Github-Poj\\UE-MMO\\Artifacts\\Tasks\\M8-007\\2026-11-07T0030+0800\\spotcheck\\monster_attack_0.png"
+    },
+    "damage_0": {
+      "duration_ms": 10000,
+      "frames": 1,
+      "png": "D:\\Github-Poj\\UE-MMO\\Artifacts\\Tasks\\M8-007\\2026-11-07T0030+0800\\spotcheck\\monster_damage_0.png"
+    },
+    "damage_1": {
+      "duration_ms": 10000,
+      "frames": 1,
+      "png": "D:\\Github-Poj\\UE-MMO\\Artifacts\\Tasks\\M8-007\\2026-11-07T0030+0800\\spotcheck\\monster_damage_1.png"
+    },
+    "daydungeon_flight": {
+      "duration_ms": 1400,
+      "frames": 22,
+      "png": "D:\\Github-Poj\\UE-MMO\\Artifacts\\Tasks\\M8-007\\2026-11-07T0030+0800\\spotcheck\\projectile_flight_daydungeon.png"
+    },
+    "down": {
+      "duration_ms": 20660,
+      "frames": 5,
+      "png": "D:\\Github-Poj\\UE-MMO\\Artifacts\\Tasks\\M8-007\\2026-11-07T0030+0800\\spotcheck\\monster_down.png"
+    },
+    "move": {
+      "duration_ms": 600,
+      "frames": 6,
+      "png": "D:\\Github-Poj\\UE-MMO\\Artifacts\\Tasks\\M8-007\\2026-11-07T0030+0800\\spotcheck\\monster_move.png"
+    },
+    "overturn": {
+      "duration_ms": 10000,
+      "frames": 1,
+      "png": "D:\\Github-Poj\\UE-MMO\\Artifacts\\Tasks\\M8-007\\2026-11-07T0030+0800\\spotcheck\\monster_overturn.png"
+    },
+    "sit": {
+      "duration_ms": 150,
+      "frames": 1,
+      "png": "D:\\Github-Poj\\UE-MMO\\Artifacts\\Tasks\\M8-007\\2026-11-07T0030+0800\\spotcheck\\monster_sit.png"
+    },
+    "stay": {
+      "duration_ms": 80,
+      "frames": 1,
+      "png": "D:\\Github-Poj\\UE-MMO\\Artifacts\\Tasks\\M8-007\\2026-11-07T0030+0800\\spotcheck\\monster_stay.png"
+    },
+    "throwstone_frames": {
+      "frames": 4,
+      "png": "D:\\Github-Poj\\UE-MMO\\Artifacts\\Tasks\\M8-007\\2026-11-07T0030+0800\\spotcheck\\projectile_throwstone_frames.png"
+    },
+    "warningmark_sector": {
+      "duration_ms": 2165,
+      "frames": 7,
+      "png": "D:\\Github-Poj\\UE-MMO\\Artifacts\\Tasks\\M8-007\\2026-11-07T0030+0800\\spotcheck\\warningmark_sector.png"
+    }
+  },
+  "task": "M8-007"
+}
