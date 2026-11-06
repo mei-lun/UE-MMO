@@ -13,16 +13,16 @@
    "melee_attack_id": "light_01"
   },
   {
-   "enemy_id": "dungeon_goblin_proto",
-   "max_hp": 80,
-   "attack_power": 8,
-   "move_speed": 260,
-   "attack_range_x": 150,
+   "enemy_id": "monster_goblinthrower",
+   "max_hp": 60,
+   "attack_power": 6,
+   "move_speed": 240,
+   "attack_range_x": 500,
    "align_y_tolerance": 40,
-   "telegraph_seconds": 0.45,
+   "telegraph_seconds": 0.3,
    "spawn_grace_seconds": 0.5,
-   "melee_attack_id": "light_01"
+   "melee_attack_id": "goblin_throw"
   }
  ],
- "comment": "M7-004: dungeon_goblin_proto carries the dungeon's real damage pressure (attack_power 8); melee_grunt keeps 0 for the old rooms. The goblin visual wires in MeleeEnemy's BeginPlay definition swap (ArtValidation DNF assets; Quinn fallback)."
+ "comment": "M7-004: dungeon_goblin_proto carries the dungeon's real damage pressure (attack_power 8); melee_grunt keeps 0 for the old rooms. The goblin visual wires in MeleeEnemy's BeginPlay definition swap (ArtValidation DNF assets; Quinn fallback). M8-019A: monster_goblinthrower uses design defaults for values the source .ai did not expose (M8-007 gaps) - HP60/speed240/range500/attack6/telegraph0.3; melee_attack_id goblin_throw is added to the M1 catalog by M8-019B (forward reference, production wiring starts at M8-019C)."
 }
