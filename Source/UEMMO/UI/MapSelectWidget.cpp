@@ -213,11 +213,20 @@ void UMapSelectWidget::BindMenu()
 	// M6-002: every presentation mirrors the current catalog and the current
 	// clear records (a cleared room re-arms with its new "cleared x N" line).
 	RebuildCatalogRows();
+	const UGameFlowSubsystem* Flow = GetGameFlowSubsystem();
+	const bool bLatestExperience = Flow && Flow->IsResourceExperience();
+	const ESlateVisibility LegacyVisibility = bLatestExperience ? ESlateVisibility::Collapsed : ESlateVisibility::Visible;
+	CatalogListBox->SetVisibility(LegacyVisibility);
+	SystemTestRoomRow->SetVisibility(LegacyVisibility);
+	SystemTestRoomEnterButton->SetVisibility(LegacyVisibility);
+	SettingsPlaceholderBlock->SetVisibility(LegacyVisibility);
+	TitleBlock->SetText(FText::FromString(bLatestExperience ? TEXT("UE-MMO | Latest resources") : GM3_017_TitleText));
 	if (EnterLabel != nullptr)
 	{
 		const URoomDefinition* Primary = EnterRoomDefinitionOverride.Get();
 		EnterLabel->SetText(FText::FromString(Primary && Primary->RoomId == FName(TEXT("room_guildagit_01"))
 			? TEXT("Play GuildagitScene") : GM3_017_EnterLabelText));
+		if (bLatestExperience) EnterLabel->SetText(FText::FromString(TEXT("Enter Guildagit - Fighter playtest")));
 	}
 }
 
@@ -256,6 +265,7 @@ void UMapSelectWidget::RebuildCatalogRows()
 		return;
 	}
 	UProfileSubsystem* Profile = GetProfileSubsystem();
+	if (Flow->IsResourceExperience()) return; // The public menu has one destination.
 	const TArray<URoomDefinition*>& Catalog = Flow->GetSelectableRoomDefinitions();
 
 	for (int32 Index = 0; Index < Catalog.Num(); ++Index)
@@ -431,6 +441,7 @@ void UMapSelectWidget::HandleEnterClicked()
 
 void UMapSelectWidget::HandleSystemTestRoomClicked()
 {
+	if (const UGameFlowSubsystem* Experience = GetGameFlowSubsystem(); Experience && Experience->IsResourceExperience()) return;
 	// The same guard chain as the wave-room enter (the state machine half
 	// lives in the flow; the visible half disables both buttons for the
 	// attempt so a double click cannot request two worlds).

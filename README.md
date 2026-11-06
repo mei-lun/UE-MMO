@@ -1,56 +1,48 @@
 # UE-MMO
 
-**2026-11-04 试玩纠正**：固定包恢复已有的 **3D骨骼角色和跑跳/普攻/受击动作**，2D待机仅作可选预览。`Scripts/Run.ps1`默认直接进入公会场景，`-Menu`回到选关；左上角显示地图名。**地图原色贴图和地形仍未补齐**，角色也仍是低精度学习原型，不能按完整美术交付。[修复交接与证据](Docs/Tasks/Handoffs/2026-11-04-Codex-3DRestore.md)。
+UE 5.8.3 单机横版动作学习原型，支持 X 横向、Y 地面纵深移动和跳跃。
 
-UE 5.8.3 单机3D横版学习原型，固定侧面镜头，支持X横向、Y地面纵深移动；使用现成免费或引擎附带素材。
+**当前交付：最新替换资源体验包（M6-026）。** 双击 [UEMMO.exe](Artifacts/Package/Windows/UEMMO.exe) 即自动进入公会场景，使用最新 DNFM 格斗家动作，六技能已准备好。正常菜单只保留同一体验入口。
 
-**开发包统一在`D:\Github-Poj\UE-MMO\Artifacts\Package\Windows`。** 后续覆盖同一份，不再创建日期或版本号包。修复追溯使用Git提交和任务报告；完整整理见[开发交付与修复汇总](Docs/开发交付与修复汇总.md)。
+开发包固定在 D:\Github-Poj\UE-MMO\Artifacts\Package\Windows，后续更新覆盖同一份。也可运行 Scripts/Run.ps1；-Menu 打开单入口菜单，-Editor 打开工程。
 
-当前内容（2026-10-30）：多关卡自由选关（菜单三关：训练场/CombatRoom01/CombatRoom02）；地面载具骑乘链（F8 生成样车，走路带车、Q 车炮、V 下车；armored 变体走表驱动：HP500/防25/速400/挂 12 发线性弹炮塔）；独立主菜单启动图；存档 v3 携带每关通关记录；普通枪、点射和散弹发射独立弹丸实体（橙色可见弹头），参数见`Data/CombatSystem/projectiles.json`。
+## 操作
 
-加内容按[配置作者手册](Docs/Tasks/M5-配置作者手册.md)（武器/子弹/反应/载具/关卡的表驱动步骤都有任务报告背书）。
+- 方向键：左右及前后纵深移动；C / 空格：跳跃。
+- X：普攻；Z：上挑；W：单踢；E：下段踢；R：抛沙；A：地裂；S：踏地。
+- F2：复位、回复生命和 MP、清除技能冷却；I：背包；Alt+F4：退出。
+- 清敌后领取奖励并返回菜单，可再次进入体验。
 
-任务状态只看[TASKS.md](TASKS.md)，最近验证与接续看[HANDOFF.md](HANDOFF.md)。自动验证不等于人工试玩通过；M5-H03（载具试玩）待用户签收，M5-H04 为最终人工关。
+本体验使用独立 ResourceExperience_ 存档槽，领取奖励时保存；未领取即退出不保存本轮进度。原 Profile_/Roster_/Char_ 存档保留。
 
-DNFM资源已导入：**279个静态模型（含183个地图/背景网格）、137个来源材质、39张关联贴图**。后续Agent直接读[资源接手入口](Docs/DNF-Research/06-Agent资源接手入口.md)，内含逐资产UE路径、本地原始依赖和缺失项说明。
+## 当前边界
 
-## 直接试玩
+新格斗家衣装与跑跳、攻击、受击、倒地、起身、死亡动作已接入。公会地图的原色贴图和地形仍未补齐，场景还有灰色占位；普通敌人和部分图标也仍有占位。当前不代表完整美术交付、多职业玩家流程或连续地城已完成。
 
-运行[开发包](Artifacts/Package/Windows/UEMMO.exe)（启动即进主菜单），或在仓库根目录执行：
+单机战斗、波次、成长、背包、装备、存档，以及武器和地面载具底层已有实现。历史开发测试地图保留供自动化验证，不出现在正常体验菜单。多人、在线账号和服务端未实现。
 
-```powershell
-rtk proxy powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/Run.ps1
-```
+任务状态只看 [TASKS.md](TASKS.md)，接续见 [HANDOFF.md](HANDOFF.md)。自动化不能代替用户试玩签收。
 
-菜单选一行点 Enter 进关（TrainingArena 训练 / CombatRoom01·02 波次房），方向键左右与纵深移动，C/Space 跳跃，X 普攻，Q 射击（手持武器），I 背包换装，F1 调试面板，F2 训练复位，F8 在身边生成试验载具。
+## 开发验证
 
-载具骑乘：F8 后走近按 V 上车，方向键走路带车，Q 发射车炮，V 下车。真实键鼠、手感与可听性仍由用户签收（M5-H03/H04）。
+仓库根目录使用 Windows PowerShell，所有命令加 rtk proxy 前缀：
 
-## 开发命令
+- powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/Build.ps1
+- powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/Test.ps1
+- powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/Test.ps1 -Render
+- powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/TestAutomation.ps1 -Filter UEMMO.Tasks -TaskId YOUR_TASK_ID
+- powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/Package.ps1
+- powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/TestPackage.ps1
+- powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/TestResourceExperience.ps1 -Package
+- powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/CheckTaskBoard.ps1
 
-项目`D:\Github-Poj\UE-MMO\UEMMO.uproject`；引擎`D:\Epic\UE_5.8`。Windows原生PowerShell，在仓库根目录执行：
+Package 的 UAT archive 根是 Artifacts/Package，由 UAT 追加 Windows；不能再建日期、vN 或 latest 包目录。package-info.json 记录源码提交与 exe 哈希；日志、截图和 JSON 留在 Artifacts/Tasks/<ID>。
 
-```powershell
-rtk proxy powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/Build.ps1
-rtk proxy powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/Test.ps1
-rtk proxy powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/Test.ps1 -Render
-rtk proxy powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/Package.ps1
-rtk proxy powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/TestPackage.ps1 -IncludeWeaponScenario
-rtk proxy powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/Run.ps1 -Editor
-rtk proxy powershell.exe -NoProfile -ExecutionPolicy Bypass -File Scripts/CheckTaskBoard.ps1
-```
+## 文档
 
-Package无需传目录，UAT的archive根为Artifacts/Package，自动追加Windows。脚本拒绝其他输出路径；打包后的`Windows/package-info.json`记录提交和exe哈希。验收日志/截图/JSON放`Artifacts/Tasks/<ID>/<timestamp>`，旧包的存档和日志有独立归档，详情见修复汇总。
-
-Run默认启动固定开发包；Run -Editor打开源码编辑器。环境检查、资源准备等命令见[操作手册](Docs/02-准备与环境操作手册.md)。
-
-## 项目文档
-
-- [任务总表](TASKS.md)与[当前交接](HANDOFF.md)：唯一任务状态及接续入口。
-- [开发交付与修复汇总](Docs/开发交付与修复汇总.md)：历次武器问题、修复关联、当前结果与未完成项。
-- [游戏与技术设计](Docs/01-游戏与技术设计.md)：目标、玩法和接口设计，不把设计当实现。
-- [准备与环境操作手册](Docs/02-准备与环境操作手册.md)、[资源登记](Docs/03-资源目录与缺口.md)、[验证记录](Docs/05-验证记录.md)。
-- [Agent工作约定](AGENTS.md)、[执行与交接规则](Docs/Tasks/执行与交接规则.md)、[接口约定](Docs/Tasks/接口约定.md)。
-- [DNF 逆向研究与多职业最终文档](Docs/DNF-Research/README.md)：仅保留研究依据、功能实施方案、Blender 建模交接三份当前文档；此区为本机私人学习参考，尚未实施为游戏功能，原游戏参考图保存在 Git 忽略目录。
-
-角色/动画使用Epic官方模板资产（保留原路径）；音效使用Kenney Impact Sounds（CC0）。装备图标仍有引擎占位，Quaternius候选动作未下载；许可与缺口见资源登记。多人、在线账号与服务端不在当前范围。
+- [本轮体验包报告](Docs/Tasks/Reports/M6-026.md)与[试玩说明](Docs/DevelopmentPlaytest.txt)。
+- [项目审计](Docs/Audit-2026-11-06.md)：本次入口收敛前的进度快照。
+- [开发交付与修复汇总](Docs/开发交付与修复汇总.md)。
+- [游戏与技术设计](Docs/01-游戏与技术设计.md)、[操作手册](Docs/02-准备与环境操作手册.md)、[资源登记](Docs/03-资源目录与缺口.md)、[验证记录](Docs/05-验证记录.md)。
+- [Agent 约定](AGENTS.md)、[执行与交接规则](Docs/Tasks/执行与交接规则.md)、[接口约定](Docs/Tasks/接口约定.md)、[配置作者手册](Docs/Tasks/M5-配置作者手册.md)。
+- [DNFM 资源接手入口](Docs/DNF-Research/06-Agent资源接手入口.md)：279 个静态模型、137 个来源材质和39 张纹理的本地接手信息与缺失项。

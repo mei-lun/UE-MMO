@@ -108,7 +108,9 @@ void APrototypeHUD::DrawHUD()
     // refresh guard skips identical snapshots, so the countdown advances at its
     // 0.1 s quantization without a per-frame rebuild).
     RefreshWeaponStatusScreen();
-    DrawRect(FLinearColor(0.02f, 0.03f, 0.05f, 0.86f), 18, 18, 630, 110);
+    const UGameFlowSubsystem* ExperienceFlow = ResolveGameFlowSubsystem();
+    const bool bExperience = ExperienceFlow && ExperienceFlow->IsResourceExperience();
+    DrawRect(FLinearColor(0.02f, 0.03f, 0.05f, 0.86f), 18, 18, bExperience ? 1160 : 630, 134);
     // M2-017: stage copy refreshed for the M2 room combat prototype (pending
     // playtest); the M1-only line is obsolete now that M2 rooms are in.
     const FString CurrentMap = GetWorld() ? GetWorld()->GetMapName() : TEXT("No World");
@@ -116,7 +118,10 @@ void APrototypeHUD::DrawHUD()
     // M1-040: DNF-style keymap hints. Arrows move (X/Y incl. depth), X attack,
     // Z launcher, C jump (Space stays a jump alias), F2 resets, QWERASDF are
     // the reserved skill slots (no skill effect yet), F1 the debug overlay.
-    DrawText(TEXT("Arrows: move  X: attack  Z: launcher  C: jump  F2: reset  QWERASDF: skills (reserved)  F1: debug"), FLinearColor(0.6f, 0.85f, 1.f), 32, 53);
+    DrawText(bExperience
+        ? TEXT("Arrows: move / depth   X: attack   Z: launcher   W E R A S: skills   C / Space: jump   F2: reset")
+        : TEXT("Arrows: move  X: attack  Z: launcher  C: jump  F2: reset  W E R A S: skills  F1: debug"),
+        FLinearColor(0.6f, 0.85f, 1.f), 32, 53);
     // M7-004/M7-003: the SkillDemo banner (visible console-command feedback;
     // the packaged run's evidence screenshot rides the first banner frame).
     if (!SkillDemoBanner.IsEmpty())
@@ -179,10 +184,16 @@ void APrototypeHUD::DrawHUD()
     // M5-044: the vehicle trial point. The hull stages through the HUD debug
     // entry; near it V enters/exits, arrows drive, Q fires the turret, T
     // reloads it (the walk faces stay suspended while seated).
-    DrawText(TEXT("F8: stage car (near you)  V: enter/exit  while seated Arrows drive, Q fire, T reload"), FLinearColor(0.6f, 0.95f, 0.7f), 32, 101);
+    if (!bExperience)
+        DrawText(TEXT("F8: stage car (near you)  V: enter/exit  while seated Arrows drive, Q fire, T reload"), FLinearColor(0.6f, 0.95f, 0.7f), 32, 101);
+    else
+        DrawText(TEXT("Fighter skills ready. Clear enemies to replay. I: inventory. Alt+F4: exit."), FLinearColor(0.6f, 0.95f, 0.7f), 32, 101);
     // M2-017: the stage note reflects the implemented M1 combat + M2 wave
     // room instead of the stale "M2 planned" text.
-    DrawText(TEXT("Single-player. M1 combat + M2 wave room + M3 progression implemented; M4 server integration not started."), FLinearColor(0.9f, 0.8f, 0.45f), 32, 77);
+    DrawText(bExperience
+        ? TEXT("Latest character actions enabled. Map textures and terrain are still incomplete.")
+        : TEXT("Single-player. M1 combat + M2 wave room + M3 progression implemented; M4 server integration not started."),
+        FLinearColor(0.9f, 0.8f, 0.45f), 32, 77);
 
     // M3-018: the pending-reward badge while the menu flow state owns the
     // screen (the card's minimal HUD hook point: canvas text of the prototype
@@ -1022,7 +1033,10 @@ void APrototypeHUD::StartDebugRepeatStrike()
 
 void APrototypeHUD::BeginPlay()
 {
-    if (FParse::Param(FCommandLine::Get(), TEXT("UEMMOPlaytestGuild")))
+    UGameFlowSubsystem* StartupFlow = ResolveGameFlowSubsystem();
+    const bool bExperienceAutoEntry = StartupFlow && StartupFlow->ConsumeResourceExperienceAutoEntry();
+    if (bExperienceAutoEntry || (!StartupFlow || !StartupFlow->IsResourceExperience())
+        && FParse::Param(FCommandLine::Get(), TEXT("UEMMOPlaytestGuild")))
     {
         if (UGameFlowSubsystem* Flow = ResolveGameFlowSubsystem(); Flow && Flow->GetState()==EGameFlowState::Menu)
         {
@@ -1450,7 +1464,10 @@ UProfileSaveService* APrototypeHUD::EnsureRewardSaveService()
     // The production prefix of the M3-015/M3-017 chain: the claim's atomic
     // snapshot travels through the same A/B slot pair the startup pass reads.
     UProfileSaveService* Service = NewObject<UProfileSaveService>(this);
-    if (Service == nullptr || !Service->Initialize(TEXT("Profile_")))
+    const UGameFlowSubsystem* Flow = ResolveGameFlowSubsystem();
+    const TCHAR* SavePrefix = Flow && Flow->IsResourceExperience()
+        ? Flow->GetResourceExperienceSavePrefix() : TEXT("Profile_");
+    if (Service == nullptr || !Service->Initialize(SavePrefix))
     {
         // Graceful degradation: the claim answers RejectedNoSaveService, the
         // UI shows a readable failure and the draft stays pending/retryable.

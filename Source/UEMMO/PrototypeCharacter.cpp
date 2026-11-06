@@ -36,6 +36,7 @@
 #include "Items/ItemInstance.h"
 #include "Logging/OperationLogSubsystem.h"
 #include "PrototypeHUD.h"
+#include "Profile/GameFlowSubsystem.h"
 #include "Profile/ProfileSubsystem.h"
 #include "Room/RoomSessionSubsystem.h"
 #include "Room/TrainingResetService.h"
@@ -2379,6 +2380,10 @@ void APrototypeCharacter::ApplyTrainingRoomReset()
         Combat->ResetCombat();
         Combat->SetDead(false);
     }
+    if (SkillLoadout != nullptr)
+    {
+        SkillLoadout->ResetTransientCombatState();
+    }
     // M5-020: the revive re-entry. The death teardown closed the reload window
     // and voided the pending callbacks; the re-applied equipment load restores
     // the binding identity with its parked magazine (switching/rebinding never
@@ -2450,7 +2455,10 @@ void APrototypeCharacter::ApplyDNFMVisualIfEnabled()
     {
         return;
     }
-    if (CVarUEMMOPlayerDNFMVisual.GetValueOnGameThread() == 0)
+    const UGameFlowSubsystem* ExperienceFlow = GetGameInstance()
+        ? GetGameInstance()->GetSubsystem<UGameFlowSubsystem>() : nullptr;
+    const bool bLatestExperience = ExperienceFlow && ExperienceFlow->IsResourceExperience();
+    if (CVarUEMMOPlayerDNFMVisual.GetValueOnGameThread() == 0 && !bLatestExperience)
     {
         // M6-021: the gate-off path (BeginPlay default and the runtime flip
         // back) is the clean reset: playback stops, the picture plane hides,

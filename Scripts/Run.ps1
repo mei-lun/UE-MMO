@@ -5,6 +5,6 @@ if ($Editor) {
 } else {
     if (-not (Test-Path -LiteralPath $DevelopmentPackageExecutable)) { throw 'Development package missing. Run Scripts/Package.ps1 first.' }
     $Arguments = @('-windowed','-ResX=1280','-ResY=720','-nosplash')
-    if (-not $Menu) { $Arguments += '-UEMMOPlaytestGuild' }
+    if ($Menu) { $Arguments += '-UEMMOExperienceMenu' }
     Start-Process -FilePath $DevelopmentPackageExecutable -ArgumentList $Arguments -WorkingDirectory $DevelopmentPackageDirectory
 }

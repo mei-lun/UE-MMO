@@ -96,6 +96,10 @@ class UEMMO_API UGameFlowSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
+	/** Public resource playtest; uses separate saves from the existing roster. */
+	bool IsResourceExperience() const { return bResourceExperience; }
+	const TCHAR* GetResourceExperienceSavePrefix() const { return TEXT("ResourceExperience_"); }
+	bool ConsumeResourceExperienceAutoEntry();
 	// -- Lifecycle -------------------------------------------------------------
 
 	/**
@@ -296,6 +300,8 @@ private:
 
 	/** Lifecycle state; starts Menu. */
 	EGameFlowState State = EGameFlowState::Menu;
+	bool bResourceExperience = false;
+	bool bResourceExperienceAutoEntryConsumed = false;
 
 	/** Target state per accepted transition (seeds with the initial Menu). */
 	TArray<EGameFlowState> StateHistory;

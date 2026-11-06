@@ -17,6 +17,9 @@
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "CoreGlobals.h"
+#include "Misc/App.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/FileHelper.h"
 #include "Misc/PackageName.h"
@@ -71,6 +74,14 @@ FString UGameFlowSubsystem::LevelCatalogSourcePathOverride;
 void UGameFlowSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
+	// Interactive game launches use the current resource experience. Dedicated
+	// unattended regression processes keep their explicit scenarios; the flag
+	// runs this same production path in a dedicated rendered acceptance process.
+	bResourceExperience = FParse::Param(FCommandLine::Get(), TEXT("UEMMOResourceExperience"))
+		|| (!GIsEditor && !GIsAutomationTesting && !FApp::IsUnattended()
+			&& !FParse::Param(FCommandLine::Get(), TEXT("UEMMOSmoke"))
+			&& !FParse::Param(FCommandLine::Get(), TEXT("M7DemoSelfTest")));
+	bResourceExperienceAutoEntryConsumed = false;
 
 	State = EGameFlowState::Menu;
 	StateHistory.Reset();
@@ -101,7 +112,8 @@ void UGameFlowSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	if (Service == nullptr && !GIsAutomationTesting && Profile != nullptr)
 	{
 		UProfileSaveService* ProductionService = NewObject<UProfileSaveService>(this);
-		if (ProductionService->Initialize(GM3_017_ProductionSlotPrefix))
+		if (ProductionService->Initialize(bResourceExperience
+			? GetResourceExperienceSavePrefix() : GM3_017_ProductionSlotPrefix))
 		{
 			Service = ProductionService;
 		}
@@ -118,7 +130,7 @@ void UGameFlowSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	// "Profile_" pass becomes the one-time import source.
 	URosterService* RosterService = ConsumeStartupRosterServiceOverride();
 	bool bRosterPassRan = false;
-	if (RosterService == nullptr && !GIsAutomationTesting && Profile != nullptr)
+	if (RosterService == nullptr && !GIsAutomationTesting && Profile != nullptr && !bResourceExperience)
 	{
 		RosterService = NewObject<URosterService>(this);
 		if (!RosterService->Initialize(GM7_002_ProductionRosterPrefix))
@@ -302,9 +314,30 @@ void UGameFlowSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		StartupOutcome.Summary = TEXT("M3-017: the startup restore pass did not run (automation without an injected save service; the real boot runs the Profile_ pass).");
 	}
 
+	if (bResourceExperience && Profile && Profile->HasProfile() && !bStartupProfileRestored)
+	{
+		TMap<FName, int32> Ranks;
+		for (const TCHAR* Id : { TEXT("launcher_z"), TEXT("singlekick_w"), TEXT("damagelowkick_e"),
+			TEXT("throwsand_r"), TEXT("earthbreak_a"), TEXT("stomp_s") })
+		{
+			Ranks.Add(FName(Id), 1);
+		}
+		// Only the new, independent experience profile receives the starter skills.
+		Profile->DevApplyAcceptanceProfession(FName(TEXT("fighter")), Ranks, 30);
+	}
+	UE_LOG(LogTemp, Display, TEXT("UEMMO M6-026: resource experience=%d; restored=%d; isolated prefix=%s"),
+		bResourceExperience, bStartupProfileRestored, bResourceExperience ? GetResourceExperienceSavePrefix() : TEXT("none"));
 	UE_LOG(LogTemp, Log, TEXT("UEMMO M3-017: game flow initialized (startup restore: %s; summary: %s)"),
 		bStartupProfileRestored ? TEXT("restored") : TEXT("none"),
 		*StartupOutcome.Summary);
+}
+
+bool UGameFlowSubsystem::ConsumeResourceExperienceAutoEntry()
+{
+	if (!bResourceExperience || bResourceExperienceAutoEntryConsumed
+		|| FParse::Param(FCommandLine::Get(), TEXT("UEMMOExperienceMenu"))) return false;
+	bResourceExperienceAutoEntryConsumed = true;
+	return true;
 }
 
 void UGameFlowSubsystem::Deinitialize()
