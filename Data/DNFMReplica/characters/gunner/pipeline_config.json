@@ -1,0 +1,562 @@
+{
+ "actions": [
+  {
+   "action_id": "stay",
+   "ani_key": "script/character/gunner/animation/Stay.ani",
+   "group": "basic",
+   "verify": {
+    "key": "Stay",
+    "section": "basic_motions"
+   }
+  },
+  {
+   "action_id": "rest",
+   "ani_key": "script/character/gunner/animation/Rest.ani",
+   "group": "basic",
+   "verify": {
+    "key": "Rest",
+    "section": "basic_motions"
+   }
+  },
+  {
+   "action_id": "move",
+   "ani_key": "script/character/gunner/animation/Move.ani",
+   "group": "basic",
+   "verify": {
+    "key": "Move",
+    "section": "basic_motions"
+   }
+  },
+  {
+   "action_id": "dash",
+   "ani_key": "script/character/gunner/animation/Dash.ani",
+   "group": "basic",
+   "verify": {
+    "key": "Dash",
+    "section": "basic_motions"
+   }
+  },
+  {
+   "action_id": "dashattack",
+   "ani_key": "script/character/gunner/animation/DashAttack.ani",
+   "group": "basic",
+   "verify": {
+    "key": "DashAttack",
+    "section": "basic_motions"
+   }
+  },
+  {
+   "action_id": "jump",
+   "ani_key": "script/character/gunner/animation/Jump.ani",
+   "group": "basic",
+   "verify": {
+    "key": "Jump",
+    "section": "basic_motions"
+   }
+  },
+  {
+   "action_id": "jumpattack",
+   "ani_key": "script/character/gunner/animation/JumpAttack.ani",
+   "group": "basic",
+   "verify": {
+    "key": "JumpAttack",
+    "section": "basic_motions"
+   }
+  },
+  {
+   "action_id": "jumpattackready",
+   "ani_key": "script/character/gunner/animation/JumpAttackReady.ani",
+   "group": "basic",
+   "verify": {
+    "key": "JumpAttackReady",
+    "section": "basic_motions"
+   }
+  },
+  {
+   "action_id": "sit",
+   "ani_key": "script/character/gunner/animation/Sit.ani",
+   "group": "basic",
+   "verify": {
+    "key": "Sit",
+    "section": "basic_motions"
+   }
+  },
+  {
+   "action_id": "attack1",
+   "ani_key": "script/character/gunner/animation/Attack1.ani",
+   "group": "basic",
+   "verify": {
+    "key": "Attack1",
+    "section": "basic_motions"
+   }
+  },
+  {
+   "action_id": "attack2",
+   "ani_key": "script/character/gunner/animation/Attack2.ani",
+   "group": "basic",
+   "verify": {
+    "key": "Attack2",
+    "section": "basic_motions"
+   }
+  },
+  {
+   "action_id": "down",
+   "ani_key": "script/character/gunner/animation/Down.ani",
+   "group": "basic",
+   "verify": {
+    "key": "Down",
+    "section": "basic_motions"
+   }
+  },
+  {
+   "action_id": "getitem",
+   "ani_key": "script/character/gunner/animation/GetItem.ani",
+   "group": "basic",
+   "verify": {
+    "key": "GetItem",
+    "section": "basic_motions"
+   }
+  },
+  {
+   "action_id": "buff",
+   "ani_key": "script/character/gunner/animation/Buff.ani",
+   "group": "basic",
+   "verify": {
+    "key": "Buff",
+    "section": "basic_motions"
+   }
+  },
+  {
+   "action_id": "die",
+   "ani_key": "script/character/gunner/animation/Die.ani",
+   "group": "basic_extra",
+   "note": "basic_motions.Die is null in the verify JSON (no restored animations row had been recorded), but the payload exists (2 frames, fi 126/127, both inside the 150 key-motion indices); included with animation-db-only checks",
+   "verify": null
+  },
+  {
+   "action_id": "damage1",
+   "ani_key": "script/character/gunner/animation/Damage1.ani",
+   "group": "hit",
+   "verify": {
+    "key": "Damage1",
+    "section": "hit_getup_states"
+   }
+  },
+  {
+   "action_id": "damage2",
+   "ani_key": "script/character/gunner/animation/Damage2.ani",
+   "group": "hit",
+   "verify": {
+    "key": "Damage2",
+    "section": "hit_getup_states"
+   }
+  },
+  {
+   "action_id": "overturn",
+   "ani_key": "script/character/gunner/animation/Overturn.ani",
+   "group": "hit",
+   "verify": {
+    "key": "Overturn",
+    "section": "hit_getup_states"
+   }
+  },
+  {
+   "action_id": "breakfall",
+   "ani_key": "script/character/gunner/animation/Breakfall.ani",
+   "group": "hit",
+   "verify": {
+    "key": "Breakfall",
+    "section": "hit_getup_states"
+   }
+  },
+  {
+   "action_id": "breakfall_back",
+   "ani_key": "script/character/gunner/animation/Breakfall_Back.ani",
+   "group": "hit",
+   "verify": {
+    "key": "Breakfall_Back",
+    "section": "hit_getup_states"
+   }
+  },
+  {
+   "action_id": "gnrecoveryrollfront_body",
+   "ani_key": "script/character/gunner/animation/gnRecoveryRollFront_body.ani",
+   "group": "hit",
+   "verify": {
+    "key": "gnRecoveryRollFront_body",
+    "section": "hit_getup_states"
+   }
+  },
+  {
+   "action_id": "gnrecoveryrollback_body",
+   "ani_key": "script/character/gunner/animation/gnRecoveryRollBack_body.ani",
+   "group": "hit",
+   "verify": {
+    "key": "gnRecoveryRollBack_body",
+    "section": "hit_getup_states"
+   }
+  },
+  {
+   "action_id": "gndodgefront_body_renew",
+   "ani_key": "script/character/gunner/animation/gnDodgeFront_body_ReNew.ani",
+   "group": "hit",
+   "verify": {
+    "key": "gnDodgeFront_body_ReNew",
+    "section": "hit_getup_states"
+   }
+  },
+  {
+   "action_id": "gndodgeback_body_renew",
+   "ani_key": "script/character/gunner/animation/gnDodgeBack_body_ReNew.ani",
+   "group": "hit",
+   "verify": {
+    "key": "gnDodgeBack_body_ReNew",
+    "section": "hit_getup_states"
+   }
+  },
+  {
+   "action_id": "gndodgerl_body_renew",
+   "ani_key": "script/character/gunner/animation/gnDodgeRL_body_ReNew.ani",
+   "group": "hit",
+   "verify": {
+    "key": "gnDodgeRL_body_ReNew",
+    "section": "hit_getup_states"
+   }
+  },
+  {
+   "action_id": "aerialknee",
+   "ani_key": "script/character/gunner/animation/AerialKnee.ani",
+   "group": "shooting",
+   "verify": {
+    "key": "AerialKnee",
+    "section": "weapon_gun_layer.per_frame_presence"
+   }
+  },
+  {
+   "action_id": "attack1shootdown",
+   "ani_key": "script/character/gunner/animation/Attack1ShootDown.ani",
+   "group": "shooting",
+   "verify": {
+    "key": "Attack1ShootDown",
+    "section": "weapon_gun_layer.per_frame_presence"
+   }
+  },
+  {
+   "action_id": "attack1shootup",
+   "ani_key": "script/character/gunner/animation/Attack1ShootUp.ani",
+   "group": "shooting",
+   "verify": {
+    "key": "Attack1ShootUp",
+    "section": "weapon_gun_layer.per_frame_presence"
+   }
+  },
+  {
+   "action_id": "attack2shootdown",
+   "ani_key": "script/character/gunner/animation/Attack2ShootDown.ani",
+   "group": "shooting",
+   "verify": {
+    "key": "Attack2ShootDown",
+    "section": "weapon_gun_layer.per_frame_presence"
+   }
+  },
+  {
+   "action_id": "attack2shootup",
+   "ani_key": "script/character/gunner/animation/Attack2ShootUp.ani",
+   "group": "shooting",
+   "verify": {
+    "key": "Attack2ShootUp",
+    "section": "weapon_gun_layer.per_frame_presence"
+   }
+  },
+  {
+   "action_id": "crossshoot",
+   "ani_key": "script/character/gunner/animation/CrossShoot.ani",
+   "group": "shooting",
+   "verify": {
+    "key": "CrossShoot",
+    "section": "weapon_gun_layer.per_frame_presence"
+   }
+  },
+  {
+   "action_id": "fastknee",
+   "ani_key": "script/character/gunner/animation/FastKnee.ani",
+   "group": "shooting",
+   "verify": {
+    "key": "FastKnee",
+    "section": "weapon_gun_layer.per_frame_presence"
+   }
+  },
+  {
+   "action_id": "reload",
+   "ani_key": "script/character/gunner/animation/Reload.ani",
+   "group": "shooting",
+   "verify": {
+    "key": "Reload",
+    "section": "weapon_gun_layer.per_frame_presence"
+   }
+  },
+  {
+   "action_id": "throw1",
+   "ani_key": "script/character/gunner/animation/Throw1.ani",
+   "group": "shooting",
+   "verify": {
+    "key": "Throw1",
+    "section": "weapon_gun_layer.per_frame_presence"
+   }
+  },
+  {
+   "action_id": "throw2",
+   "ani_key": "script/character/gunner/animation/Throw2.ani",
+   "group": "shooting",
+   "verify": {
+    "key": "Throw2",
+    "section": "weapon_gun_layer.per_frame_presence"
+   }
+  },
+  {
+   "action_id": "treadshoot",
+   "ani_key": "script/character/gunner/animation/TreadShoot.ani",
+   "group": "shooting",
+   "verify": {
+    "key": "TreadShoot",
+    "section": "weapon_gun_layer.per_frame_presence"
+   }
+  },
+  {
+   "action_id": "trytread",
+   "ani_key": "script/character/gunner/animation/TryTread.ani",
+   "group": "shooting",
+   "verify": {
+    "key": "TryTread",
+    "section": "weapon_gun_layer.per_frame_presence"
+   }
+  },
+  {
+   "action_id": "walkshootleftback",
+   "ani_key": "script/character/gunner/animation/WalkShootLeftBack.ani",
+   "group": "shooting",
+   "verify": {
+    "key": "WalkShootLeftBack",
+    "section": "weapon_gun_layer.per_frame_presence"
+   }
+  },
+  {
+   "action_id": "walkshootleftfront",
+   "ani_key": "script/character/gunner/animation/WalkShootLeftFront.ani",
+   "group": "shooting",
+   "verify": {
+    "key": "WalkShootLeftFront",
+    "section": "weapon_gun_layer.per_frame_presence"
+   }
+  },
+  {
+   "action_id": "walkshootleftstay",
+   "ani_key": "script/character/gunner/animation/WalkShootLeftStay.ani",
+   "group": "shooting",
+   "verify": {
+    "key": "WalkShootLeftStay",
+    "section": "weapon_gun_layer.per_frame_presence"
+   }
+  },
+  {
+   "action_id": "walkshootreadyback",
+   "ani_key": "script/character/gunner/animation/WalkShootReadyBack.ani",
+   "group": "shooting",
+   "verify": {
+    "key": "WalkShootReadyBack",
+    "section": "weapon_gun_layer.per_frame_presence"
+   }
+  },
+  {
+   "action_id": "walkshootreadyfront",
+   "ani_key": "script/character/gunner/animation/WalkShootReadyFront.ani",
+   "group": "shooting",
+   "verify": {
+    "key": "WalkShootReadyFront",
+    "section": "weapon_gun_layer.per_frame_presence"
+   }
+  },
+  {
+   "action_id": "walkshootreadystay",
+   "ani_key": "script/character/gunner/animation/WalkShootReadyStay.ani",
+   "group": "shooting",
+   "verify": {
+    "key": "WalkShootReadyStay",
+    "section": "weapon_gun_layer.per_frame_presence"
+   }
+  },
+  {
+   "action_id": "walkshootrightback",
+   "ani_key": "script/character/gunner/animation/WalkShootRightBack.ani",
+   "group": "shooting",
+   "verify": {
+    "key": "WalkShootRightBack",
+    "section": "weapon_gun_layer.per_frame_presence"
+   }
+  },
+  {
+   "action_id": "walkshootrightfront",
+   "ani_key": "script/character/gunner/animation/WalkShootRightFront.ani",
+   "group": "shooting",
+   "verify": {
+    "key": "WalkShootRightFront",
+    "section": "weapon_gun_layer.per_frame_presence"
+   }
+  },
+  {
+   "action_id": "walkshootrightstay",
+   "ani_key": "script/character/gunner/animation/WalkShootRightStay.ani",
+   "group": "shooting",
+   "verify": {
+    "key": "WalkShootRightStay",
+    "section": "weapon_gun_layer.per_frame_presence"
+   }
+  },
+  {
+   "action_id": "windmillroll",
+   "ani_key": "script/character/gunner/animation/WindmillRoll.ani",
+   "group": "shooting",
+   "verify": {
+    "key": "WindmillRoll",
+    "section": "weapon_gun_layer.per_frame_presence"
+   }
+  },
+  {
+   "action_id": "windmillstand",
+   "ani_key": "script/character/gunner/animation/WindmillStand.ani",
+   "group": "shooting",
+   "verify": {
+    "key": "WindmillStand",
+    "section": "weapon_gun_layer.per_frame_presence"
+   }
+  }
+ ],
+ "body": {
+  "atlas_name": "gn_body0000",
+  "canvas": [
+   500,
+   500
+  ],
+  "frame_count": 215,
+  "image_path": "Character/Gunner/Equipment/Avatar/skin/gn_body0000.img"
+ },
+ "character": "gunner",
+ "draw_order": [
+  "body",
+  "shoes_a",
+  "pants_a",
+  "belt",
+  "coat_a",
+  "face",
+  "neck",
+  "hair",
+  "gun_c",
+  "gun_b"
+ ],
+ "excluded_actions": [
+  {
+   "ani_key": "script/character/gunner/animation/Appear01_Body.ani",
+   "name": "Appear01_Body",
+   "reason": "alpha-fade frames (color_rgba alpha 25..204); per-frame tint of a multi-layer composite is unverified (pipeline hard-errors on non-white color_rgba)"
+  },
+  {
+   "ani_key": "script/character/gunner/animation/ranger2nd_rest.ani",
+   "name": "ranger2nd_rest",
+   "reason": "subclass rest variant duplicating rest.ani (both 18 frames / 4050 ms, body indices 0..12 all already covered by the composite); the verify JSON records no frame data for it (basic_motions.ranger2nd_rest=null) so there is nothing to cross-check against"
+  }
+ ],
+ "layers": [
+  {
+   "atlas_name": "gn_body0000",
+   "role": "skin/body base",
+   "slot": "body",
+   "verify_layer_index": 0
+  },
+  {
+   "atlas_name": "gn_shoes0000a",
+   "role": "shoes variant a (default)",
+   "slot": "shoes_a",
+   "variant_note": "gn_shoes0000b (verify outfit_layers[13]) is the parallel alternate",
+   "verify_layer_index": 12
+  },
+  {
+   "atlas_name": "gn_pants0000a",
+   "role": "pants variant a (default)",
+   "slot": "pants_a",
+   "variant_note": "gn_pants0000b/d (verify outfit_layers[9,10]) are the parallel alternates",
+   "verify_layer_index": 8
+  },
+  {
+   "atlas_name": "gn_belt0000a",
+   "role": "waist slot item 2000210037 (belt)",
+   "slot": "belt",
+   "verify_layer_index": 11
+  },
+  {
+   "atlas_name": "gn_coat0000a",
+   "role": "coat item 2000060036 (default; gunner has no acoat_default.equ)",
+   "slot": "coat_a",
+   "variant_note": "gn_coat0000b/c (verify outfit_layers[6,7]) are parallel coat sub-piece atlases; the M8-004 reviewed default-outfit preview (deliverable_1) composites coat_a only",
+   "verify_layer_index": 5
+  },
+  {
+   "atlas_name": "gn_face0000b",
+   "role": "face slot (default face has no aface_default naming; b-variant per M8-004)",
+   "slot": "face",
+   "verify_layer_index": 2
+  },
+  {
+   "atlas_name": "gn_neck0000d",
+   "role": "neck slot (aneck_default.equ tag neck_a/b)",
+   "slot": "neck",
+   "verify_layer_index": 3
+  },
+  {
+   "atlas_name": "gn_hair0000a",
+   "role": "hair (drawn over head)",
+   "slot": "hair",
+   "verify_layer_index": 1
+  },
+  {
+   "atlas_name": "rev0000c",
+   "role": "weapon layer c (addrevolver.ani evidence; primary revolver image)",
+   "slot": "gun_c",
+   "verify_layer_index": 15
+  },
+  {
+   "atlas_name": "rev0000b",
+   "role": "weapon layer b (same structure; double-attached on WalkShoot* frames)",
+   "slot": "gun_b",
+   "verify_layer_index": 14
+  }
+ ],
+ "notes": [
+  "48 composite actions = 14 basic + die + 10 hit/getup + 23 shooting motions; union of body frame indices == meta.counts.body_frame_indices_used_by_key_motions (150)",
+  "the 8 shooting motions that are also basic_motions (Attack1/2, DashAttack, Jump, JumpAttack, JumpAttackReady, Move, Stay) use the richer basic_motions verify records; the gun-layer presence for all 31 pfp motions was cross-checked 169/169 frames in layer_data_probe.json",
+  "layer z-order follows the reviewed M8-004 v13 spotcheck composition (body bottom, shoes->pants->belt->coat->face->neck->hair, then gun_c, gun_b)"
+ ],
+ "previews": [
+  "stay",
+  "attack2",
+  "walkshootrightfront"
+ ],
+ "px_to_cm": 1.7615,
+ "rotation_anchor": {
+  "basis": "ground-contact fit: minimize max |bottom_y| over all 41 rotated gunner frames (Overturn/Breakfall/Breakfall_Back/gnDodge*/gnRecoveryRoll*), body mask, CCW convention (fighter calibration: CCW err 12.0 vs CW 26.6). Worst residual +76 px comes from the airborne Breakfall tumble frames whose positions were hand-authored; not native-code verified.",
+  "canvas_px": [
+   232,
+   240
+  ],
+  "probe_evidence": "Artifacts/Tasks/M8-016/2026-11-07T0345+0800/db_queries/rotation_anchor_probe.json"
+ },
+ "task": "M8-016",
+ "verify_json": "Data/DNFMReplica/verify/gunner.json",
+ "weapon_rule": {
+  "kind": "parallel_stack",
+  "note": "rev0000b+c double-attach: both gun layers composite at the body frame index when their atlas frame has content (verify attach_rule: b+c on all WalkShoot* frames, c on attack/stand/reload frames, none on Move/Jump/slide/throw/ knee frames).  Layer z-order gun_c below gun_b follows the reviewed M8-004 deliverable_2_walkshoot preview composition.",
+  "slots": [
+   "gun_c",
+   "gun_b"
+  ]
+ }
+}

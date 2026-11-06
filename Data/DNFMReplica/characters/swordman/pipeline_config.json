@@ -1,0 +1,427 @@
+{
+ "actions": [
+  {
+   "action_id": "rest",
+   "ani_key": "script/character/swordman/animation/rest.ani",
+   "group": "basic",
+   "verify": {
+    "key": "idle_rest",
+    "section": "basic_motions"
+   }
+  },
+  {
+   "action_id": "stay",
+   "ani_key": "script/character/swordman/animation/stay.ani",
+   "group": "basic",
+   "verify": {
+    "key": "idle_stay",
+    "section": "basic_motions"
+   }
+  },
+  {
+   "action_id": "move",
+   "ani_key": "script/character/swordman/animation/move.ani",
+   "group": "basic",
+   "verify": {
+    "key": "move",
+    "section": "basic_motions"
+   }
+  },
+  {
+   "action_id": "dash",
+   "ani_key": "script/character/swordman/animation/dash.ani",
+   "group": "basic",
+   "verify": {
+    "key": "dash",
+    "section": "basic_motions"
+   }
+  },
+  {
+   "action_id": "dashattack",
+   "ani_key": "script/character/swordman/animation/dashattack.ani",
+   "group": "basic",
+   "verify": {
+    "key": "dashattack",
+    "section": "basic_motions"
+   }
+  },
+  {
+   "action_id": "jump",
+   "ani_key": "script/character/swordman/animation/jump.ani",
+   "group": "basic",
+   "verify": {
+    "key": "jump",
+    "section": "basic_motions"
+   }
+  },
+  {
+   "action_id": "jumpattack",
+   "ani_key": "script/character/swordman/animation/jumpattack.ani",
+   "group": "basic",
+   "verify": {
+    "key": "jumpattack",
+    "section": "basic_motions"
+   }
+  },
+  {
+   "action_id": "sit",
+   "ani_key": "script/character/swordman/animation/sit.ani",
+   "group": "basic",
+   "verify": {
+    "key": "sit",
+    "section": "basic_motions"
+   }
+  },
+  {
+   "action_id": "attack1",
+   "ani_key": "script/character/swordman/animation/attack1.ani",
+   "group": "basic",
+   "verify": {
+    "key": "attack1",
+    "section": "basic_motions"
+   }
+  },
+  {
+   "action_id": "attack2",
+   "ani_key": "script/character/swordman/animation/attack2.ani",
+   "group": "basic",
+   "verify": {
+    "key": "attack2",
+    "section": "basic_motions"
+   }
+  },
+  {
+   "action_id": "attack3",
+   "ani_key": "script/character/swordman/animation/attack3.ani",
+   "group": "basic",
+   "verify": {
+    "key": "attack3",
+    "section": "basic_motions"
+   }
+  },
+  {
+   "action_id": "down",
+   "ani_key": "script/character/swordman/animation/down.ani",
+   "group": "basic",
+   "verify": {
+    "key": "down",
+    "section": "basic_motions"
+   }
+  },
+  {
+   "action_id": "getitem",
+   "ani_key": "script/character/swordman/animation/getitem.ani",
+   "group": "basic",
+   "verify": {
+    "key": "getitem",
+    "section": "basic_motions"
+   }
+  },
+  {
+   "action_id": "die",
+   "ani_key": "script/character/swordman/animation/die.ani",
+   "group": "basic",
+   "verify": {
+    "key": "die",
+    "section": "basic_motions"
+   }
+  },
+  {
+   "action_id": "damage1",
+   "ani_key": "script/character/swordman/animation/damage1.ani",
+   "group": "hit",
+   "verify": {
+    "key": "hit_damage1",
+    "section": "hit_reactions"
+   }
+  },
+  {
+   "action_id": "damage2",
+   "ani_key": "script/character/swordman/animation/damage2.ani",
+   "group": "hit",
+   "verify": {
+    "key": "hit_damage2",
+    "section": "hit_reactions"
+   }
+  },
+  {
+   "action_id": "overturn",
+   "ani_key": "script/character/swordman/animation/overturn.ani",
+   "group": "hit",
+   "verify": {
+    "key": "getup_overturn",
+    "section": "hit_reactions"
+   }
+  },
+  {
+   "action_id": "hitback",
+   "ani_key": "script/character/swordman/animation/hitback.ani",
+   "group": "hit",
+   "verify": {
+    "key": "hitback",
+    "section": "hit_reactions"
+   }
+  },
+  {
+   "action_id": "dodgeback",
+   "ani_key": "script/character/swordman/animation/smdodgeback_body_renew.ani",
+   "group": "hit",
+   "verify": {
+    "key": "dodgeback_body_renew",
+    "section": "hit_reactions"
+   }
+  },
+  {
+   "action_id": "dodgefront",
+   "ani_key": "script/character/swordman/animation/smdodgefront_body_renew.ani",
+   "group": "hit",
+   "verify": {
+    "key": "dodgefront_body_renew",
+    "section": "hit_reactions"
+   }
+  },
+  {
+   "action_id": "recoveryrollfront",
+   "ani_key": "script/character/swordman/animation/smrecoveryrollfront_body.ani",
+   "group": "hit",
+   "verify": {
+    "key": "recoveryrollfront_body",
+    "section": "hit_reactions"
+   }
+  },
+  {
+   "action_id": "recoveryrollback",
+   "ani_key": "script/character/swordman/animation/smrecoveryrollback_body.ani",
+   "group": "hit",
+   "verify": {
+    "key": "recoveryrollback_body",
+    "section": "hit_reactions"
+   }
+  },
+  {
+   "action_id": "upperslash",
+   "ani_key": "script/character/swordman/animation/upperslash.ani",
+   "group": "skill",
+   "verify": {
+    "body": "upperslash.ani",
+    "index": 0,
+    "section": "skill_candidates"
+   }
+  },
+  {
+   "action_id": "upperslashafter",
+   "ani_key": "script/character/swordman/animation/upperslashafter.ani",
+   "group": "skill",
+   "verify": {
+    "body": "upperslashafter.ani",
+    "index": 0,
+    "section": "skill_candidates"
+   }
+  },
+  {
+   "action_id": "tripleslash1",
+   "ani_key": "script/character/swordman/animation/tripleslash1.ani",
+   "group": "skill",
+   "verify": {
+    "body": "tripleslash1.ani",
+    "index": 2,
+    "section": "skill_candidates"
+   }
+  },
+  {
+   "action_id": "tripleslash2",
+   "ani_key": "script/character/swordman/animation/tripleslash2.ani",
+   "group": "skill",
+   "verify": {
+    "body": "tripleslash2.ani",
+    "index": 2,
+    "section": "skill_candidates"
+   }
+  },
+  {
+   "action_id": "tripleslash3",
+   "ani_key": "script/character/swordman/animation/tripleslash3.ani",
+   "group": "skill",
+   "verify": {
+    "body": "tripleslash3.ani",
+    "index": 2,
+    "section": "skill_candidates"
+   }
+  },
+  {
+   "action_id": "tripleslash4",
+   "ani_key": "script/character/swordman/animation/tripleslash4.ani",
+   "group": "skill",
+   "verify": {
+    "body": "tripleslash4.ani",
+    "index": 2,
+    "section": "skill_candidates"
+   }
+  },
+  {
+   "action_id": "tripleslash5",
+   "ani_key": "script/character/swordman/animation/tripleslash5.ani",
+   "group": "skill",
+   "verify": {
+    "body": "tripleslash5.ani",
+    "index": 2,
+    "section": "skill_candidates"
+   }
+  },
+  {
+   "action_id": "hopsmashready",
+   "ani_key": "script/character/swordman/animation/hopsmashready.ani",
+   "group": "skill",
+   "verify": {
+    "body": "hopsmashready.ani",
+    "index": 3,
+    "section": "skill_candidates"
+   }
+  },
+  {
+   "action_id": "hopsmash",
+   "ani_key": "script/character/swordman/animation/hopsmash.ani",
+   "group": "skill",
+   "verify": {
+    "body": "hopsmash.ani",
+    "index": 3,
+    "section": "skill_candidates"
+   }
+  },
+  {
+   "action_id": "nomalwave",
+   "ani_key": "script/character/swordman/animation/nomalwave.ani",
+   "group": "skill",
+   "verify": {
+    "body": "nomalwave.ani",
+    "index": 4,
+    "section": "skill_candidates"
+   }
+  },
+  {
+   "action_id": "guard",
+   "ani_key": "script/character/swordman/animation/guard.ani",
+   "group": "skill",
+   "verify": {
+    "body": "guard.ani",
+    "index": 5,
+    "section": "skill_candidates"
+   }
+  },
+  {
+   "action_id": "reflectguard",
+   "ani_key": "script/character/swordman/animation/reflectguard.ani",
+   "group": "skill",
+   "verify": {
+    "body": "reflectguard.ani",
+    "index": 5,
+    "section": "skill_candidates"
+   }
+  }
+ ],
+ "body": {
+  "atlas_name": "sm_body0000",
+  "canvas": [
+   500,
+   500
+  ],
+  "frame_count": 179,
+  "image_path": "Character/Swordman/Equipment/Avatar/skin/sm_body0000.img"
+ },
+ "character": "swordman",
+ "draw_order": [
+  "katana0000b",
+  "body",
+  "pants_a",
+  "shoes_a",
+  "coat_a",
+  "hair_a",
+  "katana0000c"
+ ],
+ "excluded_actions": [
+  {
+   "ani_key": "script/character/swordman/animation/appear01_body.ani",
+   "name": "appear01_body",
+   "reason": "alpha-fade frames (color_rgba alpha 25..204 on body layer); per-frame tint of a multi-layer composite is unverified (pipeline hard-errors on non-white color_rgba)"
+  },
+  {
+   "ani_key": "script/character/swordman/animation/leave_body.ani",
+   "name": "leave_body",
+   "reason": "alpha-fade frames (color_rgba alpha 204..0), same exclusion as appear01_body"
+  }
+ ],
+ "layers": [
+  {
+   "atlas_name": "katana0000b",
+   "role": "weapon back layer (behind body; 0 overlap with body)",
+   "slot": "katana0000b",
+   "verify_layer_index": 7
+  },
+  {
+   "atlas_name": "sm_body0000",
+   "role": "skin/body base (bare body; includes head/face)",
+   "slot": "body",
+   "verify_layer_index": 0
+  },
+  {
+   "atlas_name": "sm_pants0000a",
+   "role": "pants variant a (default appearance)",
+   "slot": "pants_a",
+   "variant_note": "sm_pants0000d (verify outfit_layers[4]) is the verified 179-parallel alternate",
+   "verify_layer_index": 3
+  },
+  {
+   "atlas_name": "sm_shoes0000a",
+   "role": "shoes variant a (default appearance)",
+   "slot": "shoes_a",
+   "variant_note": "sm_shoes0000b (verify outfit_layers[6]) is the verified alternate (1x1 reference frames; canvas 501x500)",
+   "verify_layer_index": 5
+  },
+  {
+   "atlas_name": "sm_coat0000a",
+   "role": "coat (upper garment, covers torso)",
+   "slot": "coat_a",
+   "verify_layer_index": 2
+  },
+  {
+   "atlas_name": "sm_hair0000a",
+   "role": "hair (drawn over head)",
+   "slot": "hair_a",
+   "verify_layer_index": 1
+  },
+  {
+   "atlas_name": "katana0000c",
+   "role": "weapon front layer (over body; includes slash trails)",
+   "slot": "katana0000c",
+   "verify_layer_index": 8
+  }
+ ],
+ "notes": [
+  "skill candidate 2 (thrust) reuses basic dashattack.ani; not duplicated as a separate action",
+  "skill candidate bodies use the M8-003 chosen_body lists; dashattack.ani deduped",
+  "die.ani is not chr-wired (verify gap die-ani-not-chr-wired) but parses and is included",
+  "action ids are lowercase ani stems; verify section/key recorded per action"
+ ],
+ "previews": [
+  "rest",
+  "attack1",
+  "upperslash"
+ ],
+ "px_to_cm": 1.7615,
+ "rotation_anchor": {
+  "basis": "ground-contact fit: minimize max |bottom_y| (lowest visible body pixel vs y=0 in position space) over all 10 rotated swordman frames (overturn/recovery rolls/dodge), body mask, CCW convention; method calibrated on the fighter where the same fit recovers the M6-020 verified anchor (250,292) within 10 px (fit (248,301) err 12.0 vs shipped (250,292) err 20.3, overturn span at fit anchor -78..+12 matches the M6-020 overturn damage box 0..78). Not native-code verified; same epistemic status as the M6-020 fighter anchor.",
+  "canvas_px": [
+   228,
+   241
+  ],
+  "probe_evidence": "Artifacts/Tasks/M8-016/2026-11-07T0345+0800/db_queries/rotation_anchor_probe.json"
+ },
+ "task": "M8-016",
+ "verify_json": "Data/DNFMReplica/verify/swordman.json",
+ "weapon_rule": {
+  "back_slot": "katana0000b",
+  "front_slot": "katana0000c",
+  "kind": "front_back_split_stack",
+  "note": "katana0000b/c are the behind/front split of one sword (verify draw_order katana0000b->body->...->katana0000c).  The M8-016 card asked to take b OR c per pose per the verify \"mutually exclusive per pose\" wording, but frame-level verification (layer_data_probe.json: 100/179 indices non-empty on BOTH layers, e.g. rest f0 b=57px scabbard + c=799px sword; agrees with M8-003 spotcheck stats) disproved exclusivity, so both composite in the verified z-order."
+ }
+}
