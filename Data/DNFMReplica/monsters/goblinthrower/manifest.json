@@ -1,0 +1,1344 @@
+{
+  "generator": "Scripts/DNFM/prepare_monster_visual_set.py",
+  "manifest_version": 2,
+  "character": "goblinthrower",
+  "entity_type": "monster",
+  "outfit": null,
+  "mode": "monster_single_layer",
+  "source_root": "D:\\Github-Poj\\DNFM\\DNFM_export_130.5.8.0",
+  "coordinate_space": "Position space, X right / Y down, origin at the feet/action anchor; per-frame pivot_px is that anchor inside the cell (uv top-left relative, y down)",
+  "px_to_cm": 1.7615,
+  "cell_margin_px": 2,
+  "page_size_px": 2048,
+  "anchor_convention": {
+    "kind": "per_frame_negated_position",
+    "formula": "anchor_canvas_px = (-position[0], -position[1]) of the same frame",
+    "basis": "goblin body frames share position [-91,-152] => anchor at canvas (91,152), ground contact (position-space bottom of the sprite) +2..+25 px below the anchor across all untransformed body frames; the overturn frame shifts position to [-95,-97]. A fixed canvas anchor would place the 179.91-deg flipped body 127 px below the anchor (buried); the per-frame anchor keeps the overturned lying pose at +17 px, inside the standing range. Monster frames therefore carry a genuine per-frame anchor, unlike the characters' single fitted canvas anchor.",
+    "evidence": "verify monster_goblinthrower.json animations[*].frames[*].position; overturn note 'anchor shifted to [-95,-97] (flipped-on-back variant of body0#5)'",
+    "note": "untransformed frames place the layer canvas at the frame position exactly like M8-016; transforms apply about the per-frame anchor, which always lands at position-space (0,0)"
+  },
+  "transform_semantics": {
+    "transform_order": "mirror_then_scale_then_rotate",
+    "rotation_direction": "positive degrees rotate counterclockwise in y-down image space (PIL rotate(+angle), anchor at image center)",
+    "resample": "nearest",
+    "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; the anchor offset rounds identically so the anchor lands exactly on the canvas anchor; outer edges may drift <= 1 px from the ideal float position",
+    "color_rule": "per-frame color_rgba multiplies RGBA channels (c_out = c_src*color/255); baked into the cell and recorded per frame"
+  },
+  "layer_rule": {
+    "draw_order_bottom_to_top": [
+      "body"
+    ],
+    "single_layer": true,
+    "note": "monsters have no outfit layers; each frame references exactly one image (body atlas or class effect overlay). taubeast charge/warning actions are pure effect overlays (verify external_deps): their cells carry the effect art at the authored frame scale; sorting_layer below the body (5 vs 10) is recorded per action for runtime draw ordering"
+  },
+  "excluded_sources": [
+    {
+      "subject": "passiveobject .../goblinthrower/throwstone/2009020408_throwstone.obj + throwstone.ani (Monster/Goblin/PassiveObject/ThrowStone.img, 4-frame looped flight)",
+      "reason": "投掷物属 P05 投射物资源（任务卡 M8-018：投掷物帧不入怪物图集）；attack_0 .ani 帧本身无 create_objects/ani_tag，与 .obj 的联动按家族布局推断（verify gaps），不影响怪物本体图集"
+    }
+  ],
+  "pages": [
+    {
+      "file": "goblinthrower_page_0.png",
+      "sha256": "e7c4e64139437aaf7ecd344457be1458d9d399dcc3da45c3596216a1be62fa16",
+      "size": [
+        2048,
+        2048
+      ],
+      "cells_on_page": 21
+    }
+  ],
+  "actions": [
+    {
+      "action_id": "attack_0",
+      "group": "attack",
+      "source_ani": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/animation/attack_0.ani",
+      "source_sha256": "59c62fdacaf77537d17f1723b9cd8cce7cad2f3f2de239e56e49d8677adbc03d",
+      "loop": false,
+      "sorting_layer": 10,
+      "draw_shadow": true,
+      "layers": [
+        "body0"
+      ],
+      "draw_order": [
+        "body"
+      ],
+      "layer_mapping": "monster_single_layer",
+      "source": "script_index",
+      "transformed_frames": [],
+      "no_draw_frame_indexes": [],
+      "frames": [
+        {
+          "index": 0,
+          "duration_ms": 80,
+          "page": 0,
+          "uv_rect_px": [
+            0,
+            0,
+            54,
+            88
+          ],
+          "canvas_size_px": [
+            54,
+            88
+          ],
+          "pivot_px": [
+            20,
+            78
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "body0": {
+              "atlas_id": 4661,
+              "frame_index": 0,
+              "page": 0,
+              "offset": [
+                73,
+                76
+              ],
+              "content_bbox_px": [
+                -18,
+                -76
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "monster/goblin/body0.img",
+            "image_pack_index": 0,
+            "image_frame_index": 0
+          },
+          "events": []
+        },
+        {
+          "index": 1,
+          "duration_ms": 80,
+          "page": 0,
+          "uv_rect_px": [
+            54,
+            0,
+            64,
+            88
+          ],
+          "canvas_size_px": [
+            64,
+            88
+          ],
+          "pivot_px": [
+            23,
+            78
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "body0": {
+              "atlas_id": 4661,
+              "frame_index": 1,
+              "page": 0,
+              "offset": [
+                70,
+                76
+              ],
+              "content_bbox_px": [
+                -21,
+                -76
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "monster/goblin/body0.img",
+            "image_pack_index": 0,
+            "image_frame_index": 1
+          },
+          "events": []
+        },
+        {
+          "index": 2,
+          "duration_ms": 80,
+          "page": 0,
+          "uv_rect_px": [
+            118,
+            0,
+            62,
+            95
+          ],
+          "canvas_size_px": [
+            62,
+            95
+          ],
+          "pivot_px": [
+            31,
+            86
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "body0": {
+              "atlas_id": 4661,
+              "frame_index": 2,
+              "page": 0,
+              "offset": [
+                62,
+                68
+              ],
+              "content_bbox_px": [
+                -29,
+                -84
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "monster/goblin/body0.img",
+            "image_pack_index": 0,
+            "image_frame_index": 2
+          },
+          "events": []
+        },
+        {
+          "index": 3,
+          "duration_ms": 80,
+          "page": 0,
+          "uv_rect_px": [
+            180,
+            0,
+            65,
+            84
+          ],
+          "canvas_size_px": [
+            65,
+            84
+          ],
+          "pivot_px": [
+            22,
+            74
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "body0": {
+              "atlas_id": 4661,
+              "frame_index": 3,
+              "page": 0,
+              "offset": [
+                71,
+                80
+              ],
+              "content_bbox_px": [
+                -20,
+                -72
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "monster/goblin/body0.img",
+            "image_pack_index": 0,
+            "image_frame_index": 3
+          },
+          "events": []
+        },
+        {
+          "index": 4,
+          "duration_ms": 200,
+          "page": 0,
+          "uv_rect_px": [
+            245,
+            0,
+            60,
+            83
+          ],
+          "canvas_size_px": [
+            60,
+            83
+          ],
+          "pivot_px": [
+            22,
+            73
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "body0": {
+              "atlas_id": 4661,
+              "frame_index": 4,
+              "page": 0,
+              "offset": [
+                71,
+                81
+              ],
+              "content_bbox_px": [
+                -20,
+                -71
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "monster/goblin/body0.img",
+            "image_pack_index": 0,
+            "image_frame_index": 4
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "action_id": "damage_0",
+      "group": "damage",
+      "source_ani": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/animation/damage_0.ani",
+      "source_sha256": "029d5d481168f879ad3e83bddbd03b494b6e9b73b761d8b7a65f3255c2bd58af",
+      "loop": false,
+      "sorting_layer": 10,
+      "draw_shadow": true,
+      "layers": [
+        "body0"
+      ],
+      "draw_order": [
+        "body"
+      ],
+      "layer_mapping": "monster_single_layer",
+      "source": "script_index",
+      "transformed_frames": [],
+      "no_draw_frame_indexes": [],
+      "frames": [
+        {
+          "index": 0,
+          "duration_ms": 10000,
+          "page": 0,
+          "uv_rect_px": [
+            305,
+            0,
+            61,
+            80
+          ],
+          "canvas_size_px": [
+            61,
+            80
+          ],
+          "pivot_px": [
+            26,
+            74
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "body0": {
+              "atlas_id": 4661,
+              "frame_index": 5,
+              "page": 0,
+              "offset": [
+                67,
+                80
+              ],
+              "content_bbox_px": [
+                -24,
+                -72
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "monster/goblin/body0.img",
+            "image_pack_index": 0,
+            "image_frame_index": 5
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "action_id": "damage_1",
+      "group": "damage",
+      "source_ani": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/animation/damage_1.ani",
+      "source_sha256": "c24928d3c90cd2d045119cebcf10a62656f9fa0c800f726f5ca76ecaaebb594d",
+      "loop": false,
+      "sorting_layer": 10,
+      "draw_shadow": true,
+      "layers": [
+        "body0"
+      ],
+      "draw_order": [
+        "body"
+      ],
+      "layer_mapping": "monster_single_layer",
+      "source": "script_index",
+      "transformed_frames": [],
+      "no_draw_frame_indexes": [],
+      "frames": [
+        {
+          "index": 0,
+          "duration_ms": 10000,
+          "page": 0,
+          "uv_rect_px": [
+            366,
+            0,
+            64,
+            84
+          ],
+          "canvas_size_px": [
+            64,
+            84
+          ],
+          "pivot_px": [
+            47,
+            78
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "body0": {
+              "atlas_id": 4661,
+              "frame_index": 6,
+              "page": 0,
+              "offset": [
+                46,
+                76
+              ],
+              "content_bbox_px": [
+                -45,
+                -76
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "monster/goblin/body0.img",
+            "image_pack_index": 0,
+            "image_frame_index": 6
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "action_id": "down",
+      "group": "down",
+      "source_ani": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/animation/down.ani",
+      "source_sha256": "e73dc9f782903017743b87e36ffde6d742f37363d73ded545f22cfdb364983c2",
+      "loop": false,
+      "sorting_layer": 10,
+      "draw_shadow": true,
+      "layers": [
+        "body0"
+      ],
+      "draw_order": [
+        "body"
+      ],
+      "layer_mapping": "monster_single_layer",
+      "source": "script_index",
+      "transformed_frames": [],
+      "no_draw_frame_indexes": [],
+      "frames": [
+        {
+          "index": 0,
+          "duration_ms": 80,
+          "page": 0,
+          "uv_rect_px": [
+            430,
+            0,
+            61,
+            80
+          ],
+          "canvas_size_px": [
+            61,
+            80
+          ],
+          "pivot_px": [
+            26,
+            74
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "body0": {
+              "atlas_id": 4661,
+              "frame_index": 5,
+              "page": 0,
+              "offset": [
+                67,
+                80
+              ],
+              "content_bbox_px": [
+                -24,
+                -72
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "monster/goblin/body0.img",
+            "image_pack_index": 0,
+            "image_frame_index": 5
+          },
+          "events": []
+        },
+        {
+          "index": 1,
+          "duration_ms": 80,
+          "page": 0,
+          "uv_rect_px": [
+            491,
+            0,
+            64,
+            84
+          ],
+          "canvas_size_px": [
+            64,
+            84
+          ],
+          "pivot_px": [
+            47,
+            78
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "body0": {
+              "atlas_id": 4661,
+              "frame_index": 6,
+              "page": 0,
+              "offset": [
+                46,
+                76
+              ],
+              "content_bbox_px": [
+                -45,
+                -76
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "monster/goblin/body0.img",
+            "image_pack_index": 0,
+            "image_frame_index": 6
+          },
+          "events": []
+        },
+        {
+          "index": 2,
+          "duration_ms": 10000,
+          "page": 0,
+          "uv_rect_px": [
+            555,
+            0,
+            80,
+            61
+          ],
+          "canvas_size_px": [
+            80,
+            61
+          ],
+          "pivot_px": [
+            53,
+            45
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "body0": {
+              "atlas_id": 4661,
+              "frame_index": 7,
+              "page": 0,
+              "offset": [
+                40,
+                109
+              ],
+              "content_bbox_px": [
+                -51,
+                -43
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "monster/goblin/body0.img",
+            "image_pack_index": 0,
+            "image_frame_index": 7
+          },
+          "events": []
+        },
+        {
+          "index": 3,
+          "duration_ms": 10000,
+          "page": 0,
+          "uv_rect_px": [
+            635,
+            0,
+            98,
+            59
+          ],
+          "canvas_size_px": [
+            98,
+            59
+          ],
+          "pivot_px": [
+            68,
+            39
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "body0": {
+              "atlas_id": 4661,
+              "frame_index": 8,
+              "page": 0,
+              "offset": [
+                25,
+                115
+              ],
+              "content_bbox_px": [
+                -66,
+                -37
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "monster/goblin/body0.img",
+            "image_pack_index": 0,
+            "image_frame_index": 8
+          },
+          "events": []
+        },
+        {
+          "index": 4,
+          "duration_ms": 500,
+          "page": 0,
+          "uv_rect_px": [
+            733,
+            0,
+            120,
+            51
+          ],
+          "canvas_size_px": [
+            120,
+            51
+          ],
+          "pivot_px": [
+            82,
+            24
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "body0": {
+              "atlas_id": 4661,
+              "frame_index": 9,
+              "page": 0,
+              "offset": [
+                11,
+                130
+              ],
+              "content_bbox_px": [
+                -80,
+                -22
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "monster/goblin/body0.img",
+            "image_pack_index": 0,
+            "image_frame_index": 9
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "action_id": "move",
+      "group": "move",
+      "source_ani": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/animation/move.ani",
+      "source_sha256": "51c0b09d75eb9cbe260def7ad0a1e719ae954f523c9366a7c71e7e6462928159",
+      "loop": true,
+      "sorting_layer": 10,
+      "draw_shadow": true,
+      "layers": [
+        "body0"
+      ],
+      "draw_order": [
+        "body"
+      ],
+      "layer_mapping": "monster_single_layer",
+      "source": "script_index",
+      "transformed_frames": [],
+      "no_draw_frame_indexes": [],
+      "frames": [
+        {
+          "index": 0,
+          "duration_ms": 100,
+          "page": 0,
+          "uv_rect_px": [
+            853,
+            0,
+            54,
+            86
+          ],
+          "canvas_size_px": [
+            54,
+            86
+          ],
+          "pivot_px": [
+            24,
+            80
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "body0": {
+              "atlas_id": 4661,
+              "frame_index": 11,
+              "page": 0,
+              "offset": [
+                69,
+                74
+              ],
+              "content_bbox_px": [
+                -22,
+                -78
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "monster/goblin/body0.img",
+            "image_pack_index": 0,
+            "image_frame_index": 11
+          },
+          "events": []
+        },
+        {
+          "index": 1,
+          "duration_ms": 100,
+          "page": 0,
+          "uv_rect_px": [
+            907,
+            0,
+            53,
+            85
+          ],
+          "canvas_size_px": [
+            53,
+            85
+          ],
+          "pivot_px": [
+            23,
+            79
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "body0": {
+              "atlas_id": 4661,
+              "frame_index": 12,
+              "page": 0,
+              "offset": [
+                70,
+                75
+              ],
+              "content_bbox_px": [
+                -21,
+                -77
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "monster/goblin/body0.img",
+            "image_pack_index": 0,
+            "image_frame_index": 12
+          },
+          "events": []
+        },
+        {
+          "index": 2,
+          "duration_ms": 100,
+          "page": 0,
+          "uv_rect_px": [
+            960,
+            0,
+            55,
+            84
+          ],
+          "canvas_size_px": [
+            55,
+            84
+          ],
+          "pivot_px": [
+            24,
+            78
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "body0": {
+              "atlas_id": 4661,
+              "frame_index": 13,
+              "page": 0,
+              "offset": [
+                69,
+                76
+              ],
+              "content_bbox_px": [
+                -22,
+                -76
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "monster/goblin/body0.img",
+            "image_pack_index": 0,
+            "image_frame_index": 13
+          },
+          "events": []
+        },
+        {
+          "index": 3,
+          "duration_ms": 100,
+          "page": 0,
+          "uv_rect_px": [
+            1015,
+            0,
+            54,
+            86
+          ],
+          "canvas_size_px": [
+            54,
+            86
+          ],
+          "pivot_px": [
+            24,
+            79
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "body0": {
+              "atlas_id": 4661,
+              "frame_index": 14,
+              "page": 0,
+              "offset": [
+                69,
+                75
+              ],
+              "content_bbox_px": [
+                -22,
+                -77
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "monster/goblin/body0.img",
+            "image_pack_index": 0,
+            "image_frame_index": 14
+          },
+          "events": []
+        },
+        {
+          "index": 4,
+          "duration_ms": 100,
+          "page": 0,
+          "uv_rect_px": [
+            1069,
+            0,
+            58,
+            86
+          ],
+          "canvas_size_px": [
+            58,
+            86
+          ],
+          "pivot_px": [
+            23,
+            80
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "body0": {
+              "atlas_id": 4661,
+              "frame_index": 15,
+              "page": 0,
+              "offset": [
+                70,
+                74
+              ],
+              "content_bbox_px": [
+                -21,
+                -78
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "monster/goblin/body0.img",
+            "image_pack_index": 0,
+            "image_frame_index": 15
+          },
+          "events": []
+        },
+        {
+          "index": 5,
+          "duration_ms": 100,
+          "page": 0,
+          "uv_rect_px": [
+            1127,
+            0,
+            64,
+            84
+          ],
+          "canvas_size_px": [
+            64,
+            84
+          ],
+          "pivot_px": [
+            27,
+            78
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "body0": {
+              "atlas_id": 4661,
+              "frame_index": 16,
+              "page": 0,
+              "offset": [
+                66,
+                76
+              ],
+              "content_bbox_px": [
+                -25,
+                -76
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "monster/goblin/body0.img",
+            "image_pack_index": 0,
+            "image_frame_index": 16
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "action_id": "overturn",
+      "group": "down",
+      "source_ani": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/animation/overturn.ani",
+      "source_sha256": "2b5ddb73cad39875540dd56fdef2aae30b45482457a4f863399b74810781d4d3",
+      "loop": false,
+      "sorting_layer": 10,
+      "draw_shadow": true,
+      "layers": [
+        "body0"
+      ],
+      "draw_order": [
+        "body"
+      ],
+      "layer_mapping": "monster_single_layer",
+      "source": "script_index",
+      "transformed_frames": [
+        0
+      ],
+      "no_draw_frame_indexes": [],
+      "frames": [
+        {
+          "index": 0,
+          "duration_ms": 10000,
+          "page": 0,
+          "uv_rect_px": [
+            1191,
+            0,
+            61,
+            80
+          ],
+          "canvas_size_px": [
+            61,
+            80
+          ],
+          "pivot_px": [
+            31,
+            61
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "body0": {
+              "atlas_id": 4661,
+              "frame_index": 5,
+              "page": 0,
+              "offset": [
+                67,
+                80
+              ],
+              "content_bbox_px": [
+                -28,
+                -17
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 179.91001892089844,
+          "source_frame": {
+            "image_path": "monster/goblin/body0.img",
+            "image_pack_index": 0,
+            "image_frame_index": 5
+          },
+          "events": [],
+          "transform_applied": {
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "rotation_degrees": 179.91001892089844,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              95,
+              97
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest"
+          }
+        }
+      ]
+    },
+    {
+      "action_id": "sit",
+      "group": "idle",
+      "source_ani": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/animation/sit.ani",
+      "source_sha256": "4348ecd2e27f601a8143db99f03fd9311c1e4b458c9087446cf834b272432b96",
+      "loop": false,
+      "sorting_layer": 10,
+      "draw_shadow": true,
+      "layers": [
+        "body0"
+      ],
+      "draw_order": [
+        "body"
+      ],
+      "layer_mapping": "monster_single_layer",
+      "source": "script_index",
+      "transformed_frames": [],
+      "no_draw_frame_indexes": [],
+      "frames": [
+        {
+          "index": 0,
+          "duration_ms": 150,
+          "page": 0,
+          "uv_rect_px": [
+            1252,
+            0,
+            57,
+            73
+          ],
+          "canvas_size_px": [
+            57,
+            73
+          ],
+          "pivot_px": [
+            25,
+            69
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "body0": {
+              "atlas_id": 4661,
+              "frame_index": 10,
+              "page": 0,
+              "offset": [
+                68,
+                85
+              ],
+              "content_bbox_px": [
+                -23,
+                -67
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "monster/goblin/body0.img",
+            "image_pack_index": 0,
+            "image_frame_index": 10
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "action_id": "stay",
+      "group": "idle",
+      "source_ani": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/animation/stay.ani",
+      "source_sha256": "86fa8698868664f82822d7a847de6b1cf89f3010fb3268c6f5394802abd10c42",
+      "loop": true,
+      "sorting_layer": 10,
+      "draw_shadow": true,
+      "layers": [
+        "body0"
+      ],
+      "draw_order": [
+        "body"
+      ],
+      "layer_mapping": "monster_single_layer",
+      "source": "script_index",
+      "transformed_frames": [],
+      "no_draw_frame_indexes": [],
+      "frames": [
+        {
+          "index": 0,
+          "duration_ms": 80,
+          "page": 0,
+          "uv_rect_px": [
+            1309,
+            0,
+            54,
+            88
+          ],
+          "canvas_size_px": [
+            54,
+            88
+          ],
+          "pivot_px": [
+            20,
+            78
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "body0": {
+              "atlas_id": 4661,
+              "frame_index": 0,
+              "page": 0,
+              "offset": [
+                73,
+                76
+              ],
+              "content_bbox_px": [
+                -18,
+                -76
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "monster/goblin/body0.img",
+            "image_pack_index": 0,
+            "image_frame_index": 0
+          },
+          "events": []
+        }
+      ]
+    }
+  ],
+  "missing": [],
+  "verification": {
+    "mode": "monster_single_layer",
+    "assertions": {
+      "frame_counts_match_verify": {
+        "pass": true,
+        "expected_vs_verify": {
+          "frame_records_total": {
+            "expected": 21,
+            "verify": 21
+          },
+          "direct_frames": {
+            "expected": 21,
+            "verify": 21,
+            "composite": 21
+          },
+          "no_draw_frames": {
+            "expected": 0,
+            "verify": 0,
+            "composite": 0
+          }
+        },
+        "per_action_checked": 8,
+        "failures": []
+      },
+      "no_draw_frames": {
+        "pass": true,
+        "verify_unresolved": [],
+        "composite_no_draw": [],
+        "policy": "draw_frame=false manifest entries; no page/cell occupied"
+      },
+      "atlas_resolution": {
+        "pass": true,
+        "body_atlas": {
+          "name": "body0",
+          "atlas_id": 4661,
+          "frame_count": 17
+        },
+        "atlas_body0_check": {
+          "pass": true,
+          "checked": 17,
+          "failures": []
+        },
+        "external_deps_check": null,
+        "atlases_used": [
+          "body0"
+        ]
+      },
+      "body_ground_contact": {
+        "pass": true,
+        "untransformed_body_bottoms_px": {
+          "min": 2,
+          "max": 25
+        },
+        "transformed_body_bottoms_px": [
+          17
+        ],
+        "tolerance_px": 60,
+        "failures": [],
+        "note": "position-space bottom y of body-atlas cells vs the feet anchor; overturn (rotated lying pose) must stay near the standing range"
+      },
+      "transform_census": {
+        "pass": true,
+        "flip_copy_types_seen": [
+          0
+        ],
+        "tinted_frames": [],
+        "scaled_frames_count": 0,
+        "scaled_frames": []
+      },
+      "pages": {
+        "pass": true,
+        "page_count": 1,
+        "page_size": 2048,
+        "cells_total": 21,
+        "cells_on_pages": 21
+      },
+      "sampled_pixel_stats": {
+        "pass": true,
+        "sampled": 21,
+        "blank_by_data": 0,
+        "min_visible_px_non_blank": 2206,
+        "max_visible_px_non_blank": 2887,
+        "failures": []
+      }
+    }
+  },
+  "inputs": {
+    "config_file": "pipeline_config.json",
+    "config_sha256": "2cd5f65c11c6598029f4498ee6561066a18935b6515e9d903ab2d0f5cae5bc81",
+    "verify_json": "D:\\Github-Poj\\UE-MMO\\Data\\DNFMReplica\\verify\\monster_goblinthrower.json",
+    "verify_sha256": "8e8d5ac10c307140c16dbe0cf150a424d63c35aed19a08fbf4da081766ee62f4"
+  },
+  "determinism_note": "Same inputs and arguments reproduce byte-identical outputs."
+}

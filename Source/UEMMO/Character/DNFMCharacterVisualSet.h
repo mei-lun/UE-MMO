@@ -62,6 +62,15 @@ struct UEMMO_API FDNFMVisualFrame
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DNFM Visual")
     FIntPoint PivotPx = FIntPoint::ZeroValue;
 
+    /**
+     * M8-018: false for source logic frames that carry no pixels (charge
+     * holds, overturn anchors) - the frame occupies its timeline duration but
+     * the display holds the previously drawn pose. Defaults true; every
+     * pre-M8-018 manifest lacks the field and stays all-draw.
+     */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DNFM Visual")
+    bool bDrawFrame = true;
+
     /** manifest frames[].events (reported as-is when the frame becomes current). */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DNFM Visual")
     TArray<FDNFMVisualFrameEvent> Events;

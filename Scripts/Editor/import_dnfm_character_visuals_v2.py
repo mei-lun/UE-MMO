@@ -29,14 +29,15 @@ DATA = ROOT / 'Data' / 'DNFMReplica' / 'characters'
 ART = ROOT / 'Artifacts' / 'Tasks' / 'M8-017'
 
 ROLE = os.environ.get('UEMMO_DNFM_VISUAL_ROLE', '')
-if ROLE not in ('swordman', 'gunner'):
-    raise ValueError('UEMMO_DNFM_VISUAL_ROLE must be swordman or gunner, got %r' % ROLE)
+ROLE_KIND = 'characters' if ROLE in ('swordman', 'gunner') else ('monsters' if ROLE in ('goblinthrower', 'taubeast') else '')
+if not ROLE_KIND:
+    raise ValueError('UEMMO_DNFM_VISUAL_ROLE must be swordman, gunner, goblinthrower or taubeast, got %r' % ROLE)
 MODE = os.environ.get('UEMMO_DNFM_VISUAL_MODE', 'import')
 RUN_ID = os.environ.get('UEMMO_DNFM_VISUAL_RUN_ID', '')
 
-ROLE_DIR = DATA / ROLE
+ROLE_DIR = ROOT / 'Data' / 'DNFMReplica' / ROLE_KIND / ROLE
 MANIFEST_PATH = ROLE_DIR / 'manifest.json'
-DEST = DEST_ROOT + '/' + ROLE.capitalize()
+DEST = ('/Game/UEMMO/DNFM/Characters/' if ROLE_KIND == 'characters' else '/Game/UEMMO/DNFM/Monsters/') + ROLE.capitalize()
 SET_NAME = 'DA_%sVisualSet' % ROLE.capitalize()
 
 TOOLS = unreal.AssetToolsHelpers.get_asset_tools()

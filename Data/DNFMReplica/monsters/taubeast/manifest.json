@@ -1,0 +1,5820 @@
+{
+  "generator": "Scripts/DNFM/prepare_monster_visual_set.py",
+  "manifest_version": 2,
+  "character": "taubeast",
+  "entity_type": "monster",
+  "outfit": null,
+  "mode": "monster_single_layer",
+  "source_root": "D:\\Github-Poj\\DNFM\\DNFM_export_130.5.8.0",
+  "coordinate_space": "Position space, X right / Y down, origin at the feet/action anchor; per-frame pivot_px is that anchor inside the cell (uv top-left relative, y down)",
+  "px_to_cm": 1.7615,
+  "cell_margin_px": 2,
+  "page_size_px": 2048,
+  "anchor_convention": {
+    "kind": "per_frame_negated_position",
+    "formula": "anchor_canvas_px = (-position[0], -position[1]) of the same frame",
+    "basis": "taubeast body frames share position [-320,-500] => anchor at canvas (320,500), ground contact (position-space bottom of the sprite) ~+20 px below the anchor; overturn shifts position to [-320,-228] like the goblin's flipped-on-back frame. Same per-frame anchor convention as goblinthrower (see its config basis); charge/warning effect frames likewise carry their own positions [-164,-343]/[-164,-327]/[-40,-32].",
+    "evidence": "verify monster_taubeast.json animations[*].frames[*].position; behavior_mapping 'charge1/charge2/fullcharge1 contain zero body frames - they are pure effect overlays'",
+    "note": "untransformed frames place the layer canvas at the frame position exactly like M8-016; transforms apply about the per-frame anchor, which always lands at position-space (0,0)"
+  },
+  "transform_semantics": {
+    "transform_order": "mirror_then_scale_then_rotate",
+    "rotation_direction": "positive degrees rotate counterclockwise in y-down image space (PIL rotate(+angle), anchor at image center)",
+    "resample": "nearest",
+    "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; the anchor offset rounds identically so the anchor lands exactly on the canvas anchor; outer edges may drift <= 1 px from the ideal float position",
+    "color_rule": "per-frame color_rgba multiplies RGBA channels (c_out = c_src*color/255); baked into the cell and recorded per frame"
+  },
+  "layer_rule": {
+    "draw_order_bottom_to_top": [
+      "body"
+    ],
+    "single_layer": true,
+    "note": "monsters have no outfit layers; each frame references exactly one image (body atlas or class effect overlay). taubeast charge/warning actions are pure effect overlays (verify external_deps): their cells carry the effect art at the authored frame scale; sorting_layer below the body (5 vs 10) is recorded per action for runtime draw ordering"
+  },
+  "excluded_sources": [],
+  "pages": [
+    {
+      "file": "taubeast_page_0.png",
+      "sha256": "522a3dead3eb37bbf6671636713d5f44e9ce21941a2c77698a9e97f4f2608a99",
+      "size": [
+        2048,
+        2048
+      ],
+      "cells_on_page": 55
+    },
+    {
+      "file": "taubeast_page_1.png",
+      "sha256": "b53fcf133db83925a2378f77fef4d624a2822fe623ed3266d6f121ff4cece856",
+      "size": [
+        2048,
+        2048
+      ],
+      "cells_on_page": 27
+    }
+  ],
+  "actions": [
+    {
+      "action_id": "attack_0",
+      "group": "attack",
+      "source_ani": "script/monster/mdnf_scenario/renewal_monster/granflawless/taubeast/animation/attack_0.ani",
+      "source_sha256": "871c2077bde7112966da8d1d2f664cb1a31d2661543c5472595036fb3ec7e724",
+      "loop": false,
+      "sorting_layer": 10,
+      "draw_shadow": true,
+      "layers": [
+        "taubeast"
+      ],
+      "draw_order": [
+        "body"
+      ],
+      "layer_mapping": "monster_single_layer",
+      "source": "script_index",
+      "transformed_frames": [],
+      "no_draw_frame_indexes": [],
+      "frames": [
+        {
+          "index": 0,
+          "duration_ms": 70,
+          "page": 0,
+          "uv_rect_px": [
+            0,
+            0,
+            234,
+            293
+          ],
+          "canvas_size_px": [
+            234,
+            293
+          ],
+          "pivot_px": [
+            94,
+            271
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 0,
+              "page": 0,
+              "offset": [
+                228,
+                231
+              ],
+              "content_bbox_px": [
+                -92,
+                -269
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 0
+          },
+          "events": []
+        },
+        {
+          "index": 1,
+          "duration_ms": 70,
+          "page": 0,
+          "uv_rect_px": [
+            234,
+            0,
+            233,
+            307
+          ],
+          "canvas_size_px": [
+            233,
+            307
+          ],
+          "pivot_px": [
+            99,
+            285
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 1,
+              "page": 0,
+              "offset": [
+                223,
+                217
+              ],
+              "content_bbox_px": [
+                -97,
+                -283
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 1
+          },
+          "events": []
+        },
+        {
+          "index": 2,
+          "duration_ms": 600,
+          "page": 0,
+          "uv_rect_px": [
+            467,
+            0,
+            206,
+            329
+          ],
+          "canvas_size_px": [
+            206,
+            329
+          ],
+          "pivot_px": [
+            121,
+            307
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 2,
+              "page": 0,
+              "offset": [
+                201,
+                195
+              ],
+              "content_bbox_px": [
+                -119,
+                -305
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 2
+          },
+          "events": []
+        },
+        {
+          "index": 3,
+          "duration_ms": 70,
+          "page": 0,
+          "uv_rect_px": [
+            673,
+            0,
+            184,
+            338
+          ],
+          "canvas_size_px": [
+            184,
+            338
+          ],
+          "pivot_px": [
+            100,
+            316
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 3,
+              "page": 0,
+              "offset": [
+                222,
+                186
+              ],
+              "content_bbox_px": [
+                -98,
+                -314
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 3
+          },
+          "events": []
+        },
+        {
+          "index": 4,
+          "duration_ms": 250,
+          "page": 0,
+          "uv_rect_px": [
+            857,
+            0,
+            242,
+            256
+          ],
+          "canvas_size_px": [
+            242,
+            256
+          ],
+          "pivot_px": [
+            85,
+            234
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 5,
+              "page": 0,
+              "offset": [
+                237,
+                268
+              ],
+              "content_bbox_px": [
+                -83,
+                -232
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 5
+          },
+          "events": []
+        },
+        {
+          "index": 5,
+          "duration_ms": 70,
+          "page": 0,
+          "uv_rect_px": [
+            1099,
+            0,
+            281,
+            260
+          ],
+          "canvas_size_px": [
+            281,
+            260
+          ],
+          "pivot_px": [
+            101,
+            238
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 4,
+              "page": 0,
+              "offset": [
+                221,
+                264
+              ],
+              "content_bbox_px": [
+                -99,
+                -236
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 4
+          },
+          "events": []
+        },
+        {
+          "index": 6,
+          "duration_ms": 70,
+          "page": 0,
+          "uv_rect_px": [
+            1380,
+            0,
+            216,
+            271
+          ],
+          "canvas_size_px": [
+            216,
+            271
+          ],
+          "pivot_px": [
+            81,
+            249
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 7,
+              "page": 0,
+              "offset": [
+                241,
+                253
+              ],
+              "content_bbox_px": [
+                -79,
+                -247
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 7
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "action_id": "charge1",
+      "group": "attack_effect",
+      "source_ani": "script/monster/mdnf_scenario/renewal_monster/granflawless/taubeast/animation/charge1.ani",
+      "source_sha256": "5e8577d588c1792b2e05e8091f7dd6df9922f6025d08c585d7086c59c0292f7f",
+      "loop": false,
+      "sorting_layer": 10,
+      "draw_shadow": false,
+      "layers": [
+        "taubeast"
+      ],
+      "draw_order": [
+        "body"
+      ],
+      "layer_mapping": "monster_single_layer",
+      "source": "script_index",
+      "transformed_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "no_draw_frame_indexes": [
+        0,
+        12
+      ],
+      "frames": [
+        {
+          "index": 0,
+          "duration_ms": 140,
+          "page": null,
+          "uv_rect_px": null,
+          "canvas_size_px": [
+            0,
+            0
+          ],
+          "pivot_px": null,
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": false,
+          "no_draw": {
+            "classification": "non_drawing_logic_frame",
+            "reason": "image_path=null logic/timing frame; M8-008 verify classifies it as non_drawing_logic_frame; kept in the timeline, occupies no atlas page, no art fabricated",
+            "evidence": "image_path=null, attack_boxes=[], damage_boxes=[], audio_tags=[], prefab_info=null, shader_effect_info=null, flashes=[]; carries valid delay_ms=140 and position [-164,-343], scale [2,2] identical to neighbor effect frames; animation-level graphic_effect=1 shared by all 13 frames"
+          },
+          "position": [
+            -164,
+            -343
+          ],
+          "layer_frames": {},
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": null,
+            "image_pack_index": -1,
+            "image_frame_index": null
+          },
+          "events": []
+        },
+        {
+          "index": 1,
+          "duration_ms": 60,
+          "page": 0,
+          "uv_rect_px": [
+            1596,
+            0,
+            126,
+            132
+          ],
+          "canvas_size_px": [
+            126,
+            132
+          ],
+          "pivot_px": [
+            212,
+            514
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "GrandWaveOnCharge": {
+              "atlas_id": 5526,
+              "frame_index": 0,
+              "page": 0,
+              "offset": [
+                59,
+                71
+              ],
+              "content_bbox_px": [
+                -105,
+                -256
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Swordman/Effect/GrandWaveOnCharge.img",
+            "image_pack_index": 0,
+            "image_frame_index": 0
+          },
+          "events": [],
+          "transform_applied": {
+            "scale": [
+              2.0,
+              2.0
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              164,
+              327
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest"
+          }
+        },
+        {
+          "index": 2,
+          "duration_ms": 60,
+          "page": 0,
+          "uv_rect_px": [
+            1722,
+            0,
+            184,
+            138
+          ],
+          "canvas_size_px": [
+            184,
+            138
+          ],
+          "pivot_px": [
+            276,
+            508
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "GrandWaveOnCharge": {
+              "atlas_id": 5526,
+              "frame_index": 1,
+              "page": 0,
+              "offset": [
+                27,
+                74
+              ],
+              "content_bbox_px": [
+                -137,
+                -253
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Swordman/Effect/GrandWaveOnCharge.img",
+            "image_pack_index": 0,
+            "image_frame_index": 1
+          },
+          "events": [],
+          "transform_applied": {
+            "scale": [
+              2.0,
+              2.0
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              164,
+              327
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest"
+          }
+        },
+        {
+          "index": 3,
+          "duration_ms": 60,
+          "page": 0,
+          "uv_rect_px": [
+            0,
+            338,
+            176,
+            148
+          ],
+          "canvas_size_px": [
+            176,
+            148
+          ],
+          "pivot_px": [
+            270,
+            504
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "GrandWaveOnCharge": {
+              "atlas_id": 5526,
+              "frame_index": 2,
+              "page": 0,
+              "offset": [
+                30,
+                76
+              ],
+              "content_bbox_px": [
+                -134,
+                -251
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Swordman/Effect/GrandWaveOnCharge.img",
+            "image_pack_index": 0,
+            "image_frame_index": 2
+          },
+          "events": [],
+          "transform_applied": {
+            "scale": [
+              2.0,
+              2.0
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              164,
+              327
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest"
+          }
+        },
+        {
+          "index": 4,
+          "duration_ms": 60,
+          "page": 0,
+          "uv_rect_px": [
+            176,
+            338,
+            178,
+            128
+          ],
+          "canvas_size_px": [
+            178,
+            128
+          ],
+          "pivot_px": [
+            294,
+            488
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "GrandWaveOnCharge": {
+              "atlas_id": 5526,
+              "frame_index": 3,
+              "page": 0,
+              "offset": [
+                18,
+                84
+              ],
+              "content_bbox_px": [
+                -146,
+                -243
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Swordman/Effect/GrandWaveOnCharge.img",
+            "image_pack_index": 0,
+            "image_frame_index": 3
+          },
+          "events": [],
+          "transform_applied": {
+            "scale": [
+              2.0,
+              2.0
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              164,
+              327
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest"
+          }
+        },
+        {
+          "index": 5,
+          "duration_ms": 60,
+          "page": 0,
+          "uv_rect_px": [
+            354,
+            338,
+            158,
+            146
+          ],
+          "canvas_size_px": [
+            158,
+            146
+          ],
+          "pivot_px": [
+            288,
+            486
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "GrandWaveOnCharge": {
+              "atlas_id": 5526,
+              "frame_index": 4,
+              "page": 0,
+              "offset": [
+                21,
+                85
+              ],
+              "content_bbox_px": [
+                -143,
+                -242
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Swordman/Effect/GrandWaveOnCharge.img",
+            "image_pack_index": 0,
+            "image_frame_index": 4
+          },
+          "events": [],
+          "transform_applied": {
+            "scale": [
+              2.0,
+              2.0
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              164,
+              327
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest"
+          }
+        },
+        {
+          "index": 6,
+          "duration_ms": 60,
+          "page": 0,
+          "uv_rect_px": [
+            512,
+            338,
+            184,
+            138
+          ],
+          "canvas_size_px": [
+            184,
+            138
+          ],
+          "pivot_px": [
+            276,
+            480
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "GrandWaveOnCharge": {
+              "atlas_id": 5526,
+              "frame_index": 5,
+              "page": 0,
+              "offset": [
+                27,
+                88
+              ],
+              "content_bbox_px": [
+                -137,
+                -239
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Swordman/Effect/GrandWaveOnCharge.img",
+            "image_pack_index": 0,
+            "image_frame_index": 5
+          },
+          "events": [],
+          "transform_applied": {
+            "scale": [
+              2.0,
+              2.0
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              164,
+              327
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest"
+          }
+        },
+        {
+          "index": 7,
+          "duration_ms": 60,
+          "page": 0,
+          "uv_rect_px": [
+            696,
+            338,
+            156,
+            124
+          ],
+          "canvas_size_px": [
+            156,
+            124
+          ],
+          "pivot_px": [
+            252,
+            470
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "GrandWaveOnCharge": {
+              "atlas_id": 5526,
+              "frame_index": 6,
+              "page": 0,
+              "offset": [
+                39,
+                93
+              ],
+              "content_bbox_px": [
+                -125,
+                -234
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Swordman/Effect/GrandWaveOnCharge.img",
+            "image_pack_index": 0,
+            "image_frame_index": 6
+          },
+          "events": [],
+          "transform_applied": {
+            "scale": [
+              2.0,
+              2.0
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              164,
+              327
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest"
+          }
+        },
+        {
+          "index": 8,
+          "duration_ms": 60,
+          "page": 0,
+          "uv_rect_px": [
+            852,
+            338,
+            172,
+            86
+          ],
+          "canvas_size_px": [
+            172,
+            86
+          ],
+          "pivot_px": [
+            276,
+            456
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "GrandWaveOnCharge": {
+              "atlas_id": 5526,
+              "frame_index": 7,
+              "page": 0,
+              "offset": [
+                27,
+                100
+              ],
+              "content_bbox_px": [
+                -137,
+                -227
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Swordman/Effect/GrandWaveOnCharge.img",
+            "image_pack_index": 0,
+            "image_frame_index": 7
+          },
+          "events": [],
+          "transform_applied": {
+            "scale": [
+              2.0,
+              2.0
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              164,
+              327
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest"
+          }
+        },
+        {
+          "index": 9,
+          "duration_ms": 60,
+          "page": 0,
+          "uv_rect_px": [
+            1024,
+            338,
+            148,
+            128
+          ],
+          "canvas_size_px": [
+            148,
+            128
+          ],
+          "pivot_px": [
+            266,
+            520
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "GrandWaveOnCharge": {
+              "atlas_id": 5526,
+              "frame_index": 8,
+              "page": 0,
+              "offset": [
+                32,
+                68
+              ],
+              "content_bbox_px": [
+                -132,
+                -259
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Swordman/Effect/GrandWaveOnCharge.img",
+            "image_pack_index": 0,
+            "image_frame_index": 8
+          },
+          "events": [],
+          "transform_applied": {
+            "scale": [
+              2.0,
+              2.0
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              164,
+              327
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest"
+          }
+        },
+        {
+          "index": 10,
+          "duration_ms": 60,
+          "page": 0,
+          "uv_rect_px": [
+            1172,
+            338,
+            126,
+            162
+          ],
+          "canvas_size_px": [
+            126,
+            162
+          ],
+          "pivot_px": [
+            258,
+            516
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "GrandWaveOnCharge": {
+              "atlas_id": 5526,
+              "frame_index": 9,
+              "page": 0,
+              "offset": [
+                36,
+                70
+              ],
+              "content_bbox_px": [
+                -128,
+                -257
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Swordman/Effect/GrandWaveOnCharge.img",
+            "image_pack_index": 0,
+            "image_frame_index": 9
+          },
+          "events": [],
+          "transform_applied": {
+            "scale": [
+              2.0,
+              2.0
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              164,
+              327
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest"
+          }
+        },
+        {
+          "index": 11,
+          "duration_ms": 60,
+          "page": 0,
+          "uv_rect_px": [
+            1298,
+            338,
+            116,
+            154
+          ],
+          "canvas_size_px": [
+            116,
+            154
+          ],
+          "pivot_px": [
+            250,
+            512
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "GrandWaveOnCharge": {
+              "atlas_id": 5526,
+              "frame_index": 10,
+              "page": 0,
+              "offset": [
+                40,
+                72
+              ],
+              "content_bbox_px": [
+                -124,
+                -255
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Swordman/Effect/GrandWaveOnCharge.img",
+            "image_pack_index": 0,
+            "image_frame_index": 10
+          },
+          "events": [],
+          "transform_applied": {
+            "scale": [
+              2.0,
+              2.0
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              164,
+              327
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest"
+          }
+        },
+        {
+          "index": 12,
+          "duration_ms": 60,
+          "page": null,
+          "uv_rect_px": null,
+          "canvas_size_px": [
+            0,
+            0
+          ],
+          "pivot_px": null,
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": false,
+          "no_draw": {
+            "classification": "non_drawing_logic_frame",
+            "reason": "image_path=null logic/timing frame; M8-008 verify classifies it as non_drawing_logic_frame; kept in the timeline, occupies no atlas page, no art fabricated",
+            "evidence": "same empty-reference signature as charge1 f0; tail wait after effect frames f1-f11 (GrandWaveOnCharge.img#0-10)"
+          },
+          "position": [
+            -164,
+            -343
+          ],
+          "layer_frames": {},
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": null,
+            "image_pack_index": -1,
+            "image_frame_index": null
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "action_id": "charge2",
+      "group": "attack_effect",
+      "source_ani": "script/monster/mdnf_scenario/renewal_monster/granflawless/taubeast/animation/charge2.ani",
+      "source_sha256": "95fe12dfe9b6c2631115ec80d8db1b89206f760cb7aa0ee14cab39a85771c104",
+      "loop": false,
+      "sorting_layer": 10,
+      "draw_shadow": false,
+      "layers": [
+        "taubeast"
+      ],
+      "draw_order": [
+        "body"
+      ],
+      "layer_mapping": "monster_single_layer",
+      "source": "script_index",
+      "transformed_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "no_draw_frame_indexes": [
+        0,
+        12
+      ],
+      "frames": [
+        {
+          "index": 0,
+          "duration_ms": 140,
+          "page": null,
+          "uv_rect_px": null,
+          "canvas_size_px": [
+            0,
+            0
+          ],
+          "pivot_px": null,
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": false,
+          "no_draw": {
+            "classification": "non_drawing_logic_frame",
+            "reason": "image_path=null logic/timing frame; M8-008 verify classifies it as non_drawing_logic_frame; kept in the timeline, occupies no atlas page, no art fabricated",
+            "evidence": "identical structure to charge1 f0 (delay 140, pos [-164,-343]); charge2 differs from charge1 only by using GrandWaveOnCharge.img#13-23"
+          },
+          "position": [
+            -164,
+            -343
+          ],
+          "layer_frames": {},
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": null,
+            "image_pack_index": -1,
+            "image_frame_index": null
+          },
+          "events": []
+        },
+        {
+          "index": 1,
+          "duration_ms": 60,
+          "page": 0,
+          "uv_rect_px": [
+            1414,
+            338,
+            134,
+            140
+          ],
+          "canvas_size_px": [
+            134,
+            140
+          ],
+          "pivot_px": [
+            216,
+            518
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "GrandWaveOnCharge": {
+              "atlas_id": 5526,
+              "frame_index": 13,
+              "page": 0,
+              "offset": [
+                57,
+                69
+              ],
+              "content_bbox_px": [
+                -107,
+                -258
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Swordman/Effect/GrandWaveOnCharge.img",
+            "image_pack_index": 0,
+            "image_frame_index": 13
+          },
+          "events": [],
+          "transform_applied": {
+            "scale": [
+              2.0,
+              2.0
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              164,
+              327
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest"
+          }
+        },
+        {
+          "index": 2,
+          "duration_ms": 60,
+          "page": 0,
+          "uv_rect_px": [
+            1548,
+            338,
+            194,
+            146
+          ],
+          "canvas_size_px": [
+            194,
+            146
+          ],
+          "pivot_px": [
+            280,
+            512
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "GrandWaveOnCharge": {
+              "atlas_id": 5526,
+              "frame_index": 14,
+              "page": 0,
+              "offset": [
+                25,
+                72
+              ],
+              "content_bbox_px": [
+                -139,
+                -255
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Swordman/Effect/GrandWaveOnCharge.img",
+            "image_pack_index": 0,
+            "image_frame_index": 14
+          },
+          "events": [],
+          "transform_applied": {
+            "scale": [
+              2.0,
+              2.0
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              164,
+              327
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest"
+          }
+        },
+        {
+          "index": 3,
+          "duration_ms": 60,
+          "page": 0,
+          "uv_rect_px": [
+            1742,
+            338,
+            186,
+            156
+          ],
+          "canvas_size_px": [
+            186,
+            156
+          ],
+          "pivot_px": [
+            276,
+            506
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "GrandWaveOnCharge": {
+              "atlas_id": 5526,
+              "frame_index": 15,
+              "page": 0,
+              "offset": [
+                27,
+                75
+              ],
+              "content_bbox_px": [
+                -137,
+                -252
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Swordman/Effect/GrandWaveOnCharge.img",
+            "image_pack_index": 0,
+            "image_frame_index": 15
+          },
+          "events": [],
+          "transform_applied": {
+            "scale": [
+              2.0,
+              2.0
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              164,
+              327
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest"
+          }
+        },
+        {
+          "index": 4,
+          "duration_ms": 60,
+          "page": 0,
+          "uv_rect_px": [
+            0,
+            500,
+            186,
+            136
+          ],
+          "canvas_size_px": [
+            186,
+            136
+          ],
+          "pivot_px": [
+            298,
+            492
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "GrandWaveOnCharge": {
+              "atlas_id": 5526,
+              "frame_index": 16,
+              "page": 0,
+              "offset": [
+                16,
+                82
+              ],
+              "content_bbox_px": [
+                -148,
+                -245
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Swordman/Effect/GrandWaveOnCharge.img",
+            "image_pack_index": 0,
+            "image_frame_index": 16
+          },
+          "events": [],
+          "transform_applied": {
+            "scale": [
+              2.0,
+              2.0
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              164,
+              327
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest"
+          }
+        },
+        {
+          "index": 5,
+          "duration_ms": 60,
+          "page": 0,
+          "uv_rect_px": [
+            186,
+            500,
+            166,
+            154
+          ],
+          "canvas_size_px": [
+            166,
+            154
+          ],
+          "pivot_px": [
+            294,
+            488
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "GrandWaveOnCharge": {
+              "atlas_id": 5526,
+              "frame_index": 17,
+              "page": 0,
+              "offset": [
+                18,
+                84
+              ],
+              "content_bbox_px": [
+                -146,
+                -243
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Swordman/Effect/GrandWaveOnCharge.img",
+            "image_pack_index": 0,
+            "image_frame_index": 17
+          },
+          "events": [],
+          "transform_applied": {
+            "scale": [
+              2.0,
+              2.0
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              164,
+              327
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest"
+          }
+        },
+        {
+          "index": 6,
+          "duration_ms": 60,
+          "page": 0,
+          "uv_rect_px": [
+            352,
+            500,
+            194,
+            146
+          ],
+          "canvas_size_px": [
+            194,
+            146
+          ],
+          "pivot_px": [
+            282,
+            484
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "GrandWaveOnCharge": {
+              "atlas_id": 5526,
+              "frame_index": 18,
+              "page": 0,
+              "offset": [
+                24,
+                86
+              ],
+              "content_bbox_px": [
+                -140,
+                -241
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Swordman/Effect/GrandWaveOnCharge.img",
+            "image_pack_index": 0,
+            "image_frame_index": 18
+          },
+          "events": [],
+          "transform_applied": {
+            "scale": [
+              2.0,
+              2.0
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              164,
+              327
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest"
+          }
+        },
+        {
+          "index": 7,
+          "duration_ms": 60,
+          "page": 0,
+          "uv_rect_px": [
+            546,
+            500,
+            164,
+            130
+          ],
+          "canvas_size_px": [
+            164,
+            130
+          ],
+          "pivot_px": [
+            258,
+            474
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "GrandWaveOnCharge": {
+              "atlas_id": 5526,
+              "frame_index": 19,
+              "page": 0,
+              "offset": [
+                36,
+                91
+              ],
+              "content_bbox_px": [
+                -128,
+                -236
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Swordman/Effect/GrandWaveOnCharge.img",
+            "image_pack_index": 0,
+            "image_frame_index": 19
+          },
+          "events": [],
+          "transform_applied": {
+            "scale": [
+              2.0,
+              2.0
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              164,
+              327
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest"
+          }
+        },
+        {
+          "index": 8,
+          "duration_ms": 60,
+          "page": 0,
+          "uv_rect_px": [
+            710,
+            500,
+            180,
+            94
+          ],
+          "canvas_size_px": [
+            180,
+            94
+          ],
+          "pivot_px": [
+            280,
+            460
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "GrandWaveOnCharge": {
+              "atlas_id": 5526,
+              "frame_index": 20,
+              "page": 0,
+              "offset": [
+                25,
+                98
+              ],
+              "content_bbox_px": [
+                -139,
+                -229
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Swordman/Effect/GrandWaveOnCharge.img",
+            "image_pack_index": 0,
+            "image_frame_index": 20
+          },
+          "events": [],
+          "transform_applied": {
+            "scale": [
+              2.0,
+              2.0
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              164,
+              327
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest"
+          }
+        },
+        {
+          "index": 9,
+          "duration_ms": 60,
+          "page": 0,
+          "uv_rect_px": [
+            890,
+            500,
+            156,
+            134
+          ],
+          "canvas_size_px": [
+            156,
+            134
+          ],
+          "pivot_px": [
+            270,
+            524
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "GrandWaveOnCharge": {
+              "atlas_id": 5526,
+              "frame_index": 21,
+              "page": 0,
+              "offset": [
+                30,
+                66
+              ],
+              "content_bbox_px": [
+                -134,
+                -261
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Swordman/Effect/GrandWaveOnCharge.img",
+            "image_pack_index": 0,
+            "image_frame_index": 21
+          },
+          "events": [],
+          "transform_applied": {
+            "scale": [
+              2.0,
+              2.0
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              164,
+              327
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest"
+          }
+        },
+        {
+          "index": 10,
+          "duration_ms": 60,
+          "page": 0,
+          "uv_rect_px": [
+            1046,
+            500,
+            136,
+            168
+          ],
+          "canvas_size_px": [
+            136,
+            168
+          ],
+          "pivot_px": [
+            264,
+            518
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "GrandWaveOnCharge": {
+              "atlas_id": 5526,
+              "frame_index": 22,
+              "page": 0,
+              "offset": [
+                33,
+                69
+              ],
+              "content_bbox_px": [
+                -131,
+                -258
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Swordman/Effect/GrandWaveOnCharge.img",
+            "image_pack_index": 0,
+            "image_frame_index": 22
+          },
+          "events": [],
+          "transform_applied": {
+            "scale": [
+              2.0,
+              2.0
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              164,
+              327
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest"
+          }
+        },
+        {
+          "index": 11,
+          "duration_ms": 60,
+          "page": 0,
+          "uv_rect_px": [
+            1182,
+            500,
+            120,
+            162
+          ],
+          "canvas_size_px": [
+            120,
+            162
+          ],
+          "pivot_px": [
+            252,
+            516
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "GrandWaveOnCharge": {
+              "atlas_id": 5526,
+              "frame_index": 23,
+              "page": 0,
+              "offset": [
+                39,
+                70
+              ],
+              "content_bbox_px": [
+                -125,
+                -257
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Swordman/Effect/GrandWaveOnCharge.img",
+            "image_pack_index": 0,
+            "image_frame_index": 23
+          },
+          "events": [],
+          "transform_applied": {
+            "scale": [
+              2.0,
+              2.0
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              164,
+              327
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest"
+          }
+        },
+        {
+          "index": 12,
+          "duration_ms": 60,
+          "page": null,
+          "uv_rect_px": null,
+          "canvas_size_px": [
+            0,
+            0
+          ],
+          "pivot_px": null,
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": false,
+          "no_draw": {
+            "classification": "non_drawing_logic_frame",
+            "reason": "image_path=null logic/timing frame; M8-008 verify classifies it as non_drawing_logic_frame; kept in the timeline, occupies no atlas page, no art fabricated",
+            "evidence": "identical structure to charge1 f12; tail wait"
+          },
+          "position": [
+            -164,
+            -343
+          ],
+          "layer_frames": {},
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": null,
+            "image_pack_index": -1,
+            "image_frame_index": null
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "action_id": "damage_0",
+      "group": "damage",
+      "source_ani": "script/monster/mdnf_scenario/renewal_monster/granflawless/taubeast/animation/damage_0.ani",
+      "source_sha256": "188b1108017ee62cb346393a4527d02c70a470041d232fd8c2fe802bef20d891",
+      "loop": false,
+      "sorting_layer": 10,
+      "draw_shadow": true,
+      "layers": [
+        "taubeast"
+      ],
+      "draw_order": [
+        "body"
+      ],
+      "layer_mapping": "monster_single_layer",
+      "source": "script_index",
+      "transformed_frames": [],
+      "no_draw_frame_indexes": [],
+      "frames": [
+        {
+          "index": 0,
+          "duration_ms": 10000,
+          "page": 0,
+          "uv_rect_px": [
+            1302,
+            500,
+            211,
+            320
+          ],
+          "canvas_size_px": [
+            211,
+            320
+          ],
+          "pivot_px": [
+            121,
+            298
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 9,
+              "page": 0,
+              "offset": [
+                201,
+                204
+              ],
+              "content_bbox_px": [
+                -119,
+                -296
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 9
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "action_id": "damage_1",
+      "group": "damage",
+      "source_ani": "script/monster/mdnf_scenario/renewal_monster/granflawless/taubeast/animation/damage_1.ani",
+      "source_sha256": "e01d61d1692264060d8a7ddcafd171043cd1ed530ac8a0d04f7c3d4d9f975e89",
+      "loop": false,
+      "sorting_layer": 10,
+      "draw_shadow": true,
+      "layers": [
+        "taubeast"
+      ],
+      "draw_order": [
+        "body"
+      ],
+      "layer_mapping": "monster_single_layer",
+      "source": "script_index",
+      "transformed_frames": [],
+      "no_draw_frame_indexes": [],
+      "frames": [
+        {
+          "index": 0,
+          "duration_ms": 10000,
+          "page": 0,
+          "uv_rect_px": [
+            1513,
+            500,
+            235,
+            259
+          ],
+          "canvas_size_px": [
+            235,
+            259
+          ],
+          "pivot_px": [
+            70,
+            237
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 8,
+              "page": 0,
+              "offset": [
+                252,
+                265
+              ],
+              "content_bbox_px": [
+                -68,
+                -235
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 8
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "action_id": "down",
+      "group": "down",
+      "source_ani": "script/monster/mdnf_scenario/renewal_monster/granflawless/taubeast/animation/down.ani",
+      "source_sha256": "8cf46e101b63ac10f85ea2e693bbbd4ada4b13cf76cd988849356d78f9e7143c",
+      "loop": false,
+      "sorting_layer": 10,
+      "draw_shadow": true,
+      "layers": [
+        "taubeast"
+      ],
+      "draw_order": [
+        "body"
+      ],
+      "layer_mapping": "monster_single_layer",
+      "source": "script_index",
+      "transformed_frames": [],
+      "no_draw_frame_indexes": [],
+      "frames": [
+        {
+          "index": 0,
+          "duration_ms": 80,
+          "page": 0,
+          "uv_rect_px": [
+            1748,
+            500,
+            235,
+            259
+          ],
+          "canvas_size_px": [
+            235,
+            259
+          ],
+          "pivot_px": [
+            70,
+            237
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 8,
+              "page": 0,
+              "offset": [
+                252,
+                265
+              ],
+              "content_bbox_px": [
+                -68,
+                -235
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 8
+          },
+          "events": []
+        },
+        {
+          "index": 1,
+          "duration_ms": 80,
+          "page": 0,
+          "uv_rect_px": [
+            0,
+            820,
+            211,
+            320
+          ],
+          "canvas_size_px": [
+            211,
+            320
+          ],
+          "pivot_px": [
+            121,
+            298
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 9,
+              "page": 0,
+              "offset": [
+                201,
+                204
+              ],
+              "content_bbox_px": [
+                -119,
+                -296
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 9
+          },
+          "events": []
+        },
+        {
+          "index": 2,
+          "duration_ms": 10000,
+          "page": 0,
+          "uv_rect_px": [
+            211,
+            820,
+            293,
+            234
+          ],
+          "canvas_size_px": [
+            293,
+            234
+          ],
+          "pivot_px": [
+            213,
+            229
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 10,
+              "page": 0,
+              "offset": [
+                109,
+                273
+              ],
+              "content_bbox_px": [
+                -211,
+                -227
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 10
+          },
+          "events": []
+        },
+        {
+          "index": 3,
+          "duration_ms": 10000,
+          "page": 0,
+          "uv_rect_px": [
+            504,
+            820,
+            320,
+            211
+          ],
+          "canvas_size_px": [
+            320,
+            211
+          ],
+          "pivot_px": [
+            223,
+            156
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 11,
+              "page": 0,
+              "offset": [
+                99,
+                346
+              ],
+              "content_bbox_px": [
+                -221,
+                -154
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 11
+          },
+          "events": []
+        },
+        {
+          "index": 4,
+          "duration_ms": 500,
+          "page": 0,
+          "uv_rect_px": [
+            824,
+            820,
+            350,
+            157
+          ],
+          "canvas_size_px": [
+            350,
+            157
+          ],
+          "pivot_px": [
+            250,
+            103
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 12,
+              "page": 0,
+              "offset": [
+                72,
+                399
+              ],
+              "content_bbox_px": [
+                -248,
+                -101
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 12
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "action_id": "fullcharge1",
+      "group": "attack_effect",
+      "source_ani": "script/monster/mdnf_scenario/renewal_monster/granflawless/taubeast/animation/fullcharge1.ani",
+      "source_sha256": "989907dd58d708ba3b10fea71e9cc74e87653aac01ea7e82c214b388a14039dc",
+      "loop": false,
+      "sorting_layer": 10,
+      "draw_shadow": false,
+      "layers": [
+        "taubeast"
+      ],
+      "draw_order": [
+        "body"
+      ],
+      "layer_mapping": "monster_single_layer",
+      "source": "script_index",
+      "transformed_frames": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "no_draw_frame_indexes": [
+        0,
+        6
+      ],
+      "frames": [
+        {
+          "index": 0,
+          "duration_ms": 600,
+          "page": null,
+          "uv_rect_px": null,
+          "canvas_size_px": [
+            0,
+            0
+          ],
+          "pivot_px": null,
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": false,
+          "no_draw": {
+            "classification": "non_drawing_logic_frame",
+            "reason": "image_path=null logic/timing frame; M8-008 verify classifies it as non_drawing_logic_frame; kept in the timeline, occupies no atlas page, no art fabricated",
+            "evidence": "image_path=null, no boxes/audio/prefab/shader; delay 600ms is the dominant part of the 840ms animation - a long pre-glow wait before GrandWaveFullCharge.img#0-4 plays at 40ms each"
+          },
+          "position": [
+            -164,
+            -343
+          ],
+          "layer_frames": {},
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": null,
+            "image_pack_index": -1,
+            "image_frame_index": null
+          },
+          "events": []
+        },
+        {
+          "index": 1,
+          "duration_ms": 40,
+          "page": 0,
+          "uv_rect_px": [
+            1174,
+            820,
+            106,
+            108
+          ],
+          "canvas_size_px": [
+            106,
+            108
+          ],
+          "pivot_px": [
+            238,
+            484
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "GrandWaveFullCharge": {
+              "atlas_id": 5525,
+              "frame_index": 0,
+              "page": 0,
+              "offset": [
+                46,
+                86
+              ],
+              "content_bbox_px": [
+                -118,
+                -241
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Swordman/Effect/GrandWaveFullCharge.img",
+            "image_pack_index": 0,
+            "image_frame_index": 0
+          },
+          "events": [],
+          "transform_applied": {
+            "scale": [
+              2.0,
+              2.0
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              164,
+              327
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest"
+          }
+        },
+        {
+          "index": 2,
+          "duration_ms": 40,
+          "page": 0,
+          "uv_rect_px": [
+            1280,
+            820,
+            146,
+            146
+          ],
+          "canvas_size_px": [
+            146,
+            146
+          ],
+          "pivot_px": [
+            258,
+            504
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "GrandWaveFullCharge": {
+              "atlas_id": 5525,
+              "frame_index": 1,
+              "page": 0,
+              "offset": [
+                36,
+                76
+              ],
+              "content_bbox_px": [
+                -128,
+                -251
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Swordman/Effect/GrandWaveFullCharge.img",
+            "image_pack_index": 0,
+            "image_frame_index": 1
+          },
+          "events": [],
+          "transform_applied": {
+            "scale": [
+              2.0,
+              2.0
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              164,
+              327
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest"
+          }
+        },
+        {
+          "index": 3,
+          "duration_ms": 40,
+          "page": 0,
+          "uv_rect_px": [
+            1426,
+            820,
+            160,
+            160
+          ],
+          "canvas_size_px": [
+            160,
+            160
+          ],
+          "pivot_px": [
+            266,
+            510
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "GrandWaveFullCharge": {
+              "atlas_id": 5525,
+              "frame_index": 2,
+              "page": 0,
+              "offset": [
+                32,
+                73
+              ],
+              "content_bbox_px": [
+                -132,
+                -254
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Swordman/Effect/GrandWaveFullCharge.img",
+            "image_pack_index": 0,
+            "image_frame_index": 2
+          },
+          "events": [],
+          "transform_applied": {
+            "scale": [
+              2.0,
+              2.0
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              164,
+              327
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest"
+          }
+        },
+        {
+          "index": 4,
+          "duration_ms": 40,
+          "page": 0,
+          "uv_rect_px": [
+            1586,
+            820,
+            162,
+            162
+          ],
+          "canvas_size_px": [
+            162,
+            162
+          ],
+          "pivot_px": [
+            268,
+            512
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "GrandWaveFullCharge": {
+              "atlas_id": 5525,
+              "frame_index": 3,
+              "page": 0,
+              "offset": [
+                31,
+                72
+              ],
+              "content_bbox_px": [
+                -133,
+                -255
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Swordman/Effect/GrandWaveFullCharge.img",
+            "image_pack_index": 0,
+            "image_frame_index": 3
+          },
+          "events": [],
+          "transform_applied": {
+            "scale": [
+              2.0,
+              2.0
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              164,
+              327
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest"
+          }
+        },
+        {
+          "index": 5,
+          "duration_ms": 40,
+          "page": 0,
+          "uv_rect_px": [
+            1748,
+            820,
+            160,
+            160
+          ],
+          "canvas_size_px": [
+            160,
+            160
+          ],
+          "pivot_px": [
+            266,
+            510
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "GrandWaveFullCharge": {
+              "atlas_id": 5525,
+              "frame_index": 4,
+              "page": 0,
+              "offset": [
+                32,
+                73
+              ],
+              "content_bbox_px": [
+                -132,
+                -254
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Swordman/Effect/GrandWaveFullCharge.img",
+            "image_pack_index": 0,
+            "image_frame_index": 4
+          },
+          "events": [],
+          "transform_applied": {
+            "scale": [
+              2.0,
+              2.0
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              164,
+              327
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest"
+          }
+        },
+        {
+          "index": 6,
+          "duration_ms": 40,
+          "page": null,
+          "uv_rect_px": null,
+          "canvas_size_px": [
+            0,
+            0
+          ],
+          "pivot_px": null,
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": false,
+          "no_draw": {
+            "classification": "non_drawing_logic_frame",
+            "reason": "image_path=null logic/timing frame; M8-008 verify classifies it as non_drawing_logic_frame; kept in the timeline, occupies no atlas page, no art fabricated",
+            "evidence": "tail wait after effect frames, pos [-164,-339], same empty-reference signature"
+          },
+          "position": [
+            -164,
+            -339
+          ],
+          "layer_frames": {},
+          "flip_copy_type": 0,
+          "scale": [
+            2.0,
+            2.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": null,
+            "image_pack_index": -1,
+            "image_frame_index": null
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "action_id": "move",
+      "group": "move",
+      "source_ani": "script/monster/mdnf_scenario/renewal_monster/granflawless/taubeast/animation/move.ani",
+      "source_sha256": "105b1a04a1c211734936b37b79d9f731522c14a2372c1d1a3a60a63d66a1d0fc",
+      "loop": true,
+      "sorting_layer": 10,
+      "draw_shadow": true,
+      "layers": [
+        "taubeast"
+      ],
+      "draw_order": [
+        "body"
+      ],
+      "layer_mapping": "monster_single_layer",
+      "source": "script_index",
+      "transformed_frames": [],
+      "no_draw_frame_indexes": [],
+      "frames": [
+        {
+          "index": 0,
+          "duration_ms": 75,
+          "page": 0,
+          "uv_rect_px": [
+            0,
+            1140,
+            218,
+            289
+          ],
+          "canvas_size_px": [
+            218,
+            289
+          ],
+          "pivot_px": [
+            80,
+            271
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 20,
+              "page": 0,
+              "offset": [
+                242,
+                231
+              ],
+              "content_bbox_px": [
+                -78,
+                -269
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 20
+          },
+          "events": []
+        },
+        {
+          "index": 1,
+          "duration_ms": 100,
+          "page": 0,
+          "uv_rect_px": [
+            218,
+            1140,
+            227,
+            287
+          ],
+          "canvas_size_px": [
+            227,
+            287
+          ],
+          "pivot_px": [
+            89,
+            269
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 21,
+              "page": 0,
+              "offset": [
+                233,
+                233
+              ],
+              "content_bbox_px": [
+                -87,
+                -267
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 21
+          },
+          "events": []
+        },
+        {
+          "index": 2,
+          "duration_ms": 100,
+          "page": 0,
+          "uv_rect_px": [
+            445,
+            1140,
+            232,
+            269
+          ],
+          "canvas_size_px": [
+            232,
+            269
+          ],
+          "pivot_px": [
+            92,
+            269
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 22,
+              "page": 0,
+              "offset": [
+                230,
+                233
+              ],
+              "content_bbox_px": [
+                -90,
+                -267
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 22
+          },
+          "events": []
+        },
+        {
+          "index": 3,
+          "duration_ms": 100,
+          "page": 0,
+          "uv_rect_px": [
+            677,
+            1140,
+            236,
+            278
+          ],
+          "canvas_size_px": [
+            236,
+            278
+          ],
+          "pivot_px": [
+            96,
+            271
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 23,
+              "page": 0,
+              "offset": [
+                226,
+                231
+              ],
+              "content_bbox_px": [
+                -94,
+                -269
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 23
+          },
+          "events": []
+        },
+        {
+          "index": 4,
+          "duration_ms": 75,
+          "page": 0,
+          "uv_rect_px": [
+            913,
+            1140,
+            229,
+            287
+          ],
+          "canvas_size_px": [
+            229,
+            287
+          ],
+          "pivot_px": [
+            89,
+            272
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 24,
+              "page": 0,
+              "offset": [
+                233,
+                230
+              ],
+              "content_bbox_px": [
+                -87,
+                -270
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 24
+          },
+          "events": []
+        },
+        {
+          "index": 5,
+          "duration_ms": 75,
+          "page": 0,
+          "uv_rect_px": [
+            1142,
+            1140,
+            219,
+            285
+          ],
+          "canvas_size_px": [
+            219,
+            285
+          ],
+          "pivot_px": [
+            79,
+            270
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 25,
+              "page": 0,
+              "offset": [
+                243,
+                232
+              ],
+              "content_bbox_px": [
+                -77,
+                -268
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 25
+          },
+          "events": []
+        },
+        {
+          "index": 6,
+          "duration_ms": 100,
+          "page": 0,
+          "uv_rect_px": [
+            1361,
+            1140,
+            211,
+            287
+          ],
+          "canvas_size_px": [
+            211,
+            287
+          ],
+          "pivot_px": [
+            71,
+            269
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 26,
+              "page": 0,
+              "offset": [
+                251,
+                233
+              ],
+              "content_bbox_px": [
+                -69,
+                -267
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 26
+          },
+          "events": []
+        },
+        {
+          "index": 7,
+          "duration_ms": 75,
+          "page": 0,
+          "uv_rect_px": [
+            1572,
+            1140,
+            225,
+            286
+          ],
+          "canvas_size_px": [
+            225,
+            286
+          ],
+          "pivot_px": [
+            85,
+            269
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 27,
+              "page": 0,
+              "offset": [
+                237,
+                233
+              ],
+              "content_bbox_px": [
+                -83,
+                -267
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 27
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "action_id": "overturn",
+      "group": "down",
+      "source_ani": "script/monster/mdnf_scenario/renewal_monster/granflawless/taubeast/animation/overturn.ani",
+      "source_sha256": "4b0cc5e89eebeee1bfc645ed932cf4bbaf54e458fe1988bb01041168cdd7e589",
+      "loop": false,
+      "sorting_layer": 10,
+      "draw_shadow": true,
+      "layers": [
+        "taubeast"
+      ],
+      "draw_order": [
+        "body"
+      ],
+      "layer_mapping": "monster_single_layer",
+      "source": "script_index",
+      "transformed_frames": [
+        0
+      ],
+      "no_draw_frame_indexes": [],
+      "frames": [
+        {
+          "index": 0,
+          "duration_ms": 10000,
+          "page": 0,
+          "uv_rect_px": [
+            1797,
+            1140,
+            211,
+            320
+          ],
+          "canvas_size_px": [
+            211,
+            320
+          ],
+          "pivot_px": [
+            90,
+            294
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 9,
+              "page": 0,
+              "offset": [
+                201,
+                204
+              ],
+              "content_bbox_px": [
+                -119,
+                -24
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 179.91001892089844,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 9
+          },
+          "events": [],
+          "transform_applied": {
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "rotation_degrees": 179.91001892089844,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              320,
+              228
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest"
+          }
+        }
+      ]
+    },
+    {
+      "action_id": "roar",
+      "group": "idle",
+      "source_ani": "script/monster/mdnf_scenario/renewal_monster/granflawless/taubeast/animation/roar.ani",
+      "source_sha256": "7f0e2e8a6a6cce48c6e548a054ef1662103735ff6afcdaf7a87eb188e4cc3a74",
+      "loop": false,
+      "sorting_layer": 10,
+      "draw_shadow": true,
+      "layers": [
+        "taubeast"
+      ],
+      "draw_order": [
+        "body"
+      ],
+      "layer_mapping": "monster_single_layer",
+      "source": "script_index",
+      "transformed_frames": [],
+      "no_draw_frame_indexes": [],
+      "frames": [
+        {
+          "index": 0,
+          "duration_ms": 150,
+          "page": 0,
+          "uv_rect_px": [
+            0,
+            1460,
+            219,
+            315
+          ],
+          "canvas_size_px": [
+            219,
+            315
+          ],
+          "pivot_px": [
+            115,
+            294
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 28,
+              "page": 0,
+              "offset": [
+                207,
+                208
+              ],
+              "content_bbox_px": [
+                -113,
+                -292
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 28
+          },
+          "events": []
+        },
+        {
+          "index": 1,
+          "duration_ms": 70,
+          "page": 0,
+          "uv_rect_px": [
+            219,
+            1460,
+            379,
+            383
+          ],
+          "canvas_size_px": [
+            379,
+            383
+          ],
+          "pivot_px": [
+            230,
+            234
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 29,
+              "page": 0,
+              "offset": [
+                92,
+                268
+              ],
+              "content_bbox_px": [
+                -228,
+                -232
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 29
+          },
+          "events": []
+        },
+        {
+          "index": 2,
+          "duration_ms": 30,
+          "page": 0,
+          "uv_rect_px": [
+            598,
+            1460,
+            380,
+            382
+          ],
+          "canvas_size_px": [
+            380,
+            382
+          ],
+          "pivot_px": [
+            230,
+            233
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 30,
+              "page": 0,
+              "offset": [
+                92,
+                269
+              ],
+              "content_bbox_px": [
+                -228,
+                -231
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 30
+          },
+          "events": []
+        },
+        {
+          "index": 3,
+          "duration_ms": 30,
+          "page": 0,
+          "uv_rect_px": [
+            978,
+            1460,
+            380,
+            378
+          ],
+          "canvas_size_px": [
+            380,
+            378
+          ],
+          "pivot_px": [
+            230,
+            229
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 31,
+              "page": 0,
+              "offset": [
+                92,
+                273
+              ],
+              "content_bbox_px": [
+                -228,
+                -227
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 31
+          },
+          "events": []
+        },
+        {
+          "index": 4,
+          "duration_ms": 30,
+          "page": 0,
+          "uv_rect_px": [
+            1358,
+            1460,
+            380,
+            382
+          ],
+          "canvas_size_px": [
+            380,
+            382
+          ],
+          "pivot_px": [
+            230,
+            233
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 30,
+              "page": 0,
+              "offset": [
+                92,
+                269
+              ],
+              "content_bbox_px": [
+                -228,
+                -231
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 30
+          },
+          "events": []
+        },
+        {
+          "index": 5,
+          "duration_ms": 30,
+          "page": 1,
+          "uv_rect_px": [
+            0,
+            0,
+            380,
+            378
+          ],
+          "canvas_size_px": [
+            380,
+            378
+          ],
+          "pivot_px": [
+            230,
+            229
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 31,
+              "page": 0,
+              "offset": [
+                92,
+                273
+              ],
+              "content_bbox_px": [
+                -228,
+                -227
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 31
+          },
+          "events": []
+        },
+        {
+          "index": 6,
+          "duration_ms": 30,
+          "page": 1,
+          "uv_rect_px": [
+            380,
+            0,
+            380,
+            382
+          ],
+          "canvas_size_px": [
+            380,
+            382
+          ],
+          "pivot_px": [
+            230,
+            233
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 30,
+              "page": 0,
+              "offset": [
+                92,
+                269
+              ],
+              "content_bbox_px": [
+                -228,
+                -231
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 30
+          },
+          "events": []
+        },
+        {
+          "index": 7,
+          "duration_ms": 30,
+          "page": 1,
+          "uv_rect_px": [
+            760,
+            0,
+            380,
+            378
+          ],
+          "canvas_size_px": [
+            380,
+            378
+          ],
+          "pivot_px": [
+            230,
+            229
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 31,
+              "page": 0,
+              "offset": [
+                92,
+                273
+              ],
+              "content_bbox_px": [
+                -228,
+                -227
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 31
+          },
+          "events": []
+        },
+        {
+          "index": 8,
+          "duration_ms": 30,
+          "page": 1,
+          "uv_rect_px": [
+            1140,
+            0,
+            380,
+            382
+          ],
+          "canvas_size_px": [
+            380,
+            382
+          ],
+          "pivot_px": [
+            230,
+            233
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 30,
+              "page": 0,
+              "offset": [
+                92,
+                269
+              ],
+              "content_bbox_px": [
+                -228,
+                -231
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 30
+          },
+          "events": []
+        },
+        {
+          "index": 9,
+          "duration_ms": 30,
+          "page": 1,
+          "uv_rect_px": [
+            1520,
+            0,
+            380,
+            378
+          ],
+          "canvas_size_px": [
+            380,
+            378
+          ],
+          "pivot_px": [
+            230,
+            229
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 31,
+              "page": 0,
+              "offset": [
+                92,
+                273
+              ],
+              "content_bbox_px": [
+                -228,
+                -227
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 31
+          },
+          "events": []
+        },
+        {
+          "index": 10,
+          "duration_ms": 30,
+          "page": 1,
+          "uv_rect_px": [
+            0,
+            382,
+            380,
+            382
+          ],
+          "canvas_size_px": [
+            380,
+            382
+          ],
+          "pivot_px": [
+            230,
+            233
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 30,
+              "page": 0,
+              "offset": [
+                92,
+                269
+              ],
+              "content_bbox_px": [
+                -228,
+                -231
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 30
+          },
+          "events": []
+        },
+        {
+          "index": 11,
+          "duration_ms": 30,
+          "page": 1,
+          "uv_rect_px": [
+            380,
+            382,
+            380,
+            378
+          ],
+          "canvas_size_px": [
+            380,
+            378
+          ],
+          "pivot_px": [
+            230,
+            229
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 31,
+              "page": 0,
+              "offset": [
+                92,
+                273
+              ],
+              "content_bbox_px": [
+                -228,
+                -227
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 31
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "action_id": "sit",
+      "group": "idle",
+      "source_ani": "script/monster/mdnf_scenario/renewal_monster/granflawless/taubeast/animation/sit.ani",
+      "source_sha256": "83f1670cc1ab8206b2951a0657ed5fa4db1131ea4760776932ebbc42a7d62a01",
+      "loop": false,
+      "sorting_layer": 10,
+      "draw_shadow": true,
+      "layers": [
+        "taubeast"
+      ],
+      "draw_order": [
+        "body"
+      ],
+      "layer_mapping": "monster_single_layer",
+      "source": "script_index",
+      "transformed_frames": [],
+      "no_draw_frame_indexes": [],
+      "frames": [
+        {
+          "index": 0,
+          "duration_ms": 150,
+          "page": 1,
+          "uv_rect_px": [
+            760,
+            382,
+            225,
+            227
+          ],
+          "canvas_size_px": [
+            225,
+            227
+          ],
+          "pivot_px": [
+            103,
+            202
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 19,
+              "page": 0,
+              "offset": [
+                219,
+                300
+              ],
+              "content_bbox_px": [
+                -101,
+                -200
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 19
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "action_id": "stay",
+      "group": "idle",
+      "source_ani": "script/monster/mdnf_scenario/renewal_monster/granflawless/taubeast/animation/stay.ani",
+      "source_sha256": "03bfd144e1ab9ce5dff57dd26548ddcc9a94a9c28b5d0d96b13523e28d2f040f",
+      "loop": true,
+      "sorting_layer": 10,
+      "draw_shadow": true,
+      "layers": [
+        "taubeast"
+      ],
+      "draw_order": [
+        "body"
+      ],
+      "layer_mapping": "monster_single_layer",
+      "source": "script_index",
+      "transformed_frames": [],
+      "no_draw_frame_indexes": [],
+      "frames": [
+        {
+          "index": 0,
+          "duration_ms": 80,
+          "page": 1,
+          "uv_rect_px": [
+            985,
+            382,
+            234,
+            293
+          ],
+          "canvas_size_px": [
+            234,
+            293
+          ],
+          "pivot_px": [
+            94,
+            271
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "taubeast": {
+              "atlas_id": 4357,
+              "frame_index": 0,
+              "page": 0,
+              "offset": [
+                228,
+                231
+              ],
+              "content_bbox_px": [
+                -92,
+                -269
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.0,
+            1.0
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Monster/Tau/taubeast.img",
+            "image_pack_index": 0,
+            "image_frame_index": 0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "action_id": "warning",
+      "group": "telegraph",
+      "source_ani": "script/monster/mdnf_scenario/renewal_monster/granflawless/taubeast/animation/warning.ani",
+      "source_sha256": "f5580714dea559d1def5669bcccd8443316ff4bd5754c7cecf6b0af1f205e97b",
+      "loop": false,
+      "sorting_layer": 5,
+      "draw_shadow": false,
+      "layers": [
+        "taubeast"
+      ],
+      "draw_order": [
+        "body"
+      ],
+      "layer_mapping": "monster_single_layer",
+      "source": "script_index",
+      "transformed_frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17
+      ],
+      "no_draw_frame_indexes": [],
+      "frames": [
+        {
+          "index": 0,
+          "duration_ms": 30,
+          "page": 1,
+          "uv_rect_px": [
+            1219,
+            382,
+            69,
+            26
+          ],
+          "canvas_size_px": [
+            69,
+            26
+          ],
+          "pivot_px": [
+            16,
+            39
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "Warning02": {
+              "atlas_id": 22265,
+              "frame_index": 0,
+              "page": 0,
+              "offset": [
+                32,
+                10
+              ],
+              "content_bbox_px": [
+                -8,
+                -22
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.7000000476837158,
+            1.7000000476837158
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Mage/Effect/LightSoul/Warning02.img",
+            "image_pack_index": 0,
+            "image_frame_index": 0
+          },
+          "events": [],
+          "color_rgba": [
+            255,
+            0,
+            0,
+            255
+          ],
+          "transform_applied": {
+            "scale": [
+              1.7000000476837158,
+              1.7000000476837158
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              40,
+              32
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest",
+            "color_rgba": [
+              255,
+              0,
+              0,
+              255
+            ],
+            "color_rule": "c_out = c_src * color / 255 per channel"
+          }
+        },
+        {
+          "index": 1,
+          "duration_ms": 30,
+          "page": 1,
+          "uv_rect_px": [
+            1288,
+            382,
+            89,
+            31
+          ],
+          "canvas_size_px": [
+            89,
+            31
+          ],
+          "pivot_px": [
+            26,
+            43
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "Warning02": {
+              "atlas_id": 22265,
+              "frame_index": 1,
+              "page": 0,
+              "offset": [
+                26,
+                8
+              ],
+              "content_bbox_px": [
+                -14,
+                -24
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.7000000476837158,
+            1.7000000476837158
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Mage/Effect/LightSoul/Warning02.img",
+            "image_pack_index": 0,
+            "image_frame_index": 1
+          },
+          "events": [],
+          "color_rgba": [
+            255,
+            0,
+            0,
+            255
+          ],
+          "transform_applied": {
+            "scale": [
+              1.7000000476837158,
+              1.7000000476837158
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              40,
+              32
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest",
+            "color_rgba": [
+              255,
+              0,
+              0,
+              255
+            ],
+            "color_rule": "c_out = c_src * color / 255 per channel"
+          }
+        },
+        {
+          "index": 2,
+          "duration_ms": 30,
+          "page": 1,
+          "uv_rect_px": [
+            1377,
+            382,
+            123,
+            45
+          ],
+          "canvas_size_px": [
+            123,
+            45
+          ],
+          "pivot_px": [
+            43,
+            50
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "Warning02": {
+              "atlas_id": 22265,
+              "frame_index": 2,
+              "page": 0,
+              "offset": [
+                16,
+                4
+              ],
+              "content_bbox_px": [
+                -24,
+                -28
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.7000000476837158,
+            1.7000000476837158
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Mage/Effect/LightSoul/Warning02.img",
+            "image_pack_index": 0,
+            "image_frame_index": 2
+          },
+          "events": [],
+          "color_rgba": [
+            255,
+            0,
+            0,
+            255
+          ],
+          "transform_applied": {
+            "scale": [
+              1.7000000476837158,
+              1.7000000476837158
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              40,
+              32
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest",
+            "color_rgba": [
+              255,
+              0,
+              0,
+              255
+            ],
+            "color_rule": "c_out = c_src * color / 255 per channel"
+          }
+        },
+        {
+          "index": 3,
+          "duration_ms": 30,
+          "page": 1,
+          "uv_rect_px": [
+            1500,
+            382,
+            143,
+            50
+          ],
+          "canvas_size_px": [
+            143,
+            50
+          ],
+          "pivot_px": [
+            53,
+            51
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "Warning02": {
+              "atlas_id": 22265,
+              "frame_index": 3,
+              "page": 0,
+              "offset": [
+                10,
+                3
+              ],
+              "content_bbox_px": [
+                -30,
+                -29
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.7000000476837158,
+            1.7000000476837158
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Mage/Effect/LightSoul/Warning02.img",
+            "image_pack_index": 0,
+            "image_frame_index": 3
+          },
+          "events": [],
+          "color_rgba": [
+            255,
+            0,
+            0,
+            255
+          ],
+          "transform_applied": {
+            "scale": [
+              1.7000000476837158,
+              1.7000000476837158
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              40,
+              32
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest",
+            "color_rgba": [
+              255,
+              0,
+              0,
+              255
+            ],
+            "color_rule": "c_out = c_src * color / 255 per channel"
+          }
+        },
+        {
+          "index": 4,
+          "duration_ms": 30,
+          "page": 1,
+          "uv_rect_px": [
+            1643,
+            382,
+            164,
+            57
+          ],
+          "canvas_size_px": [
+            164,
+            57
+          ],
+          "pivot_px": [
+            63,
+            55
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "Warning02": {
+              "atlas_id": 22265,
+              "frame_index": 4,
+              "page": 0,
+              "offset": [
+                4,
+                1
+              ],
+              "content_bbox_px": [
+                -36,
+                -31
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.7000000476837158,
+            1.7000000476837158
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Mage/Effect/LightSoul/Warning02.img",
+            "image_pack_index": 0,
+            "image_frame_index": 4
+          },
+          "events": [],
+          "color_rgba": [
+            255,
+            0,
+            0,
+            255
+          ],
+          "transform_applied": {
+            "scale": [
+              1.7000000476837158,
+              1.7000000476837158
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              40,
+              32
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest",
+            "color_rgba": [
+              255,
+              0,
+              0,
+              255
+            ],
+            "color_rule": "c_out = c_src * color / 255 per channel"
+          }
+        },
+        {
+          "index": 5,
+          "duration_ms": 30,
+          "page": 1,
+          "uv_rect_px": [
+            1807,
+            382,
+            176,
+            58
+          ],
+          "canvas_size_px": [
+            176,
+            58
+          ],
+          "pivot_px": [
+            70,
+            56
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "Warning02": {
+              "atlas_id": 22265,
+              "frame_index": 5,
+              "page": 0,
+              "offset": [
+                0,
+                0
+              ],
+              "content_bbox_px": [
+                -40,
+                -32
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.7000000476837158,
+            1.7000000476837158
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Mage/Effect/LightSoul/Warning02.img",
+            "image_pack_index": 0,
+            "image_frame_index": 5
+          },
+          "events": [],
+          "color_rgba": [
+            255,
+            0,
+            0,
+            255
+          ],
+          "transform_applied": {
+            "scale": [
+              1.7000000476837158,
+              1.7000000476837158
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              40,
+              32
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest",
+            "color_rgba": [
+              255,
+              0,
+              0,
+              255
+            ],
+            "color_rule": "c_out = c_src * color / 255 per channel"
+          }
+        },
+        {
+          "index": 6,
+          "duration_ms": 30,
+          "page": 1,
+          "uv_rect_px": [
+            0,
+            764,
+            176,
+            60
+          ],
+          "canvas_size_px": [
+            176,
+            60
+          ],
+          "pivot_px": [
+            70,
+            56
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "Warning02": {
+              "atlas_id": 22265,
+              "frame_index": 6,
+              "page": 0,
+              "offset": [
+                0,
+                0
+              ],
+              "content_bbox_px": [
+                -40,
+                -32
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.7000000476837158,
+            1.7000000476837158
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Mage/Effect/LightSoul/Warning02.img",
+            "image_pack_index": 0,
+            "image_frame_index": 6
+          },
+          "events": [],
+          "color_rgba": [
+            255,
+            0,
+            0,
+            255
+          ],
+          "transform_applied": {
+            "scale": [
+              1.7000000476837158,
+              1.7000000476837158
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              40,
+              32
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest",
+            "color_rgba": [
+              255,
+              0,
+              0,
+              255
+            ],
+            "color_rule": "c_out = c_src * color / 255 per channel"
+          }
+        },
+        {
+          "index": 7,
+          "duration_ms": 30,
+          "page": 1,
+          "uv_rect_px": [
+            176,
+            764,
+            176,
+            60
+          ],
+          "canvas_size_px": [
+            176,
+            60
+          ],
+          "pivot_px": [
+            70,
+            56
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "Warning02": {
+              "atlas_id": 22265,
+              "frame_index": 7,
+              "page": 0,
+              "offset": [
+                0,
+                0
+              ],
+              "content_bbox_px": [
+                -40,
+                -32
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.7000000476837158,
+            1.7000000476837158
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Mage/Effect/LightSoul/Warning02.img",
+            "image_pack_index": 0,
+            "image_frame_index": 7
+          },
+          "events": [],
+          "color_rgba": [
+            255,
+            0,
+            0,
+            255
+          ],
+          "transform_applied": {
+            "scale": [
+              1.7000000476837158,
+              1.7000000476837158
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              40,
+              32
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest",
+            "color_rgba": [
+              255,
+              0,
+              0,
+              255
+            ],
+            "color_rule": "c_out = c_src * color / 255 per channel"
+          }
+        },
+        {
+          "index": 8,
+          "duration_ms": 30,
+          "page": 1,
+          "uv_rect_px": [
+            352,
+            764,
+            154,
+            53
+          ],
+          "canvas_size_px": [
+            154,
+            53
+          ],
+          "pivot_px": [
+            58,
+            53
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "Warning02": {
+              "atlas_id": 22265,
+              "frame_index": 8,
+              "page": 0,
+              "offset": [
+                7,
+                2
+              ],
+              "content_bbox_px": [
+                -33,
+                -30
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.7000000476837158,
+            1.7000000476837158
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Mage/Effect/LightSoul/Warning02.img",
+            "image_pack_index": 0,
+            "image_frame_index": 8
+          },
+          "events": [],
+          "color_rgba": [
+            255,
+            0,
+            0,
+            255
+          ],
+          "transform_applied": {
+            "scale": [
+              1.7000000476837158,
+              1.7000000476837158
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              40,
+              32
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest",
+            "color_rgba": [
+              255,
+              0,
+              0,
+              255
+            ],
+            "color_rule": "c_out = c_src * color / 255 per channel"
+          }
+        },
+        {
+          "index": 9,
+          "duration_ms": 30,
+          "page": 1,
+          "uv_rect_px": [
+            506,
+            764,
+            69,
+            26
+          ],
+          "canvas_size_px": [
+            69,
+            26
+          ],
+          "pivot_px": [
+            16,
+            39
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "Warning02": {
+              "atlas_id": 22265,
+              "frame_index": 0,
+              "page": 0,
+              "offset": [
+                32,
+                10
+              ],
+              "content_bbox_px": [
+                -8,
+                -22
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.7000000476837158,
+            1.7000000476837158
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Mage/Effect/LightSoul/Warning02.img",
+            "image_pack_index": 0,
+            "image_frame_index": 0
+          },
+          "events": [],
+          "color_rgba": [
+            255,
+            0,
+            0,
+            255
+          ],
+          "transform_applied": {
+            "scale": [
+              1.7000000476837158,
+              1.7000000476837158
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              40,
+              32
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest",
+            "color_rgba": [
+              255,
+              0,
+              0,
+              255
+            ],
+            "color_rule": "c_out = c_src * color / 255 per channel"
+          }
+        },
+        {
+          "index": 10,
+          "duration_ms": 30,
+          "page": 1,
+          "uv_rect_px": [
+            575,
+            764,
+            89,
+            31
+          ],
+          "canvas_size_px": [
+            89,
+            31
+          ],
+          "pivot_px": [
+            26,
+            43
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "Warning02": {
+              "atlas_id": 22265,
+              "frame_index": 1,
+              "page": 0,
+              "offset": [
+                26,
+                8
+              ],
+              "content_bbox_px": [
+                -14,
+                -24
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.7000000476837158,
+            1.7000000476837158
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Mage/Effect/LightSoul/Warning02.img",
+            "image_pack_index": 0,
+            "image_frame_index": 1
+          },
+          "events": [],
+          "color_rgba": [
+            255,
+            0,
+            0,
+            255
+          ],
+          "transform_applied": {
+            "scale": [
+              1.7000000476837158,
+              1.7000000476837158
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              40,
+              32
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest",
+            "color_rgba": [
+              255,
+              0,
+              0,
+              255
+            ],
+            "color_rule": "c_out = c_src * color / 255 per channel"
+          }
+        },
+        {
+          "index": 11,
+          "duration_ms": 30,
+          "page": 1,
+          "uv_rect_px": [
+            664,
+            764,
+            123,
+            45
+          ],
+          "canvas_size_px": [
+            123,
+            45
+          ],
+          "pivot_px": [
+            43,
+            50
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "Warning02": {
+              "atlas_id": 22265,
+              "frame_index": 2,
+              "page": 0,
+              "offset": [
+                16,
+                4
+              ],
+              "content_bbox_px": [
+                -24,
+                -28
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.7000000476837158,
+            1.7000000476837158
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Mage/Effect/LightSoul/Warning02.img",
+            "image_pack_index": 0,
+            "image_frame_index": 2
+          },
+          "events": [],
+          "color_rgba": [
+            255,
+            0,
+            0,
+            255
+          ],
+          "transform_applied": {
+            "scale": [
+              1.7000000476837158,
+              1.7000000476837158
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              40,
+              32
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest",
+            "color_rgba": [
+              255,
+              0,
+              0,
+              255
+            ],
+            "color_rule": "c_out = c_src * color / 255 per channel"
+          }
+        },
+        {
+          "index": 12,
+          "duration_ms": 30,
+          "page": 1,
+          "uv_rect_px": [
+            787,
+            764,
+            143,
+            50
+          ],
+          "canvas_size_px": [
+            143,
+            50
+          ],
+          "pivot_px": [
+            53,
+            51
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "Warning02": {
+              "atlas_id": 22265,
+              "frame_index": 3,
+              "page": 0,
+              "offset": [
+                10,
+                3
+              ],
+              "content_bbox_px": [
+                -30,
+                -29
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.7000000476837158,
+            1.7000000476837158
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Mage/Effect/LightSoul/Warning02.img",
+            "image_pack_index": 0,
+            "image_frame_index": 3
+          },
+          "events": [],
+          "color_rgba": [
+            255,
+            0,
+            0,
+            255
+          ],
+          "transform_applied": {
+            "scale": [
+              1.7000000476837158,
+              1.7000000476837158
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              40,
+              32
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest",
+            "color_rgba": [
+              255,
+              0,
+              0,
+              255
+            ],
+            "color_rule": "c_out = c_src * color / 255 per channel"
+          }
+        },
+        {
+          "index": 13,
+          "duration_ms": 30,
+          "page": 1,
+          "uv_rect_px": [
+            930,
+            764,
+            164,
+            57
+          ],
+          "canvas_size_px": [
+            164,
+            57
+          ],
+          "pivot_px": [
+            63,
+            55
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "Warning02": {
+              "atlas_id": 22265,
+              "frame_index": 4,
+              "page": 0,
+              "offset": [
+                4,
+                1
+              ],
+              "content_bbox_px": [
+                -36,
+                -31
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.7000000476837158,
+            1.7000000476837158
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Mage/Effect/LightSoul/Warning02.img",
+            "image_pack_index": 0,
+            "image_frame_index": 4
+          },
+          "events": [],
+          "color_rgba": [
+            255,
+            0,
+            0,
+            255
+          ],
+          "transform_applied": {
+            "scale": [
+              1.7000000476837158,
+              1.7000000476837158
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              40,
+              32
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest",
+            "color_rgba": [
+              255,
+              0,
+              0,
+              255
+            ],
+            "color_rule": "c_out = c_src * color / 255 per channel"
+          }
+        },
+        {
+          "index": 14,
+          "duration_ms": 30,
+          "page": 1,
+          "uv_rect_px": [
+            1094,
+            764,
+            176,
+            58
+          ],
+          "canvas_size_px": [
+            176,
+            58
+          ],
+          "pivot_px": [
+            70,
+            56
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "Warning02": {
+              "atlas_id": 22265,
+              "frame_index": 5,
+              "page": 0,
+              "offset": [
+                0,
+                0
+              ],
+              "content_bbox_px": [
+                -40,
+                -32
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.7000000476837158,
+            1.7000000476837158
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Mage/Effect/LightSoul/Warning02.img",
+            "image_pack_index": 0,
+            "image_frame_index": 5
+          },
+          "events": [],
+          "color_rgba": [
+            255,
+            0,
+            0,
+            255
+          ],
+          "transform_applied": {
+            "scale": [
+              1.7000000476837158,
+              1.7000000476837158
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              40,
+              32
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest",
+            "color_rgba": [
+              255,
+              0,
+              0,
+              255
+            ],
+            "color_rule": "c_out = c_src * color / 255 per channel"
+          }
+        },
+        {
+          "index": 15,
+          "duration_ms": 30,
+          "page": 1,
+          "uv_rect_px": [
+            1270,
+            764,
+            176,
+            60
+          ],
+          "canvas_size_px": [
+            176,
+            60
+          ],
+          "pivot_px": [
+            70,
+            56
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "Warning02": {
+              "atlas_id": 22265,
+              "frame_index": 6,
+              "page": 0,
+              "offset": [
+                0,
+                0
+              ],
+              "content_bbox_px": [
+                -40,
+                -32
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.7000000476837158,
+            1.7000000476837158
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Mage/Effect/LightSoul/Warning02.img",
+            "image_pack_index": 0,
+            "image_frame_index": 6
+          },
+          "events": [],
+          "color_rgba": [
+            255,
+            0,
+            0,
+            255
+          ],
+          "transform_applied": {
+            "scale": [
+              1.7000000476837158,
+              1.7000000476837158
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              40,
+              32
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest",
+            "color_rgba": [
+              255,
+              0,
+              0,
+              255
+            ],
+            "color_rule": "c_out = c_src * color / 255 per channel"
+          }
+        },
+        {
+          "index": 16,
+          "duration_ms": 30,
+          "page": 1,
+          "uv_rect_px": [
+            1446,
+            764,
+            176,
+            60
+          ],
+          "canvas_size_px": [
+            176,
+            60
+          ],
+          "pivot_px": [
+            70,
+            56
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "Warning02": {
+              "atlas_id": 22265,
+              "frame_index": 7,
+              "page": 0,
+              "offset": [
+                0,
+                0
+              ],
+              "content_bbox_px": [
+                -40,
+                -32
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.7000000476837158,
+            1.7000000476837158
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Mage/Effect/LightSoul/Warning02.img",
+            "image_pack_index": 0,
+            "image_frame_index": 7
+          },
+          "events": [],
+          "color_rgba": [
+            255,
+            0,
+            0,
+            255
+          ],
+          "transform_applied": {
+            "scale": [
+              1.7000000476837158,
+              1.7000000476837158
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              40,
+              32
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest",
+            "color_rgba": [
+              255,
+              0,
+              0,
+              255
+            ],
+            "color_rule": "c_out = c_src * color / 255 per channel"
+          }
+        },
+        {
+          "index": 17,
+          "duration_ms": 30,
+          "page": 1,
+          "uv_rect_px": [
+            1622,
+            764,
+            154,
+            53
+          ],
+          "canvas_size_px": [
+            154,
+            53
+          ],
+          "pivot_px": [
+            58,
+            53
+          ],
+          "pivot_definition": "脚底/动作原点在 cell 内的位置（相对 uv_rect 左上，y 向下）",
+          "draw_frame": true,
+          "layer_frames": {
+            "Warning02": {
+              "atlas_id": 22265,
+              "frame_index": 8,
+              "page": 0,
+              "offset": [
+                7,
+                2
+              ],
+              "content_bbox_px": [
+                -33,
+                -30
+              ]
+            }
+          },
+          "flip_copy_type": 0,
+          "scale": [
+            1.7000000476837158,
+            1.7000000476837158
+          ],
+          "rotation_degrees": 0.0,
+          "source_frame": {
+            "image_path": "Character/Mage/Effect/LightSoul/Warning02.img",
+            "image_pack_index": 0,
+            "image_frame_index": 8
+          },
+          "events": [],
+          "color_rgba": [
+            255,
+            0,
+            0,
+            255
+          ],
+          "transform_applied": {
+            "scale": [
+              1.7000000476837158,
+              1.7000000476837158
+            ],
+            "rotation_degrees": 0.0,
+            "mirror": {
+              "x": false,
+              "y": false
+            },
+            "order": "mirror_then_scale_then_rotate",
+            "anchor_canvas_px": [
+              40,
+              32
+            ],
+            "anchor_rule": "per-frame negated position (-position)",
+            "scale_rule": "content resized about the anchor, half-up rounding, NEAREST; anchor offset rounds the same way so the anchor lands exactly at the canvas anchor (outer edges may drift <= 1 px)",
+            "resample": "nearest",
+            "color_rgba": [
+              255,
+              0,
+              0,
+              255
+            ],
+            "color_rule": "c_out = c_src * color / 255 per channel"
+          }
+        }
+      ]
+    }
+  ],
+  "missing": [],
+  "verification": {
+    "mode": "monster_single_layer",
+    "assertions": {
+      "frame_counts_match_verify": {
+        "pass": true,
+        "expected_vs_verify": {
+          "frame_records_total": {
+            "expected": 88,
+            "verify": 88
+          },
+          "direct_frames": {
+            "expected": 82,
+            "verify": 82,
+            "composite": 82
+          },
+          "no_draw_frames": {
+            "expected": 6,
+            "verify": 6,
+            "composite": 0
+          }
+        },
+        "per_action_checked": 13,
+        "failures": []
+      },
+      "no_draw_frames": {
+        "pass": true,
+        "verify_unresolved": [
+          "charge1#0",
+          "charge1#12",
+          "charge2#0",
+          "charge2#12",
+          "fullcharge1#0",
+          "fullcharge1#6"
+        ],
+        "composite_no_draw": [
+          "charge1#0",
+          "charge1#12",
+          "charge2#0",
+          "charge2#12",
+          "fullcharge1#0",
+          "fullcharge1#6"
+        ],
+        "policy": "draw_frame=false manifest entries; no page/cell occupied"
+      },
+      "atlas_resolution": {
+        "pass": true,
+        "body_atlas": {
+          "name": "taubeast",
+          "atlas_id": 4357,
+          "frame_count": 32
+        },
+        "atlas_body0_check": null,
+        "external_deps_check": {
+          "pass": true,
+          "checked": 5,
+          "failures": []
+        },
+        "atlases_used": [
+          "GrandWaveFullCharge",
+          "GrandWaveOnCharge",
+          "Warning02",
+          "taubeast"
+        ]
+      },
+      "body_ground_contact": {
+        "pass": true,
+        "untransformed_body_bottoms_px": {
+          "min": -2,
+          "max": 147
+        },
+        "transformed_body_bottoms_px": [
+          24
+        ],
+        "tolerance_px": 60,
+        "failures": [],
+        "note": "position-space bottom y of body-atlas cells vs the feet anchor; overturn (rotated lying pose) must stay near the standing range"
+      },
+      "transform_census": {
+        "pass": true,
+        "flip_copy_types_seen": [
+          0
+        ],
+        "tinted_frames": [
+          "warning#0",
+          "warning#1",
+          "warning#10",
+          "warning#11",
+          "warning#12",
+          "warning#13",
+          "warning#14",
+          "warning#15",
+          "warning#16",
+          "warning#17",
+          "warning#2",
+          "warning#3",
+          "warning#4",
+          "warning#5",
+          "warning#6",
+          "warning#7",
+          "warning#8",
+          "warning#9"
+        ],
+        "scaled_frames_count": 45,
+        "scaled_frames": [
+          "charge1#1",
+          "charge1#10",
+          "charge1#11",
+          "charge1#2",
+          "charge1#3",
+          "charge1#4",
+          "charge1#5",
+          "charge1#6",
+          "charge1#7",
+          "charge1#8",
+          "charge1#9",
+          "charge2#1",
+          "charge2#10",
+          "charge2#11",
+          "charge2#2",
+          "charge2#3",
+          "charge2#4",
+          "charge2#5",
+          "charge2#6",
+          "charge2#7",
+          "charge2#8",
+          "charge2#9",
+          "fullcharge1#1",
+          "fullcharge1#2",
+          "fullcharge1#3",
+          "fullcharge1#4",
+          "fullcharge1#5",
+          "warning#0",
+          "warning#1",
+          "warning#10",
+          "warning#11",
+          "warning#12",
+          "warning#13",
+          "warning#14",
+          "warning#15",
+          "warning#16",
+          "warning#17",
+          "warning#2",
+          "warning#3",
+          "warning#4",
+          "warning#5",
+          "warning#6",
+          "warning#7",
+          "warning#8",
+          "warning#9"
+        ]
+      },
+      "pages": {
+        "pass": true,
+        "page_count": 2,
+        "page_size": 2048,
+        "cells_total": 82,
+        "cells_on_pages": 82
+      },
+      "sampled_pixel_stats": {
+        "pass": true,
+        "sampled": 60,
+        "blank_by_data": 0,
+        "min_visible_px_non_blank": 504,
+        "max_visible_px_non_blank": 36871,
+        "failures": []
+      }
+    }
+  },
+  "inputs": {
+    "config_file": "pipeline_config.json",
+    "config_sha256": "df62366e52ce5b38af099e0ac8c89690fc10492f9bd245f791fa03f1d0ac308b",
+    "verify_json": "D:\\Github-Poj\\UE-MMO\\Data\\DNFMReplica\\verify\\monster_taubeast.json",
+    "verify_sha256": "b6da3ad6fb94a60103c4bb51614a752f2dcaec051a84d41745ed27d5187bf98c"
+  },
+  "determinism_note": "Same inputs and arguments reproduce byte-identical outputs."
+}

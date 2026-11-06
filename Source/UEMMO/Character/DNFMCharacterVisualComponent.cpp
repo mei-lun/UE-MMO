@@ -368,6 +368,13 @@ void UDNFMCharacterVisualComponent::ApplyCurrentFrame()
         return;
     }
     const FDNFMVisualFrame& Frame = VisualSet->Actions[CurrentActionIndex].Frames[CurrentFrameIndex];
+    // M8-018: a no-draw logic frame keeps the previously drawn pose on
+    // screen for its duration (charge holds etc.) - skip the material and
+    // quad updates entirely, events still fire through the seek walk.
+    if (!Frame.bDrawFrame)
+    {
+        return;
+    }
     // Page + UV material parameters (no-op without an imported material).
     if (VisualMaterial != nullptr)
     {

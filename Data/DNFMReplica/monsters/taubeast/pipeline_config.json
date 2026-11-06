@@ -1,0 +1,47 @@
+{
+  "monster": "taubeast",
+  "task": "M8-018",
+  "verify_json": "Data/DNFMReplica/verify/monster_taubeast.json",
+  "body": {
+    "atlas_name": "taubeast",
+    "image_path": "Monster/Tau/taubeast.img",
+    "canvas": [750, 750],
+    "frame_count": 32
+  },
+  "px_to_cm": 1.7615,
+  "anchor_convention": {
+    "kind": "per_frame_negated_position",
+    "formula": "anchor_canvas_px = (-position[0], -position[1]) of the same frame",
+    "basis": "taubeast body frames share position [-320,-500] => anchor at canvas (320,500), ground contact (position-space bottom of the sprite) ~+20 px below the anchor; overturn shifts position to [-320,-228] like the goblin's flipped-on-back frame. Same per-frame anchor convention as goblinthrower (see its config basis); charge/warning effect frames likewise carry their own positions [-164,-343]/[-164,-327]/[-40,-32].",
+    "evidence": "verify monster_taubeast.json animations[*].frames[*].position; behavior_mapping 'charge1/charge2/fullcharge1 contain zero body frames - they are pure effect overlays'"
+  },
+  "actions": [
+    { "action_id": "attack_0", "ani_key": "script/monster/mdnf_scenario/renewal_monster/granflawless/taubeast/animation/attack_0.ani", "group": "attack", "verify_name": "attack_0" },
+    { "action_id": "charge1", "ani_key": "script/monster/mdnf_scenario/renewal_monster/granflawless/taubeast/animation/charge1.ani", "group": "attack_effect", "verify_name": "charge1" },
+    { "action_id": "charge2", "ani_key": "script/monster/mdnf_scenario/renewal_monster/granflawless/taubeast/animation/charge2.ani", "group": "attack_effect", "verify_name": "charge2" },
+    { "action_id": "damage_0", "ani_key": "script/monster/mdnf_scenario/renewal_monster/granflawless/taubeast/animation/damage_0.ani", "group": "damage", "verify_name": "damage_0" },
+    { "action_id": "damage_1", "ani_key": "script/monster/mdnf_scenario/renewal_monster/granflawless/taubeast/animation/damage_1.ani", "group": "damage", "verify_name": "damage_1" },
+    { "action_id": "down", "ani_key": "script/monster/mdnf_scenario/renewal_monster/granflawless/taubeast/animation/down.ani", "group": "down", "verify_name": "down" },
+    { "action_id": "fullcharge1", "ani_key": "script/monster/mdnf_scenario/renewal_monster/granflawless/taubeast/animation/fullcharge1.ani", "group": "attack_effect", "verify_name": "fullcharge1" },
+    { "action_id": "move", "ani_key": "script/monster/mdnf_scenario/renewal_monster/granflawless/taubeast/animation/move.ani", "group": "move", "verify_name": "move" },
+    { "action_id": "overturn", "ani_key": "script/monster/mdnf_scenario/renewal_monster/granflawless/taubeast/animation/overturn.ani", "group": "down", "verify_name": "overturn" },
+    { "action_id": "roar", "ani_key": "script/monster/mdnf_scenario/renewal_monster/granflawless/taubeast/animation/roar.ani", "group": "idle", "verify_name": "roar" },
+    { "action_id": "sit", "ani_key": "script/monster/mdnf_scenario/renewal_monster/granflawless/taubeast/animation/sit.ani", "group": "idle", "verify_name": "sit" },
+    { "action_id": "stay", "ani_key": "script/monster/mdnf_scenario/renewal_monster/granflawless/taubeast/animation/stay.ani", "group": "idle", "verify_name": "stay" },
+    { "action_id": "warning", "ani_key": "script/monster/mdnf_scenario/renewal_monster/granflawless/taubeast/animation/warning.ani", "group": "telegraph", "verify_name": "warning" }
+  ],
+  "expected": {
+    "frame_records_total": 88,
+    "direct_frames": 82,
+    "no_draw_frames": 6
+  },
+  "previews": [
+    "attack_0", "charge1", "charge2", "damage_0", "damage_1", "down", "fullcharge1", "move", "overturn", "roar", "sit", "stay", "warning"
+  ],
+  "notes": [
+    "13 actions x 88 frame records = 82 direct image frames (37 body taubeast.img + 45 effect overlays) + 6 no-image logic frames (charge1 f0/f12, charge2 f0/f12, fullcharge1 f0/f6)",
+    "6 no-draw frames: M8-008 unresolved_frames classifies them non_drawing_logic_frame (pure timing; delay 140/60/600/40 ms); manifest entries carry draw_frame=false + reason/evidence and occupy no page",
+    "effect overlays are source data (swordman/mage effect imgs reused by the boss, verify external_deps): charge1/2 GrandWaveOnCharge#0-10/#13-23 at scale 2.0, fullcharge1 GrandWaveFullCharge#0-4 at scale 2.0, warning Warning02#0-8 x2 at scale 1.7 + color_rgba [255,0,0,255] (red tint baked in); their sorting_layer=5 sits below the body layer 10 - recorded per action for runtime draw order",
+    "single layer, no outfit layers; feet-origin pivot per M8-016 schema; px_to_cm 1.7615 same scale convention as characters, body source pixels unscaled (体型差异按源像素呈现)"
+  ]
+}

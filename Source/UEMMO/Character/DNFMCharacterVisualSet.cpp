@@ -308,6 +308,17 @@ bool UDNFMCharacterVisualSet::ParseManifestInto(const FString& ManifestJson,
                 OutError = DescribeExpected(FrameWhere, TEXT("duration_ms must be a positive integer"));
                 return false;
             }
+            // M8-018: a no-draw logic frame keeps its timeline duration but
+            // carries no pixels (page/uv/pivot absent in the manifest); the
+            // display holds the previous drawn pose for the duration.
+            Row.bDrawFrame = true;
+            if (Frame->HasField(TEXT("draw_frame")))
+            {
+                const TSharedPtr<FJsonValue> DrawValue = Frame->GetFieldUntyped(TEXT("draw_frame"));
+                Row.bDrawFrame = DrawValue.IsValid() && DrawValue->AsBool();
+            }
+            if (Row.bDrawFrame)
+            {
             if (!ReadInt(Frame, TEXT("page"), Row.PageIndex) || !OutSet.PageSizesPx.IsValidIndex(Row.PageIndex))
             {
                 OutError = DescribeExpected(FrameWhere, TEXT("page must index the manifest pages array"));
@@ -348,6 +359,7 @@ bool UDNFMCharacterVisualSet::ParseManifestInto(const FString& ManifestJson,
                 OutError = DescribeExpected(FrameWhere, TEXT("pivot_px must be [px, py] integers"));
                 return false;
             }
+            } // end draw-frame pixel block (M8-018 no-draw frames skip it)
             ReadString(Frame, TEXT("source_sha256"), Row.SourceSha256);
 
             const TSharedPtr<FJsonValue> EventsValue = Frame->GetFieldUntyped(TEXT("events"));

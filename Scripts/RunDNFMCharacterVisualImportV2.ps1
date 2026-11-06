@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('swordman','gunner')][string]$Role,
+    [ValidateSet('swordman','gunner','goblinthrower','taubeast')][string]$Role,
     [ValidateSet('import','verify')][string]$Mode='import'
 )
 . "$PSScriptRoot\Common.ps1"

@@ -1,0 +1,47 @@
+{
+  "monster": "goblinthrower",
+  "task": "M8-018",
+  "verify_json": "Data/DNFMReplica/verify/monster_goblinthrower.json",
+  "body": {
+    "atlas_name": "body0",
+    "image_path": "monster/goblin/body0.img",
+    "canvas": [200, 200],
+    "frame_count": 17
+  },
+  "px_to_cm": 1.7615,
+  "anchor_convention": {
+    "kind": "per_frame_negated_position",
+    "formula": "anchor_canvas_px = (-position[0], -position[1]) of the same frame",
+    "basis": "goblin body frames share position [-91,-152] => anchor at canvas (91,152), ground contact (position-space bottom of the sprite) +2..+25 px below the anchor across all untransformed body frames; the overturn frame shifts position to [-95,-97]. A fixed canvas anchor would place the 179.91-deg flipped body 127 px below the anchor (buried); the per-frame anchor keeps the overturned lying pose at +17 px, inside the standing range. Monster frames therefore carry a genuine per-frame anchor, unlike the characters' single fitted canvas anchor.",
+    "evidence": "verify monster_goblinthrower.json animations[*].frames[*].position; overturn note 'anchor shifted to [-95,-97] (flipped-on-back variant of body0#5)'"
+  },
+  "actions": [
+    { "action_id": "attack_0", "ani_key": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/animation/attack_0.ani", "group": "attack", "verify_name": "attack_0" },
+    { "action_id": "damage_0", "ani_key": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/animation/damage_0.ani", "group": "damage", "verify_name": "damage_0" },
+    { "action_id": "damage_1", "ani_key": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/animation/damage_1.ani", "group": "damage", "verify_name": "damage_1" },
+    { "action_id": "down", "ani_key": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/animation/down.ani", "group": "down", "verify_name": "down" },
+    { "action_id": "move", "ani_key": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/animation/move.ani", "group": "move", "verify_name": "move" },
+    { "action_id": "overturn", "ani_key": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/animation/overturn.ani", "group": "down", "verify_name": "overturn" },
+    { "action_id": "sit", "ani_key": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/animation/sit.ani", "group": "idle", "verify_name": "sit" },
+    { "action_id": "stay", "ani_key": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/animation/stay.ani", "group": "idle", "verify_name": "stay" }
+  ],
+  "expected": {
+    "frame_records_total": 21,
+    "direct_frames": 21,
+    "no_draw_frames": 0
+  },
+  "excluded_sources": [
+    {
+      "subject": "passiveobject .../goblinthrower/throwstone/2009020408_throwstone.obj + throwstone.ani (Monster/Goblin/PassiveObject/ThrowStone.img, 4-frame looped flight)",
+      "reason": "投掷物属 P05 投射物资源（任务卡 M8-018：投掷物帧不入怪物图集）；attack_0 .ani 帧本身无 create_objects/ani_tag，与 .obj 的联动按家族布局推断（verify gaps），不影响怪物本体图集"
+    }
+  ],
+  "previews": [
+    "attack_0", "damage_0", "damage_1", "down", "move", "overturn", "sit", "stay"
+  ],
+  "notes": [
+    "8 actions x 21 direct frames, all from body0 (atlas_id 4661, canvas 200x200, 17 distinct frames); anchor_dir/position [-91,-152] on 20 frames, overturn [-95,-97] + rotation 179.91",
+    "death chain: no dedicated die.ani - down/overturn reuse is the source structure (verify death_chain)",
+    "single layer, no outfit layers; feet-origin pivot per M8-016 schema; px_to_cm 1.7615 same scale convention as characters, source pixels unscaled"
+  ]
+}
