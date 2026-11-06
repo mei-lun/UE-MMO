@@ -1,0 +1,3201 @@
+{
+  "assertions": [
+    {
+      "action": "Stand on a monster spawn, press S then W.",
+      "expect": "S moves the character down-screen toward the viewer with UE Y increasing (dY > 0); W moves up-screen with Y decreasing (dY < 0); dX = 0 for both.",
+      "id": "A1",
+      "kind": "axis_mapping_depth_keys",
+      "numeric": {
+        "s_key_delta_y_cm": "+",
+        "w_key_delta_y_cm": "-"
+      },
+      "rejects": "scene y-down -> -Y mapping"
+    },
+    {
+      "action": "Compare fighter height with one ground tile width.",
+      "expect": "tile width 224 px = 394.576 cm ~= 2.055 x fighter 192 cm; ground strip 896 px = 1578.304 cm = 4 tiles.",
+      "id": "A2",
+      "kind": "scale_reference",
+      "numeric": {
+        "ground_strip_cm": 1578.304,
+        "tile_width_cm": 394.576
+      }
+    },
+    {
+      "action": "Walk the walkable band; watch the capsule bottom.",
+      "expect": "Capsule bottom rests at Z=0 across the band; ground texture is a camera-facing/depth projection, no steps. Floor line (primary reading) at Y=211.38 cm; tile band Y in [70.46, 1127.36] cm.",
+      "id": "A3",
+      "kind": "ground_plane",
+      "numeric": {
+        "floor_line_y_cm_primary": 211.38,
+        "floor_z_cm": 0.0,
+        "tile_band_y_cm_primary": [
+          70.46,
+          1127.36
+        ]
+      }
+    },
+    {
+      "action": "From monster spawn 3 (px 622,260 -> world 1095.653, 457.99, 0) walk W (-Y) and S (+Y) under the PRIMARY reading (tile top 40, rows from top).",
+      "expect_hypothesis_A": "movement blocked near Y=422.76 cm (row 10 boundary); S to Y<=1127.36 cm allowed.",
+      "expect_hypothesis_B": "spawn area itself blocked (row 11 = value 0 = wall); walkable only Y in [70.46, 422.76) cm.",
+      "id": "A4",
+      "kind": "walkability_hypothesis_adjudication",
+      "numeric": {
+        "hypothesis_A_walkable_y_cm": [
+          422.76,
+          1127.36
+        ],
+        "hypothesis_B_walkable_y_cm": [
+          70.46,
+          422.76
+        ]
+      }
+    },
+    {
+      "action": "Check whether each of the 4 monster + 4 rival spawn points is standable (primary reading, rows from top).",
+      "expect": "hypothesis A: exactly 2 of 8 standable (monsters at px y=260,261); hypothesis B: exactly 6 of 8 standable (both y=201 monsters + all rivals).",
+      "id": "A5",
+      "kind": "spawn_standability",
+      "numeric": {
+        "hypothesis_A_standable": 2,
+        "hypothesis_B_standable": 6
+      }
+    },
+    {
+      "action": "Walk A/D to the map edges from any walkable cell.",
+      "expect": "movement stops at X<0 and X>=1578.304 cm (tile ground ends; x<0 / x>896 px content is backdrop/fog, not floor).",
+      "id": "A6",
+      "kind": "x_bounds",
+      "numeric": {
+        "max_x_cm": 1578.304,
+        "min_x_cm": 0.0
+      }
+    },
+    {
+      "action": "Compare the character's feet with the ground texture at a spawn point.",
+      "expect": "if feet meet the ground texture at floor line Y=211.38 cm the primary reading (P, tile top y=40) holds; if the texture is 140.92 cm (80 px) off, the preview-generator reading (Q, tile top y=-40, floor line Y=70.46) holds.",
+      "id": "A7",
+      "kind": "tile_reading_adjudication",
+      "numeric": {
+        "delta_cm": 140.92,
+        "floor_line_y_cm_P": 211.38,
+        "floor_line_y_cm_Q": 70.46
+      }
+    },
+    {
+      "action": "Count standable spawn points per reading/row-order (see walkability_hypotheses[].variants[].spawn_points_standable_of_8).",
+      "expect": "3 of 4 reading x row-order combos put ALL 8 spawn points in value-0 cells (A walkable); only P+top splits them (monsters 2/0, rivals 2). A map where nothing is walkable (B outside P+top) is implausible.",
+      "id": "A8",
+      "kind": "variant_cross_check",
+      "numeric": {
+        "P_bottom": {
+          "A": 8,
+          "B": 0
+        },
+        "P_top": {
+          "A": 2,
+          "B": 6
+        },
+        "Q_bottom": {
+          "A": 8,
+          "B": 0
+        },
+        "Q_top": {
+          "A": 8,
+          "B": 0
+        }
+      }
+    }
+  ],
+  "axis_mapping": {
+    "corollary": "scene y-down maps to +Y, NOT -Y: mapping it to -Y would invert the W/S depth keys relative to the camera side and flip which end of the ground band is near the viewer.",
+    "decision_evidence": [
+      "Source/UEMMO/Character/SideViewCameraComponent.h:101-102,158-168 - fixed rig yaw=-90 pitch=-18; yaw -90 => camera forward=(0,-1,0), camera right=+X, spring arm puts the camera on the +Y side looking toward -Y, so larger world Y is nearer the viewer and lower on the ground plane.",
+      "Source/UEMMO/Character/PlanarMovement.h:6-7,18-19,41-52 - axis convention X horizontal / Y depth / Z vertical; AxisY 'S positive, W negative'; ComputePlanarVelocity returns FVector(AxisX, AxisY, 0).",
+      "Source/UEMMO/PrototypeCharacter.cpp:185-193 - the planar vector is fed to AddMovementInput as a world-space direction, so S drives world +Y.",
+      "Source/UEMMO/Character/DNFMCharacterVisualComponent.cpp:39-51,470-476,500-514 - canvas x -> camera Right * Facing, canvas y-down -> -Up (image up = world up); camera basis from the fixed rig (EAxis::Y right, EAxis::Z up); yaw 0 faces right. Screen vertical belongs to Z/Up, depth to Y.",
+      "DNFM preview projection canvasY = mapY - mapZ (render_dnf_map_preview.py:56): larger z draws higher on screen => z is up-positive elevation."
+    ],
+    "mirror": "none for map placement (facing mirror is sprite-only)",
+    "scene_x_right_to": "UE +X",
+    "scene_y_down_to": "UE +Y",
+    "scene_z_to": "UE +Z"
+  },
+  "evidence": [
+    {
+      "claim": "scale s=1.7615 cm/px (exact 192/109=1.761468)",
+      "refs": [
+        "Docs/Tasks/Reports/M6-022.md:23 (109px/192cm/s=1.761468)",
+        "Source/UEMMO/PrototypeCharacter.cpp:2529-2533 (SetWorldScaleFromStandingHeight)"
+      ]
+    },
+    {
+      "claim": "camera fixed rig yaw=-90 pitch=-18; camera right=+X; camera on +Y side",
+      "refs": [
+        "Source/UEMMO/Character/SideViewCameraComponent.h:101-102",
+        "Source/UEMMO/Character/SideViewCameraComponent.h:158-168"
+      ]
+    },
+    {
+      "claim": "depth input S->+Y, W->-Y, applied as world XY direction",
+      "refs": [
+        "Source/UEMMO/Character/PlanarMovement.h:18-19",
+        "Source/UEMMO/Character/PlanarMovement.h:41-52",
+        "Source/UEMMO/PrototypeCharacter.cpp:185-193"
+      ]
+    },
+    {
+      "claim": "canvas x -> Right*Facing, canvas y-down -> -Up, single mirror, foot anchor",
+      "refs": [
+        "Source/UEMMO/Character/DNFMCharacterVisualComponent.cpp:39-51",
+        "Source/UEMMO/Character/DNFMCharacterVisualComponent.cpp:470-476",
+        "Source/UEMMO/Character/DNFMCharacterVisualComponent.cpp:500-514"
+      ]
+    },
+    {
+      "claim": "tile placement native formula + origin unrecovered",
+      "refs": [
+        "Data/DNFMReplica/verify/map_bamboo.json:813 (tile_native_placement)",
+        "D:/Github-Poj/DNFM/DNFM_export_130.5.8.0/tools/render_dnf_map_preview.py:77 (tile_placement_evidence, method 242386)"
+      ]
+    },
+    {
+      "claim": "generator code places tiles at y=80-floorHeight (= -40), objects at y-z",
+      "refs": [
+        "D:/Github-Poj/DNFM/DNFM_export_130.5.8.0/tools/render_dnf_map_preview.py:33",
+        "D:/Github-Poj/DNFM/DNFM_export_130.5.8.0/tools/render_dnf_map_preview.py:56",
+        "Artifacts/Tasks/M8-005/2026-11-07T0030+0800/scripts/q6_compose_layers.py:40"
+      ]
+    },
+    {
+      "claim": "official preview bounds [-239,-284,2842,560] imply tiles at canvas y [-40,560]",
+      "refs": [
+        "restored/maps/previews/map_013_00595.json (bounds; tile bottom -40+600=560)"
+      ]
+    },
+    {
+      "claim": "task-card reading tile top y=40, tile canvas [40,640]",
+      "refs": [
+        "Data/DNFMReplica/verify/map_bamboo.json:1308 (ground_strip_y_top_pixels=40)",
+        "Data/DNFMReplica/verify/map_bamboo.json:1309-1313 (tile_canvas_y_range_inferred)"
+      ]
+    },
+    {
+      "claim": "passage grid 30x14, rows 0-9=2, rows 10-29=0, both tiles identical",
+      "refs": [
+        "Data/DNFMReplica/verify/map_bamboo.json:3668-3681 (tile_passage_grid_field)",
+        "Artifacts/Tasks/M8-005/2026-11-07T0030+0800/db_queries/q4_grids.json (both 30x14 grids verified)"
+      ]
+    },
+    {
+      "claim": "ground strip x [0,896] px, tile PNG 224x600, floor_height=120",
+      "refs": [
+        "Data/DNFMReplica/verify/map_bamboo.json:1304-1315 (ground)",
+        "Data/DNFMReplica/verify/map_bamboo.json:3469-3589 (tile_layers)"
+      ]
+    }
+  ],
+  "generated_at": "2026-11-07T02:33:09+08:00",
+  "ground_band": {
+    "cell_size": {
+      "h_cm": 35.23,
+      "h_px": 20,
+      "status": "geometric inference 224/14, 600/30; not native (gap G2)",
+      "w_cm": 28.184,
+      "w_px": 16
+    },
+    "floor_line": {
+      "preview_variant": {
+        "variant": "Q",
+        "world_cm": {
+          "x": 0.0,
+          "y": 70.46,
+          "z": 0.0
+        },
+        "y_px": 40
+      },
+      "primary": {
+        "variant": "P",
+        "world_cm": {
+          "x": 0.0,
+          "y": 211.38,
+          "z": 0.0
+        },
+        "y_px": 120
+      }
+    },
+    "floor_z_cm": 0.0,
+    "preview_variant": {
+      "px": {
+        "x": [
+          0,
+          896
+        ],
+        "y": [
+          -40,
+          560
+        ]
+      },
+      "tile_top_y_px": -40,
+      "variant": "Q",
+      "world_cm": {
+        "x": [
+          0.0,
+          1578.304
+        ],
+        "y": [
+          -70.46,
+          986.44
+        ],
+        "z": [
+          0.0,
+          0.0
+        ]
+      }
+    },
+    "primary": {
+      "px": {
+        "x": [
+          0,
+          896
+        ],
+        "y": [
+          40,
+          640
+        ]
+      },
+      "tile_top_y_px": 40,
+      "variant": "P",
+      "world_cm": {
+        "x": [
+          0.0,
+          1578.304
+        ],
+        "y": [
+          70.46,
+          1127.36
+        ],
+        "z": [
+          0.0,
+          0.0
+        ]
+      }
+    },
+    "tile_placement_formula": {
+      "native_evidence": "x=224*index+originX; unityY=floorHeight-80-originY (MapViewManager.LoadBaseTile method 242386)",
+      "origin": [
+        0,
+        0
+      ],
+      "origin_status": "controller origin unrecovered (gap G5); offline preview used (0,0)",
+      "preview_variant_tile_tops_px": [
+        -40,
+        -40,
+        -40,
+        -40
+      ],
+      "primary_tile_tops_px": [
+        40,
+        40,
+        40,
+        40
+      ]
+    },
+    "z_derivation": "The tile's 600 px image height is projected depth-face (canvas y), not UE height: the preview projects canvasY = y - z, monsters and interactables sit at z=0 across y=201..261 with no vertical spread, and the walk plane is flat. Walk plane Z = 0 cm; scene z (all 0 in this map) maps to UE Z = s * z. Tile band world Y span [70.46, 1127.36] cm (primary reading); floor line Y = 211.38 cm."
+  },
+  "inputs": {
+    "maps_hash": "6816aad6b6cd4ced",
+    "scene_json": "Data/DNFMReplica/verify/map_bamboo.json",
+    "scene_payload_sha256": "8631fdb066ba0158f4b05b6b44b36634770a6174040e2fcf91a5ade3fe93934c",
+    "task_card": "Docs/Tasks/M8-010.md"
+  },
+  "object_world_predictions": [
+    {
+      "anchor_px": {
+        "x": 106,
+        "y": -64,
+        "z": 0
+      },
+      "draw_layer": 1,
+      "foot_px": {
+        "x": 76.0,
+        "y": 116
+      },
+      "frame_size_px": {
+        "h": 355,
+        "w": 630
+      },
+      "frame_top_left_px": {
+        "x": -239,
+        "y": -239
+      },
+      "index": 0,
+      "layer_group": "backdrop",
+      "recorded_bottom_y": 116,
+      "script_block": 591,
+      "world_anchor_cm": {
+        "x": 186.719,
+        "y": -112.736,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 133.874,
+        "y": 204.334,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 736,
+        "y": -64,
+        "z": 0
+      },
+      "draw_layer": 1,
+      "foot_px": {
+        "x": 706.0,
+        "y": 116
+      },
+      "frame_size_px": {
+        "h": 355,
+        "w": 630
+      },
+      "frame_top_left_px": {
+        "x": 391,
+        "y": -239
+      },
+      "index": 1,
+      "layer_group": "backdrop",
+      "recorded_bottom_y": 116,
+      "script_block": 591,
+      "world_anchor_cm": {
+        "x": 1296.464,
+        "y": -112.736,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 1243.619,
+        "y": 204.334,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 1366,
+        "y": -64,
+        "z": 0
+      },
+      "draw_layer": 1,
+      "foot_px": {
+        "x": 1336.0,
+        "y": 116
+      },
+      "frame_size_px": {
+        "h": 355,
+        "w": 630
+      },
+      "frame_top_left_px": {
+        "x": 1021,
+        "y": -239
+      },
+      "index": 2,
+      "layer_group": "backdrop",
+      "recorded_bottom_y": 116,
+      "script_block": 591,
+      "world_anchor_cm": {
+        "x": 2406.209,
+        "y": -112.736,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 2353.364,
+        "y": 204.334,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 160,
+        "y": -31,
+        "z": 0
+      },
+      "draw_layer": 2,
+      "foot_px": {
+        "x": 160.0,
+        "y": 157
+      },
+      "frame_size_px": {
+        "h": 441,
+        "w": 440
+      },
+      "frame_top_left_px": {
+        "x": -60,
+        "y": -284
+      },
+      "index": 3,
+      "layer_group": "backdrop",
+      "recorded_bottom_y": 157,
+      "script_block": 581,
+      "world_anchor_cm": {
+        "x": 281.84,
+        "y": -54.6065,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 281.84,
+        "y": 276.5555,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 913,
+        "y": -11,
+        "z": 0
+      },
+      "draw_layer": 2,
+      "foot_px": {
+        "x": 913.0,
+        "y": 177
+      },
+      "frame_size_px": {
+        "h": 441,
+        "w": 440
+      },
+      "frame_top_left_px": {
+        "x": 693,
+        "y": -264
+      },
+      "index": 4,
+      "layer_group": "backdrop",
+      "recorded_bottom_y": 177,
+      "script_block": 581,
+      "world_anchor_cm": {
+        "x": 1608.2495,
+        "y": -19.3765,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 1608.2495,
+        "y": 311.7855,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 406,
+        "y": 12,
+        "z": 0
+      },
+      "draw_layer": 2,
+      "foot_px": {
+        "x": 385.5,
+        "y": 151
+      },
+      "frame_size_px": {
+        "h": 392,
+        "w": 399
+      },
+      "frame_top_left_px": {
+        "x": 186,
+        "y": -241
+      },
+      "index": 5,
+      "layer_group": "backdrop",
+      "recorded_bottom_y": 151,
+      "script_block": 582,
+      "world_anchor_cm": {
+        "x": 715.169,
+        "y": 21.138,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 679.05825,
+        "y": 265.9865,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 541,
+        "y": -10,
+        "z": 0
+      },
+      "draw_layer": 4,
+      "foot_px": {
+        "x": 465.0,
+        "y": 155
+      },
+      "frame_size_px": {
+        "h": 418,
+        "w": 288
+      },
+      "frame_top_left_px": {
+        "x": 321,
+        "y": -263
+      },
+      "index": 6,
+      "layer_group": "backdrop",
+      "recorded_bottom_y": 155,
+      "script_block": 583,
+      "world_anchor_cm": {
+        "x": 952.9715,
+        "y": -17.615,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 819.0975,
+        "y": 273.0325,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 832,
+        "y": 98,
+        "z": 0
+      },
+      "draw_layer": 6,
+      "foot_px": {
+        "x": 828.5,
+        "y": 129
+      },
+      "frame_size_px": {
+        "h": 166,
+        "w": 223
+      },
+      "frame_top_left_px": {
+        "x": 717,
+        "y": -37
+      },
+      "index": 7,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 129,
+      "script_block": 584,
+      "world_anchor_cm": {
+        "x": 1465.568,
+        "y": 172.627,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 1459.40275,
+        "y": 227.2335,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 50,
+        "y": 103,
+        "z": 0
+      },
+      "draw_layer": 6,
+      "foot_px": {
+        "x": 59.5,
+        "y": 126
+      },
+      "frame_size_px": {
+        "h": 133,
+        "w": 189
+      },
+      "frame_top_left_px": {
+        "x": -35,
+        "y": -7
+      },
+      "index": 8,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 126,
+      "script_block": 585,
+      "world_anchor_cm": {
+        "x": 88.075,
+        "y": 181.4345,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 104.80925,
+        "y": 221.949,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 180,
+        "y": 92,
+        "z": 0
+      },
+      "draw_layer": 6,
+      "foot_px": {
+        "x": 173.5,
+        "y": 104
+      },
+      "frame_size_px": {
+        "h": 27,
+        "w": 37
+      },
+      "frame_top_left_px": {
+        "x": 155,
+        "y": 77
+      },
+      "index": 9,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 104,
+      "script_block": 594,
+      "world_anchor_cm": {
+        "x": 317.07,
+        "y": 162.058,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 305.62025,
+        "y": 183.196,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 722,
+        "y": 87,
+        "z": 0
+      },
+      "draw_layer": 6,
+      "foot_px": {
+        "x": 715.5,
+        "y": 99
+      },
+      "frame_size_px": {
+        "h": 27,
+        "w": 37
+      },
+      "frame_top_left_px": {
+        "x": 697,
+        "y": 72
+      },
+      "index": 10,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 99,
+      "script_block": 594,
+      "world_anchor_cm": {
+        "x": 1271.803,
+        "y": 153.2505,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 1260.35325,
+        "y": 174.3885,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 252,
+        "y": 98,
+        "z": 0
+      },
+      "draw_layer": 6,
+      "foot_px": {
+        "x": 245.5,
+        "y": 110
+      },
+      "frame_size_px": {
+        "h": 27,
+        "w": 37
+      },
+      "frame_top_left_px": {
+        "x": 227,
+        "y": 83
+      },
+      "index": 11,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 110,
+      "script_block": 594,
+      "world_anchor_cm": {
+        "x": 443.898,
+        "y": 172.627,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 432.44825,
+        "y": 193.765,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 124,
+        "y": 99,
+        "z": 0
+      },
+      "draw_layer": 6,
+      "foot_px": {
+        "x": 125.5,
+        "y": 111
+      },
+      "frame_size_px": {
+        "h": 82,
+        "w": 63
+      },
+      "frame_top_left_px": {
+        "x": 94,
+        "y": 29
+      },
+      "index": 12,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 111,
+      "script_block": 586,
+      "world_anchor_cm": {
+        "x": 218.426,
+        "y": 174.3885,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 221.06825,
+        "y": 195.5265,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 424,
+        "y": 109,
+        "z": 0
+      },
+      "draw_layer": 6,
+      "foot_px": {
+        "x": 425.5,
+        "y": 121
+      },
+      "frame_size_px": {
+        "h": 82,
+        "w": 63
+      },
+      "frame_top_left_px": {
+        "x": 394,
+        "y": 39
+      },
+      "index": 13,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 121,
+      "script_block": 586,
+      "world_anchor_cm": {
+        "x": 746.876,
+        "y": 192.0035,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 749.51825,
+        "y": 213.1415,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 260,
+        "y": 104,
+        "z": 0
+      },
+      "draw_layer": 5,
+      "foot_px": {
+        "x": 259.5,
+        "y": 160
+      },
+      "frame_size_px": {
+        "h": 106,
+        "w": 399
+      },
+      "frame_top_left_px": {
+        "x": 60,
+        "y": 54
+      },
+      "index": 14,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 160,
+      "script_block": 587,
+      "world_anchor_cm": {
+        "x": 457.99,
+        "y": 183.196,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 457.10925,
+        "y": 281.84,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 572,
+        "y": 367,
+        "z": 0
+      },
+      "draw_layer": 5,
+      "foot_px": {
+        "x": 587.0,
+        "y": 417
+      },
+      "frame_size_px": {
+        "h": 95,
+        "w": 280
+      },
+      "frame_top_left_px": {
+        "x": 447,
+        "y": 322
+      },
+      "index": 15,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 417,
+      "script_block": 588,
+      "world_anchor_cm": {
+        "x": 1007.578,
+        "y": 646.4705,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 1034.0005,
+        "y": 734.5455,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 621,
+        "y": 303,
+        "z": 0
+      },
+      "draw_layer": 5,
+      "foot_px": {
+        "x": 636.0,
+        "y": 339
+      },
+      "frame_size_px": {
+        "h": 66,
+        "w": 160
+      },
+      "frame_top_left_px": {
+        "x": 556,
+        "y": 273
+      },
+      "index": 16,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 339,
+      "script_block": 589,
+      "world_anchor_cm": {
+        "x": 1093.8915,
+        "y": 533.7345,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 1120.314,
+        "y": 597.1485,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 312,
+        "y": 311,
+        "z": 0
+      },
+      "draw_layer": 5,
+      "foot_px": {
+        "x": 327.0,
+        "y": 347
+      },
+      "frame_size_px": {
+        "h": 66,
+        "w": 160
+      },
+      "frame_top_left_px": {
+        "x": 247,
+        "y": 281
+      },
+      "index": 17,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 347,
+      "script_block": 589,
+      "world_anchor_cm": {
+        "x": 549.588,
+        "y": 547.8265,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 576.0105,
+        "y": 611.2405,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 449,
+        "y": 202,
+        "z": 0
+      },
+      "draw_layer": 6,
+      "foot_px": {
+        "x": 442.5,
+        "y": 214
+      },
+      "frame_size_px": {
+        "h": 27,
+        "w": 37
+      },
+      "frame_top_left_px": {
+        "x": 424,
+        "y": 187
+      },
+      "index": 18,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 214,
+      "script_block": 594,
+      "world_anchor_cm": {
+        "x": 790.9135,
+        "y": 355.823,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 779.46375,
+        "y": 376.961,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 68,
+        "y": 341,
+        "z": 0
+      },
+      "draw_layer": 5,
+      "foot_px": {
+        "x": 67.5,
+        "y": 397
+      },
+      "frame_size_px": {
+        "h": 106,
+        "w": 399
+      },
+      "frame_top_left_px": {
+        "x": -132,
+        "y": 291
+      },
+      "index": 19,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 397,
+      "script_block": 587,
+      "world_anchor_cm": {
+        "x": 119.782,
+        "y": 600.6715,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 118.90125,
+        "y": 699.3155,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 871,
+        "y": 369,
+        "z": 0
+      },
+      "draw_layer": 7,
+      "foot_px": {
+        "x": 867.5,
+        "y": 400
+      },
+      "frame_size_px": {
+        "h": 166,
+        "w": 223
+      },
+      "frame_top_left_px": {
+        "x": 756,
+        "y": 234
+      },
+      "index": 20,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 400,
+      "script_block": 584,
+      "world_anchor_cm": {
+        "x": 1534.2665,
+        "y": 649.9935,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 1528.10125,
+        "y": 704.6,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 456,
+        "y": 386,
+        "z": 0
+      },
+      "draw_layer": 7,
+      "foot_px": {
+        "x": 465.5,
+        "y": 409
+      },
+      "frame_size_px": {
+        "h": 133,
+        "w": 189
+      },
+      "frame_top_left_px": {
+        "x": 371,
+        "y": 276
+      },
+      "index": 21,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 409,
+      "script_block": 585,
+      "world_anchor_cm": {
+        "x": 803.244,
+        "y": 679.939,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 819.97825,
+        "y": 720.4535,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 75,
+        "y": 396,
+        "z": 0
+      },
+      "draw_layer": 7,
+      "foot_px": {
+        "x": 71.5,
+        "y": 427
+      },
+      "frame_size_px": {
+        "h": 166,
+        "w": 223
+      },
+      "frame_top_left_px": {
+        "x": -40,
+        "y": 261
+      },
+      "index": 22,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 427,
+      "script_block": 584,
+      "world_anchor_cm": {
+        "x": 132.1125,
+        "y": 697.554,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 125.94725,
+        "y": 752.1605,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 4,
+        "y": 353,
+        "z": 0
+      },
+      "draw_layer": 6,
+      "foot_px": {
+        "x": 13.5,
+        "y": 376
+      },
+      "frame_size_px": {
+        "h": 133,
+        "w": 189
+      },
+      "frame_top_left_px": {
+        "x": -81,
+        "y": 243
+      },
+      "index": 23,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 376,
+      "script_block": 585,
+      "world_anchor_cm": {
+        "x": 7.046,
+        "y": 621.8095,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 23.78025,
+        "y": 662.324,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 126,
+        "y": 163,
+        "z": 0
+      },
+      "draw_layer": 5,
+      "foot_px": {
+        "x": 141.0,
+        "y": 213
+      },
+      "frame_size_px": {
+        "h": 95,
+        "w": 280
+      },
+      "frame_top_left_px": {
+        "x": 1,
+        "y": 118
+      },
+      "index": 24,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 213,
+      "script_block": 588,
+      "world_anchor_cm": {
+        "x": 221.949,
+        "y": 287.1245,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 248.3715,
+        "y": 375.1995,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 194,
+        "y": -51,
+        "z": 0
+      },
+      "draw_layer": 2,
+      "foot_px": {
+        "x": 133.0,
+        "y": 149
+      },
+      "frame_size_px": {
+        "h": 375,
+        "w": 568
+      },
+      "frame_top_left_px": {
+        "x": -151,
+        "y": -226
+      },
+      "index": 25,
+      "layer_group": "backdrop",
+      "recorded_bottom_y": 149,
+      "script_block": 593,
+      "world_anchor_cm": {
+        "x": 341.731,
+        "y": -89.8365,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 234.2795,
+        "y": 262.4635,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 888,
+        "y": 180,
+        "z": 0
+      },
+      "draw_layer": 5,
+      "foot_px": {
+        "x": 903.0,
+        "y": 230
+      },
+      "frame_size_px": {
+        "h": 95,
+        "w": 280
+      },
+      "frame_top_left_px": {
+        "x": 763,
+        "y": 135
+      },
+      "index": 26,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 230,
+      "script_block": 588,
+      "world_anchor_cm": {
+        "x": 1564.212,
+        "y": 317.07,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 1590.6345,
+        "y": 405.145,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 793,
+        "y": 255,
+        "z": 0
+      },
+      "draw_layer": 5,
+      "foot_px": {
+        "x": 808.0,
+        "y": 291
+      },
+      "frame_size_px": {
+        "h": 66,
+        "w": 160
+      },
+      "frame_top_left_px": {
+        "x": 728,
+        "y": 225
+      },
+      "index": 27,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 291,
+      "script_block": 589,
+      "world_anchor_cm": {
+        "x": 1396.8695,
+        "y": 449.1825,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 1423.292,
+        "y": 512.5965,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 891,
+        "y": 239,
+        "z": 0
+      },
+      "draw_layer": 5,
+      "foot_px": {
+        "x": 906.0,
+        "y": 275
+      },
+      "frame_size_px": {
+        "h": 66,
+        "w": 160
+      },
+      "frame_top_left_px": {
+        "x": 826,
+        "y": 209
+      },
+      "index": 28,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 275,
+      "script_block": 589,
+      "world_anchor_cm": {
+        "x": 1569.4965,
+        "y": 420.9985,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 1595.919,
+        "y": 484.4125,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 874,
+        "y": 300,
+        "z": 0
+      },
+      "draw_layer": 5,
+      "foot_px": {
+        "x": 889.0,
+        "y": 336
+      },
+      "frame_size_px": {
+        "h": 66,
+        "w": 160
+      },
+      "frame_top_left_px": {
+        "x": 809,
+        "y": 270
+      },
+      "index": 29,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 336,
+      "script_block": 589,
+      "world_anchor_cm": {
+        "x": 1539.551,
+        "y": 528.45,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 1565.9735,
+        "y": 591.864,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 764,
+        "y": 412,
+        "z": 0
+      },
+      "draw_layer": 7,
+      "foot_px": {
+        "x": 760.5,
+        "y": 443
+      },
+      "frame_size_px": {
+        "h": 166,
+        "w": 223
+      },
+      "frame_top_left_px": {
+        "x": 649,
+        "y": 277
+      },
+      "index": 30,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 443,
+      "script_block": 584,
+      "world_anchor_cm": {
+        "x": 1345.786,
+        "y": 725.738,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 1339.62075,
+        "y": 780.3445,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 774,
+        "y": 137,
+        "z": 0
+      },
+      "draw_layer": 6,
+      "foot_px": {
+        "x": 775.5,
+        "y": 149
+      },
+      "frame_size_px": {
+        "h": 82,
+        "w": 63
+      },
+      "frame_top_left_px": {
+        "x": 744,
+        "y": 67
+      },
+      "index": 31,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 149,
+      "script_block": 586,
+      "world_anchor_cm": {
+        "x": 1363.401,
+        "y": 241.3255,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 1366.04325,
+        "y": 262.4635,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 868,
+        "y": 231,
+        "z": 0
+      },
+      "draw_layer": 5,
+      "foot_px": {
+        "x": 883.0,
+        "y": 281
+      },
+      "frame_size_px": {
+        "h": 95,
+        "w": 280
+      },
+      "frame_top_left_px": {
+        "x": 743,
+        "y": 186
+      },
+      "index": 32,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 281,
+      "script_block": 573,
+      "world_anchor_cm": {
+        "x": 1528.982,
+        "y": 406.9065,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 1555.4045,
+        "y": 494.9815,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 873,
+        "y": 210,
+        "z": 0
+      },
+      "draw_layer": 6,
+      "foot_px": {
+        "x": 869.5,
+        "y": 241
+      },
+      "frame_size_px": {
+        "h": 166,
+        "w": 223
+      },
+      "frame_top_left_px": {
+        "x": 758,
+        "y": 75
+      },
+      "index": 33,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 241,
+      "script_block": 568,
+      "world_anchor_cm": {
+        "x": 1537.7895,
+        "y": 369.915,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 1531.62425,
+        "y": 424.5215,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 862,
+        "y": 183,
+        "z": 0
+      },
+      "draw_layer": 6,
+      "foot_px": {
+        "x": 862.5,
+        "y": 202
+      },
+      "frame_size_px": {
+        "h": 84,
+        "w": 91
+      },
+      "frame_top_left_px": {
+        "x": 817,
+        "y": 118
+      },
+      "index": 34,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 202,
+      "script_block": 575,
+      "world_anchor_cm": {
+        "x": 1518.413,
+        "y": 322.3545,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 1519.29375,
+        "y": 355.823,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 835,
+        "y": 217,
+        "z": 0
+      },
+      "draw_layer": 6,
+      "foot_px": {
+        "x": 835.5,
+        "y": 236
+      },
+      "frame_size_px": {
+        "h": 84,
+        "w": 91
+      },
+      "frame_top_left_px": {
+        "x": 790,
+        "y": 152
+      },
+      "index": 35,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 236,
+      "script_block": 575,
+      "world_anchor_cm": {
+        "x": 1470.8525,
+        "y": 382.2455,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 1471.73325,
+        "y": 415.714,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 700,
+        "y": 361,
+        "z": 0
+      },
+      "draw_layer": 6,
+      "foot_px": {
+        "x": 700.5,
+        "y": 380
+      },
+      "frame_size_px": {
+        "h": 84,
+        "w": 91
+      },
+      "frame_top_left_px": {
+        "x": 655,
+        "y": 296
+      },
+      "index": 36,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 380,
+      "script_block": 575,
+      "world_anchor_cm": {
+        "x": 1233.05,
+        "y": 635.9015,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 1233.93075,
+        "y": 669.37,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 814,
+        "y": 276,
+        "z": 0
+      },
+      "draw_layer": 7,
+      "foot_px": {
+        "x": 823.5,
+        "y": 299
+      },
+      "frame_size_px": {
+        "h": 133,
+        "w": 189
+      },
+      "frame_top_left_px": {
+        "x": 729,
+        "y": 166
+      },
+      "index": 37,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 299,
+      "script_block": 585,
+      "world_anchor_cm": {
+        "x": 1433.861,
+        "y": 486.174,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 1450.59525,
+        "y": 526.6885,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 887,
+        "y": 255,
+        "z": 0
+      },
+      "draw_layer": 6,
+      "foot_px": {
+        "x": 887.5,
+        "y": 274
+      },
+      "frame_size_px": {
+        "h": 84,
+        "w": 91
+      },
+      "frame_top_left_px": {
+        "x": 842,
+        "y": 190
+      },
+      "index": 38,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 274,
+      "script_block": 575,
+      "world_anchor_cm": {
+        "x": 1562.4505,
+        "y": 449.1825,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 1563.33125,
+        "y": 482.651,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 779,
+        "y": 310,
+        "z": 0
+      },
+      "draw_layer": 6,
+      "foot_px": {
+        "x": 779.5,
+        "y": 329
+      },
+      "frame_size_px": {
+        "h": 84,
+        "w": 91
+      },
+      "frame_top_left_px": {
+        "x": 734,
+        "y": 245
+      },
+      "index": 39,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 329,
+      "script_block": 575,
+      "world_anchor_cm": {
+        "x": 1372.2085,
+        "y": 546.065,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 1373.08925,
+        "y": 579.5335,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 740,
+        "y": 323,
+        "z": 0
+      },
+      "draw_layer": 6,
+      "foot_px": {
+        "x": 740.5,
+        "y": 342
+      },
+      "frame_size_px": {
+        "h": 84,
+        "w": 91
+      },
+      "frame_top_left_px": {
+        "x": 695,
+        "y": 258
+      },
+      "index": 40,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 342,
+      "script_block": 575,
+      "world_anchor_cm": {
+        "x": 1303.51,
+        "y": 568.9645,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 1304.39075,
+        "y": 602.433,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 701,
+        "y": 326,
+        "z": 0
+      },
+      "draw_layer": 6,
+      "foot_px": {
+        "x": 702.5,
+        "y": 338
+      },
+      "frame_size_px": {
+        "h": 82,
+        "w": 63
+      },
+      "frame_top_left_px": {
+        "x": 671,
+        "y": 256
+      },
+      "index": 41,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 338,
+      "script_block": 586,
+      "world_anchor_cm": {
+        "x": 1234.8115,
+        "y": 574.249,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 1237.45375,
+        "y": 595.387,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 93,
+        "y": 125,
+        "z": 0
+      },
+      "draw_layer": 5,
+      "foot_px": {
+        "x": 108.0,
+        "y": 161
+      },
+      "frame_size_px": {
+        "h": 66,
+        "w": 160
+      },
+      "frame_top_left_px": {
+        "x": 28,
+        "y": 95
+      },
+      "index": 42,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 161,
+      "script_block": 589,
+      "world_anchor_cm": {
+        "x": 163.8195,
+        "y": 220.1875,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 190.242,
+        "y": 283.6015,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 740,
+        "y": 92,
+        "z": 0
+      },
+      "draw_layer": 6,
+      "foot_px": {
+        "x": 741.5,
+        "y": 104
+      },
+      "frame_size_px": {
+        "h": 82,
+        "w": 63
+      },
+      "frame_top_left_px": {
+        "x": 710,
+        "y": 22
+      },
+      "index": 43,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 104,
+      "script_block": 586,
+      "world_anchor_cm": {
+        "x": 1303.51,
+        "y": 162.058,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 1306.15225,
+        "y": 183.196,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 247,
+        "y": 330,
+        "z": 0
+      },
+      "draw_layer": 5,
+      "foot_px": {
+        "x": 240.5,
+        "y": 342
+      },
+      "frame_size_px": {
+        "h": 27,
+        "w": 37
+      },
+      "frame_top_left_px": {
+        "x": 222,
+        "y": 315
+      },
+      "index": 44,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 342,
+      "script_block": 594,
+      "world_anchor_cm": {
+        "x": 435.0905,
+        "y": 581.295,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 423.64075,
+        "y": 602.433,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 114,
+        "y": 114,
+        "z": 0
+      },
+      "draw_layer": 6,
+      "foot_px": {
+        "x": 107.5,
+        "y": 126
+      },
+      "frame_size_px": {
+        "h": 27,
+        "w": 37
+      },
+      "frame_top_left_px": {
+        "x": 89,
+        "y": 99
+      },
+      "index": 45,
+      "layer_group": "ground_adjacent",
+      "recorded_bottom_y": 126,
+      "script_block": 594,
+      "world_anchor_cm": {
+        "x": 200.811,
+        "y": 200.811,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 189.36125,
+        "y": 221.949,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": -150,
+        "y": 100,
+        "z": 0
+      },
+      "draw_layer": 2,
+      "foot_px": {
+        "x": 598.0,
+        "y": 469
+      },
+      "frame_size_px": {
+        "h": 369,
+        "w": 1496
+      },
+      "frame_top_left_px": {
+        "x": -150,
+        "y": 100
+      },
+      "index": 46,
+      "layer_group": "backdrop",
+      "recorded_bottom_y": 469,
+      "script_block": 596,
+      "world_anchor_cm": {
+        "x": -264.225,
+        "y": 176.15,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 1053.377,
+        "y": 826.1435,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": -150,
+        "y": 100,
+        "z": 0
+      },
+      "draw_layer": 2,
+      "foot_px": {
+        "x": 598.0,
+        "y": 469
+      },
+      "frame_size_px": {
+        "h": 369,
+        "w": 1496
+      },
+      "frame_top_left_px": {
+        "x": -150,
+        "y": 100
+      },
+      "index": 47,
+      "layer_group": "backdrop",
+      "recorded_bottom_y": 469,
+      "script_block": 596,
+      "world_anchor_cm": {
+        "x": -264.225,
+        "y": 176.15,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 1053.377,
+        "y": 826.1435,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 1346,
+        "y": 100,
+        "z": 0
+      },
+      "draw_layer": 2,
+      "foot_px": {
+        "x": 2094.0,
+        "y": 469
+      },
+      "frame_size_px": {
+        "h": 369,
+        "w": 1496
+      },
+      "frame_top_left_px": {
+        "x": 1346,
+        "y": 100
+      },
+      "index": 48,
+      "layer_group": "backdrop",
+      "recorded_bottom_y": 469,
+      "script_block": 596,
+      "world_anchor_cm": {
+        "x": 2370.979,
+        "y": 176.15,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 3688.581,
+        "y": 826.1435,
+        "z": 0.0
+      }
+    },
+    {
+      "anchor_px": {
+        "x": 1346,
+        "y": 100,
+        "z": 0
+      },
+      "draw_layer": 2,
+      "foot_px": {
+        "x": 2094.0,
+        "y": 469
+      },
+      "frame_size_px": {
+        "h": 369,
+        "w": 1496
+      },
+      "frame_top_left_px": {
+        "x": 1346,
+        "y": 100
+      },
+      "index": 49,
+      "layer_group": "backdrop",
+      "recorded_bottom_y": 469,
+      "script_block": 596,
+      "world_anchor_cm": {
+        "x": 2370.979,
+        "y": 176.15,
+        "z": 0.0
+      },
+      "world_foot_cm": {
+        "x": 3688.581,
+        "y": 826.1435,
+        "z": 0.0
+      }
+    }
+  ],
+  "scale": {
+    "cm_per_px": 1.7615,
+    "delta_vs_exact_cm_per_px": 3.2e-05,
+    "m6_022_exact": 1.761468,
+    "m6_022_exact_expression": "192 cm / 109 px",
+    "map_width_cm": 1578.304,
+    "source": "M6-022 fighter calibration, mandated by Docs/Tasks/M8-010.md",
+    "tile_h_px_as_depth_note": "tile 600 px height is projected depth face, NOT 1056.9 cm of UE height (see ground_band.z_derivation)",
+    "tile_w_cm": 394.576
+  },
+  "spawn_world_predictions": {
+    "monster_spawn_predictions": [
+      {
+        "grid_cell_variant_P": {
+          "col": 13,
+          "row_from_bottom": 21,
+          "row_from_top": 8,
+          "tile_index": 2,
+          "value": 2
+        },
+        "grid_cell_variant_Q": {
+          "col": 13,
+          "row_from_bottom": 17,
+          "row_from_top": 12,
+          "tile_index": 2,
+          "value": 0
+        },
+        "px": {
+          "x": 659,
+          "y": 201,
+          "z": 0
+        },
+        "source": "STAssignMonster",
+        "world_cm": {
+          "x": 1160.8285,
+          "y": 354.0615,
+          "z": 0.0
+        }
+      },
+      {
+        "grid_cell_variant_P": {
+          "col": 7,
+          "row_from_bottom": 21,
+          "row_from_top": 8,
+          "tile_index": 2,
+          "value": 2
+        },
+        "grid_cell_variant_Q": {
+          "col": 7,
+          "row_from_bottom": 17,
+          "row_from_top": 12,
+          "tile_index": 2,
+          "value": 0
+        },
+        "px": {
+          "x": 574,
+          "y": 201,
+          "z": 0
+        },
+        "source": "STAssignMonster",
+        "world_cm": {
+          "x": 1011.101,
+          "y": 354.0615,
+          "z": 0.0
+        }
+      },
+      {
+        "grid_cell_variant_P": {
+          "col": 10,
+          "row_from_bottom": 18,
+          "row_from_top": 11,
+          "tile_index": 2,
+          "value": 0
+        },
+        "grid_cell_variant_Q": {
+          "col": 10,
+          "row_from_bottom": 14,
+          "row_from_top": 15,
+          "tile_index": 2,
+          "value": 0
+        },
+        "px": {
+          "x": 622,
+          "y": 260,
+          "z": 0
+        },
+        "source": "STAssignMonster",
+        "world_cm": {
+          "x": 1095.653,
+          "y": 457.99,
+          "z": 0.0
+        }
+      },
+      {
+        "grid_cell_variant_P": {
+          "col": 5,
+          "row_from_bottom": 18,
+          "row_from_top": 11,
+          "tile_index": 2,
+          "value": 0
+        },
+        "grid_cell_variant_Q": {
+          "col": 5,
+          "row_from_bottom": 14,
+          "row_from_top": 15,
+          "tile_index": 2,
+          "value": 0
+        },
+        "px": {
+          "x": 540,
+          "y": 261,
+          "z": 0
+        },
+        "source": "STAssignMonster",
+        "world_cm": {
+          "x": 951.21,
+          "y": 459.7515,
+          "z": 0.0
+        }
+      }
+    ],
+    "passive_object_predictions": [
+      {
+        "grid_cell_variant_P": {
+          "col": 0,
+          "row_from_bottom": 27,
+          "row_from_top": 2,
+          "tile_index": 1,
+          "value": 2
+        },
+        "grid_cell_variant_Q": {
+          "col": 0,
+          "row_from_bottom": 23,
+          "row_from_top": 6,
+          "tile_index": 1,
+          "value": 2
+        },
+        "px": {
+          "x": 236,
+          "y": 86,
+          "z": 0
+        },
+        "source": "STAssignPassiveObject",
+        "world_cm": {
+          "x": 415.714,
+          "y": 151.489,
+          "z": 0.0
+        }
+      },
+      {
+        "grid_cell_variant_P": {
+          "col": 0,
+          "row_from_bottom": 25,
+          "row_from_top": 4,
+          "tile_index": 0,
+          "value": 2
+        },
+        "grid_cell_variant_Q": {
+          "col": 0,
+          "row_from_bottom": 21,
+          "row_from_top": 8,
+          "tile_index": 0,
+          "value": 2
+        },
+        "px": {
+          "x": 2,
+          "y": 124,
+          "z": 0
+        },
+        "source": "STAssignPassiveObject",
+        "world_cm": {
+          "x": 3.523,
+          "y": 218.426,
+          "z": 0.0
+        }
+      },
+      {
+        "grid_cell_variant_P": {
+          "col": 9,
+          "row_from_bottom": 13,
+          "row_from_top": 16,
+          "tile_index": 1,
+          "value": 0
+        },
+        "grid_cell_variant_Q": {
+          "col": 9,
+          "row_from_bottom": 9,
+          "row_from_top": 20,
+          "tile_index": 1,
+          "value": 0
+        },
+        "px": {
+          "x": 376,
+          "y": 375,
+          "z": 0
+        },
+        "source": "STAssignPassiveObject",
+        "world_cm": {
+          "x": 662.324,
+          "y": 660.5625,
+          "z": 0.0
+        }
+      },
+      {
+        "grid_cell_variant_P": {
+          "col": 7,
+          "row_from_bottom": 26,
+          "row_from_top": 3,
+          "tile_index": 2,
+          "value": 2
+        },
+        "grid_cell_variant_Q": {
+          "col": 7,
+          "row_from_bottom": 22,
+          "row_from_top": 7,
+          "tile_index": 2,
+          "value": 2
+        },
+        "px": {
+          "x": 575,
+          "y": 110,
+          "z": 0
+        },
+        "source": "STAssignPassiveObject",
+        "world_cm": {
+          "x": 1012.8625,
+          "y": 193.765,
+          "z": 0.0
+        }
+      },
+      {
+        "grid_cell_variant_P": {
+          "col": 8,
+          "row_from_bottom": 26,
+          "row_from_top": 3,
+          "tile_index": 1,
+          "value": 2
+        },
+        "grid_cell_variant_Q": {
+          "col": 8,
+          "row_from_bottom": 22,
+          "row_from_top": 7,
+          "tile_index": 1,
+          "value": 2
+        },
+        "px": {
+          "x": 360,
+          "y": 103,
+          "z": 0
+        },
+        "source": "STAssignPassiveObject",
+        "world_cm": {
+          "x": 634.14,
+          "y": 181.4345,
+          "z": 0.0
+        }
+      },
+      {
+        "grid_cell_variant_P": {
+          "col": 6,
+          "row_from_bottom": 27,
+          "row_from_top": 2,
+          "tile_index": 1,
+          "value": 2
+        },
+        "grid_cell_variant_Q": {
+          "col": 6,
+          "row_from_bottom": 23,
+          "row_from_top": 6,
+          "tile_index": 1,
+          "value": 2
+        },
+        "px": {
+          "x": 324,
+          "y": 80,
+          "z": 0
+        },
+        "source": "STAssignPassiveObject",
+        "world_cm": {
+          "x": 570.726,
+          "y": 140.92,
+          "z": 0.0
+        }
+      },
+      {
+        "grid_cell_variant_P": {
+          "col": 11,
+          "row_from_bottom": 21,
+          "row_from_top": 8,
+          "tile_index": 3,
+          "value": 2
+        },
+        "grid_cell_variant_Q": {
+          "col": 11,
+          "row_from_bottom": 17,
+          "row_from_top": 12,
+          "tile_index": 3,
+          "value": 0
+        },
+        "px": {
+          "x": 861,
+          "y": 216,
+          "z": 0
+        },
+        "source": "STAssignPassiveObject",
+        "world_cm": {
+          "x": 1516.6515,
+          "y": 380.484,
+          "z": 0.0
+        }
+      },
+      {
+        "grid_cell_variant_P": {
+          "col": 4,
+          "row_from_bottom": 13,
+          "row_from_top": 16,
+          "tile_index": 1,
+          "value": 0
+        },
+        "grid_cell_variant_Q": {
+          "col": 4,
+          "row_from_bottom": 9,
+          "row_from_top": 20,
+          "tile_index": 1,
+          "value": 0
+        },
+        "px": {
+          "x": 301,
+          "y": 375,
+          "z": 0
+        },
+        "source": "STAssignPassiveObject",
+        "world_cm": {
+          "x": 530.2115,
+          "y": 660.5625,
+          "z": 0.0
+        }
+      },
+      {
+        "grid_cell_variant_P": {
+          "col": 12,
+          "row_from_bottom": 25,
+          "row_from_top": 4,
+          "tile_index": 2,
+          "value": 2
+        },
+        "grid_cell_variant_Q": {
+          "col": 12,
+          "row_from_bottom": 21,
+          "row_from_top": 8,
+          "tile_index": 2,
+          "value": 2
+        },
+        "px": {
+          "x": 653,
+          "y": 123,
+          "z": 0
+        },
+        "source": "STAssignPassiveObject",
+        "world_cm": {
+          "x": 1150.2595,
+          "y": 216.6645,
+          "z": 0.0
+        }
+      },
+      {
+        "grid_cell_variant_P": {
+          "col": 6,
+          "row_from_bottom": 14,
+          "row_from_top": 15,
+          "tile_index": 3,
+          "value": 0
+        },
+        "grid_cell_variant_Q": {
+          "col": 6,
+          "row_from_bottom": 10,
+          "row_from_top": 19,
+          "tile_index": 3,
+          "value": 0
+        },
+        "px": {
+          "x": 769,
+          "y": 357,
+          "z": 0
+        },
+        "source": "STAssignPassiveObject",
+        "world_cm": {
+          "x": 1354.5935,
+          "y": 628.8555,
+          "z": 0.0
+        }
+      },
+      {
+        "grid_cell_variant_P": {
+          "col": 13,
+          "row_from_bottom": 24,
+          "row_from_top": 5,
+          "tile_index": 3,
+          "value": 2
+        },
+        "grid_cell_variant_Q": {
+          "col": 13,
+          "row_from_bottom": 20,
+          "row_from_top": 9,
+          "tile_index": 3,
+          "value": 2
+        },
+        "px": {
+          "x": 884,
+          "y": 140,
+          "z": 0
+        },
+        "source": "STAssignPassiveObject",
+        "world_cm": {
+          "x": 1557.166,
+          "y": 246.61,
+          "z": 0.0
+        }
+      },
+      {
+        "grid_cell_variant_P": {
+          "col": 4,
+          "row_from_bottom": 14,
+          "row_from_top": 15,
+          "tile_index": 3,
+          "value": 0
+        },
+        "grid_cell_variant_Q": {
+          "col": 4,
+          "row_from_bottom": 10,
+          "row_from_top": 19,
+          "tile_index": 3,
+          "value": 0
+        },
+        "px": {
+          "x": 745,
+          "y": 343,
+          "z": 0
+        },
+        "source": "STAssignPassiveObject",
+        "world_cm": {
+          "x": 1312.3175,
+          "y": 604.1945,
+          "z": 0.0
+        }
+      },
+      {
+        "grid_cell_variant_P": {
+          "col": 7,
+          "row_from_bottom": 16,
+          "row_from_top": 13,
+          "tile_index": 3,
+          "value": 0
+        },
+        "grid_cell_variant_Q": {
+          "col": 7,
+          "row_from_bottom": 12,
+          "row_from_top": 17,
+          "tile_index": 3,
+          "value": 0
+        },
+        "px": {
+          "x": 793,
+          "y": 311,
+          "z": 0
+        },
+        "source": "STAssignPassiveObject",
+        "world_cm": {
+          "x": 1396.8695,
+          "y": 547.8265,
+          "z": 0.0
+        }
+      },
+      {
+        "grid_cell_variant_P": {
+          "col": 13,
+          "row_from_bottom": 17,
+          "row_from_top": 12,
+          "tile_index": 3,
+          "value": 0
+        },
+        "grid_cell_variant_Q": {
+          "col": 13,
+          "row_from_bottom": 13,
+          "row_from_top": 16,
+          "tile_index": 3,
+          "value": 0
+        },
+        "px": {
+          "x": 887,
+          "y": 280,
+          "z": 0
+        },
+        "source": "STAssignPassiveObject",
+        "world_cm": {
+          "x": 1562.4505,
+          "y": 493.22,
+          "z": 0.0
+        }
+      },
+      {
+        "grid_cell_variant_P": {
+          "col": 8,
+          "row_from_bottom": 25,
+          "row_from_top": 4,
+          "tile_index": 3,
+          "value": 2
+        },
+        "grid_cell_variant_Q": {
+          "col": 8,
+          "row_from_bottom": 21,
+          "row_from_top": 8,
+          "tile_index": 3,
+          "value": 2
+        },
+        "px": {
+          "x": 810,
+          "y": 132,
+          "z": 0
+        },
+        "source": "STAssignPassiveObject",
+        "world_cm": {
+          "x": 1426.815,
+          "y": 232.518,
+          "z": 0.0
+        }
+      },
+      {
+        "grid_cell_variant_P": {
+          "col": 10,
+          "row_from_bottom": 26,
+          "row_from_top": 3,
+          "tile_index": 3,
+          "value": 2
+        },
+        "grid_cell_variant_Q": {
+          "col": 10,
+          "row_from_bottom": 22,
+          "row_from_top": 7,
+          "tile_index": 3,
+          "value": 2
+        },
+        "px": {
+          "x": 847,
+          "y": 107,
+          "z": 0
+        },
+        "source": "STAssignPassiveObject",
+        "world_cm": {
+          "x": 1491.9905,
+          "y": 188.4805,
+          "z": 0.0
+        }
+      },
+      {
+        "grid_cell_variant_P": {
+          "col": 11,
+          "row_from_bottom": 12,
+          "row_from_top": 17,
+          "tile_index": 0,
+          "value": 0
+        },
+        "grid_cell_variant_Q": {
+          "col": 11,
+          "row_from_bottom": 8,
+          "row_from_top": 21,
+          "tile_index": 0,
+          "value": 0
+        },
+        "px": {
+          "x": 182,
+          "y": 394,
+          "z": 0
+        },
+        "source": "STAssignPassiveObject",
+        "world_cm": {
+          "x": 320.593,
+          "y": 694.031,
+          "z": 0.0
+        }
+      },
+      {
+        "grid_cell_variant_P": {
+          "col": 8,
+          "row_from_bottom": 23,
+          "row_from_top": 6,
+          "tile_index": 3,
+          "value": 2
+        },
+        "grid_cell_variant_Q": {
+          "col": 8,
+          "row_from_bottom": 19,
+          "row_from_top": 10,
+          "tile_index": 3,
+          "value": 0
+        },
+        "px": {
+          "x": 803,
+          "y": 162,
+          "z": 0
+        },
+        "source": "STAssignPassiveObject",
+        "world_cm": {
+          "x": 1414.4845,
+          "y": 285.363,
+          "z": 0.0
+        }
+      }
+    ],
+    "rival_spawn_predictions": [
+      {
+        "grid_cell_variant_P": {
+          "col": 3,
+          "row_from_bottom": 20,
+          "row_from_top": 9,
+          "tile_index": 2,
+          "value": 2
+        },
+        "grid_cell_variant_Q": {
+          "col": 3,
+          "row_from_bottom": 16,
+          "row_from_top": 13,
+          "tile_index": 2,
+          "value": 0
+        },
+        "px": {
+          "x": 507,
+          "y": 230,
+          "z": 0
+        },
+        "source": "STRivalMapSpawnData",
+        "world_cm": {
+          "x": 893.0805,
+          "y": 405.145,
+          "z": 0.0
+        }
+      },
+      {
+        "grid_cell_variant_P": {
+          "col": 8,
+          "row_from_bottom": 23,
+          "row_from_top": 6,
+          "tile_index": 2,
+          "value": 2
+        },
+        "grid_cell_variant_Q": {
+          "col": 8,
+          "row_from_bottom": 19,
+          "row_from_top": 10,
+          "tile_index": 2,
+          "value": 0
+        },
+        "px": {
+          "x": 580,
+          "y": 166,
+          "z": 0
+        },
+        "source": "STRivalMapSpawnData",
+        "world_cm": {
+          "x": 1021.67,
+          "y": 292.409,
+          "z": 0.0
+        }
+      },
+      {
+        "grid_cell_variant_P": {
+          "col": 7,
+          "row_from_bottom": 21,
+          "row_from_top": 8,
+          "tile_index": 2,
+          "value": 2
+        },
+        "grid_cell_variant_Q": {
+          "col": 7,
+          "row_from_bottom": 17,
+          "row_from_top": 12,
+          "tile_index": 2,
+          "value": 0
+        },
+        "px": {
+          "x": 565,
+          "y": 210,
+          "z": 0
+        },
+        "source": "STRivalMapSpawnData",
+        "world_cm": {
+          "x": 995.2475,
+          "y": 369.915,
+          "z": 0.0
+        }
+      },
+      {
+        "grid_cell_variant_P": {
+          "col": 3,
+          "row_from_bottom": 23,
+          "row_from_top": 6,
+          "tile_index": 2,
+          "value": 2
+        },
+        "grid_cell_variant_Q": {
+          "col": 3,
+          "row_from_bottom": 19,
+          "row_from_top": 10,
+          "tile_index": 2,
+          "value": 0
+        },
+        "px": {
+          "x": 498,
+          "y": 169,
+          "z": 0
+        },
+        "source": "STRivalMapSpawnData",
+        "world_cm": {
+          "x": 877.227,
+          "y": 297.6935,
+          "z": 0.0
+        }
+      }
+    ]
+  },
+  "unknowns": [
+    {
+      "detail": "DNFM controller origin (originX/originY) unrecovered (map_bamboo.json gap G5); the anchor scene(0,0,0)->UE(0,0,0) is provisional. Only coordinate differences are meaningful until M8-012 pins the anchor.",
+      "handling": "anchor isolated in px_to_world; all bands/tables report differences that survive any translation",
+      "id": "U1",
+      "topic": "controller_origin"
+    },
+    {
+      "detail": "0/2 meanings unrecovered (gap G2).",
+      "handling": "both hypotheses A (0 walkable) and B (2 walkable) carried with full numeric bands and spawn cross-checks",
+      "id": "U2",
+      "topic": "passage_value_semantics"
+    },
+    {
+      "detail": "Task card / M8-005 JSON record tile top y = floorHeight-80-originY = 40 (y-down), but the offline preview generator code computes y = 80-floorHeight = -40 (render_dnf_map_preview.py:33, q6_compose_layers.py:40); official preview bounds maxy=560 = -40+600 match the code. The two readings shift the tile band and floor line by 80 px = 140.92 cm relative to objects/spawns.",
+      "handling": "primary = P (task card mandate, tile top 40, floor line 120); variant Q carried in full; M8-012 adjudicates (assertion A7)",
+      "id": "U3",
+      "topic": "tile_y_top_reading"
+    },
+    {
+      "detail": "Whether grid row 0 counts from the tile top or bottom edge is not native-evidenced.",
+      "handling": "row_order 'top'/'bottom' both carried per variant",
+      "id": "U4",
+      "topic": "grid_row_order"
+    },
+    {
+      "detail": "16x20 px cell size is geometric inference (224/14, 600/30), not native (gap G2).",
+      "handling": "used for row/col mapping only; flagged in every derived cell",
+      "id": "U5",
+      "topic": "grid_cell_size"
+    },
+    {
+      "detail": "z = up-positive elevation is inferred from the y-z projection; every bamboo z is 0, so the sign is untestable offline.",
+      "handling": "Z_cm = s*z recorded as convention; assertion A3 tests the flat floor",
+      "id": "U6",
+      "topic": "scene_z_semantics"
+    },
+    {
+      "detail": "'floor line = floorHeight = tile top + 80' derives from the placement formula; whether the 80 px offset hangs the image above or below the floor line is not independently evidenced.",
+      "handling": "carried inside the P/Q readings; assertion A7 decides",
+      "id": "U7",
+      "topic": "floor_line_semantics"
+    },
+    {
+      "detail": "For backdrop layers (1/2/4) the canvas foot y conflates depth and height; the flat-floor projection baseline is not their final world placement.",
+      "handling": "table marks layer_group=backdrop; M8-012 places billboards by layer",
+      "id": "U8",
+      "topic": "backdrop_foot_points"
+    },
+    {
+      "detail": "Mandated s=1.7615 vs M6-022 exact 192/109=1.761468; delta 3.21e-05 cm/px (~0.006 cm over the 896 px map).",
+      "handling": "mandated value used; delta recorded",
+      "id": "U9",
+      "topic": "scale_rounding"
+    },
+    {
+      "detail": "The decompiled 'unityY' naming (method 242386) does not fully recover the original runtime's axis senses; this calibration anchors to UE conventions and this project's code, not to DNFM runtime internals.",
+      "handling": "documented; does not affect the UE-side predictions",
+      "id": "U10",
+      "topic": "native_axis_names"
+    }
+  ],
+  "walkability_hypotheses": [
+    {
+      "id": "A",
+      "meaning": "value 0 walkable, value 2 blocks",
+      "primary_band": {
+        "blocked": {
+          "x_cm": [
+            0.0,
+            1578.304
+          ],
+          "y_cm_bands": [
+            {
+              "y_cm": [
+                70.46,
+                422.76
+              ],
+              "y_px_range": [
+                40,
+                240
+              ]
+            }
+          ]
+        },
+        "grid_row_order": "top",
+        "hypothesis": "A",
+        "spawn_points_standable_of_8": 2,
+        "tile_placement_variant": "P",
+        "walkable": {
+          "x_cm": [
+            0.0,
+            1578.304
+          ],
+          "y_cm": [
+            422.76,
+            1127.36
+          ],
+          "y_px_range": [
+            240,
+            640
+          ],
+          "z_cm": 0.0
+        }
+      },
+      "variants": [
+        {
+          "blocked": {
+            "x_cm": [
+              0.0,
+              1578.304
+            ],
+            "y_cm_bands": [
+              {
+                "y_cm": [
+                  70.46,
+                  422.76
+                ],
+                "y_px_range": [
+                  40,
+                  240
+                ]
+              }
+            ]
+          },
+          "grid_row_order": "top",
+          "hypothesis": "A",
+          "spawn_points_standable_of_8": 2,
+          "tile_placement_variant": "P",
+          "walkable": {
+            "x_cm": [
+              0.0,
+              1578.304
+            ],
+            "y_cm": [
+              422.76,
+              1127.36
+            ],
+            "y_px_range": [
+              240,
+              640
+            ],
+            "z_cm": 0.0
+          }
+        },
+        {
+          "blocked": {
+            "x_cm": [
+              0.0,
+              1578.304
+            ],
+            "y_cm_bands": [
+              {
+                "y_cm": [
+                  775.06,
+                  1127.36
+                ],
+                "y_px_range": [
+                  440,
+                  640
+                ]
+              }
+            ]
+          },
+          "grid_row_order": "bottom",
+          "hypothesis": "A",
+          "spawn_points_standable_of_8": 8,
+          "tile_placement_variant": "P",
+          "walkable": {
+            "x_cm": [
+              0.0,
+              1578.304
+            ],
+            "y_cm": [
+              70.46,
+              775.06
+            ],
+            "y_px_range": [
+              40,
+              440
+            ],
+            "z_cm": 0.0
+          }
+        },
+        {
+          "blocked": {
+            "x_cm": [
+              0.0,
+              1578.304
+            ],
+            "y_cm_bands": [
+              {
+                "y_cm": [
+                  -70.46,
+                  281.84
+                ],
+                "y_px_range": [
+                  -40,
+                  160
+                ]
+              }
+            ]
+          },
+          "grid_row_order": "top",
+          "hypothesis": "A",
+          "spawn_points_standable_of_8": 8,
+          "tile_placement_variant": "Q",
+          "walkable": {
+            "x_cm": [
+              0.0,
+              1578.304
+            ],
+            "y_cm": [
+              281.84,
+              986.44
+            ],
+            "y_px_range": [
+              160,
+              560
+            ],
+            "z_cm": 0.0
+          }
+        },
+        {
+          "blocked": {
+            "x_cm": [
+              0.0,
+              1578.304
+            ],
+            "y_cm_bands": [
+              {
+                "y_cm": [
+                  634.14,
+                  986.44
+                ],
+                "y_px_range": [
+                  360,
+                  560
+                ]
+              }
+            ]
+          },
+          "grid_row_order": "bottom",
+          "hypothesis": "A",
+          "spawn_points_standable_of_8": 8,
+          "tile_placement_variant": "Q",
+          "walkable": {
+            "x_cm": [
+              0.0,
+              1578.304
+            ],
+            "y_cm": [
+              -70.46,
+              634.14
+            ],
+            "y_px_range": [
+              -40,
+              360
+            ],
+            "z_cm": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "meaning": "value 2 walkable, value 0 blocks",
+      "primary_band": {
+        "blocked": {
+          "x_cm": [
+            0.0,
+            1578.304
+          ],
+          "y_cm_bands": [
+            {
+              "y_cm": [
+                422.76,
+                1127.36
+              ],
+              "y_px_range": [
+                240,
+                640
+              ]
+            }
+          ]
+        },
+        "grid_row_order": "top",
+        "hypothesis": "B",
+        "spawn_points_standable_of_8": 6,
+        "tile_placement_variant": "P",
+        "walkable": {
+          "x_cm": [
+            0.0,
+            1578.304
+          ],
+          "y_cm": [
+            70.46,
+            422.76
+          ],
+          "y_px_range": [
+            40,
+            240
+          ],
+          "z_cm": 0.0
+        }
+      },
+      "variants": [
+        {
+          "blocked": {
+            "x_cm": [
+              0.0,
+              1578.304
+            ],
+            "y_cm_bands": [
+              {
+                "y_cm": [
+                  422.76,
+                  1127.36
+                ],
+                "y_px_range": [
+                  240,
+                  640
+                ]
+              }
+            ]
+          },
+          "grid_row_order": "top",
+          "hypothesis": "B",
+          "spawn_points_standable_of_8": 6,
+          "tile_placement_variant": "P",
+          "walkable": {
+            "x_cm": [
+              0.0,
+              1578.304
+            ],
+            "y_cm": [
+              70.46,
+              422.76
+            ],
+            "y_px_range": [
+              40,
+              240
+            ],
+            "z_cm": 0.0
+          }
+        },
+        {
+          "blocked": {
+            "x_cm": [
+              0.0,
+              1578.304
+            ],
+            "y_cm_bands": [
+              {
+                "y_cm": [
+                  70.46,
+                  775.06
+                ],
+                "y_px_range": [
+                  40,
+                  440
+                ]
+              }
+            ]
+          },
+          "grid_row_order": "bottom",
+          "hypothesis": "B",
+          "spawn_points_standable_of_8": 0,
+          "tile_placement_variant": "P",
+          "walkable": {
+            "x_cm": [
+              0.0,
+              1578.304
+            ],
+            "y_cm": [
+              775.06,
+              1127.36
+            ],
+            "y_px_range": [
+              440,
+              640
+            ],
+            "z_cm": 0.0
+          }
+        },
+        {
+          "blocked": {
+            "x_cm": [
+              0.0,
+              1578.304
+            ],
+            "y_cm_bands": [
+              {
+                "y_cm": [
+                  281.84,
+                  986.44
+                ],
+                "y_px_range": [
+                  160,
+                  560
+                ]
+              }
+            ]
+          },
+          "grid_row_order": "top",
+          "hypothesis": "B",
+          "spawn_points_standable_of_8": 0,
+          "tile_placement_variant": "Q",
+          "walkable": {
+            "x_cm": [
+              0.0,
+              1578.304
+            ],
+            "y_cm": [
+              -70.46,
+              281.84
+            ],
+            "y_px_range": [
+              -40,
+              160
+            ],
+            "z_cm": 0.0
+          }
+        },
+        {
+          "blocked": {
+            "x_cm": [
+              0.0,
+              1578.304
+            ],
+            "y_cm_bands": [
+              {
+                "y_cm": [
+                  -70.46,
+                  634.14
+                ],
+                "y_px_range": [
+                  -40,
+                  360
+                ]
+              }
+            ]
+          },
+          "grid_row_order": "bottom",
+          "hypothesis": "B",
+          "spawn_points_standable_of_8": 0,
+          "tile_placement_variant": "Q",
+          "walkable": {
+            "x_cm": [
+              0.0,
+              1578.304
+            ],
+            "y_cm": [
+              634.14,
+              986.44
+            ],
+            "y_px_range": [
+              360,
+              560
+            ],
+            "z_cm": 0.0
+          }
+        }
+      ]
+    }
+  ]
+}

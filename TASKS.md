@@ -253,6 +253,6 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M8-007 | [P01-F 哥布林投掷兵源依赖核实](Docs/Tasks/M8-007.md) | DONE | M8-001 | ZCode-20261107-G | 2026-11-07T01:50:00+08:00 | [report](Docs/Tasks/Reports/M8-007.md) |
 | M8-008 | [P01-G taubeast Boss 源依赖核实](Docs/Tasks/M8-008.md) | DONE | M8-001 | ZCode-20261107-H | 2026-11-07T01:50:00+08:00 | [report](Docs/Tasks/Reports/M8-008.md) |
 | M8-009 | [P01-H 声音与特效依赖核实](Docs/Tasks/M8-009.md) | DONE | M8-001 | ZCode-20261107-I | 2026-11-07T02:20:00+08:00 | [report](Docs/Tasks/Reports/M8-009.md) |
-| M8-010 | [P02-A 竹林像素/世界标定](Docs/Tasks/M8-010.md) | IN_PROGRESS | M8-005 | ZCode-20261107-A | 2026-11-07T02:35:00+08:00 | [report](Docs/Tasks/Reports/M8-010.md) |
+| M8-010 | [P02-A 竹林像素/世界标定](Docs/Tasks/M8-010.md) | DONE | M8-005 | ZCode-20261107-J | 2026-11-07T02:45:00+08:00 | [report](Docs/Tasks/Reports/M8-010.md) |
 | M8-011 | [P02-B 竹林地面与分层材质 UE 构建](Docs/Tasks/M8-011.md) | TODO | M8-005,M8-010 | — | — | [report](Docs/Tasks/Reports/M8-011.md) |
 | M8-012 | [P02-C 竹林碰撞与摄像边界](Docs/Tasks/M8-012.md) | TODO | M8-010,M8-011 | — | — | [report](Docs/Tasks/Reports/M8-012.md) |
