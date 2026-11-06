@@ -1,0 +1,5282 @@
+{
+  "assets_root": "Data/DNFMReplica/bamboo_assets/",
+  "build_stamp": "2026-11-07T02:27+0800",
+  "conventions": {
+    "anim_sequence": "多帧对象的 objects_anim/ 含全帧 _f{nn} 序列（_f00 与 objects/ 首帧字节相同，便于按序取帧）；单帧对象只有 objects/ 首帧文件",
+    "controller_origin": "originX/originY 未恢复，按 (0,0) 处理（M8-005 G5）",
+    "depth_note": "z 为 y 修正（投影 y-z，M8-005 预览口径）；UE 纵深映射由 M8-010 定",
+    "foot_point": "y = 首帧图像底边（top_left_y + 缩放后高，M8-005 foot_points 口径）；x = 源 position x（图像锚点偏移未解释）",
+    "frame_transforms": "翻转/缩放/旋转/逐帧位置偏移等变换字段按帧附于 objects[].frames[]，PNG 未烘焙任何翻转或缩放（地砖与对象一致），由 UE 侧处理；本图 rotation 全 0、scale 仅 ±1（无数量级缩放）；无 udim 字段（逐帧 udim=null 占位）",
+    "object_top_left_formula": "top_left = [x + frame_pos_x, y - z + frame_pos_y] (M8-005 预览口径，y-down 屏幕空间；50/50 与官方预览 JSON 一致)",
+    "painter_order": "draw_layer 升序绘制（远景→前景），同层内按源 y 排序为 M8-005 预览口径",
+    "tile_placement_formula": "x = 224*placement_index + originX; y_top = floor_height - 80 - originY（native 证据，M8-005）",
+    "y_axis_note": "地砖 y_top_px=40 为 native 公式值（floorHeight-80，origin 0,0）；M8-005 预览/合成在同一屏幕 y-down 空间用 80-floorHeight=-40 放置地砖（同乘 -1 的两种口径），本文件两值都给出（y_top_px 与 y_top_screen_ydown_px），由 M8-010 标定裁决"
+  },
+  "evidence": {
+    "build_script": "Artifacts/Tasks/M8-011/2026-11-07T0227+0800/scripts/build_bamboo_assets.py",
+    "m8_005_evidence": "Artifacts/Tasks/M8-005/2026-11-07T0030+0800/",
+    "probe_script": "Artifacts/Tasks/M8-011/2026-11-07T0227+0800/scripts/p1_probe_frames.py",
+    "source_databases_read_only": [
+      "restored/maps/maps.sqlite",
+      "restored/atlas/atlas.sqlite",
+      "restored/animations/animations.sqlite",
+      "restored/script_index.sqlite"
+    ]
+  },
+  "manifest_file": "Data/DNFMReplica/bamboo_assets/manifest.json",
+  "map": {
+    "block": 595,
+    "maps_hash": "6816aad6b6cd4ced",
+    "scene_content_bounds_px": [
+      -239,
+      -284,
+      2842,
+      560
+    ],
+    "shard": 13
+  },
+  "objects": [
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        591
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 1,
+      "draw_layer_name": "DISTANTBACK",
+      "first_frame": {
+        "atlas_frame_index": 0,
+        "atlas_image_path": "Map/Shonan_Hell/BackGround/2nd_Far.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 106,
+          "y": 116,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L1_00_222e81e5.png",
+        "png_size_px": [
+          630,
+          355
+        ],
+        "scaled_size_px": [
+          630,
+          355
+        ],
+        "top_left_px": [
+          -239,
+          -239
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 0,
+          "atlas_image_path": "Map/Shonan_Hell/BackGround/2nd_Far.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -345,
+            -175
+          ],
+          "image_file": "objects/L1_00_222e81e5.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            630,
+            355
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            630,
+            355
+          ],
+          "source_range": [
+            74,
+            266
+          ],
+          "top_left_px": [
+            -239,
+            -239
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 0,
+      "loop": false,
+      "position_xy_px": [
+        106,
+        -64
+      ],
+      "script_block": 591,
+      "script_hash64": "222e81e501e7909f",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        106,
+        -64,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        591
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 1,
+      "draw_layer_name": "DISTANTBACK",
+      "first_frame": {
+        "atlas_frame_index": 0,
+        "atlas_image_path": "Map/Shonan_Hell/BackGround/2nd_Far.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 736,
+          "y": 116,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L1_01_222e81e5.png",
+        "png_size_px": [
+          630,
+          355
+        ],
+        "scaled_size_px": [
+          630,
+          355
+        ],
+        "top_left_px": [
+          391,
+          -239
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 0,
+          "atlas_image_path": "Map/Shonan_Hell/BackGround/2nd_Far.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -345,
+            -175
+          ],
+          "image_file": "objects/L1_01_222e81e5.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            630,
+            355
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            630,
+            355
+          ],
+          "source_range": [
+            74,
+            266
+          ],
+          "top_left_px": [
+            391,
+            -239
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 1,
+      "loop": false,
+      "position_xy_px": [
+        736,
+        -64
+      ],
+      "script_block": 591,
+      "script_hash64": "222e81e501e7909f",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        736,
+        -64,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        591
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 1,
+      "draw_layer_name": "DISTANTBACK",
+      "first_frame": {
+        "atlas_frame_index": 0,
+        "atlas_image_path": "Map/Shonan_Hell/BackGround/2nd_Far.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 1366,
+          "y": 116,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L1_02_222e81e5.png",
+        "png_size_px": [
+          630,
+          355
+        ],
+        "scaled_size_px": [
+          630,
+          355
+        ],
+        "top_left_px": [
+          1021,
+          -239
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 0,
+          "atlas_image_path": "Map/Shonan_Hell/BackGround/2nd_Far.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -345,
+            -175
+          ],
+          "image_file": "objects/L1_02_222e81e5.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            630,
+            355
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            630,
+            355
+          ],
+          "source_range": [
+            74,
+            266
+          ],
+          "top_left_px": [
+            1021,
+            -239
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 2,
+      "loop": false,
+      "position_xy_px": [
+        1366,
+        -64
+      ],
+      "script_block": 591,
+      "script_hash64": "222e81e501e7909f",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        1366,
+        -64,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        581
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 2,
+      "draw_layer_name": "MIDDLEBACK",
+      "first_frame": {
+        "atlas_frame_index": 0,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 160,
+          "y": 157,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L2_03_f484c71b.png",
+        "png_size_px": [
+          440,
+          441
+        ],
+        "scaled_size_px": [
+          440,
+          441
+        ],
+        "top_left_px": [
+          -60,
+          -284
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 0,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -220,
+            -253
+          ],
+          "image_file": "objects/L2_03_f484c71b.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            440,
+            441
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            440,
+            441
+          ],
+          "source_range": [
+            79,
+            187
+          ],
+          "top_left_px": [
+            -60,
+            -284
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 3,
+      "loop": false,
+      "position_xy_px": [
+        160,
+        -31
+      ],
+      "script_block": 581,
+      "script_hash64": "f484c71bdee0b60b",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        160,
+        -31,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        581
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 2,
+      "draw_layer_name": "MIDDLEBACK",
+      "first_frame": {
+        "atlas_frame_index": 0,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 913,
+          "y": 177,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L2_04_f484c71b.png",
+        "png_size_px": [
+          440,
+          441
+        ],
+        "scaled_size_px": [
+          440,
+          441
+        ],
+        "top_left_px": [
+          693,
+          -264
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 0,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -220,
+            -253
+          ],
+          "image_file": "objects/L2_04_f484c71b.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            440,
+            441
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            440,
+            441
+          ],
+          "source_range": [
+            79,
+            187
+          ],
+          "top_left_px": [
+            693,
+            -264
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 4,
+      "loop": false,
+      "position_xy_px": [
+        913,
+        -11
+      ],
+      "script_block": 581,
+      "script_hash64": "f484c71bdee0b60b",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        913,
+        -11,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        582
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 2,
+      "draw_layer_name": "MIDDLEBACK",
+      "first_frame": {
+        "atlas_frame_index": 1,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 406,
+          "y": 151,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L2_05_fb71db55.png",
+        "png_size_px": [
+          399,
+          392
+        ],
+        "scaled_size_px": [
+          399,
+          392
+        ],
+        "top_left_px": [
+          186,
+          -241
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 1,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -220,
+            -253
+          ],
+          "image_file": "objects/L2_05_fb71db55.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            399,
+            392
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            399,
+            392
+          ],
+          "source_range": [
+            79,
+            187
+          ],
+          "top_left_px": [
+            186,
+            -241
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 5,
+      "loop": false,
+      "position_xy_px": [
+        406,
+        12
+      ],
+      "script_block": 582,
+      "script_hash64": "fb71db553e200ada",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        406,
+        12,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        583
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 4,
+      "draw_layer_name": "CLOSEBACK",
+      "first_frame": {
+        "atlas_frame_index": 2,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 541,
+          "y": 155,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L4_06_ab07d46c.png",
+        "png_size_px": [
+          288,
+          418
+        ],
+        "scaled_size_px": [
+          288,
+          418
+        ],
+        "top_left_px": [
+          321,
+          -263
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 2,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -220,
+            -253
+          ],
+          "image_file": "objects/L4_06_ab07d46c.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            288,
+            418
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            288,
+            418
+          ],
+          "source_range": [
+            79,
+            187
+          ],
+          "top_left_px": [
+            321,
+            -263
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 6,
+      "loop": false,
+      "position_xy_px": [
+        541,
+        -10
+      ],
+      "script_block": 583,
+      "script_hash64": "ab07d46c5e7d96bd",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        541,
+        -10,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        584
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 6,
+      "draw_layer_name": "NORMAL",
+      "first_frame": {
+        "atlas_frame_index": 3,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 832,
+          "y": 129,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L6_07_b5812984.png",
+        "png_size_px": [
+          223,
+          166
+        ],
+        "scaled_size_px": [
+          223,
+          166
+        ],
+        "top_left_px": [
+          717,
+          -37
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 3,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -115,
+            -135
+          ],
+          "image_file": "objects/L6_07_b5812984.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            223,
+            166
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            223,
+            166
+          ],
+          "source_range": [
+            79,
+            187
+          ],
+          "top_left_px": [
+            717,
+            -37
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 7,
+      "loop": false,
+      "position_xy_px": [
+        832,
+        98
+      ],
+      "script_block": 584,
+      "script_hash64": "b581298403321c9c",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        832,
+        98,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        585
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 6,
+      "draw_layer_name": "NORMAL",
+      "first_frame": {
+        "atlas_frame_index": 4,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 50,
+          "y": 126,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L6_08_9277784d.png",
+        "png_size_px": [
+          189,
+          133
+        ],
+        "scaled_size_px": [
+          189,
+          133
+        ],
+        "top_left_px": [
+          -35,
+          -7
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 4,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -85,
+            -110
+          ],
+          "image_file": "objects/L6_08_9277784d.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            189,
+            133
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            189,
+            133
+          ],
+          "source_range": [
+            79,
+            187
+          ],
+          "top_left_px": [
+            -35,
+            -7
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 8,
+      "loop": false,
+      "position_xy_px": [
+        50,
+        103
+      ],
+      "script_block": 585,
+      "script_hash64": "9277784de838585e",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        50,
+        103,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        594
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 6,
+      "draw_layer_name": "NORMAL",
+      "first_frame": {
+        "atlas_frame_index": 4,
+        "atlas_image_path": "Map/event/2018_Hell/Step4/object/rock.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 180,
+          "y": 104,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L6_09_8e997b55.png",
+        "png_size_px": [
+          37,
+          27
+        ],
+        "scaled_size_px": [
+          37,
+          27
+        ],
+        "top_left_px": [
+          155,
+          77
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 4,
+          "atlas_image_path": "Map/event/2018_Hell/Step4/object/rock.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -25,
+            -15
+          ],
+          "image_file": "objects/L6_09_8e997b55.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            37,
+            27
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            37,
+            27
+          ],
+          "source_range": [
+            77,
+            185
+          ],
+          "top_left_px": [
+            155,
+            77
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 9,
+      "loop": false,
+      "position_xy_px": [
+        180,
+        92
+      ],
+      "script_block": 594,
+      "script_hash64": "8e997b55c7322be9",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        180,
+        92,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        594
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 6,
+      "draw_layer_name": "NORMAL",
+      "first_frame": {
+        "atlas_frame_index": 4,
+        "atlas_image_path": "Map/event/2018_Hell/Step4/object/rock.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 722,
+          "y": 99,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L6_10_8e997b55.png",
+        "png_size_px": [
+          37,
+          27
+        ],
+        "scaled_size_px": [
+          37,
+          27
+        ],
+        "top_left_px": [
+          697,
+          72
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 4,
+          "atlas_image_path": "Map/event/2018_Hell/Step4/object/rock.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -25,
+            -15
+          ],
+          "image_file": "objects/L6_10_8e997b55.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            37,
+            27
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            37,
+            27
+          ],
+          "source_range": [
+            77,
+            185
+          ],
+          "top_left_px": [
+            697,
+            72
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 10,
+      "loop": false,
+      "position_xy_px": [
+        722,
+        87
+      ],
+      "script_block": 594,
+      "script_hash64": "8e997b55c7322be9",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        722,
+        87,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        594
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 6,
+      "draw_layer_name": "NORMAL",
+      "first_frame": {
+        "atlas_frame_index": 4,
+        "atlas_image_path": "Map/event/2018_Hell/Step4/object/rock.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 252,
+          "y": 110,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L6_11_8e997b55.png",
+        "png_size_px": [
+          37,
+          27
+        ],
+        "scaled_size_px": [
+          37,
+          27
+        ],
+        "top_left_px": [
+          227,
+          83
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 4,
+          "atlas_image_path": "Map/event/2018_Hell/Step4/object/rock.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -25,
+            -15
+          ],
+          "image_file": "objects/L6_11_8e997b55.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            37,
+            27
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            37,
+            27
+          ],
+          "source_range": [
+            77,
+            185
+          ],
+          "top_left_px": [
+            227,
+            83
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 11,
+      "loop": false,
+      "position_xy_px": [
+        252,
+        98
+      ],
+      "script_block": 594,
+      "script_hash64": "8e997b55c7322be9",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        252,
+        98,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        586
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 6,
+      "draw_layer_name": "NORMAL",
+      "first_frame": {
+        "atlas_frame_index": 5,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 124,
+          "y": 111,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L6_12_802acb69.png",
+        "png_size_px": [
+          63,
+          82
+        ],
+        "scaled_size_px": [
+          63,
+          82
+        ],
+        "top_left_px": [
+          94,
+          29
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 5,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -30,
+            -70
+          ],
+          "image_file": "objects/L6_12_802acb69.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            63,
+            82
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            63,
+            82
+          ],
+          "source_range": [
+            79,
+            187
+          ],
+          "top_left_px": [
+            94,
+            29
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 12,
+      "loop": false,
+      "position_xy_px": [
+        124,
+        99
+      ],
+      "script_block": 586,
+      "script_hash64": "802acb69ae657b15",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        124,
+        99,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        586
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 6,
+      "draw_layer_name": "NORMAL",
+      "first_frame": {
+        "atlas_frame_index": 5,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 424,
+          "y": 121,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L6_13_802acb69.png",
+        "png_size_px": [
+          63,
+          82
+        ],
+        "scaled_size_px": [
+          63,
+          82
+        ],
+        "top_left_px": [
+          394,
+          39
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 5,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -30,
+            -70
+          ],
+          "image_file": "objects/L6_13_802acb69.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            63,
+            82
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            63,
+            82
+          ],
+          "source_range": [
+            79,
+            187
+          ],
+          "top_left_px": [
+            394,
+            39
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 13,
+      "loop": false,
+      "position_xy_px": [
+        424,
+        109
+      ],
+      "script_block": 586,
+      "script_hash64": "802acb69ae657b15",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        424,
+        109,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        587
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 5,
+      "draw_layer_name": "BOTTOM",
+      "first_frame": {
+        "atlas_frame_index": 2,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 260,
+          "y": 160,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L5_14_b1aee041.png",
+        "png_size_px": [
+          399,
+          106
+        ],
+        "scaled_size_px": [
+          399,
+          106
+        ],
+        "top_left_px": [
+          60,
+          54
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 2,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -200,
+            -50
+          ],
+          "image_file": "objects/L5_14_b1aee041.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            399,
+            106
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            399,
+            106
+          ],
+          "source_range": [
+            83,
+            191
+          ],
+          "top_left_px": [
+            60,
+            54
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 14,
+      "loop": false,
+      "position_xy_px": [
+        260,
+        104
+      ],
+      "script_block": 587,
+      "script_hash64": "b1aee0412ee5e7fa",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        260,
+        104,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        588
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 5,
+      "draw_layer_name": "BOTTOM",
+      "first_frame": {
+        "atlas_frame_index": 3,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 572,
+          "y": 417,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L5_15_68fd2517.png",
+        "png_size_px": [
+          280,
+          95
+        ],
+        "scaled_size_px": [
+          280,
+          95
+        ],
+        "top_left_px": [
+          447,
+          322
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 3,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -125,
+            -45
+          ],
+          "image_file": "objects/L5_15_68fd2517.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            280,
+            95
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            280,
+            95
+          ],
+          "source_range": [
+            83,
+            191
+          ],
+          "top_left_px": [
+            447,
+            322
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 15,
+      "loop": false,
+      "position_xy_px": [
+        572,
+        367
+      ],
+      "script_block": 588,
+      "script_hash64": "68fd2517044b759e",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        572,
+        367,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        589
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 5,
+      "draw_layer_name": "BOTTOM",
+      "first_frame": {
+        "atlas_frame_index": 4,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 621,
+          "y": 339,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L5_16_d6f50c5e.png",
+        "png_size_px": [
+          160,
+          66
+        ],
+        "scaled_size_px": [
+          160,
+          66
+        ],
+        "top_left_px": [
+          556,
+          273
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 4,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -65,
+            -30
+          ],
+          "image_file": "objects/L5_16_d6f50c5e.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            160,
+            66
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            160,
+            66
+          ],
+          "source_range": [
+            83,
+            191
+          ],
+          "top_left_px": [
+            556,
+            273
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 16,
+      "loop": false,
+      "position_xy_px": [
+        621,
+        303
+      ],
+      "script_block": 589,
+      "script_hash64": "d6f50c5e011218a8",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        621,
+        303,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        589
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 5,
+      "draw_layer_name": "BOTTOM",
+      "first_frame": {
+        "atlas_frame_index": 4,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 312,
+          "y": 347,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L5_17_d6f50c5e.png",
+        "png_size_px": [
+          160,
+          66
+        ],
+        "scaled_size_px": [
+          160,
+          66
+        ],
+        "top_left_px": [
+          247,
+          281
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 4,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -65,
+            -30
+          ],
+          "image_file": "objects/L5_17_d6f50c5e.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            160,
+            66
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            160,
+            66
+          ],
+          "source_range": [
+            83,
+            191
+          ],
+          "top_left_px": [
+            247,
+            281
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 17,
+      "loop": false,
+      "position_xy_px": [
+        312,
+        311
+      ],
+      "script_block": 589,
+      "script_hash64": "d6f50c5e011218a8",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        312,
+        311,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        594
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 6,
+      "draw_layer_name": "NORMAL",
+      "first_frame": {
+        "atlas_frame_index": 4,
+        "atlas_image_path": "Map/event/2018_Hell/Step4/object/rock.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 449,
+          "y": 214,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L6_18_8e997b55.png",
+        "png_size_px": [
+          37,
+          27
+        ],
+        "scaled_size_px": [
+          37,
+          27
+        ],
+        "top_left_px": [
+          424,
+          187
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 4,
+          "atlas_image_path": "Map/event/2018_Hell/Step4/object/rock.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -25,
+            -15
+          ],
+          "image_file": "objects/L6_18_8e997b55.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            37,
+            27
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            37,
+            27
+          ],
+          "source_range": [
+            77,
+            185
+          ],
+          "top_left_px": [
+            424,
+            187
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 18,
+      "loop": false,
+      "position_xy_px": [
+        449,
+        202
+      ],
+      "script_block": 594,
+      "script_hash64": "8e997b55c7322be9",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        449,
+        202,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        587
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 5,
+      "draw_layer_name": "BOTTOM",
+      "first_frame": {
+        "atlas_frame_index": 2,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 68,
+          "y": 397,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L5_19_b1aee041.png",
+        "png_size_px": [
+          399,
+          106
+        ],
+        "scaled_size_px": [
+          399,
+          106
+        ],
+        "top_left_px": [
+          -132,
+          291
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 2,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -200,
+            -50
+          ],
+          "image_file": "objects/L5_19_b1aee041.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            399,
+            106
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            399,
+            106
+          ],
+          "source_range": [
+            83,
+            191
+          ],
+          "top_left_px": [
+            -132,
+            291
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 19,
+      "loop": false,
+      "position_xy_px": [
+        68,
+        341
+      ],
+      "script_block": 587,
+      "script_hash64": "b1aee0412ee5e7fa",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        68,
+        341,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        584
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 7,
+      "draw_layer_name": "CONTACT",
+      "first_frame": {
+        "atlas_frame_index": 3,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 871,
+          "y": 400,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L7_20_b5812984.png",
+        "png_size_px": [
+          223,
+          166
+        ],
+        "scaled_size_px": [
+          223,
+          166
+        ],
+        "top_left_px": [
+          756,
+          234
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 3,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -115,
+            -135
+          ],
+          "image_file": "objects/L7_20_b5812984.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            223,
+            166
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            223,
+            166
+          ],
+          "source_range": [
+            79,
+            187
+          ],
+          "top_left_px": [
+            756,
+            234
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 20,
+      "loop": false,
+      "position_xy_px": [
+        871,
+        369
+      ],
+      "script_block": 584,
+      "script_hash64": "b581298403321c9c",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        871,
+        369,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        585
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 7,
+      "draw_layer_name": "CONTACT",
+      "first_frame": {
+        "atlas_frame_index": 4,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 456,
+          "y": 409,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L7_21_9277784d.png",
+        "png_size_px": [
+          189,
+          133
+        ],
+        "scaled_size_px": [
+          189,
+          133
+        ],
+        "top_left_px": [
+          371,
+          276
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 4,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -85,
+            -110
+          ],
+          "image_file": "objects/L7_21_9277784d.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            189,
+            133
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            189,
+            133
+          ],
+          "source_range": [
+            79,
+            187
+          ],
+          "top_left_px": [
+            371,
+            276
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 21,
+      "loop": false,
+      "position_xy_px": [
+        456,
+        386
+      ],
+      "script_block": 585,
+      "script_hash64": "9277784de838585e",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        456,
+        386,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        584
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 7,
+      "draw_layer_name": "CONTACT",
+      "first_frame": {
+        "atlas_frame_index": 3,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 75,
+          "y": 427,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L7_22_b5812984.png",
+        "png_size_px": [
+          223,
+          166
+        ],
+        "scaled_size_px": [
+          223,
+          166
+        ],
+        "top_left_px": [
+          -40,
+          261
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 3,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -115,
+            -135
+          ],
+          "image_file": "objects/L7_22_b5812984.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            223,
+            166
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            223,
+            166
+          ],
+          "source_range": [
+            79,
+            187
+          ],
+          "top_left_px": [
+            -40,
+            261
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 22,
+      "loop": false,
+      "position_xy_px": [
+        75,
+        396
+      ],
+      "script_block": 584,
+      "script_hash64": "b581298403321c9c",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        75,
+        396,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        585
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 6,
+      "draw_layer_name": "NORMAL",
+      "first_frame": {
+        "atlas_frame_index": 4,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 4,
+          "y": 376,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L6_23_9277784d.png",
+        "png_size_px": [
+          189,
+          133
+        ],
+        "scaled_size_px": [
+          189,
+          133
+        ],
+        "top_left_px": [
+          -81,
+          243
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 4,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -85,
+            -110
+          ],
+          "image_file": "objects/L6_23_9277784d.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            189,
+            133
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            189,
+            133
+          ],
+          "source_range": [
+            79,
+            187
+          ],
+          "top_left_px": [
+            -81,
+            243
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 23,
+      "loop": false,
+      "position_xy_px": [
+        4,
+        353
+      ],
+      "script_block": 585,
+      "script_hash64": "9277784de838585e",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        4,
+        353,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        588
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 5,
+      "draw_layer_name": "BOTTOM",
+      "first_frame": {
+        "atlas_frame_index": 3,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 126,
+          "y": 213,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L5_24_68fd2517.png",
+        "png_size_px": [
+          280,
+          95
+        ],
+        "scaled_size_px": [
+          280,
+          95
+        ],
+        "top_left_px": [
+          1,
+          118
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 3,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -125,
+            -45
+          ],
+          "image_file": "objects/L5_24_68fd2517.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            280,
+            95
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            280,
+            95
+          ],
+          "source_range": [
+            83,
+            191
+          ],
+          "top_left_px": [
+            1,
+            118
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 24,
+      "loop": false,
+      "position_xy_px": [
+        126,
+        163
+      ],
+      "script_block": 588,
+      "script_hash64": "68fd2517044b759e",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        126,
+        163,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        593
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 2,
+      "draw_layer_name": "MIDDLEBACK",
+      "first_frame": {
+        "atlas_frame_index": 0,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/background/back_middle.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 194,
+          "y": 149,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L2_25_d4eaaf0a.png",
+        "png_size_px": [
+          568,
+          375
+        ],
+        "scaled_size_px": [
+          568,
+          375
+        ],
+        "top_left_px": [
+          -151,
+          -226
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 0,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/background/back_middle.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -345,
+            -175
+          ],
+          "image_file": "objects/L2_25_d4eaaf0a.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            568,
+            375
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            568,
+            375
+          ],
+          "source_range": [
+            88,
+            280
+          ],
+          "top_left_px": [
+            -151,
+            -226
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 25,
+      "loop": false,
+      "position_xy_px": [
+        194,
+        -51
+      ],
+      "script_block": 593,
+      "script_hash64": "d4eaaf0a6481f98c",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        194,
+        -51,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        588
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 5,
+      "draw_layer_name": "BOTTOM",
+      "first_frame": {
+        "atlas_frame_index": 3,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 888,
+          "y": 230,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L5_26_68fd2517.png",
+        "png_size_px": [
+          280,
+          95
+        ],
+        "scaled_size_px": [
+          280,
+          95
+        ],
+        "top_left_px": [
+          763,
+          135
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 3,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -125,
+            -45
+          ],
+          "image_file": "objects/L5_26_68fd2517.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            280,
+            95
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            280,
+            95
+          ],
+          "source_range": [
+            83,
+            191
+          ],
+          "top_left_px": [
+            763,
+            135
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 26,
+      "loop": false,
+      "position_xy_px": [
+        888,
+        180
+      ],
+      "script_block": 588,
+      "script_hash64": "68fd2517044b759e",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        888,
+        180,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        589
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 5,
+      "draw_layer_name": "BOTTOM",
+      "first_frame": {
+        "atlas_frame_index": 4,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 793,
+          "y": 291,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L5_27_d6f50c5e.png",
+        "png_size_px": [
+          160,
+          66
+        ],
+        "scaled_size_px": [
+          160,
+          66
+        ],
+        "top_left_px": [
+          728,
+          225
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 4,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -65,
+            -30
+          ],
+          "image_file": "objects/L5_27_d6f50c5e.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            160,
+            66
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            160,
+            66
+          ],
+          "source_range": [
+            83,
+            191
+          ],
+          "top_left_px": [
+            728,
+            225
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 27,
+      "loop": false,
+      "position_xy_px": [
+        793,
+        255
+      ],
+      "script_block": 589,
+      "script_hash64": "d6f50c5e011218a8",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        793,
+        255,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        589
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 5,
+      "draw_layer_name": "BOTTOM",
+      "first_frame": {
+        "atlas_frame_index": 4,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 891,
+          "y": 275,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L5_28_d6f50c5e.png",
+        "png_size_px": [
+          160,
+          66
+        ],
+        "scaled_size_px": [
+          160,
+          66
+        ],
+        "top_left_px": [
+          826,
+          209
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 4,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -65,
+            -30
+          ],
+          "image_file": "objects/L5_28_d6f50c5e.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            160,
+            66
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            160,
+            66
+          ],
+          "source_range": [
+            83,
+            191
+          ],
+          "top_left_px": [
+            826,
+            209
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 28,
+      "loop": false,
+      "position_xy_px": [
+        891,
+        239
+      ],
+      "script_block": 589,
+      "script_hash64": "d6f50c5e011218a8",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        891,
+        239,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        589
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 5,
+      "draw_layer_name": "BOTTOM",
+      "first_frame": {
+        "atlas_frame_index": 4,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 874,
+          "y": 336,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L5_29_d6f50c5e.png",
+        "png_size_px": [
+          160,
+          66
+        ],
+        "scaled_size_px": [
+          160,
+          66
+        ],
+        "top_left_px": [
+          809,
+          270
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 4,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -65,
+            -30
+          ],
+          "image_file": "objects/L5_29_d6f50c5e.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            160,
+            66
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            160,
+            66
+          ],
+          "source_range": [
+            83,
+            191
+          ],
+          "top_left_px": [
+            809,
+            270
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 29,
+      "loop": false,
+      "position_xy_px": [
+        874,
+        300
+      ],
+      "script_block": 589,
+      "script_hash64": "d6f50c5e011218a8",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        874,
+        300,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        584
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 7,
+      "draw_layer_name": "CONTACT",
+      "first_frame": {
+        "atlas_frame_index": 3,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 764,
+          "y": 443,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L7_30_b5812984.png",
+        "png_size_px": [
+          223,
+          166
+        ],
+        "scaled_size_px": [
+          223,
+          166
+        ],
+        "top_left_px": [
+          649,
+          277
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 3,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -115,
+            -135
+          ],
+          "image_file": "objects/L7_30_b5812984.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            223,
+            166
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            223,
+            166
+          ],
+          "source_range": [
+            79,
+            187
+          ],
+          "top_left_px": [
+            649,
+            277
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 30,
+      "loop": false,
+      "position_xy_px": [
+        764,
+        412
+      ],
+      "script_block": 584,
+      "script_hash64": "b581298403321c9c",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        764,
+        412,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        586
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 6,
+      "draw_layer_name": "NORMAL",
+      "first_frame": {
+        "atlas_frame_index": 5,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 774,
+          "y": 149,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L6_31_802acb69.png",
+        "png_size_px": [
+          63,
+          82
+        ],
+        "scaled_size_px": [
+          63,
+          82
+        ],
+        "top_left_px": [
+          744,
+          67
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 5,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -30,
+            -70
+          ],
+          "image_file": "objects/L6_31_802acb69.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            63,
+            82
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            63,
+            82
+          ],
+          "source_range": [
+            79,
+            187
+          ],
+          "top_left_px": [
+            744,
+            67
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 31,
+      "loop": false,
+      "position_xy_px": [
+        774,
+        137
+      ],
+      "script_block": 586,
+      "script_hash64": "802acb69ae657b15",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        774,
+        137,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        573
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 5,
+      "draw_layer_name": "BOTTOM",
+      "first_frame": {
+        "atlas_frame_index": 3,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 868,
+          "y": 281,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L5_32_9e0e589c.png",
+        "png_size_px": [
+          280,
+          95
+        ],
+        "scaled_size_px": [
+          280,
+          95
+        ],
+        "top_left_px": [
+          743,
+          186
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 3,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -125,
+            -45
+          ],
+          "image_file": "objects/L5_32_9e0e589c.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            280,
+            95
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            280,
+            95
+          ],
+          "source_range": [
+            83,
+            191
+          ],
+          "top_left_px": [
+            743,
+            186
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 32,
+      "loop": false,
+      "position_xy_px": [
+        868,
+        231
+      ],
+      "script_block": 573,
+      "script_hash64": "9e0e589c8dcd0da1",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        868,
+        231,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        568
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 6,
+      "draw_layer_name": "NORMAL",
+      "first_frame": {
+        "atlas_frame_index": 3,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 873,
+          "y": 241,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L6_33_7c072467.png",
+        "png_size_px": [
+          223,
+          166
+        ],
+        "scaled_size_px": [
+          223,
+          166
+        ],
+        "top_left_px": [
+          758,
+          75
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 3,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -115,
+            -135
+          ],
+          "image_file": "objects/L6_33_7c072467.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            223,
+            166
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            223,
+            166
+          ],
+          "source_range": [
+            79,
+            187
+          ],
+          "top_left_px": [
+            758,
+            75
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 33,
+      "loop": false,
+      "position_xy_px": [
+        873,
+        210
+      ],
+      "script_block": 568,
+      "script_hash64": "7c0724676e267a43",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        873,
+        210,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        575
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 6,
+      "draw_layer_name": "NORMAL",
+      "first_frame": {
+        "atlas_frame_index": 5,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 862,
+          "y": 202,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L6_34_23f46eb4.png",
+        "png_size_px": [
+          91,
+          84
+        ],
+        "scaled_size_px": [
+          91,
+          84
+        ],
+        "top_left_px": [
+          817,
+          118
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 5,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -45,
+            -65
+          ],
+          "image_file": "objects/L6_34_23f46eb4.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            91,
+            84
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            91,
+            84
+          ],
+          "source_range": [
+            83,
+            191
+          ],
+          "top_left_px": [
+            817,
+            118
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 34,
+      "loop": false,
+      "position_xy_px": [
+        862,
+        183
+      ],
+      "script_block": 575,
+      "script_hash64": "23f46eb42bdac7dd",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        862,
+        183,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        575
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 6,
+      "draw_layer_name": "NORMAL",
+      "first_frame": {
+        "atlas_frame_index": 5,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 835,
+          "y": 236,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L6_35_23f46eb4.png",
+        "png_size_px": [
+          91,
+          84
+        ],
+        "scaled_size_px": [
+          91,
+          84
+        ],
+        "top_left_px": [
+          790,
+          152
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 5,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -45,
+            -65
+          ],
+          "image_file": "objects/L6_35_23f46eb4.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            91,
+            84
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            91,
+            84
+          ],
+          "source_range": [
+            83,
+            191
+          ],
+          "top_left_px": [
+            790,
+            152
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 35,
+      "loop": false,
+      "position_xy_px": [
+        835,
+        217
+      ],
+      "script_block": 575,
+      "script_hash64": "23f46eb42bdac7dd",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        835,
+        217,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        575
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 6,
+      "draw_layer_name": "NORMAL",
+      "first_frame": {
+        "atlas_frame_index": 5,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 700,
+          "y": 380,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L6_36_23f46eb4.png",
+        "png_size_px": [
+          91,
+          84
+        ],
+        "scaled_size_px": [
+          91,
+          84
+        ],
+        "top_left_px": [
+          655,
+          296
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 5,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -45,
+            -65
+          ],
+          "image_file": "objects/L6_36_23f46eb4.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            91,
+            84
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            91,
+            84
+          ],
+          "source_range": [
+            83,
+            191
+          ],
+          "top_left_px": [
+            655,
+            296
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 36,
+      "loop": false,
+      "position_xy_px": [
+        700,
+        361
+      ],
+      "script_block": 575,
+      "script_hash64": "23f46eb42bdac7dd",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        700,
+        361,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        585
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 7,
+      "draw_layer_name": "CONTACT",
+      "first_frame": {
+        "atlas_frame_index": 4,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 814,
+          "y": 299,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L7_37_9277784d.png",
+        "png_size_px": [
+          189,
+          133
+        ],
+        "scaled_size_px": [
+          189,
+          133
+        ],
+        "top_left_px": [
+          729,
+          166
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 4,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -85,
+            -110
+          ],
+          "image_file": "objects/L7_37_9277784d.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            189,
+            133
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            189,
+            133
+          ],
+          "source_range": [
+            79,
+            187
+          ],
+          "top_left_px": [
+            729,
+            166
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 37,
+      "loop": false,
+      "position_xy_px": [
+        814,
+        276
+      ],
+      "script_block": 585,
+      "script_hash64": "9277784de838585e",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        814,
+        276,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        575
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 6,
+      "draw_layer_name": "NORMAL",
+      "first_frame": {
+        "atlas_frame_index": 5,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 887,
+          "y": 274,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L6_38_23f46eb4.png",
+        "png_size_px": [
+          91,
+          84
+        ],
+        "scaled_size_px": [
+          91,
+          84
+        ],
+        "top_left_px": [
+          842,
+          190
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 5,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -45,
+            -65
+          ],
+          "image_file": "objects/L6_38_23f46eb4.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            91,
+            84
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            91,
+            84
+          ],
+          "source_range": [
+            83,
+            191
+          ],
+          "top_left_px": [
+            842,
+            190
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 38,
+      "loop": false,
+      "position_xy_px": [
+        887,
+        255
+      ],
+      "script_block": 575,
+      "script_hash64": "23f46eb42bdac7dd",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        887,
+        255,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        575
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 6,
+      "draw_layer_name": "NORMAL",
+      "first_frame": {
+        "atlas_frame_index": 5,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 779,
+          "y": 329,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L6_39_23f46eb4.png",
+        "png_size_px": [
+          91,
+          84
+        ],
+        "scaled_size_px": [
+          91,
+          84
+        ],
+        "top_left_px": [
+          734,
+          245
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 5,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -45,
+            -65
+          ],
+          "image_file": "objects/L6_39_23f46eb4.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            91,
+            84
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            91,
+            84
+          ],
+          "source_range": [
+            83,
+            191
+          ],
+          "top_left_px": [
+            734,
+            245
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 39,
+      "loop": false,
+      "position_xy_px": [
+        779,
+        310
+      ],
+      "script_block": 575,
+      "script_hash64": "23f46eb42bdac7dd",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        779,
+        310,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        575
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 6,
+      "draw_layer_name": "NORMAL",
+      "first_frame": {
+        "atlas_frame_index": 5,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 740,
+          "y": 342,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L6_40_23f46eb4.png",
+        "png_size_px": [
+          91,
+          84
+        ],
+        "scaled_size_px": [
+          91,
+          84
+        ],
+        "top_left_px": [
+          695,
+          258
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 5,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -45,
+            -65
+          ],
+          "image_file": "objects/L6_40_23f46eb4.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            91,
+            84
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            91,
+            84
+          ],
+          "source_range": [
+            83,
+            191
+          ],
+          "top_left_px": [
+            695,
+            258
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 40,
+      "loop": false,
+      "position_xy_px": [
+        740,
+        323
+      ],
+      "script_block": 575,
+      "script_hash64": "23f46eb42bdac7dd",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        740,
+        323,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        586
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 6,
+      "draw_layer_name": "NORMAL",
+      "first_frame": {
+        "atlas_frame_index": 5,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 701,
+          "y": 338,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L6_41_802acb69.png",
+        "png_size_px": [
+          63,
+          82
+        ],
+        "scaled_size_px": [
+          63,
+          82
+        ],
+        "top_left_px": [
+          671,
+          256
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 5,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -30,
+            -70
+          ],
+          "image_file": "objects/L6_41_802acb69.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            63,
+            82
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            63,
+            82
+          ],
+          "source_range": [
+            79,
+            187
+          ],
+          "top_left_px": [
+            671,
+            256
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 41,
+      "loop": false,
+      "position_xy_px": [
+        701,
+        326
+      ],
+      "script_block": 586,
+      "script_hash64": "802acb69ae657b15",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        701,
+        326,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        589
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 5,
+      "draw_layer_name": "BOTTOM",
+      "first_frame": {
+        "atlas_frame_index": 4,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 93,
+          "y": 161,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L5_42_d6f50c5e.png",
+        "png_size_px": [
+          160,
+          66
+        ],
+        "scaled_size_px": [
+          160,
+          66
+        ],
+        "top_left_px": [
+          28,
+          95
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 4,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -65,
+            -30
+          ],
+          "image_file": "objects/L5_42_d6f50c5e.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            160,
+            66
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            160,
+            66
+          ],
+          "source_range": [
+            83,
+            191
+          ],
+          "top_left_px": [
+            28,
+            95
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 42,
+      "loop": false,
+      "position_xy_px": [
+        93,
+        125
+      ],
+      "script_block": 589,
+      "script_hash64": "d6f50c5e011218a8",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        93,
+        125,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        586
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 6,
+      "draw_layer_name": "NORMAL",
+      "first_frame": {
+        "atlas_frame_index": 5,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 740,
+          "y": 104,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L6_43_802acb69.png",
+        "png_size_px": [
+          63,
+          82
+        ],
+        "scaled_size_px": [
+          63,
+          82
+        ],
+        "top_left_px": [
+          710,
+          22
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 5,
+          "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -30,
+            -70
+          ],
+          "image_file": "objects/L6_43_802acb69.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            63,
+            82
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            63,
+            82
+          ],
+          "source_range": [
+            79,
+            187
+          ],
+          "top_left_px": [
+            710,
+            22
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 43,
+      "loop": false,
+      "position_xy_px": [
+        740,
+        92
+      ],
+      "script_block": 586,
+      "script_hash64": "802acb69ae657b15",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        740,
+        92,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        594
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 5,
+      "draw_layer_name": "BOTTOM",
+      "first_frame": {
+        "atlas_frame_index": 4,
+        "atlas_image_path": "Map/event/2018_Hell/Step4/object/rock.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 247,
+          "y": 342,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L5_44_8e997b55.png",
+        "png_size_px": [
+          37,
+          27
+        ],
+        "scaled_size_px": [
+          37,
+          27
+        ],
+        "top_left_px": [
+          222,
+          315
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 4,
+          "atlas_image_path": "Map/event/2018_Hell/Step4/object/rock.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -25,
+            -15
+          ],
+          "image_file": "objects/L5_44_8e997b55.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            37,
+            27
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            37,
+            27
+          ],
+          "source_range": [
+            77,
+            185
+          ],
+          "top_left_px": [
+            222,
+            315
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 44,
+      "loop": false,
+      "position_xy_px": [
+        247,
+        330
+      ],
+      "script_block": 594,
+      "script_hash64": "8e997b55c7322be9",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        247,
+        330,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 80,
+      "animation_shard_block": [
+        21,
+        594
+      ],
+      "decoded_frame_count": 1,
+      "draw_layer": 6,
+      "draw_layer_name": "NORMAL",
+      "first_frame": {
+        "atlas_frame_index": 4,
+        "atlas_image_path": "Map/event/2018_Hell/Step4/object/rock.img",
+        "delay_ms": 80,
+        "foot_point_px": {
+          "x": 114,
+          "y": 126,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L6_45_8e997b55.png",
+        "png_size_px": [
+          37,
+          27
+        ],
+        "scaled_size_px": [
+          37,
+          27
+        ],
+        "top_left_px": [
+          89,
+          99
+        ]
+      },
+      "frames": [
+        {
+          "atlas_frame_index": 4,
+          "atlas_image_path": "Map/event/2018_Hell/Step4/object/rock.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "delay_ms": 80,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": false,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            -25,
+            -15
+          ],
+          "image_file": "objects/L6_45_8e997b55.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            37,
+            27
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            1.0
+          ],
+          "scaled_size_px": [
+            37,
+            27
+          ],
+          "source_range": [
+            77,
+            185
+          ],
+          "top_left_px": [
+            89,
+            99
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 1,
+      "index": 45,
+      "loop": false,
+      "position_xy_px": [
+        114,
+        114
+      ],
+      "script_block": 594,
+      "script_hash64": "8e997b55c7322be9",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        114,
+        114,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 50100,
+      "animation_shard_block": [
+        21,
+        596
+      ],
+      "decoded_frame_count": 2,
+      "draw_layer": 2,
+      "draw_layer_name": "MIDDLEBACK",
+      "first_frame": {
+        "atlas_frame_index": 0,
+        "atlas_image_path": "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+        "delay_ms": 50000,
+        "foot_point_px": {
+          "x": -150,
+          "y": 469,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L2_46_5b7b43a5.png",
+        "png_size_px": [
+          1496,
+          369
+        ],
+        "scaled_size_px": [
+          1496,
+          369
+        ],
+        "top_left_px": [
+          -150,
+          100
+        ]
+      },
+      "frames": [
+        {
+          "anim_copy_file": "objects_anim/L2_46_5b7b43a5_f00.png",
+          "atlas_frame_index": 0,
+          "atlas_image_path": "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            100,
+            255
+          ],
+          "delay_ms": 50000,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": true,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            0,
+            0
+          ],
+          "image_file": "objects/L2_46_5b7b43a5.png",
+          "interpolation": true,
+          "interpolation_center_pos": [],
+          "interpolation_value": 2,
+          "offsets": [],
+          "png_size_px": [
+            1496,
+            369
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            -1.0
+          ],
+          "scaled_size_px": [
+            1496,
+            369
+          ],
+          "source_range": [
+            92,
+            200
+          ],
+          "top_left_px": [
+            -150,
+            100
+          ],
+          "udim": null
+        },
+        {
+          "atlas_frame_index": 0,
+          "atlas_image_path": "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            100,
+            255
+          ],
+          "delay_ms": 100,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": true,
+          "frame_position": 1,
+          "frame_position_offset_px": [
+            -1500,
+            0
+          ],
+          "image_file": "objects/L2_46_5b7b43a5.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            1496,
+            369
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            -1.0
+          ],
+          "scaled_size_px": [
+            1496,
+            369
+          ],
+          "source_range": [
+            200,
+            308
+          ],
+          "top_left_px": [
+            -1650,
+            100
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 2,
+      "index": 46,
+      "loop": true,
+      "position_xy_px": [
+        -150,
+        100
+      ],
+      "script_block": 596,
+      "script_hash64": "5b7b43a536fab1c1",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        -150,
+        100,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 50100,
+      "animation_shard_block": [
+        21,
+        596
+      ],
+      "decoded_frame_count": 2,
+      "draw_layer": 2,
+      "draw_layer_name": "MIDDLEBACK",
+      "first_frame": {
+        "atlas_frame_index": 0,
+        "atlas_image_path": "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+        "delay_ms": 50000,
+        "foot_point_px": {
+          "x": -150,
+          "y": 469,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L2_47_5b7b43a5.png",
+        "png_size_px": [
+          1496,
+          369
+        ],
+        "scaled_size_px": [
+          1496,
+          369
+        ],
+        "top_left_px": [
+          -150,
+          100
+        ]
+      },
+      "frames": [
+        {
+          "anim_copy_file": "objects_anim/L2_47_5b7b43a5_f00.png",
+          "atlas_frame_index": 0,
+          "atlas_image_path": "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            100,
+            255
+          ],
+          "delay_ms": 50000,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": true,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            0,
+            0
+          ],
+          "image_file": "objects/L2_47_5b7b43a5.png",
+          "interpolation": true,
+          "interpolation_center_pos": [],
+          "interpolation_value": 2,
+          "offsets": [],
+          "png_size_px": [
+            1496,
+            369
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            -1.0
+          ],
+          "scaled_size_px": [
+            1496,
+            369
+          ],
+          "source_range": [
+            92,
+            200
+          ],
+          "top_left_px": [
+            -150,
+            100
+          ],
+          "udim": null
+        },
+        {
+          "atlas_frame_index": 0,
+          "atlas_image_path": "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            100,
+            255
+          ],
+          "delay_ms": 100,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": true,
+          "frame_position": 1,
+          "frame_position_offset_px": [
+            -1500,
+            0
+          ],
+          "image_file": "objects/L2_47_5b7b43a5.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            1496,
+            369
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            -1.0
+          ],
+          "scaled_size_px": [
+            1496,
+            369
+          ],
+          "source_range": [
+            200,
+            308
+          ],
+          "top_left_px": [
+            -1650,
+            100
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 2,
+      "index": 47,
+      "loop": true,
+      "position_xy_px": [
+        -150,
+        100
+      ],
+      "script_block": 596,
+      "script_hash64": "5b7b43a536fab1c1",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        -150,
+        100,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 50100,
+      "animation_shard_block": [
+        21,
+        596
+      ],
+      "decoded_frame_count": 2,
+      "draw_layer": 2,
+      "draw_layer_name": "MIDDLEBACK",
+      "first_frame": {
+        "atlas_frame_index": 0,
+        "atlas_image_path": "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+        "delay_ms": 50000,
+        "foot_point_px": {
+          "x": 1346,
+          "y": 469,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L2_48_5b7b43a5.png",
+        "png_size_px": [
+          1496,
+          369
+        ],
+        "scaled_size_px": [
+          1496,
+          369
+        ],
+        "top_left_px": [
+          1346,
+          100
+        ]
+      },
+      "frames": [
+        {
+          "anim_copy_file": "objects_anim/L2_48_5b7b43a5_f00.png",
+          "atlas_frame_index": 0,
+          "atlas_image_path": "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            100,
+            255
+          ],
+          "delay_ms": 50000,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": true,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            0,
+            0
+          ],
+          "image_file": "objects/L2_48_5b7b43a5.png",
+          "interpolation": true,
+          "interpolation_center_pos": [],
+          "interpolation_value": 2,
+          "offsets": [],
+          "png_size_px": [
+            1496,
+            369
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            -1.0
+          ],
+          "scaled_size_px": [
+            1496,
+            369
+          ],
+          "source_range": [
+            92,
+            200
+          ],
+          "top_left_px": [
+            1346,
+            100
+          ],
+          "udim": null
+        },
+        {
+          "atlas_frame_index": 0,
+          "atlas_image_path": "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            100,
+            255
+          ],
+          "delay_ms": 100,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": true,
+          "frame_position": 1,
+          "frame_position_offset_px": [
+            -1500,
+            0
+          ],
+          "image_file": "objects/L2_48_5b7b43a5.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            1496,
+            369
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            -1.0
+          ],
+          "scaled_size_px": [
+            1496,
+            369
+          ],
+          "source_range": [
+            200,
+            308
+          ],
+          "top_left_px": [
+            -154,
+            100
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 2,
+      "index": 48,
+      "loop": true,
+      "position_xy_px": [
+        1346,
+        100
+      ],
+      "script_block": 596,
+      "script_hash64": "5b7b43a536fab1c1",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        1346,
+        100,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    },
+    {
+      "animation_duration_ms": 50100,
+      "animation_shard_block": [
+        21,
+        596
+      ],
+      "decoded_frame_count": 2,
+      "draw_layer": 2,
+      "draw_layer_name": "MIDDLEBACK",
+      "first_frame": {
+        "atlas_frame_index": 0,
+        "atlas_image_path": "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+        "delay_ms": 50000,
+        "foot_point_px": {
+          "x": 1346,
+          "y": 469,
+          "y_basis": "first-frame image bottom edge y (M8-005 foot_points 口径); x 沿用源 position x（图像锚点偏移未解释，M8-010 标定裁决）"
+        },
+        "image_file": "objects/L2_49_5b7b43a5.png",
+        "png_size_px": [
+          1496,
+          369
+        ],
+        "scaled_size_px": [
+          1496,
+          369
+        ],
+        "top_left_px": [
+          1346,
+          100
+        ]
+      },
+      "frames": [
+        {
+          "anim_copy_file": "objects_anim/L2_49_5b7b43a5_f00.png",
+          "atlas_frame_index": 0,
+          "atlas_image_path": "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            100,
+            255
+          ],
+          "delay_ms": 50000,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": true,
+          "frame_position": 0,
+          "frame_position_offset_px": [
+            0,
+            0
+          ],
+          "image_file": "objects/L2_49_5b7b43a5.png",
+          "interpolation": true,
+          "interpolation_center_pos": [],
+          "interpolation_value": 2,
+          "offsets": [],
+          "png_size_px": [
+            1496,
+            369
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            -1.0
+          ],
+          "scaled_size_px": [
+            1496,
+            369
+          ],
+          "source_range": [
+            92,
+            200
+          ],
+          "top_left_px": [
+            1346,
+            100
+          ],
+          "udim": null
+        },
+        {
+          "atlas_frame_index": 0,
+          "atlas_image_path": "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+          "clip_area": [],
+          "color_rgba": [
+            255,
+            255,
+            100,
+            255
+          ],
+          "delay_ms": 100,
+          "flip_copy_type": 0,
+          "flip_x": false,
+          "flip_y": true,
+          "frame_position": 1,
+          "frame_position_offset_px": [
+            -1500,
+            0
+          ],
+          "image_file": "objects/L2_49_5b7b43a5.png",
+          "interpolation": false,
+          "interpolation_center_pos": [],
+          "interpolation_value": 0,
+          "offsets": [],
+          "png_size_px": [
+            1496,
+            369
+          ],
+          "rotation_degrees": 0.0,
+          "scale_xy": [
+            1.0,
+            -1.0
+          ],
+          "scaled_size_px": [
+            1496,
+            369
+          ],
+          "source_range": [
+            200,
+            308
+          ],
+          "top_left_px": [
+            -154,
+            100
+          ],
+          "udim": null
+        }
+      ],
+      "image_frame_count": 2,
+      "index": 49,
+      "loop": true,
+      "position_xy_px": [
+        1346,
+        100
+      ],
+      "script_block": 596,
+      "script_hash64": "5b7b43a536fab1c1",
+      "script_shard": 21,
+      "source_position_xyz_px": [
+        1346,
+        100,
+        0
+      ],
+      "world": null,
+      "z_correction_px": 0
+    }
+  ],
+  "px_to_world": {
+    "owner_task": "M8-010",
+    "status": "not_converted_here",
+    "world_field": "每个对象/地砖实例的 \"world\" 字段为 null 占位，按 M8-010 JSON 字段口径由其换算结果回填"
+  },
+  "summary": {
+    "distinct_script_keys": 16,
+    "image_frames_exported_total": 54,
+    "layer_counts": {
+      "1": 3,
+      "2": 8,
+      "4": 1,
+      "5": 13,
+      "6": 20,
+      "7": 5
+    },
+    "multi_frame_object_indices": [
+      46,
+      47,
+      48,
+      49
+    ],
+    "object_count": 50,
+    "png_file_total": 60
+  },
+  "task": "M8-011 P02-B 竹林地面与分层材质 UE 构建 — 离线裁切与放置中间数据（UE 部分由协调者执行）",
+  "tiles": {
+    "instance_count": 4,
+    "instances": [
+      {
+        "floor_height_px": 120,
+        "image_file": "tiles/tile_84368d266da2197b.png",
+        "placement_index": 0,
+        "tile_hash64": "84368d266da2197b",
+        "world": null,
+        "x_px": 0,
+        "y_top_px": 40,
+        "y_top_screen_ydown_px": -40
+      },
+      {
+        "floor_height_px": 120,
+        "image_file": "tiles/tile_8460768a44b09b76.png",
+        "placement_index": 1,
+        "tile_hash64": "8460768a44b09b76",
+        "world": null,
+        "x_px": 224,
+        "y_top_px": 40,
+        "y_top_screen_ydown_px": -40
+      },
+      {
+        "floor_height_px": 120,
+        "image_file": "tiles/tile_84368d266da2197b.png",
+        "placement_index": 2,
+        "tile_hash64": "84368d266da2197b",
+        "world": null,
+        "x_px": 448,
+        "y_top_px": 40,
+        "y_top_screen_ydown_px": -40
+      },
+      {
+        "floor_height_px": 120,
+        "image_file": "tiles/tile_8460768a44b09b76.png",
+        "placement_index": 3,
+        "tile_hash64": "8460768a44b09b76",
+        "world": null,
+        "x_px": 672,
+        "y_top_px": 40,
+        "y_top_screen_ydown_px": -40
+      }
+    ],
+    "unique_definitions": [
+      {
+        "atlas_frame_index": 1,
+        "atlas_image_path": "Map/event/2018_Hell/Step4/tile/tile.img",
+        "floor_height_px": 120,
+        "image_file": "tiles/tile_84368d266da2197b.png",
+        "png_sha256": "e07539d8d64b2ed872decbfcec52f9b697d1acb8b5f21b5cf25a28458f335438",
+        "png_size_px": [
+          224,
+          600
+        ],
+        "tile_hash64": "84368d266da2197b",
+        "tile_horizontal_step_px": 224
+      },
+      {
+        "atlas_frame_index": 0,
+        "atlas_image_path": "Map/event/2018_Hell/Step4/tile/tile.img",
+        "floor_height_px": 120,
+        "image_file": "tiles/tile_8460768a44b09b76.png",
+        "png_sha256": "5d8e8542c6f360af5022fd483452fa065b96f85dabacd22d59dd4a48b6edf70b",
+        "png_size_px": [
+          224,
+          600
+        ],
+        "tile_hash64": "8460768a44b09b76",
+        "tile_horizontal_step_px": 224
+      }
+    ]
+  },
+  "units": "源 2D 像素坐标（原始游戏像素，非 Unity 米）；本文件不做 px→cm 换算"
+}

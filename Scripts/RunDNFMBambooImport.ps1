@@ -1,4 +1,4 @@
-param([ValidateSet('import','verify')][string]$Mode='import')
+param([ValidateSet('import','verify','capture')][string]$Mode='import')
 . "$PSScriptRoot\Common.ps1"
 # M8-011: import the P02 bamboo segment (textures/materials/placement map).
 # Same single-writer and run-id guards as RunDNFMCharacterVisualImport.ps1.
@@ -19,7 +19,8 @@ if (Test-Path $Report) {
 try {
     $Editor = Join-Path $EngineRoot 'Engine\Binaries\Win64\UnrealEditor-Cmd.exe'
     $Arguments = @($ProjectFile,'-unattended','-nosplash','-nosound','-NoSourceControl','-ScriptErrorsAreFatal',"-abslog=$Evidence\ue-$Mode.log","-ExecutePythonScript=$PSScriptRoot\Editor\import_dnfm_bamboo_map.py")
-    if ($Mode -ne 'verify') { $Arguments += '-nullrhi' }
+    if ($Mode -eq 'capture') { $Arguments += '-RenderOffscreen' }
+    elseif ($Mode -ne 'verify') { $Arguments += '-nullrhi' }
     Invoke-UEProcess $Editor $Arguments "dnfm-bamboo-$Mode" 3600
     if (-not (Test-Path $Report)) { throw "Missing $Report" }
     $Result = Get-Content -LiteralPath $Report -Raw | ConvertFrom-Json

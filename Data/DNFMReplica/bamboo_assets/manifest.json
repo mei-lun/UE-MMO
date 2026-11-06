@@ -1,0 +1,2790 @@
+{
+  "assets_root": "Data/DNFMReplica/bamboo_assets/",
+  "build_stamp": "2026-11-07T02:27+0800",
+  "counts": {
+    "object_anim_png": 8,
+    "object_first_frame_png": 50,
+    "object_image_frames_exported": 54,
+    "png_total": 60,
+    "tile_png": 2
+  },
+  "files": [
+    {
+      "draw_layer": 1,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L1_00_222e81e5.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 0,
+      "png_sha256": "7829fb8ba33da576151192279b7a1c558c43f7a9c8454613dd6b924995537338",
+      "png_size_px": [
+        630,
+        355
+      ],
+      "script_hash64": "222e81e501e7909f",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 11286,
+        "atlas_image_path": "Map/Shonan_Hell/BackGround/2nd_Far.img",
+        "atlas_lookup_hash": "1c1b8a6a6e829dcf",
+        "atlas_name": "2nd_Far",
+        "atlas_payload_sha256": "335a40771ebf56b8546676d59ede53db7b51947c4cafeb84e0392e2ec4aab90a",
+        "canvas_px": [
+          630,
+          355
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          636,
+          360
+        ],
+        "page_format_code": 1,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03950_95b145603e3f56_5290100766878511979_2nd_Far.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/Shonan_Hell/BackGround/2nd_Far.img_0.png",
+        "rect_pixels": [
+          2.0,
+          2.0,
+          630.0,
+          355.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 1,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L1_01_222e81e5.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 1,
+      "png_sha256": "7829fb8ba33da576151192279b7a1c558c43f7a9c8454613dd6b924995537338",
+      "png_size_px": [
+        630,
+        355
+      ],
+      "script_hash64": "222e81e501e7909f",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 11286,
+        "atlas_image_path": "Map/Shonan_Hell/BackGround/2nd_Far.img",
+        "atlas_lookup_hash": "1c1b8a6a6e829dcf",
+        "atlas_name": "2nd_Far",
+        "atlas_payload_sha256": "335a40771ebf56b8546676d59ede53db7b51947c4cafeb84e0392e2ec4aab90a",
+        "canvas_px": [
+          630,
+          355
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          636,
+          360
+        ],
+        "page_format_code": 1,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03950_95b145603e3f56_5290100766878511979_2nd_Far.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/Shonan_Hell/BackGround/2nd_Far.img_0.png",
+        "rect_pixels": [
+          2.0,
+          2.0,
+          630.0,
+          355.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 1,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L1_02_222e81e5.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 2,
+      "png_sha256": "7829fb8ba33da576151192279b7a1c558c43f7a9c8454613dd6b924995537338",
+      "png_size_px": [
+        630,
+        355
+      ],
+      "script_hash64": "222e81e501e7909f",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 11286,
+        "atlas_image_path": "Map/Shonan_Hell/BackGround/2nd_Far.img",
+        "atlas_lookup_hash": "1c1b8a6a6e829dcf",
+        "atlas_name": "2nd_Far",
+        "atlas_payload_sha256": "335a40771ebf56b8546676d59ede53db7b51947c4cafeb84e0392e2ec4aab90a",
+        "canvas_px": [
+          630,
+          355
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          636,
+          360
+        ],
+        "page_format_code": 1,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03950_95b145603e3f56_5290100766878511979_2nd_Far.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/Shonan_Hell/BackGround/2nd_Far.img_0.png",
+        "rect_pixels": [
+          2.0,
+          2.0,
+          630.0,
+          355.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L2_03_f484c71b.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 3,
+      "png_sha256": "bacc911f42485d055aeba1ad718f3126225807b502529aff87b3f56e8d5c16a1",
+      "png_size_px": [
+        440,
+        441
+      ],
+      "script_hash64": "f484c71bdee0b60b",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135940,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "atlas_lookup_hash": "a4b13ae401eab684",
+        "atlas_name": "bamboo",
+        "atlas_payload_sha256": "724352a5840607f77caab0a1fec95d4d237916fe069c6ea4ed81c8e6f46732c0",
+        "canvas_px": [
+          440,
+          441
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          960,
+          816
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5836530328173785818_bamboo.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bamboo.img_0.png",
+        "rect_pixels": [
+          2.0,
+          2.0,
+          440.0,
+          441.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L2_04_f484c71b.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 4,
+      "png_sha256": "bacc911f42485d055aeba1ad718f3126225807b502529aff87b3f56e8d5c16a1",
+      "png_size_px": [
+        440,
+        441
+      ],
+      "script_hash64": "f484c71bdee0b60b",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135940,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "atlas_lookup_hash": "a4b13ae401eab684",
+        "atlas_name": "bamboo",
+        "atlas_payload_sha256": "724352a5840607f77caab0a1fec95d4d237916fe069c6ea4ed81c8e6f46732c0",
+        "canvas_px": [
+          440,
+          441
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          960,
+          816
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5836530328173785818_bamboo.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bamboo.img_0.png",
+        "rect_pixels": [
+          2.0,
+          2.0,
+          440.0,
+          441.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L2_05_fb71db55.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 5,
+      "png_sha256": "8a25a3f94e3e39d6711b0700a12bce26533bd5cac00c239e099c6e981f78c400",
+      "png_size_px": [
+        399,
+        392
+      ],
+      "script_hash64": "fb71db553e200ada",
+      "source": {
+        "atlas_frame_index": 1,
+        "atlas_id": 135940,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "atlas_lookup_hash": "a4b13ae401eab684",
+        "atlas_name": "bamboo",
+        "atlas_payload_sha256": "724352a5840607f77caab0a1fec95d4d237916fe069c6ea4ed81c8e6f46732c0",
+        "canvas_px": [
+          399,
+          392
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          960,
+          816
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5836530328173785818_bamboo.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bamboo.img_0.png",
+        "rect_pixels": [
+          444.0,
+          422.0,
+          399.0,
+          392.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L2_25_d4eaaf0a.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 25,
+      "png_sha256": "9723d64763ae9ef51a0af2071e6377f01377483c84af04b4c727559f3d7b1987",
+      "png_size_px": [
+        568,
+        375
+      ],
+      "script_hash64": "d4eaaf0a6481f98c",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135939,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/background/back_middle.img",
+        "atlas_lookup_hash": "66139d76850761cd",
+        "atlas_name": "back_middle",
+        "atlas_payload_sha256": "1f1980ceac433aedf8b7e7f16248bf1c4e9f0e57f7906e8c0f9f11f62fb52320",
+        "canvas_px": [
+          568,
+          375
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          572,
+          756
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03291_c4ecc61c27d4f7_-8422259556762837590_back_middle.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/background/back_middle.img_0.png",
+        "rect_pixels": [
+          2.0,
+          2.0,
+          568.0,
+          375.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L2_46_5b7b43a5.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 46,
+      "png_sha256": "3e3b06e2f7473f761cf78ac81464ae5f25787036ae4b5f6f1b8cf6b671dcbed5",
+      "png_size_px": [
+        1496,
+        369
+      ],
+      "script_hash64": "5b7b43a536fab1c1",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 30543,
+        "atlas_image_path": "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+        "atlas_lookup_hash": "a74377f16da9f3bf",
+        "atlas_name": "BossMap_fog",
+        "atlas_payload_sha256": "cf2baaa1849d1f95109efaa4b9baa04624ff54cc41765c7e0c7db7f78bb85970",
+        "canvas_px": [
+          1496,
+          369
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1500,
+          376
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03389_a854a88215b862_2598445252729241293_BossMap_fog.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img_0.png",
+        "rect_pixels": [
+          2.0,
+          3.0,
+          1496.0,
+          369.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L2_47_5b7b43a5.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 47,
+      "png_sha256": "3e3b06e2f7473f761cf78ac81464ae5f25787036ae4b5f6f1b8cf6b671dcbed5",
+      "png_size_px": [
+        1496,
+        369
+      ],
+      "script_hash64": "5b7b43a536fab1c1",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 30543,
+        "atlas_image_path": "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+        "atlas_lookup_hash": "a74377f16da9f3bf",
+        "atlas_name": "BossMap_fog",
+        "atlas_payload_sha256": "cf2baaa1849d1f95109efaa4b9baa04624ff54cc41765c7e0c7db7f78bb85970",
+        "canvas_px": [
+          1496,
+          369
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1500,
+          376
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03389_a854a88215b862_2598445252729241293_BossMap_fog.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img_0.png",
+        "rect_pixels": [
+          2.0,
+          3.0,
+          1496.0,
+          369.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L2_48_5b7b43a5.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 48,
+      "png_sha256": "3e3b06e2f7473f761cf78ac81464ae5f25787036ae4b5f6f1b8cf6b671dcbed5",
+      "png_size_px": [
+        1496,
+        369
+      ],
+      "script_hash64": "5b7b43a536fab1c1",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 30543,
+        "atlas_image_path": "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+        "atlas_lookup_hash": "a74377f16da9f3bf",
+        "atlas_name": "BossMap_fog",
+        "atlas_payload_sha256": "cf2baaa1849d1f95109efaa4b9baa04624ff54cc41765c7e0c7db7f78bb85970",
+        "canvas_px": [
+          1496,
+          369
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1500,
+          376
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03389_a854a88215b862_2598445252729241293_BossMap_fog.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img_0.png",
+        "rect_pixels": [
+          2.0,
+          3.0,
+          1496.0,
+          369.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L2_49_5b7b43a5.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 49,
+      "png_sha256": "3e3b06e2f7473f761cf78ac81464ae5f25787036ae4b5f6f1b8cf6b671dcbed5",
+      "png_size_px": [
+        1496,
+        369
+      ],
+      "script_hash64": "5b7b43a536fab1c1",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 30543,
+        "atlas_image_path": "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+        "atlas_lookup_hash": "a74377f16da9f3bf",
+        "atlas_name": "BossMap_fog",
+        "atlas_payload_sha256": "cf2baaa1849d1f95109efaa4b9baa04624ff54cc41765c7e0c7db7f78bb85970",
+        "canvas_px": [
+          1496,
+          369
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1500,
+          376
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03389_a854a88215b862_2598445252729241293_BossMap_fog.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img_0.png",
+        "rect_pixels": [
+          2.0,
+          3.0,
+          1496.0,
+          369.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 4,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L4_06_ab07d46c.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 6,
+      "png_sha256": "1299bf8e5399387cd48d6c6472ad29f75ae83c9625f33aca981cc8593347b2cc",
+      "png_size_px": [
+        288,
+        418
+      ],
+      "script_hash64": "ab07d46c5e7d96bd",
+      "source": {
+        "atlas_frame_index": 2,
+        "atlas_id": 135940,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "atlas_lookup_hash": "a4b13ae401eab684",
+        "atlas_name": "bamboo",
+        "atlas_payload_sha256": "724352a5840607f77caab0a1fec95d4d237916fe069c6ea4ed81c8e6f46732c0",
+        "canvas_px": [
+          288,
+          418
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          960,
+          816
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5836530328173785818_bamboo.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bamboo.img_0.png",
+        "rect_pixels": [
+          444.0,
+          2.0,
+          288.0,
+          418.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 5,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L5_14_b1aee041.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 14,
+      "png_sha256": "a3cbfcebbb557e3ffc689c3bc38d2c0da60187a894244d95fbd9d911108e06f7",
+      "png_size_px": [
+        399,
+        106
+      ],
+      "script_hash64": "b1aee0412ee5e7fa",
+      "source": {
+        "atlas_frame_index": 2,
+        "atlas_id": 135942,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "atlas_lookup_hash": "488a425e2914b847",
+        "atlas_name": "bottom_obj",
+        "atlas_payload_sha256": "71dba77dd7e6eec466bef67c8c50d739887aca47982bb2a0725e7eeed9d9b6a5",
+        "canvas_px": [
+          399,
+          106
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1004,
+          500
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5622000257940281897_bottom_obj.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bottom_obj.img_0.png",
+        "rect_pixels": [
+          491.0,
+          169.0,
+          399.0,
+          106.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 5,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L5_15_68fd2517.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 15,
+      "png_sha256": "aff8d77e9bf687454c2343881c9c73d8ed32d11c2da1c99b7e4ce39d4ccb76de",
+      "png_size_px": [
+        280,
+        95
+      ],
+      "script_hash64": "68fd2517044b759e",
+      "source": {
+        "atlas_frame_index": 3,
+        "atlas_id": 135942,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "atlas_lookup_hash": "488a425e2914b847",
+        "atlas_name": "bottom_obj",
+        "atlas_payload_sha256": "71dba77dd7e6eec466bef67c8c50d739887aca47982bb2a0725e7eeed9d9b6a5",
+        "canvas_px": [
+          280,
+          95
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1004,
+          500
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5622000257940281897_bottom_obj.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bottom_obj.img_0.png",
+        "rect_pixels": [
+          721.0,
+          2.0,
+          280.0,
+          95.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 5,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L5_16_d6f50c5e.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 16,
+      "png_sha256": "288cc2ef1b4eb8eab6549fef4e1feff6af0464490cc6c5655569515b4d0b4210",
+      "png_size_px": [
+        160,
+        66
+      ],
+      "script_hash64": "d6f50c5e011218a8",
+      "source": {
+        "atlas_frame_index": 4,
+        "atlas_id": 135942,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "atlas_lookup_hash": "488a425e2914b847",
+        "atlas_name": "bottom_obj",
+        "atlas_payload_sha256": "71dba77dd7e6eec466bef67c8c50d739887aca47982bb2a0725e7eeed9d9b6a5",
+        "canvas_px": [
+          160,
+          66
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1004,
+          500
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5622000257940281897_bottom_obj.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bottom_obj.img_0.png",
+        "rect_pixels": [
+          721.0,
+          99.0,
+          160.0,
+          66.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 5,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L5_17_d6f50c5e.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 17,
+      "png_sha256": "288cc2ef1b4eb8eab6549fef4e1feff6af0464490cc6c5655569515b4d0b4210",
+      "png_size_px": [
+        160,
+        66
+      ],
+      "script_hash64": "d6f50c5e011218a8",
+      "source": {
+        "atlas_frame_index": 4,
+        "atlas_id": 135942,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "atlas_lookup_hash": "488a425e2914b847",
+        "atlas_name": "bottom_obj",
+        "atlas_payload_sha256": "71dba77dd7e6eec466bef67c8c50d739887aca47982bb2a0725e7eeed9d9b6a5",
+        "canvas_px": [
+          160,
+          66
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1004,
+          500
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5622000257940281897_bottom_obj.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bottom_obj.img_0.png",
+        "rect_pixels": [
+          721.0,
+          99.0,
+          160.0,
+          66.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 5,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L5_19_b1aee041.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 19,
+      "png_sha256": "a3cbfcebbb557e3ffc689c3bc38d2c0da60187a894244d95fbd9d911108e06f7",
+      "png_size_px": [
+        399,
+        106
+      ],
+      "script_hash64": "b1aee0412ee5e7fa",
+      "source": {
+        "atlas_frame_index": 2,
+        "atlas_id": 135942,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "atlas_lookup_hash": "488a425e2914b847",
+        "atlas_name": "bottom_obj",
+        "atlas_payload_sha256": "71dba77dd7e6eec466bef67c8c50d739887aca47982bb2a0725e7eeed9d9b6a5",
+        "canvas_px": [
+          399,
+          106
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1004,
+          500
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5622000257940281897_bottom_obj.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bottom_obj.img_0.png",
+        "rect_pixels": [
+          491.0,
+          169.0,
+          399.0,
+          106.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 5,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L5_24_68fd2517.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 24,
+      "png_sha256": "aff8d77e9bf687454c2343881c9c73d8ed32d11c2da1c99b7e4ce39d4ccb76de",
+      "png_size_px": [
+        280,
+        95
+      ],
+      "script_hash64": "68fd2517044b759e",
+      "source": {
+        "atlas_frame_index": 3,
+        "atlas_id": 135942,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "atlas_lookup_hash": "488a425e2914b847",
+        "atlas_name": "bottom_obj",
+        "atlas_payload_sha256": "71dba77dd7e6eec466bef67c8c50d739887aca47982bb2a0725e7eeed9d9b6a5",
+        "canvas_px": [
+          280,
+          95
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1004,
+          500
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5622000257940281897_bottom_obj.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bottom_obj.img_0.png",
+        "rect_pixels": [
+          721.0,
+          2.0,
+          280.0,
+          95.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 5,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L5_26_68fd2517.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 26,
+      "png_sha256": "aff8d77e9bf687454c2343881c9c73d8ed32d11c2da1c99b7e4ce39d4ccb76de",
+      "png_size_px": [
+        280,
+        95
+      ],
+      "script_hash64": "68fd2517044b759e",
+      "source": {
+        "atlas_frame_index": 3,
+        "atlas_id": 135942,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "atlas_lookup_hash": "488a425e2914b847",
+        "atlas_name": "bottom_obj",
+        "atlas_payload_sha256": "71dba77dd7e6eec466bef67c8c50d739887aca47982bb2a0725e7eeed9d9b6a5",
+        "canvas_px": [
+          280,
+          95
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1004,
+          500
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5622000257940281897_bottom_obj.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bottom_obj.img_0.png",
+        "rect_pixels": [
+          721.0,
+          2.0,
+          280.0,
+          95.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 5,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L5_27_d6f50c5e.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 27,
+      "png_sha256": "288cc2ef1b4eb8eab6549fef4e1feff6af0464490cc6c5655569515b4d0b4210",
+      "png_size_px": [
+        160,
+        66
+      ],
+      "script_hash64": "d6f50c5e011218a8",
+      "source": {
+        "atlas_frame_index": 4,
+        "atlas_id": 135942,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "atlas_lookup_hash": "488a425e2914b847",
+        "atlas_name": "bottom_obj",
+        "atlas_payload_sha256": "71dba77dd7e6eec466bef67c8c50d739887aca47982bb2a0725e7eeed9d9b6a5",
+        "canvas_px": [
+          160,
+          66
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1004,
+          500
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5622000257940281897_bottom_obj.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bottom_obj.img_0.png",
+        "rect_pixels": [
+          721.0,
+          99.0,
+          160.0,
+          66.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 5,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L5_28_d6f50c5e.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 28,
+      "png_sha256": "288cc2ef1b4eb8eab6549fef4e1feff6af0464490cc6c5655569515b4d0b4210",
+      "png_size_px": [
+        160,
+        66
+      ],
+      "script_hash64": "d6f50c5e011218a8",
+      "source": {
+        "atlas_frame_index": 4,
+        "atlas_id": 135942,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "atlas_lookup_hash": "488a425e2914b847",
+        "atlas_name": "bottom_obj",
+        "atlas_payload_sha256": "71dba77dd7e6eec466bef67c8c50d739887aca47982bb2a0725e7eeed9d9b6a5",
+        "canvas_px": [
+          160,
+          66
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1004,
+          500
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5622000257940281897_bottom_obj.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bottom_obj.img_0.png",
+        "rect_pixels": [
+          721.0,
+          99.0,
+          160.0,
+          66.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 5,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L5_29_d6f50c5e.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 29,
+      "png_sha256": "288cc2ef1b4eb8eab6549fef4e1feff6af0464490cc6c5655569515b4d0b4210",
+      "png_size_px": [
+        160,
+        66
+      ],
+      "script_hash64": "d6f50c5e011218a8",
+      "source": {
+        "atlas_frame_index": 4,
+        "atlas_id": 135942,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "atlas_lookup_hash": "488a425e2914b847",
+        "atlas_name": "bottom_obj",
+        "atlas_payload_sha256": "71dba77dd7e6eec466bef67c8c50d739887aca47982bb2a0725e7eeed9d9b6a5",
+        "canvas_px": [
+          160,
+          66
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1004,
+          500
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5622000257940281897_bottom_obj.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bottom_obj.img_0.png",
+        "rect_pixels": [
+          721.0,
+          99.0,
+          160.0,
+          66.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 5,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L5_32_9e0e589c.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 32,
+      "png_sha256": "aff8d77e9bf687454c2343881c9c73d8ed32d11c2da1c99b7e4ce39d4ccb76de",
+      "png_size_px": [
+        280,
+        95
+      ],
+      "script_hash64": "9e0e589c8dcd0da1",
+      "source": {
+        "atlas_frame_index": 3,
+        "atlas_id": 135942,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "atlas_lookup_hash": "488a425e2914b847",
+        "atlas_name": "bottom_obj",
+        "atlas_payload_sha256": "71dba77dd7e6eec466bef67c8c50d739887aca47982bb2a0725e7eeed9d9b6a5",
+        "canvas_px": [
+          280,
+          95
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1004,
+          500
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5622000257940281897_bottom_obj.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bottom_obj.img_0.png",
+        "rect_pixels": [
+          721.0,
+          2.0,
+          280.0,
+          95.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 5,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L5_42_d6f50c5e.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 42,
+      "png_sha256": "288cc2ef1b4eb8eab6549fef4e1feff6af0464490cc6c5655569515b4d0b4210",
+      "png_size_px": [
+        160,
+        66
+      ],
+      "script_hash64": "d6f50c5e011218a8",
+      "source": {
+        "atlas_frame_index": 4,
+        "atlas_id": 135942,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "atlas_lookup_hash": "488a425e2914b847",
+        "atlas_name": "bottom_obj",
+        "atlas_payload_sha256": "71dba77dd7e6eec466bef67c8c50d739887aca47982bb2a0725e7eeed9d9b6a5",
+        "canvas_px": [
+          160,
+          66
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1004,
+          500
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5622000257940281897_bottom_obj.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bottom_obj.img_0.png",
+        "rect_pixels": [
+          721.0,
+          99.0,
+          160.0,
+          66.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 5,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L5_44_8e997b55.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 44,
+      "png_sha256": "2e22cf812c944e7a9d9a641de9bade78ba97d814314cff4e3402a1f0269ea431",
+      "png_size_px": [
+        37,
+        27
+      ],
+      "script_hash64": "8e997b55c7322be9",
+      "source": {
+        "atlas_frame_index": 4,
+        "atlas_id": 135949,
+        "atlas_image_path": "Map/event/2018_Hell/Step4/object/rock.img",
+        "atlas_lookup_hash": "c6cab108db525e7a",
+        "atlas_name": "rock",
+        "atlas_payload_sha256": "4299d08c389a08a73358fe8cd503c308bfee9bdf671ec3b2e449cbf4ea61cd4d",
+        "canvas_px": [
+          37,
+          27
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          240,
+          144
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03294_4c027bb3d90acf_-8301932904767768977_rock.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step4/object/rock.img_0.png",
+        "rect_pixels": [
+          176.0,
+          90.0,
+          37.0,
+          27.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L6_07_b5812984.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 7,
+      "png_sha256": "83dd3583ba6b8f37b94d72e04a3c2554ba1b2ccb876aa405062d9f5a1238238e",
+      "png_size_px": [
+        223,
+        166
+      ],
+      "script_hash64": "b581298403321c9c",
+      "source": {
+        "atlas_frame_index": 3,
+        "atlas_id": 135940,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "atlas_lookup_hash": "a4b13ae401eab684",
+        "atlas_name": "bamboo",
+        "atlas_payload_sha256": "724352a5840607f77caab0a1fec95d4d237916fe069c6ea4ed81c8e6f46732c0",
+        "canvas_px": [
+          223,
+          166
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          960,
+          816
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5836530328173785818_bamboo.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bamboo.img_0.png",
+        "rect_pixels": [
+          734.0,
+          2.0,
+          223.0,
+          166.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L6_08_9277784d.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 8,
+      "png_sha256": "57660e6bfe487967e2fd0e46a9f3bb80f96be5f432e661cbc414979f643933ec",
+      "png_size_px": [
+        189,
+        133
+      ],
+      "script_hash64": "9277784de838585e",
+      "source": {
+        "atlas_frame_index": 4,
+        "atlas_id": 135940,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "atlas_lookup_hash": "a4b13ae401eab684",
+        "atlas_name": "bamboo",
+        "atlas_payload_sha256": "724352a5840607f77caab0a1fec95d4d237916fe069c6ea4ed81c8e6f46732c0",
+        "canvas_px": [
+          189,
+          133
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          960,
+          816
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5836530328173785818_bamboo.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bamboo.img_0.png",
+        "rect_pixels": [
+          734.0,
+          170.0,
+          189.0,
+          133.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L6_09_8e997b55.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 9,
+      "png_sha256": "2e22cf812c944e7a9d9a641de9bade78ba97d814314cff4e3402a1f0269ea431",
+      "png_size_px": [
+        37,
+        27
+      ],
+      "script_hash64": "8e997b55c7322be9",
+      "source": {
+        "atlas_frame_index": 4,
+        "atlas_id": 135949,
+        "atlas_image_path": "Map/event/2018_Hell/Step4/object/rock.img",
+        "atlas_lookup_hash": "c6cab108db525e7a",
+        "atlas_name": "rock",
+        "atlas_payload_sha256": "4299d08c389a08a73358fe8cd503c308bfee9bdf671ec3b2e449cbf4ea61cd4d",
+        "canvas_px": [
+          37,
+          27
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          240,
+          144
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03294_4c027bb3d90acf_-8301932904767768977_rock.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step4/object/rock.img_0.png",
+        "rect_pixels": [
+          176.0,
+          90.0,
+          37.0,
+          27.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L6_10_8e997b55.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 10,
+      "png_sha256": "2e22cf812c944e7a9d9a641de9bade78ba97d814314cff4e3402a1f0269ea431",
+      "png_size_px": [
+        37,
+        27
+      ],
+      "script_hash64": "8e997b55c7322be9",
+      "source": {
+        "atlas_frame_index": 4,
+        "atlas_id": 135949,
+        "atlas_image_path": "Map/event/2018_Hell/Step4/object/rock.img",
+        "atlas_lookup_hash": "c6cab108db525e7a",
+        "atlas_name": "rock",
+        "atlas_payload_sha256": "4299d08c389a08a73358fe8cd503c308bfee9bdf671ec3b2e449cbf4ea61cd4d",
+        "canvas_px": [
+          37,
+          27
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          240,
+          144
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03294_4c027bb3d90acf_-8301932904767768977_rock.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step4/object/rock.img_0.png",
+        "rect_pixels": [
+          176.0,
+          90.0,
+          37.0,
+          27.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L6_11_8e997b55.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 11,
+      "png_sha256": "2e22cf812c944e7a9d9a641de9bade78ba97d814314cff4e3402a1f0269ea431",
+      "png_size_px": [
+        37,
+        27
+      ],
+      "script_hash64": "8e997b55c7322be9",
+      "source": {
+        "atlas_frame_index": 4,
+        "atlas_id": 135949,
+        "atlas_image_path": "Map/event/2018_Hell/Step4/object/rock.img",
+        "atlas_lookup_hash": "c6cab108db525e7a",
+        "atlas_name": "rock",
+        "atlas_payload_sha256": "4299d08c389a08a73358fe8cd503c308bfee9bdf671ec3b2e449cbf4ea61cd4d",
+        "canvas_px": [
+          37,
+          27
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          240,
+          144
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03294_4c027bb3d90acf_-8301932904767768977_rock.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step4/object/rock.img_0.png",
+        "rect_pixels": [
+          176.0,
+          90.0,
+          37.0,
+          27.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L6_12_802acb69.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 12,
+      "png_sha256": "ece26f49530d937f05e2515391410ab616425e8900fc97bbfba39439d53faffb",
+      "png_size_px": [
+        63,
+        82
+      ],
+      "script_hash64": "802acb69ae657b15",
+      "source": {
+        "atlas_frame_index": 5,
+        "atlas_id": 135940,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "atlas_lookup_hash": "a4b13ae401eab684",
+        "atlas_name": "bamboo",
+        "atlas_payload_sha256": "724352a5840607f77caab0a1fec95d4d237916fe069c6ea4ed81c8e6f46732c0",
+        "canvas_px": [
+          63,
+          82
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          960,
+          816
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5836530328173785818_bamboo.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bamboo.img_0.png",
+        "rect_pixels": [
+          734.0,
+          305.0,
+          63.0,
+          82.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L6_13_802acb69.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 13,
+      "png_sha256": "ece26f49530d937f05e2515391410ab616425e8900fc97bbfba39439d53faffb",
+      "png_size_px": [
+        63,
+        82
+      ],
+      "script_hash64": "802acb69ae657b15",
+      "source": {
+        "atlas_frame_index": 5,
+        "atlas_id": 135940,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "atlas_lookup_hash": "a4b13ae401eab684",
+        "atlas_name": "bamboo",
+        "atlas_payload_sha256": "724352a5840607f77caab0a1fec95d4d237916fe069c6ea4ed81c8e6f46732c0",
+        "canvas_px": [
+          63,
+          82
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          960,
+          816
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5836530328173785818_bamboo.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bamboo.img_0.png",
+        "rect_pixels": [
+          734.0,
+          305.0,
+          63.0,
+          82.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L6_18_8e997b55.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 18,
+      "png_sha256": "2e22cf812c944e7a9d9a641de9bade78ba97d814314cff4e3402a1f0269ea431",
+      "png_size_px": [
+        37,
+        27
+      ],
+      "script_hash64": "8e997b55c7322be9",
+      "source": {
+        "atlas_frame_index": 4,
+        "atlas_id": 135949,
+        "atlas_image_path": "Map/event/2018_Hell/Step4/object/rock.img",
+        "atlas_lookup_hash": "c6cab108db525e7a",
+        "atlas_name": "rock",
+        "atlas_payload_sha256": "4299d08c389a08a73358fe8cd503c308bfee9bdf671ec3b2e449cbf4ea61cd4d",
+        "canvas_px": [
+          37,
+          27
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          240,
+          144
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03294_4c027bb3d90acf_-8301932904767768977_rock.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step4/object/rock.img_0.png",
+        "rect_pixels": [
+          176.0,
+          90.0,
+          37.0,
+          27.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L6_23_9277784d.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 23,
+      "png_sha256": "57660e6bfe487967e2fd0e46a9f3bb80f96be5f432e661cbc414979f643933ec",
+      "png_size_px": [
+        189,
+        133
+      ],
+      "script_hash64": "9277784de838585e",
+      "source": {
+        "atlas_frame_index": 4,
+        "atlas_id": 135940,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "atlas_lookup_hash": "a4b13ae401eab684",
+        "atlas_name": "bamboo",
+        "atlas_payload_sha256": "724352a5840607f77caab0a1fec95d4d237916fe069c6ea4ed81c8e6f46732c0",
+        "canvas_px": [
+          189,
+          133
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          960,
+          816
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5836530328173785818_bamboo.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bamboo.img_0.png",
+        "rect_pixels": [
+          734.0,
+          170.0,
+          189.0,
+          133.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L6_31_802acb69.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 31,
+      "png_sha256": "ece26f49530d937f05e2515391410ab616425e8900fc97bbfba39439d53faffb",
+      "png_size_px": [
+        63,
+        82
+      ],
+      "script_hash64": "802acb69ae657b15",
+      "source": {
+        "atlas_frame_index": 5,
+        "atlas_id": 135940,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "atlas_lookup_hash": "a4b13ae401eab684",
+        "atlas_name": "bamboo",
+        "atlas_payload_sha256": "724352a5840607f77caab0a1fec95d4d237916fe069c6ea4ed81c8e6f46732c0",
+        "canvas_px": [
+          63,
+          82
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          960,
+          816
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5836530328173785818_bamboo.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bamboo.img_0.png",
+        "rect_pixels": [
+          734.0,
+          305.0,
+          63.0,
+          82.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L6_33_7c072467.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 33,
+      "png_sha256": "83dd3583ba6b8f37b94d72e04a3c2554ba1b2ccb876aa405062d9f5a1238238e",
+      "png_size_px": [
+        223,
+        166
+      ],
+      "script_hash64": "7c0724676e267a43",
+      "source": {
+        "atlas_frame_index": 3,
+        "atlas_id": 135940,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "atlas_lookup_hash": "a4b13ae401eab684",
+        "atlas_name": "bamboo",
+        "atlas_payload_sha256": "724352a5840607f77caab0a1fec95d4d237916fe069c6ea4ed81c8e6f46732c0",
+        "canvas_px": [
+          223,
+          166
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          960,
+          816
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5836530328173785818_bamboo.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bamboo.img_0.png",
+        "rect_pixels": [
+          734.0,
+          2.0,
+          223.0,
+          166.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L6_34_23f46eb4.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 34,
+      "png_sha256": "07e73cb13adb2a047896c8cde899863dec4458361d9386fe4edb5f928062adab",
+      "png_size_px": [
+        91,
+        84
+      ],
+      "script_hash64": "23f46eb42bdac7dd",
+      "source": {
+        "atlas_frame_index": 5,
+        "atlas_id": 135942,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "atlas_lookup_hash": "488a425e2914b847",
+        "atlas_name": "bottom_obj",
+        "atlas_payload_sha256": "71dba77dd7e6eec466bef67c8c50d739887aca47982bb2a0725e7eeed9d9b6a5",
+        "canvas_px": [
+          91,
+          84
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1004,
+          500
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5622000257940281897_bottom_obj.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bottom_obj.img_0.png",
+        "rect_pixels": [
+          892.0,
+          99.0,
+          91.0,
+          84.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L6_35_23f46eb4.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 35,
+      "png_sha256": "07e73cb13adb2a047896c8cde899863dec4458361d9386fe4edb5f928062adab",
+      "png_size_px": [
+        91,
+        84
+      ],
+      "script_hash64": "23f46eb42bdac7dd",
+      "source": {
+        "atlas_frame_index": 5,
+        "atlas_id": 135942,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "atlas_lookup_hash": "488a425e2914b847",
+        "atlas_name": "bottom_obj",
+        "atlas_payload_sha256": "71dba77dd7e6eec466bef67c8c50d739887aca47982bb2a0725e7eeed9d9b6a5",
+        "canvas_px": [
+          91,
+          84
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1004,
+          500
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5622000257940281897_bottom_obj.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bottom_obj.img_0.png",
+        "rect_pixels": [
+          892.0,
+          99.0,
+          91.0,
+          84.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L6_36_23f46eb4.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 36,
+      "png_sha256": "07e73cb13adb2a047896c8cde899863dec4458361d9386fe4edb5f928062adab",
+      "png_size_px": [
+        91,
+        84
+      ],
+      "script_hash64": "23f46eb42bdac7dd",
+      "source": {
+        "atlas_frame_index": 5,
+        "atlas_id": 135942,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "atlas_lookup_hash": "488a425e2914b847",
+        "atlas_name": "bottom_obj",
+        "atlas_payload_sha256": "71dba77dd7e6eec466bef67c8c50d739887aca47982bb2a0725e7eeed9d9b6a5",
+        "canvas_px": [
+          91,
+          84
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1004,
+          500
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5622000257940281897_bottom_obj.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bottom_obj.img_0.png",
+        "rect_pixels": [
+          892.0,
+          99.0,
+          91.0,
+          84.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L6_38_23f46eb4.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 38,
+      "png_sha256": "07e73cb13adb2a047896c8cde899863dec4458361d9386fe4edb5f928062adab",
+      "png_size_px": [
+        91,
+        84
+      ],
+      "script_hash64": "23f46eb42bdac7dd",
+      "source": {
+        "atlas_frame_index": 5,
+        "atlas_id": 135942,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "atlas_lookup_hash": "488a425e2914b847",
+        "atlas_name": "bottom_obj",
+        "atlas_payload_sha256": "71dba77dd7e6eec466bef67c8c50d739887aca47982bb2a0725e7eeed9d9b6a5",
+        "canvas_px": [
+          91,
+          84
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1004,
+          500
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5622000257940281897_bottom_obj.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bottom_obj.img_0.png",
+        "rect_pixels": [
+          892.0,
+          99.0,
+          91.0,
+          84.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L6_39_23f46eb4.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 39,
+      "png_sha256": "07e73cb13adb2a047896c8cde899863dec4458361d9386fe4edb5f928062adab",
+      "png_size_px": [
+        91,
+        84
+      ],
+      "script_hash64": "23f46eb42bdac7dd",
+      "source": {
+        "atlas_frame_index": 5,
+        "atlas_id": 135942,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "atlas_lookup_hash": "488a425e2914b847",
+        "atlas_name": "bottom_obj",
+        "atlas_payload_sha256": "71dba77dd7e6eec466bef67c8c50d739887aca47982bb2a0725e7eeed9d9b6a5",
+        "canvas_px": [
+          91,
+          84
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1004,
+          500
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5622000257940281897_bottom_obj.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bottom_obj.img_0.png",
+        "rect_pixels": [
+          892.0,
+          99.0,
+          91.0,
+          84.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L6_40_23f46eb4.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 40,
+      "png_sha256": "07e73cb13adb2a047896c8cde899863dec4458361d9386fe4edb5f928062adab",
+      "png_size_px": [
+        91,
+        84
+      ],
+      "script_hash64": "23f46eb42bdac7dd",
+      "source": {
+        "atlas_frame_index": 5,
+        "atlas_id": 135942,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bottom_obj.img",
+        "atlas_lookup_hash": "488a425e2914b847",
+        "atlas_name": "bottom_obj",
+        "atlas_payload_sha256": "71dba77dd7e6eec466bef67c8c50d739887aca47982bb2a0725e7eeed9d9b6a5",
+        "canvas_px": [
+          91,
+          84
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1004,
+          500
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5622000257940281897_bottom_obj.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bottom_obj.img_0.png",
+        "rect_pixels": [
+          892.0,
+          99.0,
+          91.0,
+          84.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L6_41_802acb69.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 41,
+      "png_sha256": "ece26f49530d937f05e2515391410ab616425e8900fc97bbfba39439d53faffb",
+      "png_size_px": [
+        63,
+        82
+      ],
+      "script_hash64": "802acb69ae657b15",
+      "source": {
+        "atlas_frame_index": 5,
+        "atlas_id": 135940,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "atlas_lookup_hash": "a4b13ae401eab684",
+        "atlas_name": "bamboo",
+        "atlas_payload_sha256": "724352a5840607f77caab0a1fec95d4d237916fe069c6ea4ed81c8e6f46732c0",
+        "canvas_px": [
+          63,
+          82
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          960,
+          816
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5836530328173785818_bamboo.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bamboo.img_0.png",
+        "rect_pixels": [
+          734.0,
+          305.0,
+          63.0,
+          82.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L6_43_802acb69.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 43,
+      "png_sha256": "ece26f49530d937f05e2515391410ab616425e8900fc97bbfba39439d53faffb",
+      "png_size_px": [
+        63,
+        82
+      ],
+      "script_hash64": "802acb69ae657b15",
+      "source": {
+        "atlas_frame_index": 5,
+        "atlas_id": 135940,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "atlas_lookup_hash": "a4b13ae401eab684",
+        "atlas_name": "bamboo",
+        "atlas_payload_sha256": "724352a5840607f77caab0a1fec95d4d237916fe069c6ea4ed81c8e6f46732c0",
+        "canvas_px": [
+          63,
+          82
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          960,
+          816
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5836530328173785818_bamboo.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bamboo.img_0.png",
+        "rect_pixels": [
+          734.0,
+          305.0,
+          63.0,
+          82.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L6_45_8e997b55.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 45,
+      "png_sha256": "2e22cf812c944e7a9d9a641de9bade78ba97d814314cff4e3402a1f0269ea431",
+      "png_size_px": [
+        37,
+        27
+      ],
+      "script_hash64": "8e997b55c7322be9",
+      "source": {
+        "atlas_frame_index": 4,
+        "atlas_id": 135949,
+        "atlas_image_path": "Map/event/2018_Hell/Step4/object/rock.img",
+        "atlas_lookup_hash": "c6cab108db525e7a",
+        "atlas_name": "rock",
+        "atlas_payload_sha256": "4299d08c389a08a73358fe8cd503c308bfee9bdf671ec3b2e449cbf4ea61cd4d",
+        "canvas_px": [
+          37,
+          27
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          240,
+          144
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03294_4c027bb3d90acf_-8301932904767768977_rock.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step4/object/rock.img_0.png",
+        "rect_pixels": [
+          176.0,
+          90.0,
+          37.0,
+          27.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 7,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L7_20_b5812984.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 20,
+      "png_sha256": "83dd3583ba6b8f37b94d72e04a3c2554ba1b2ccb876aa405062d9f5a1238238e",
+      "png_size_px": [
+        223,
+        166
+      ],
+      "script_hash64": "b581298403321c9c",
+      "source": {
+        "atlas_frame_index": 3,
+        "atlas_id": 135940,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "atlas_lookup_hash": "a4b13ae401eab684",
+        "atlas_name": "bamboo",
+        "atlas_payload_sha256": "724352a5840607f77caab0a1fec95d4d237916fe069c6ea4ed81c8e6f46732c0",
+        "canvas_px": [
+          223,
+          166
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          960,
+          816
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5836530328173785818_bamboo.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bamboo.img_0.png",
+        "rect_pixels": [
+          734.0,
+          2.0,
+          223.0,
+          166.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 7,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L7_21_9277784d.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 21,
+      "png_sha256": "57660e6bfe487967e2fd0e46a9f3bb80f96be5f432e661cbc414979f643933ec",
+      "png_size_px": [
+        189,
+        133
+      ],
+      "script_hash64": "9277784de838585e",
+      "source": {
+        "atlas_frame_index": 4,
+        "atlas_id": 135940,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "atlas_lookup_hash": "a4b13ae401eab684",
+        "atlas_name": "bamboo",
+        "atlas_payload_sha256": "724352a5840607f77caab0a1fec95d4d237916fe069c6ea4ed81c8e6f46732c0",
+        "canvas_px": [
+          189,
+          133
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          960,
+          816
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5836530328173785818_bamboo.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bamboo.img_0.png",
+        "rect_pixels": [
+          734.0,
+          170.0,
+          189.0,
+          133.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 7,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L7_22_b5812984.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 22,
+      "png_sha256": "83dd3583ba6b8f37b94d72e04a3c2554ba1b2ccb876aa405062d9f5a1238238e",
+      "png_size_px": [
+        223,
+        166
+      ],
+      "script_hash64": "b581298403321c9c",
+      "source": {
+        "atlas_frame_index": 3,
+        "atlas_id": 135940,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "atlas_lookup_hash": "a4b13ae401eab684",
+        "atlas_name": "bamboo",
+        "atlas_payload_sha256": "724352a5840607f77caab0a1fec95d4d237916fe069c6ea4ed81c8e6f46732c0",
+        "canvas_px": [
+          223,
+          166
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          960,
+          816
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5836530328173785818_bamboo.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bamboo.img_0.png",
+        "rect_pixels": [
+          734.0,
+          2.0,
+          223.0,
+          166.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 7,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L7_30_b5812984.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 30,
+      "png_sha256": "83dd3583ba6b8f37b94d72e04a3c2554ba1b2ccb876aa405062d9f5a1238238e",
+      "png_size_px": [
+        223,
+        166
+      ],
+      "script_hash64": "b581298403321c9c",
+      "source": {
+        "atlas_frame_index": 3,
+        "atlas_id": 135940,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "atlas_lookup_hash": "a4b13ae401eab684",
+        "atlas_name": "bamboo",
+        "atlas_payload_sha256": "724352a5840607f77caab0a1fec95d4d237916fe069c6ea4ed81c8e6f46732c0",
+        "canvas_px": [
+          223,
+          166
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          960,
+          816
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5836530328173785818_bamboo.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bamboo.img_0.png",
+        "rect_pixels": [
+          734.0,
+          2.0,
+          223.0,
+          166.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 7,
+      "file": "Data/DNFMReplica/bamboo_assets/objects/L7_37_9277784d.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 37,
+      "png_sha256": "57660e6bfe487967e2fd0e46a9f3bb80f96be5f432e661cbc414979f643933ec",
+      "png_size_px": [
+        189,
+        133
+      ],
+      "script_hash64": "9277784de838585e",
+      "source": {
+        "atlas_frame_index": 4,
+        "atlas_id": 135940,
+        "atlas_image_path": "Map/event/2018_Hell/Step3/object/bamboo.img",
+        "atlas_lookup_hash": "a4b13ae401eab684",
+        "atlas_name": "bamboo",
+        "atlas_payload_sha256": "724352a5840607f77caab0a1fec95d4d237916fe069c6ea4ed81c8e6f46732c0",
+        "canvas_px": [
+          189,
+          133
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          960,
+          816
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03292_fc548e8158780b_-5836530328173785818_bamboo.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step3/object/bamboo.img_0.png",
+        "rect_pixels": [
+          734.0,
+          170.0,
+          189.0,
+          133.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/bamboo_assets/objects_anim/L2_46_5b7b43a5_f00.png",
+      "frame_position": 0,
+      "kind": "object_anim",
+      "object_index": 46,
+      "png_sha256": "3e3b06e2f7473f761cf78ac81464ae5f25787036ae4b5f6f1b8cf6b671dcbed5",
+      "png_size_px": [
+        1496,
+        369
+      ],
+      "script_hash64": "5b7b43a536fab1c1",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 30543,
+        "atlas_image_path": "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+        "atlas_lookup_hash": "a74377f16da9f3bf",
+        "atlas_name": "BossMap_fog",
+        "atlas_payload_sha256": "cf2baaa1849d1f95109efaa4b9baa04624ff54cc41765c7e0c7db7f78bb85970",
+        "canvas_px": [
+          1496,
+          369
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1500,
+          376
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03389_a854a88215b862_2598445252729241293_BossMap_fog.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img_0.png",
+        "rect_pixels": [
+          2.0,
+          3.0,
+          1496.0,
+          369.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/bamboo_assets/objects_anim/L2_46_5b7b43a5_f01.png",
+      "frame_position": 1,
+      "kind": "object_anim",
+      "object_index": 46,
+      "png_sha256": "3e3b06e2f7473f761cf78ac81464ae5f25787036ae4b5f6f1b8cf6b671dcbed5",
+      "png_size_px": [
+        1496,
+        369
+      ],
+      "script_hash64": "5b7b43a536fab1c1",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 30543,
+        "atlas_image_path": "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+        "atlas_lookup_hash": "a74377f16da9f3bf",
+        "atlas_name": "BossMap_fog",
+        "atlas_payload_sha256": "cf2baaa1849d1f95109efaa4b9baa04624ff54cc41765c7e0c7db7f78bb85970",
+        "canvas_px": [
+          1496,
+          369
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1500,
+          376
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03389_a854a88215b862_2598445252729241293_BossMap_fog.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img_0.png",
+        "rect_pixels": [
+          2.0,
+          3.0,
+          1496.0,
+          369.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/bamboo_assets/objects_anim/L2_47_5b7b43a5_f00.png",
+      "frame_position": 0,
+      "kind": "object_anim",
+      "object_index": 47,
+      "png_sha256": "3e3b06e2f7473f761cf78ac81464ae5f25787036ae4b5f6f1b8cf6b671dcbed5",
+      "png_size_px": [
+        1496,
+        369
+      ],
+      "script_hash64": "5b7b43a536fab1c1",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 30543,
+        "atlas_image_path": "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+        "atlas_lookup_hash": "a74377f16da9f3bf",
+        "atlas_name": "BossMap_fog",
+        "atlas_payload_sha256": "cf2baaa1849d1f95109efaa4b9baa04624ff54cc41765c7e0c7db7f78bb85970",
+        "canvas_px": [
+          1496,
+          369
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1500,
+          376
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03389_a854a88215b862_2598445252729241293_BossMap_fog.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img_0.png",
+        "rect_pixels": [
+          2.0,
+          3.0,
+          1496.0,
+          369.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/bamboo_assets/objects_anim/L2_47_5b7b43a5_f01.png",
+      "frame_position": 1,
+      "kind": "object_anim",
+      "object_index": 47,
+      "png_sha256": "3e3b06e2f7473f761cf78ac81464ae5f25787036ae4b5f6f1b8cf6b671dcbed5",
+      "png_size_px": [
+        1496,
+        369
+      ],
+      "script_hash64": "5b7b43a536fab1c1",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 30543,
+        "atlas_image_path": "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+        "atlas_lookup_hash": "a74377f16da9f3bf",
+        "atlas_name": "BossMap_fog",
+        "atlas_payload_sha256": "cf2baaa1849d1f95109efaa4b9baa04624ff54cc41765c7e0c7db7f78bb85970",
+        "canvas_px": [
+          1496,
+          369
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1500,
+          376
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03389_a854a88215b862_2598445252729241293_BossMap_fog.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img_0.png",
+        "rect_pixels": [
+          2.0,
+          3.0,
+          1496.0,
+          369.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/bamboo_assets/objects_anim/L2_48_5b7b43a5_f00.png",
+      "frame_position": 0,
+      "kind": "object_anim",
+      "object_index": 48,
+      "png_sha256": "3e3b06e2f7473f761cf78ac81464ae5f25787036ae4b5f6f1b8cf6b671dcbed5",
+      "png_size_px": [
+        1496,
+        369
+      ],
+      "script_hash64": "5b7b43a536fab1c1",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 30543,
+        "atlas_image_path": "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+        "atlas_lookup_hash": "a74377f16da9f3bf",
+        "atlas_name": "BossMap_fog",
+        "atlas_payload_sha256": "cf2baaa1849d1f95109efaa4b9baa04624ff54cc41765c7e0c7db7f78bb85970",
+        "canvas_px": [
+          1496,
+          369
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1500,
+          376
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03389_a854a88215b862_2598445252729241293_BossMap_fog.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img_0.png",
+        "rect_pixels": [
+          2.0,
+          3.0,
+          1496.0,
+          369.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/bamboo_assets/objects_anim/L2_48_5b7b43a5_f01.png",
+      "frame_position": 1,
+      "kind": "object_anim",
+      "object_index": 48,
+      "png_sha256": "3e3b06e2f7473f761cf78ac81464ae5f25787036ae4b5f6f1b8cf6b671dcbed5",
+      "png_size_px": [
+        1496,
+        369
+      ],
+      "script_hash64": "5b7b43a536fab1c1",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 30543,
+        "atlas_image_path": "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+        "atlas_lookup_hash": "a74377f16da9f3bf",
+        "atlas_name": "BossMap_fog",
+        "atlas_payload_sha256": "cf2baaa1849d1f95109efaa4b9baa04624ff54cc41765c7e0c7db7f78bb85970",
+        "canvas_px": [
+          1496,
+          369
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1500,
+          376
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03389_a854a88215b862_2598445252729241293_BossMap_fog.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img_0.png",
+        "rect_pixels": [
+          2.0,
+          3.0,
+          1496.0,
+          369.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/bamboo_assets/objects_anim/L2_49_5b7b43a5_f00.png",
+      "frame_position": 0,
+      "kind": "object_anim",
+      "object_index": 49,
+      "png_sha256": "3e3b06e2f7473f761cf78ac81464ae5f25787036ae4b5f6f1b8cf6b671dcbed5",
+      "png_size_px": [
+        1496,
+        369
+      ],
+      "script_hash64": "5b7b43a536fab1c1",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 30543,
+        "atlas_image_path": "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+        "atlas_lookup_hash": "a74377f16da9f3bf",
+        "atlas_name": "BossMap_fog",
+        "atlas_payload_sha256": "cf2baaa1849d1f95109efaa4b9baa04624ff54cc41765c7e0c7db7f78bb85970",
+        "canvas_px": [
+          1496,
+          369
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1500,
+          376
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03389_a854a88215b862_2598445252729241293_BossMap_fog.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img_0.png",
+        "rect_pixels": [
+          2.0,
+          3.0,
+          1496.0,
+          369.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/bamboo_assets/objects_anim/L2_49_5b7b43a5_f01.png",
+      "frame_position": 1,
+      "kind": "object_anim",
+      "object_index": 49,
+      "png_sha256": "3e3b06e2f7473f761cf78ac81464ae5f25787036ae4b5f6f1b8cf6b671dcbed5",
+      "png_size_px": [
+        1496,
+        369
+      ],
+      "script_hash64": "5b7b43a536fab1c1",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 30543,
+        "atlas_image_path": "Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img",
+        "atlas_lookup_hash": "a74377f16da9f3bf",
+        "atlas_name": "BossMap_fog",
+        "atlas_payload_sha256": "cf2baaa1849d1f95109efaa4b9baa04624ff54cc41765c7e0c7db7f78bb85970",
+        "canvas_px": [
+          1496,
+          369
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          1500,
+          376
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03389_a854a88215b862_2598445252729241293_BossMap_fog.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/KContents3/TheMineOfAbyss/background/BossMap_fog.img_0.png",
+        "rect_pixels": [
+          2.0,
+          3.0,
+          1496.0,
+          369.0
+        ]
+      }
+    },
+    {
+      "file": "Data/DNFMReplica/bamboo_assets/tiles/tile_84368d266da2197b.png",
+      "kind": "tile",
+      "placement_indices": [
+        0,
+        2
+      ],
+      "png_sha256": "e07539d8d64b2ed872decbfcec52f9b697d1acb8b5f21b5cf25a28458f335438",
+      "png_size_px": [
+        224,
+        600
+      ],
+      "source": {
+        "atlas_frame_index": 1,
+        "atlas_id": 135950,
+        "atlas_image_path": "Map/event/2018_Hell/Step4/tile/tile.img",
+        "atlas_lookup_hash": "3b280cebecf4ee13",
+        "atlas_name": "tile",
+        "atlas_payload_sha256": "9c0ca482defee2bffe3dc21698464450afd53956decc5b4358a9d081efa99acf",
+        "canvas_px": [
+          224,
+          600
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          309
+        ],
+        "page_declared_size_px": [
+          456,
+          296
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03295_d13a36bc6d28ce_4085337320569247468_tile.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step4/tile/tile.img_0.png",
+        "rect_pixels": [
+          230.0,
+          3.0,
+          224.0,
+          291.0
+        ]
+      },
+      "tile_hash64": "84368d266da2197b"
+    },
+    {
+      "file": "Data/DNFMReplica/bamboo_assets/tiles/tile_8460768a44b09b76.png",
+      "kind": "tile",
+      "placement_indices": [
+        1,
+        3
+      ],
+      "png_sha256": "5d8e8542c6f360af5022fd483452fa065b96f85dabacd22d59dd4a48b6edf70b",
+      "png_size_px": [
+        224,
+        600
+      ],
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135950,
+        "atlas_image_path": "Map/event/2018_Hell/Step4/tile/tile.img",
+        "atlas_lookup_hash": "3b280cebecf4ee13",
+        "atlas_name": "tile",
+        "atlas_payload_sha256": "9c0ca482defee2bffe3dc21698464450afd53956decc5b4358a9d081efa99acf",
+        "canvas_px": [
+          224,
+          600
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          308
+        ],
+        "page_declared_size_px": [
+          456,
+          296
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "2D/bundles/Texture2D/03295_d13a36bc6d28ce_4085337320569247468_tile.img_0.png",
+        "page_texture_path": "Assets/Bundle/Sprite/Map/event/2018_Hell/Step4/tile/tile.img_0.png",
+        "rect_pixels": [
+          2.0,
+          2.0,
+          224.0,
+          292.0
+        ]
+      },
+      "tile_hash64": "8460768a44b09b76"
+    }
+  ],
+  "map_hash": "6816aad6b6cd4ced",
+  "map_shard_block": [
+    13,
+    595
+  ],
+  "read_only_statement": "源库以 sqlite mode=ro URI 打开，页面 PNG 只读打开；D:/Github-Poj/DNFM 零写入。",
+  "task": "M8-011 P02-B 竹林地面与分层材质 UE 构建 — 离线裁切与放置中间数据（UE 部分由协调者执行）"
+}
