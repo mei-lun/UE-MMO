@@ -22,6 +22,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 
 | ID | 任务 | 状态 | 依赖 | Owner | 更新时间 | 报告/证据 |
 |---|---|---|---|---|---|---|
+| M8-000 | [DNFM最小复刻与全资源替换计划](Docs/Tasks/M8-000.md) | DONE | M6-026 | Codex-20261106-ResourcePlan | 2026-11-06T12:04:00+08:00 | [report](Docs/Tasks/Reports/M8-000.md) |
 | M6-026 | [最新替换资源的单入口体验包](Docs/Tasks/M6-026.md) | DONE | M6-025,M7-003 | Codex-20261106-ResourcePlaytest | 2026-11-06T10:39:54+08:00 | [report](Docs/Tasks/Reports/M6-026.md) |
 | M0-001 | UE 工程与兼容工具链 | DONE | — | 既有基线 | 2026-09-25T06:05:19+08:00 | [M0-001](Docs/Tasks/Reports/M0-001.md) |
 | M0-002 | 现成模型、动画、音效入库 | DONE | — | 既有基线 | 2026-09-25T06:05:19+08:00 | [M0-002](Docs/Tasks/Reports/M0-002.md) |
