@@ -252,4 +252,4 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M8-006 | [P01-E 火山地图源依赖核实](Docs/Tasks/M8-006.md) | DONE | M8-001 | ZCode-20261107-F | 2026-11-07T02:05:00+08:00 | [report](Docs/Tasks/Reports/M8-006.md) |
 | M8-007 | [P01-F 哥布林投掷兵源依赖核实](Docs/Tasks/M8-007.md) | DONE | M8-001 | ZCode-20261107-G | 2026-11-07T01:50:00+08:00 | [report](Docs/Tasks/Reports/M8-007.md) |
 | M8-008 | [P01-G taubeast Boss 源依赖核实](Docs/Tasks/M8-008.md) | DONE | M8-001 | ZCode-20261107-H | 2026-11-07T01:50:00+08:00 | [report](Docs/Tasks/Reports/M8-008.md) |
-| M8-009 | [P01-H 声音与特效依赖核实](Docs/Tasks/M8-009.md) | TODO | M8-001 | — | — | [report](Docs/Tasks/Reports/M8-009.md) |
+| M8-009 | [P01-H 声音与特效依赖核实](Docs/Tasks/M8-009.md) | DONE | M8-001 | ZCode-20261107-I | 2026-11-07T02:20:00+08:00 | [report](Docs/Tasks/Reports/M8-009.md) |

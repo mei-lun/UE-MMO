@@ -1,0 +1,3108 @@
+{
+ "evidence_paths": [
+  "Artifacts/Tasks/M8-009/2026-11-07T0030+0800/scripts/01_probe_schema.py",
+  "Artifacts/Tasks/M8-009/2026-11-07T0030+0800/scripts/02_sample_event_values.py",
+  "Artifacts/Tasks/M8-009/2026-11-07T0030+0800/scripts/03_list_targets.py",
+  "Artifacts/Tasks/M8-009/2026-11-07T0030+0800/scripts/04_find_skills_and_audio.py",
+  "Artifacts/Tasks/M8-009/2026-11-07T0030+0800/scripts/05_extract_events.py",
+  "Artifacts/Tasks/M8-009/2026-11-07T0030+0800/scripts/06_audio_index.py",
+  "Artifacts/Tasks/M8-009/2026-11-07T0030+0800/scripts/07_mob_skl_strings.py",
+  "Artifacts/Tasks/M8-009/2026-11-07T0030+0800/scripts/08_ai_obj_strings.py",
+  "Artifacts/Tasks/M8-009/2026-11-07T0030+0800/scripts/09_atk_and_map_audio.py",
+  "Artifacts/Tasks/M8-009/2026-11-07T0030+0800/scripts/10_fx_atlas_and_resolve.py",
+  "Artifacts/Tasks/M8-009/2026-11-07T0030+0800/scripts/11_build_json.py",
+  "Artifacts/Tasks/M8-009/2026-11-07T0030+0800/scripts/12_extra_skl_blocks.py",
+  "Artifacts/Tasks/M8-009/2026-11-07T0030+0800/db_queries/01_schema_probe.json",
+  "Artifacts/Tasks/M8-009/2026-11-07T0030+0800/db_queries/02_event_value_samples.json",
+  "Artifacts/Tasks/M8-009/2026-11-07T0030+0800/db_queries/03_target_paths.json",
+  "Artifacts/Tasks/M8-009/2026-11-07T0030+0800/db_queries/04_skills_audio_survey.json",
+  "Artifacts/Tasks/M8-009/2026-11-07T0030+0800/db_queries/05_events_raw.json",
+  "Artifacts/Tasks/M8-009/2026-11-07T0030+0800/db_queries/06_audio_index.json",
+  "Artifacts/Tasks/M8-009/2026-11-07T0030+0800/db_queries/06_clip_index_full.json",
+  "Artifacts/Tasks/M8-009/2026-11-07T0030+0800/db_queries/07_mob_skl_strings.json",
+  "Artifacts/Tasks/M8-009/2026-11-07T0030+0800/db_queries/08_ai_obj_strings.json",
+  "Artifacts/Tasks/M8-009/2026-11-07T0030+0800/db_queries/09_atk_map_audio.json",
+  "Artifacts/Tasks/M8-009/2026-11-07T0030+0800/db_queries/10_resolve_fx.json",
+  "Artifacts/Tasks/M8-009/2026-11-07T0030+0800/db_queries/12_extra_skl.json"
+ ],
+ "gaps": [
+  {
+   "detail": "R_FOOTSTEP_FEMALE/MALE_WALK/RUN 事件键存在于 move/dash 动画，但 sounds_char_common_footstep.npk（及 sounds_char_common_move.npk）未被 bundle 清单解析（2430/10823 npk 已解析，211 个 sounds/music 包未覆盖），剪辑名与 WAV 无法按名定位。包级证据：Android/bundles/sounds_char_common_footstep.npk（UnityFS 格式）。",
+   "id": "gap_footstep_clips_unindexed",
+   "impact": "脚步声暂以 Kenney 占位或静音实现，不能声称原声脚步已还原",
+   "scope": [
+    "fighter",
+    "swordman",
+    "gunner"
+   ]
+  },
+  {
+   "detail": "技能 throwsand（源名，任务卡名 throwsand_sp）无专名音频剪辑；投掷动作本体动画 throwsand1_1..2_2/throwsanddust 无 audio_tags 事件。mon_act6 sandatk_* 为怪物音不采纳。",
+   "id": "gap_fighter_throwsand_audio",
+   "impact": "扬沙出招音缺原声键",
+   "scope": [
+    "fighter"
+   ]
+  },
+  {
+   "detail": "stomp 技能无专名音频剪辑；任务卡名 stompfinish 在源 paths 表不存在（stomp.skl/stompex.skl 为实际源键名）。",
+   "id": "gap_fighter_stomp_audio_and_stompfinish",
+   "impact": "stomp 技能音缺键；stompfinish 名称需在 P13 收口时按源名核对",
+   "scope": [
+    "fighter"
+   ]
+  },
+  {
+   "detail": "attack_0.ani 无 audio_tags；无 .atk 命名块；投掷石声音无源键。仅 .mob 有 GOBLIN_DMG_04/GOBLIN_DIE_01 两个语音键。",
+   "id": "gap_goblinthrower_attack0_sound",
+   "impact": "投掷出手音需后续在 AI/代码层追认或人工听验挑选",
+   "scope": [
+    "goblinthrower"
+   ]
+  },
+  {
+   "detail": "attack_0/charge1/charge2/fullcharge1/roar/warning 动画均无 audio_tags；.mob 仅 TAU_DMG_02/TAU_DIE。攻击/咆哮声仅有同包命名候选（hyper_tau_atk_*/tau_roar），触发键未证实。",
+   "id": "gap_taubeast_attack_charge_sound",
+   "impact": "Boss 出招/蓄力/咆哮声音依赖为候选级",
+   "scope": [
+    "taubeast"
+   ]
+  },
+  {
+   "detail": "两张候选地图 maps.sqlite raw_json/scene_json 无 BGM/环境音声明字段；预览引用（Shonan_Hell / Anton_Guide 07_Black_Volcano）仅证明视觉主题。BGM/环境音均为主题推断候选，非原声明。",
+   "id": "gap_map_bgm_no_source_key",
+   "impact": "不能声称还原了这两图的原版 BGM；接入时标注为适配选择",
+   "scope": [
+    "map_bamboo",
+    "map_volcano"
+   ]
+  },
+  {
+   "detail": "26 个特效键中 14 个已在 atlas.sqlite 命中 exact_texture_path 图集页（含尺寸/帧数，Warning02/GrandWaveOnCharge/GrandWaveFullCharge/NenGuard 等）；其余 12 个（ATBlockBuster 2、ATDestroyEarthSkyDrop burn、ATRuinRain StoneA/B、ATTyphoon Stone/dust、Typhoon a/b/c、BlockBusterEx、Common_Explosion_Lightning prefab）atlas.sqlite 无页，对应 fx_*.npk bundle 在盘但未被逐名解析。",
+   "id": "gap_fx_named_content_unverified",
+   "impact": "未命中部分停留在资源键级（供 P13 收口），不能声称特效贴图已定位",
+   "scope": [
+    "fighter",
+    "taubeast"
+   ]
+  },
+  {
+   "detail": "6 技能 .skl 块已定位并提取 ASCII（UI 文本），无声音键字段（ASCII 层面）；技能声音触发点未在二进制结构中解码（il2cpp 行为层，超出本卡只读资源核实范围）。",
+   "id": "gap_skill_skl_no_sound_fields_decoded",
+   "impact": "技能触发音按命名约定候选接入，触发时机未证实",
+   "scope": [
+    "fighter"
+   ]
+  },
+  {
+   "detail": ".atk 命中音标签（R_CHAR_SWORD_HIT/R_CHAR_PUNCH_HIT/DSTRAIGHT_HIT/SUPLEX_HIT/R_CHAR_LIGHT_HIT/R_SLESSSWDA_HIT/GHOSTSTEPSLASH_HIT）→ pc_*_hit_XX 剪辑的映射为缩写/词干推断（SINGLEKICK/SHOULDER_ATK/TAU_* 已验证精确小写映射）；DSTRAIGHT_HIT/SUPLEX_HIT/R_SLESSSWDA_HIT/GHOSTSTEPSLASH_HIT 无同名词干剪辑（dstraight 只在 priest/wizard 包），映射未闭合。",
+   "id": "gap_hit_sound_mapping_inferred",
+   "impact": "命中音采用 common hit 包近似；4 个技能命中标签映射未闭合列入缺失",
+   "scope": [
+    "fighter",
+    "swordman",
+    "gunner"
+   ]
+  },
+  {
+   "detail": "本卡只做文件级存在性/格式证据（WAV 头解析时长/声道/码率），未做人工听验；内容是否为正确声音由人工签收。",
+   "id": "gap_audio_listening_not_performed",
+   "impact": "听验后补",
+   "scope": [
+    "*"
+   ]
+  }
+ ],
+ "generated_at": "2026-11-07T01:07:28+08:00",
+ "groups": {
+  "fighter": {
+   "audio": [
+    {
+     "bundles": {
+      "sounds_char_common_footstep.npk": {
+       "bundle": "Android/bundles/sounds_char_common_footstep.npk",
+       "bytes": 67337,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "93ddbf4062667dd37a681f33adc852c4b7d86c8c1401a5fd6aac4477dfda1972"
+      },
+      "sounds_char_common_move.npk": {
+       "bundle": "Android/bundles/sounds_char_common_move.npk",
+       "bytes": 137313,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "da904276ed594f1858f383aeb7cf09b6c663e5819eefc587961fad65ee86d232"
+      }
+     },
+     "events": [
+      {
+       "delay_ms": 100,
+       "field": "audio_tags",
+       "frame": 3,
+       "source_path": "script/character/fighter/animation/move.ani",
+       "tag": "R_FOOTSTEP_FEMALE_WALK"
+      },
+      {
+       "delay_ms": 100,
+       "field": "audio_tags",
+       "frame": 7,
+       "source_path": "script/character/fighter/animation/move.ani",
+       "tag": "R_FOOTSTEP_FEMALE_WALK"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "fighter_move_footstep",
+     "note": "脚步声包 sounds_char_common_footstep.npk 存在但未被 bundle 清单解析，剪辑名未索引；无已定位 WAV",
+     "status": "keyed"
+    },
+    {
+     "bundles": {
+      "sounds_char_common_footstep.npk": {
+       "bundle": "Android/bundles/sounds_char_common_footstep.npk",
+       "bytes": 67337,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "93ddbf4062667dd37a681f33adc852c4b7d86c8c1401a5fd6aac4477dfda1972"
+      },
+      "sounds_char_common_move.npk": {
+       "bundle": "Android/bundles/sounds_char_common_move.npk",
+       "bytes": 137313,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "da904276ed594f1858f383aeb7cf09b6c663e5819eefc587961fad65ee86d232"
+      }
+     },
+     "events": [
+      {
+       "delay_ms": 70,
+       "field": "audio_tags",
+       "frame": 2,
+       "source_path": "script/character/fighter/animation/dash.ani",
+       "tag": "R_FOOTSTEP_FEMALE_RUN"
+      },
+      {
+       "delay_ms": 70,
+       "field": "audio_tags",
+       "frame": 6,
+       "source_path": "script/character/fighter/animation/dash.ani",
+       "tag": "R_FOOTSTEP_FEMALE_RUN"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "fighter_dash_footstep",
+     "note": "同上：包存在、内容未索引",
+     "status": "keyed"
+    },
+    {
+     "entity": {
+      "bytes": 38302,
+      "channels": 1,
+      "clip": "shoulder_atk",
+      "duration_s": 0.868,
+      "format": "WAV PCM (已解码自 Unity AudioClip)",
+      "npk": "sounds_char_fighter_effect.npk",
+      "npk_bundle": "Android/bundles/sounds_char_fighter_effect.npk",
+      "npk_sha256": "c11661dfa0312a675c3e0ae58903e0fea8cf4f11554fc21e1fe7a80371ad1c79",
+      "rate_hz": 22050,
+      "sample_width_bytes": 2,
+      "wav": "audio/sounds/d01070_c11661dfa0312a_6793550324209288108_shoulder_atk_shoulder_atk.wav"
+     },
+     "events": [
+      {
+       "delay_ms": 100,
+       "field": "audio_tags",
+       "frame": 0,
+       "source_path": "script/character/fighter/animation/dashattack.ani",
+       "tag": "SHOULDER_ATK"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "fighter_dashattack_shoulder_atk",
+     "match": "exact: tag 小写 == clip 名",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "bytes": 17702,
+      "channels": 1,
+      "clip": "singlekick",
+      "duration_s": 0.4,
+      "format": "WAV PCM (已解码自 Unity AudioClip)",
+      "npk": "sounds_char_fighter_effect.npk",
+      "npk_bundle": "Android/bundles/sounds_char_fighter_effect.npk",
+      "npk_sha256": "c11661dfa0312a675c3e0ae58903e0fea8cf4f11554fc21e1fe7a80371ad1c79",
+      "rate_hz": 22050,
+      "sample_width_bytes": 2,
+      "wav": "audio/sounds/d01070_c11661dfa0312a_-1737752499697657585_singlekick_singlekick.wav"
+     },
+     "events": [
+      {
+       "delay_ms": 20,
+       "field": "audio_tags",
+       "frame": 0,
+       "source_path": "script/character/fighter/animation/jumpattack.ani",
+       "tag": "SINGLEKICK"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "fighter_jumpattack_singlekick",
+     "match": "exact: tag 小写 == clip 名",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "bytes": 11266,
+      "channels": 1,
+      "clip": "ft_atk_01",
+      "duration_s": 0.254,
+      "format": "WAV PCM (已解码自 Unity AudioClip)",
+      "npk": "sounds_char_fighter.npk",
+      "npk_bundle": "Android/bundles/sounds_char_fighter.npk",
+      "npk_sha256": "753b1ab0e0c68c610c4c4096823dff0a3d555aa6a5009a24703aa85f59c3d3d6",
+      "rate_hz": 22050,
+      "sample_width_bytes": 2,
+      "wav": "audio/sounds/d01069_753b1ab0e0c68c_-5658854479975510258_ft_atk_01_ft_atk_01.wav"
+     },
+     "events": [
+      {
+       "field": "audio_tags",
+       "frame": null,
+       "source_path": "script/character/fighter/animation/attack1.ani"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "fighter_attack1_swing",
+     "match": "convention: 动画无音频事件，按命名约定取 ft_atk_0n 候选（触发点未证实）",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "bytes": 8412,
+      "channels": 1,
+      "clip": "ft_atk_02",
+      "duration_s": 0.19,
+      "format": "WAV PCM (已解码自 Unity AudioClip)",
+      "npk": "sounds_char_fighter.npk",
+      "npk_bundle": "Android/bundles/sounds_char_fighter.npk",
+      "npk_sha256": "753b1ab0e0c68c610c4c4096823dff0a3d555aa6a5009a24703aa85f59c3d3d6",
+      "rate_hz": 22050,
+      "sample_width_bytes": 2,
+      "wav": "audio/sounds/d01069_753b1ab0e0c68c_-8143136364734689028_ft_atk_02_ft_atk_02.wav"
+     },
+     "events": [
+      {
+       "field": "audio_tags",
+       "frame": null,
+       "source_path": "script/character/fighter/animation/attack2.ani"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "fighter_attack2_swing",
+     "match": "convention: 动画无音频事件，按命名约定取 ft_atk_0n 候选（触发点未证实）",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "bytes": 14464,
+      "channels": 1,
+      "clip": "ft_atk_03",
+      "duration_s": 0.327,
+      "format": "WAV PCM (已解码自 Unity AudioClip)",
+      "npk": "sounds_char_fighter.npk",
+      "npk_bundle": "Android/bundles/sounds_char_fighter.npk",
+      "npk_sha256": "753b1ab0e0c68c610c4c4096823dff0a3d555aa6a5009a24703aa85f59c3d3d6",
+      "rate_hz": 22050,
+      "sample_width_bytes": 2,
+      "wav": "audio/sounds/d01069_753b1ab0e0c68c_-3724771454157208451_ft_atk_03_ft_atk_03.wav"
+     },
+     "events": [
+      {
+       "field": "audio_tags",
+       "frame": null,
+       "source_path": "script/character/fighter/animation/attack3.ani"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "fighter_attack3_swing",
+     "match": "convention: 动画无音频事件，按命名约定取 ft_atk_0n 候选（触发点未证实）",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "bytes": 63890,
+      "channels": 1,
+      "clip": "ft_die",
+      "duration_s": 1.448,
+      "format": "WAV PCM (已解码自 Unity AudioClip)",
+      "npk": "sounds_char_fighter.npk",
+      "npk_bundle": "Android/bundles/sounds_char_fighter.npk",
+      "npk_sha256": "753b1ab0e0c68c610c4c4096823dff0a3d555aa6a5009a24703aa85f59c3d3d6",
+      "rate_hz": 22050,
+      "sample_width_bytes": 2,
+      "wav": "audio/sounds/d01069_753b1ab0e0c68c_114724404645341885_ft_die_ft_die.wav"
+     },
+     "events": [
+      {
+       "field": "audio_tags",
+       "frame": null,
+       "source_path": "script/character/fighter/animation/die.ani"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "fighter_die_voice",
+     "match": "convention: 命名约定候选",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "bytes": 5770,
+      "channels": 1,
+      "clip": "ft_jump",
+      "duration_s": 0.13,
+      "format": "WAV PCM (已解码自 Unity AudioClip)",
+      "npk": "sounds_char_fighter.npk",
+      "npk_bundle": "Android/bundles/sounds_char_fighter.npk",
+      "npk_sha256": "753b1ab0e0c68c610c4c4096823dff0a3d555aa6a5009a24703aa85f59c3d3d6",
+      "rate_hz": 22050,
+      "sample_width_bytes": 2,
+      "wav": "audio/sounds/d01069_753b1ab0e0c68c_-2051711607628007682_ft_jump_ft_jump.wav"
+     },
+     "events": [
+      {
+       "field": "audio_tags",
+       "frame": null,
+       "source_path": "script/character/fighter/animation/jump.ani"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "fighter_jump_voice",
+     "match": "convention: 命名约定候选",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "bytes": 8452,
+      "channels": 1,
+      "clip": "ft_sit",
+      "duration_s": 0.191,
+      "format": "WAV PCM (已解码自 Unity AudioClip)",
+      "npk": "sounds_char_fighter.npk",
+      "npk_bundle": "Android/bundles/sounds_char_fighter.npk",
+      "npk_sha256": "753b1ab0e0c68c610c4c4096823dff0a3d555aa6a5009a24703aa85f59c3d3d6",
+      "rate_hz": 22050,
+      "sample_width_bytes": 2,
+      "wav": "audio/sounds/d01069_753b1ab0e0c68c_5531352771581436238_ft_sit_ft_sit.wav"
+     },
+     "events": [
+      {
+       "field": "audio_tags",
+       "frame": null,
+       "source_path": "script/character/fighter/animation/sit.ani"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "fighter_sit_voice",
+     "match": "convention: 命名约定候选",
+     "status": "located"
+    },
+    {
+     "entity": [
+      {
+       "bytes": 20946,
+       "channels": 1,
+       "clip": "ft_dmg_01",
+       "duration_s": 0.474,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_char_fighter.npk",
+       "npk_bundle": "Android/bundles/sounds_char_fighter.npk",
+       "npk_sha256": "753b1ab0e0c68c610c4c4096823dff0a3d555aa6a5009a24703aa85f59c3d3d6",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01069_753b1ab0e0c68c_-8243132582989159766_ft_dmg_01_ft_dmg_01.wav"
+      },
+      {
+       "bytes": 22686,
+       "channels": 1,
+       "clip": "ft_dmg_02",
+       "duration_s": 0.513,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_char_fighter.npk",
+       "npk_bundle": "Android/bundles/sounds_char_fighter.npk",
+       "npk_sha256": "753b1ab0e0c68c610c4c4096823dff0a3d555aa6a5009a24703aa85f59c3d3d6",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01069_753b1ab0e0c68c_2086676808464642238_ft_dmg_02_ft_dmg_02.wav"
+      },
+      {
+       "bytes": 20944,
+       "channels": 1,
+       "clip": "ft_dmg_03",
+       "duration_s": 0.474,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_char_fighter.npk",
+       "npk_bundle": "Android/bundles/sounds_char_fighter.npk",
+       "npk_sha256": "753b1ab0e0c68c610c4c4096823dff0a3d555aa6a5009a24703aa85f59c3d3d6",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01069_753b1ab0e0c68c_5003254332252434375_ft_dmg_03_ft_dmg_03.wav"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "fighter_damage_voice",
+     "match": "convention: 受击动作无音频事件，ft_dmg_01-03 为命名约定候选",
+     "status": "located"
+    },
+    {
+     "entity": [
+      {
+       "bytes": 23588,
+       "channels": 1,
+       "clip": "liftupper",
+       "duration_s": 0.534,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_char_fighter_effect.npk",
+       "npk_bundle": "Android/bundles/sounds_char_fighter_effect.npk",
+       "npk_sha256": "c11661dfa0312a675c3e0ae58903e0fea8cf4f11554fc21e1fe7a80371ad1c79",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01070_c11661dfa0312a_-9184780138365035905_liftupper_liftupper.wav"
+      },
+      {
+       "bytes": 10658,
+       "channels": 1,
+       "clip": "ft_upper1",
+       "duration_s": 0.241,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_char_fighter.npk",
+       "npk_bundle": "Android/bundles/sounds_char_fighter.npk",
+       "npk_sha256": "753b1ab0e0c68c610c4c4096823dff0a3d555aa6a5009a24703aa85f59c3d3d6",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01069_753b1ab0e0c68c_-6385538877717882103_ft_upper1_ft_upper1.wav"
+      },
+      {
+       "bytes": 13780,
+       "channels": 1,
+       "clip": "ft_upper2",
+       "duration_s": 0.311,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_char_fighter.npk",
+       "npk_bundle": "Android/bundles/sounds_char_fighter.npk",
+       "npk_sha256": "753b1ab0e0c68c610c4c4096823dff0a3d555aa6a5009a24703aa85f59c3d3d6",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01069_753b1ab0e0c68c_66211047661281174_ft_upper2_ft_upper2.wav"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "fighter_skill_liftupper",
+     "match": "convention: liftupper 专名剪辑 + ft_upper1/2 候选；skill 定义块已定位见 effects",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "bytes": 17702,
+      "channels": 1,
+      "clip": "singlekick",
+      "duration_s": 0.4,
+      "format": "WAV PCM (已解码自 Unity AudioClip)",
+      "npk": "sounds_char_fighter_effect.npk",
+      "npk_bundle": "Android/bundles/sounds_char_fighter_effect.npk",
+      "npk_sha256": "c11661dfa0312a675c3e0ae58903e0fea8cf4f11554fc21e1fe7a80371ad1c79",
+      "rate_hz": 22050,
+      "sample_width_bytes": 2,
+      "wav": "audio/sounds/d01070_c11661dfa0312a_-1737752499697657585_singlekick_singlekick.wav"
+     },
+     "kind": "audio",
+     "logical_key": "fighter_skill_singlekick",
+     "match": "exact: jumpattack.ani 事件 SINGLEKICK + 专名剪辑",
+     "status": "located"
+    },
+    {
+     "entity": [
+      {
+       "bytes": 8700,
+       "channels": 1,
+       "clip": "ft_lowKick_01",
+       "duration_s": 0.196,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_char_fighter.npk",
+       "npk_bundle": "Android/bundles/sounds_char_fighter.npk",
+       "npk_sha256": "753b1ab0e0c68c610c4c4096823dff0a3d555aa6a5009a24703aa85f59c3d3d6",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01069_753b1ab0e0c68c_1551931790527773145_ft_lowKick_01_ft_lowKick_01.wav"
+      },
+      {
+       "bytes": 7650,
+       "channels": 1,
+       "clip": "ft_lowKick_02",
+       "duration_s": 0.172,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_char_fighter.npk",
+       "npk_bundle": "Android/bundles/sounds_char_fighter.npk",
+       "npk_sha256": "753b1ab0e0c68c610c4c4096823dff0a3d555aa6a5009a24703aa85f59c3d3d6",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01069_753b1ab0e0c68c_-2247995854737788282_ft_lowKick_02_ft_lowKick_02.wav"
+      },
+      {
+       "bytes": 8090,
+       "channels": 1,
+       "clip": "ft_lowKick_03",
+       "duration_s": 0.182,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_char_fighter.npk",
+       "npk_bundle": "Android/bundles/sounds_char_fighter.npk",
+       "npk_sha256": "753b1ab0e0c68c610c4c4096823dff0a3d555aa6a5009a24703aa85f59c3d3d6",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01069_753b1ab0e0c68c_-606557341972363450_ft_lowKick_03_ft_lowKick_03.wav"
+      },
+      {
+       "bytes": 50074,
+       "channels": 1,
+       "clip": "Strong_lowkick",
+       "duration_s": 1.134,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_char_fighter_effect.npk",
+       "npk_bundle": "Android/bundles/sounds_char_fighter_effect.npk",
+       "npk_sha256": "c11661dfa0312a675c3e0ae58903e0fea8cf4f11554fc21e1fe7a80371ad1c79",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01070_c11661dfa0312a_-1988055167708355889_Strong_lowkick_Strong_lowkick.wav"
+      },
+      {
+       "bytes": 16230,
+       "channels": 1,
+       "clip": "1st_strong_lowkick_hit",
+       "duration_s": 0.367,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_char_fighter_effect.npk",
+       "npk_bundle": "Android/bundles/sounds_char_fighter_effect.npk",
+       "npk_sha256": "c11661dfa0312a675c3e0ae58903e0fea8cf4f11554fc21e1fe7a80371ad1c79",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01070_c11661dfa0312a_-2578689775982885699_1st_strong_lowkick_hit_1st_strong_lowkick_hit.wav"
+      },
+      {
+       "bytes": 47360,
+       "channels": 1,
+       "clip": "lowKick_impact",
+       "duration_s": 1.073,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_char_fighter_effect.npk",
+       "npk_bundle": "Android/bundles/sounds_char_fighter_effect.npk",
+       "npk_sha256": "c11661dfa0312a675c3e0ae58903e0fea8cf4f11554fc21e1fe7a80371ad1c79",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01070_c11661dfa0312a_-2108650391018269009_lowKick_impact_lowKick_impact.wav"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "fighter_skill_damagelowkick",
+     "match": "convention: lowkick 系列剪辑",
+     "status": "located"
+    },
+    {
+     "kind": "audio",
+     "logical_key": "fighter_skill_throwsand",
+     "note": "源技能名为 throwsand（throwsand.skl/throwsandex.skl），任务卡名称 throwsand_sp 无同名源键；全库无 throwsand 专名音频剪辑。候选 sandatk_*（sounds_mon_act6_effect.npk）为怪物音，不采纳为原声",
+     "search_evidence": {
+      "clip_searches": [
+       "throwsand",
+       "sand"
+      ],
+      "result": "无 fighter 专名剪辑"
+     },
+     "status": "missing"
+    },
+    {
+     "entity": [
+      {
+       "bytes": 55960,
+       "channels": 1,
+       "clip": "earthbreak",
+       "duration_s": 1.268,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_char_fighter_effect.npk",
+       "npk_bundle": "Android/bundles/sounds_char_fighter_effect.npk",
+       "npk_sha256": "c11661dfa0312a675c3e0ae58903e0fea8cf4f11554fc21e1fe7a80371ad1c79",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01070_c11661dfa0312a_1167219278030699940_earthbreak_earthbreak.wav"
+      },
+      null
+     ],
+     "kind": "audio",
+     "logical_key": "fighter_skill_earthbreak",
+     "match": "convention: earthbreak 专名剪辑",
+     "status": "located"
+    },
+    {
+     "kind": "audio",
+     "logical_key": "fighter_skill_stomp",
+     "note": "源技能名为 stomp（stomp.skl/stompex.skl）；全库无 stomp 专名音频剪辑；候选 shoulder_tackle_*/ft_teckle（sounds_char_fighter_effect.npk）仅为推断不采纳",
+     "search_evidence": {
+      "clip_searches": [
+       "stomp"
+      ],
+      "result": "0 匹配"
+     },
+     "status": "missing"
+    }
+   ],
+   "effects": [
+    {
+     "entity": {
+      "script_block": {
+       "block": 1102,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/skill/fighter/liftupper.skl",
+       "payload_bytes": 4024,
+       "sha256": "e5ffeb77144ce8b1fd89525b1c0d114b6e45f1fc49aed9bf5679217ca94cebbc",
+       "shard": 142
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "fighter_skl_liftupper",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 1103,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/skill/fighter/liftupperex.skl",
+       "payload_bytes": 922,
+       "sha256": "985c843baa8debf32b89984855abef39b584c4b4cc833d8c10620a62f4e354d5",
+       "shard": 142
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "fighter_skl_liftupperex",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 1195,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/skill/fighter/singlekick.skl",
+       "payload_bytes": 10214,
+       "sha256": "406dd5a2121a95ce5e30883d3f4a670ef36274a3cd9a1657a045820b2132d667",
+       "shard": 142
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "fighter_skl_singlekick",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 1196,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/skill/fighter/singlekickex.skl",
+       "payload_bytes": 870,
+       "sha256": "37794e2227f5e6933ee663d09295f047e3291d37f2f5bf7bca35842636ad69b1",
+       "shard": 142
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "fighter_skl_singlekickex",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 1013,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/skill/fighter/damagelowkick.skl",
+       "payload_bytes": 20156,
+       "sha256": "169d3f9ff43691d3e5d73c0f2254ade376d57c60102d723e35629f50f4753f5c",
+       "shard": 142
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "fighter_skl_damagelowkick",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 1014,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/skill/fighter/damagelowkickex.skl",
+       "payload_bytes": 876,
+       "sha256": "3ec626c3b88935c8d6efeeac7537088c72075f7abf180aaa0175d44dd2c43921",
+       "shard": 142
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "fighter_skl_damagelowkickex",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 1224,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/skill/fighter/throwsand.skl",
+       "payload_bytes": 13799,
+       "sha256": "d62adda15d14fe438ee7dea5ce789af38feeea43b22a71c02d81f9420d068f86",
+       "shard": 142
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "fighter_skl_throwsand",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 1225,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/skill/fighter/throwsandex.skl",
+       "payload_bytes": 946,
+       "sha256": "cdea9053c1d0167e46ed68f6e0ea084b4b7c6abee7d54cb0a797b2f9074f832b",
+       "shard": 142
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "fighter_skl_throwsandex",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 1037,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/skill/fighter/earthbreak.skl",
+       "payload_bytes": 16606,
+       "sha256": "26d26144c84617f570bcda37c5f595f7d79190684cf0bb6a66350345c006cf73",
+       "shard": 142
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "fighter_skl_earthbreak",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 1206,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/skill/fighter/stomp.skl",
+       "payload_bytes": 12849,
+       "sha256": "c5365e0147d2d67594074f6427d04b2672febda169cb351bf27faaea29b71c00",
+       "shard": 142
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "fighter_skl_stomp",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 1207,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/skill/fighter/stompex.skl",
+       "payload_bytes": 876,
+       "sha256": "a2d34ce50400128c429da21c5b65e6206cc920fbdf152ec23d12bdb424a176be",
+       "shard": 142
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "fighter_skl_stompex",
+     "status": "located"
+    },
+    {
+     "kind": "script_block",
+     "logical_key": "fighter_skl_stompfinish",
+     "note": "任务卡名 stompfinish 无同名源键；paths 表无 script/skill/fighter/stompfinish.skl；throwsand_sp.skl 同样不存在（源名 throwsand）",
+     "search_evidence": {
+      "result": "not_found",
+      "searched": "script/skill/fighter/stompfinish.skl, throwsand_sp.skl"
+     },
+     "status": "missing"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 986,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/passiveobject/character/fighter/throwsand.obj",
+       "payload_bytes": 561,
+       "sha256": null,
+       "shard": 83
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "fighter_obj_throwsand",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 869,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/passiveobject/character/fighter/atthrowsand.obj",
+       "payload_bytes": 563,
+       "sha256": null,
+       "shard": 83
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "fighter_obj_atthrowsand",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 900,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/passiveobject/character/fighter/earthbreakin.obj",
+       "payload_bytes": 597,
+       "sha256": null,
+       "shard": 83
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "fighter_obj_earthbreakin",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 901,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/passiveobject/character/fighter/earthbreakout.obj",
+       "payload_bytes": 580,
+       "sha256": null,
+       "shard": 83
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "fighter_obj_earthbreakout",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 821,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/passiveobject/character/fighter/atearthbreakin.obj",
+       "payload_bytes": 599,
+       "sha256": null,
+       "shard": 83
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "fighter_obj_atearthbreakin",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 822,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/passiveobject/character/fighter/atearthbreakout.obj",
+       "payload_bytes": 582,
+       "sha256": null,
+       "shard": 83
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "fighter_obj_atearthbreakout",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 967,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/passiveobject/character/fighter/stearthbreakin.obj",
+       "payload_bytes": 599,
+       "sha256": null,
+       "shard": 83
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "fighter_obj_stearthbreakin",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 968,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/passiveobject/character/fighter/stearthbreakout.obj",
+       "payload_bytes": 582,
+       "sha256": null,
+       "shard": 83
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "fighter_obj_stearthbreakout",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 944,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/passiveobject/character/fighter/lowkicksub.obj",
+       "payload_bytes": 577,
+       "sha256": null,
+       "shard": 83
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "fighter_obj_lowkicksub",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 890,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/passiveobject/character/fighter/crashlowkicksub.obj",
+       "payload_bytes": 582,
+       "sha256": null,
+       "shard": 83
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "fighter_obj_crashlowkicksub",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 981,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/passiveobject/character/fighter/strongestlowkicksub.obj",
+       "payload_bytes": 586,
+       "sha256": null,
+       "shard": 83
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "fighter_obj_strongestlowkicksub",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 947,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/passiveobject/character/fighter/nenguard.obj",
+       "payload_bytes": 608,
+       "sha256": null,
+       "shard": 83
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "fighter_obj_nenguard",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 948,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/passiveobject/character/fighter/nenguardex.obj",
+       "payload_bytes": 619,
+       "sha256": null,
+       "shard": 83
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "fighter_obj_nenguardex",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 963,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/passiveobject/character/fighter/risinguppernewsub.obj",
+       "payload_bytes": 584,
+       "sha256": null,
+       "shard": 83
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "fighter_obj_risinguppernewsub",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 3449,
+       "path": "script/passiveobject/character/fighter/particle/throwsandparticle1.ptl",
+       "shard": 84
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "fighter_ptl_throwsandparticle1",
+     "note": "投掷沙粒子脚本键（payload 未逐块提取，块号已定位）",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 3450,
+       "path": "script/passiveobject/character/fighter/particle/throwsandparticle1_sp.ptl",
+       "shard": 84
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "fighter_ptl_throwsandparticle1_sp",
+     "note": "投掷沙粒子脚本键（payload 未逐块提取，块号已定位）",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 3451,
+       "path": "script/passiveobject/character/fighter/particle/throwsandparticle2.ptl",
+       "shard": 84
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "fighter_ptl_throwsandparticle2",
+     "note": "投掷沙粒子脚本键（payload 未逐块提取，块号已定位）",
+     "status": "located"
+    },
+    {
+     "bundles": {
+      "fx_animation_character_fighter.npk": {
+       "bundle": "Android/bundles/fx_animation_character_fighter.npk",
+       "bytes": 14491,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "3f2662073fc36083ddf4fbbb4700fc6e4a128b7ff3f92eed0453cb8826dc6605"
+      },
+      "fx_texture_common_explosion.npk": {
+       "bundle": "Android/bundles/fx_texture_common_explosion.npk",
+       "bytes": 807459,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "a41bf09bda0166570c60882b7bedfcc47aca87777cc7787337cb746fbcc725d5"
+      },
+      "fx_texture_common_fire.npk": {
+       "bundle": "Android/bundles/fx_texture_common_fire.npk",
+       "bytes": 3048899,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "b869ef38d97e40397f913c5587fa9f5ae3f1feefb301981037d0d666a374255f"
+      },
+      "fx_texture_common_glow.npk": {
+       "bundle": "Android/bundles/fx_texture_common_glow.npk",
+       "bytes": 980943,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "bff3325f72b3fdf4ceb181f3cdb0a60f0e5b88c03539f5272512c4466f1f2329"
+      },
+      "fx_texture_common_smoke.npk": {
+       "bundle": "Android/bundles/fx_texture_common_smoke.npk",
+       "bytes": 1141950,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "9a9571b7ba7e999ea3dc41d7a7f5d79a9461e79fc83bda2428686fca444ad01d"
+      },
+      "fx_texture_common_stone.npk": {
+       "bundle": "Android/bundles/fx_texture_common_stone.npk",
+       "bytes": 33528,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "bfbb6983684ea4caaf7aee6a405bc60f89b4733e4e04b256f11bcda0fc43ec8a"
+      }
+     },
+     "fx_key": "Character/Fighter/Effect/ATBlockBuster/Block2nd_Piece.img",
+     "kind": "fx_image",
+     "logical_key": "fighter_fximg_Block2nd_Piece",
+     "note": "FX .img 图集键来自动作帧 fx_image 引用；atlas.sqlite 无该页，fx_*.npk bundle 在盘但未被逐名解析",
+     "status": "keyed"
+    },
+    {
+     "bundles": {
+      "fx_animation_character_fighter.npk": {
+       "bundle": "Android/bundles/fx_animation_character_fighter.npk",
+       "bytes": 14491,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "3f2662073fc36083ddf4fbbb4700fc6e4a128b7ff3f92eed0453cb8826dc6605"
+      },
+      "fx_texture_common_explosion.npk": {
+       "bundle": "Android/bundles/fx_texture_common_explosion.npk",
+       "bytes": 807459,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "a41bf09bda0166570c60882b7bedfcc47aca87777cc7787337cb746fbcc725d5"
+      },
+      "fx_texture_common_fire.npk": {
+       "bundle": "Android/bundles/fx_texture_common_fire.npk",
+       "bytes": 3048899,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "b869ef38d97e40397f913c5587fa9f5ae3f1feefb301981037d0d666a374255f"
+      },
+      "fx_texture_common_glow.npk": {
+       "bundle": "Android/bundles/fx_texture_common_glow.npk",
+       "bytes": 980943,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "bff3325f72b3fdf4ceb181f3cdb0a60f0e5b88c03539f5272512c4466f1f2329"
+      },
+      "fx_texture_common_smoke.npk": {
+       "bundle": "Android/bundles/fx_texture_common_smoke.npk",
+       "bytes": 1141950,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "9a9571b7ba7e999ea3dc41d7a7f5d79a9461e79fc83bda2428686fca444ad01d"
+      },
+      "fx_texture_common_stone.npk": {
+       "bundle": "Android/bundles/fx_texture_common_stone.npk",
+       "bytes": 33528,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "bfbb6983684ea4caaf7aee6a405bc60f89b4733e4e04b256f11bcda0fc43ec8a"
+      }
+     },
+     "fx_key": "Character/Fighter/Effect/ATBlockBuster/stone_particle_big.img",
+     "kind": "fx_image",
+     "logical_key": "fighter_fximg_stone_particle_big",
+     "note": "FX .img 图集键来自动作帧 fx_image 引用；atlas.sqlite 无该页，fx_*.npk bundle 在盘但未被逐名解析",
+     "status": "keyed"
+    },
+    {
+     "bundles": {
+      "fx_animation_character_fighter.npk": {
+       "bundle": "Android/bundles/fx_animation_character_fighter.npk",
+       "bytes": 14491,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "3f2662073fc36083ddf4fbbb4700fc6e4a128b7ff3f92eed0453cb8826dc6605"
+      },
+      "fx_texture_common_explosion.npk": {
+       "bundle": "Android/bundles/fx_texture_common_explosion.npk",
+       "bytes": 807459,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "a41bf09bda0166570c60882b7bedfcc47aca87777cc7787337cb746fbcc725d5"
+      },
+      "fx_texture_common_fire.npk": {
+       "bundle": "Android/bundles/fx_texture_common_fire.npk",
+       "bytes": 3048899,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "b869ef38d97e40397f913c5587fa9f5ae3f1feefb301981037d0d666a374255f"
+      },
+      "fx_texture_common_glow.npk": {
+       "bundle": "Android/bundles/fx_texture_common_glow.npk",
+       "bytes": 980943,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "bff3325f72b3fdf4ceb181f3cdb0a60f0e5b88c03539f5272512c4466f1f2329"
+      },
+      "fx_texture_common_smoke.npk": {
+       "bundle": "Android/bundles/fx_texture_common_smoke.npk",
+       "bytes": 1141950,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "9a9571b7ba7e999ea3dc41d7a7f5d79a9461e79fc83bda2428686fca444ad01d"
+      },
+      "fx_texture_common_stone.npk": {
+       "bundle": "Android/bundles/fx_texture_common_stone.npk",
+       "bytes": 33528,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "bfbb6983684ea4caaf7aee6a405bc60f89b4733e4e04b256f11bcda0fc43ec8a"
+      }
+     },
+     "fx_key": "Character/Fighter/Effect/ATDestroyEarthSkyDrop/particle_stone_burn_normal.img",
+     "kind": "fx_image",
+     "logical_key": "fighter_fximg_particle_stone_burn_normal",
+     "note": "FX .img 图集键来自动作帧 fx_image 引用；atlas.sqlite 无该页，fx_*.npk bundle 在盘但未被逐名解析",
+     "status": "keyed"
+    },
+    {
+     "atlas_page": {
+      "atlas": "particle_stone_normal",
+      "frames": 4,
+      "h": 112,
+      "status": "exact_texture_path",
+      "texture_path": "Assets/Bundle/sprite/Character/Fighter/Effect/ATDestroyEarthSkyDrop/particle_stone_normal.img_0.png",
+      "w": 152
+     },
+     "fx_key": "Character/Fighter/Effect/ATDestroyEarthSkyDrop/particle_stone_normal.img",
+     "kind": "fx_image",
+     "logical_key": "fighter_fximg_particle_stone_normal",
+     "note": "动作帧 fx_image 引用 → atlas.sqlite exact_texture_path 页（含尺寸/帧数）",
+     "status": "located"
+    },
+    {
+     "atlas_page": {
+      "atlas": "BigStone01",
+      "frames": 16,
+      "h": 1024,
+      "status": "exact_texture_path",
+      "texture_path": "Assets/Bundle/Sprite/Character/Fighter/Effect/ATRuinRain/BigStone01.img_0.png",
+      "w": 2048
+     },
+     "fx_key": "Character/Fighter/Effect/ATRuinRain/BigStone01.img",
+     "kind": "fx_image",
+     "logical_key": "fighter_fximg_BigStone01",
+     "note": "动作帧 fx_image 引用 → atlas.sqlite exact_texture_path 页（含尺寸/帧数）",
+     "status": "located"
+    },
+    {
+     "bundles": {
+      "fx_animation_character_fighter.npk": {
+       "bundle": "Android/bundles/fx_animation_character_fighter.npk",
+       "bytes": 14491,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "3f2662073fc36083ddf4fbbb4700fc6e4a128b7ff3f92eed0453cb8826dc6605"
+      },
+      "fx_texture_common_explosion.npk": {
+       "bundle": "Android/bundles/fx_texture_common_explosion.npk",
+       "bytes": 807459,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "a41bf09bda0166570c60882b7bedfcc47aca87777cc7787337cb746fbcc725d5"
+      },
+      "fx_texture_common_fire.npk": {
+       "bundle": "Android/bundles/fx_texture_common_fire.npk",
+       "bytes": 3048899,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "b869ef38d97e40397f913c5587fa9f5ae3f1feefb301981037d0d666a374255f"
+      },
+      "fx_texture_common_glow.npk": {
+       "bundle": "Android/bundles/fx_texture_common_glow.npk",
+       "bytes": 980943,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "bff3325f72b3fdf4ceb181f3cdb0a60f0e5b88c03539f5272512c4466f1f2329"
+      },
+      "fx_texture_common_smoke.npk": {
+       "bundle": "Android/bundles/fx_texture_common_smoke.npk",
+       "bytes": 1141950,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "9a9571b7ba7e999ea3dc41d7a7f5d79a9461e79fc83bda2428686fca444ad01d"
+      },
+      "fx_texture_common_stone.npk": {
+       "bundle": "Android/bundles/fx_texture_common_stone.npk",
+       "bytes": 33528,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "bfbb6983684ea4caaf7aee6a405bc60f89b4733e4e04b256f11bcda0fc43ec8a"
+      }
+     },
+     "fx_key": "Character/Fighter/Effect/ATRuinRain/StoneAParticle.img",
+     "kind": "fx_image",
+     "logical_key": "fighter_fximg_StoneAParticle",
+     "note": "FX .img 图集键来自动作帧 fx_image 引用；atlas.sqlite 无该页，fx_*.npk bundle 在盘但未被逐名解析",
+     "status": "keyed"
+    },
+    {
+     "bundles": {
+      "fx_animation_character_fighter.npk": {
+       "bundle": "Android/bundles/fx_animation_character_fighter.npk",
+       "bytes": 14491,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "3f2662073fc36083ddf4fbbb4700fc6e4a128b7ff3f92eed0453cb8826dc6605"
+      },
+      "fx_texture_common_explosion.npk": {
+       "bundle": "Android/bundles/fx_texture_common_explosion.npk",
+       "bytes": 807459,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "a41bf09bda0166570c60882b7bedfcc47aca87777cc7787337cb746fbcc725d5"
+      },
+      "fx_texture_common_fire.npk": {
+       "bundle": "Android/bundles/fx_texture_common_fire.npk",
+       "bytes": 3048899,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "b869ef38d97e40397f913c5587fa9f5ae3f1feefb301981037d0d666a374255f"
+      },
+      "fx_texture_common_glow.npk": {
+       "bundle": "Android/bundles/fx_texture_common_glow.npk",
+       "bytes": 980943,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "bff3325f72b3fdf4ceb181f3cdb0a60f0e5b88c03539f5272512c4466f1f2329"
+      },
+      "fx_texture_common_smoke.npk": {
+       "bundle": "Android/bundles/fx_texture_common_smoke.npk",
+       "bytes": 1141950,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "9a9571b7ba7e999ea3dc41d7a7f5d79a9461e79fc83bda2428686fca444ad01d"
+      },
+      "fx_texture_common_stone.npk": {
+       "bundle": "Android/bundles/fx_texture_common_stone.npk",
+       "bytes": 33528,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "bfbb6983684ea4caaf7aee6a405bc60f89b4733e4e04b256f11bcda0fc43ec8a"
+      }
+     },
+     "fx_key": "Character/Fighter/Effect/ATRuinRain/StoneBParticle.img",
+     "kind": "fx_image",
+     "logical_key": "fighter_fximg_StoneBParticle",
+     "note": "FX .img 图集键来自动作帧 fx_image 引用；atlas.sqlite 无该页，fx_*.npk bundle 在盘但未被逐名解析",
+     "status": "keyed"
+    },
+    {
+     "bundles": {
+      "fx_animation_character_fighter.npk": {
+       "bundle": "Android/bundles/fx_animation_character_fighter.npk",
+       "bytes": 14491,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "3f2662073fc36083ddf4fbbb4700fc6e4a128b7ff3f92eed0453cb8826dc6605"
+      },
+      "fx_texture_common_explosion.npk": {
+       "bundle": "Android/bundles/fx_texture_common_explosion.npk",
+       "bytes": 807459,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "a41bf09bda0166570c60882b7bedfcc47aca87777cc7787337cb746fbcc725d5"
+      },
+      "fx_texture_common_fire.npk": {
+       "bundle": "Android/bundles/fx_texture_common_fire.npk",
+       "bytes": 3048899,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "b869ef38d97e40397f913c5587fa9f5ae3f1feefb301981037d0d666a374255f"
+      },
+      "fx_texture_common_glow.npk": {
+       "bundle": "Android/bundles/fx_texture_common_glow.npk",
+       "bytes": 980943,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "bff3325f72b3fdf4ceb181f3cdb0a60f0e5b88c03539f5272512c4466f1f2329"
+      },
+      "fx_texture_common_smoke.npk": {
+       "bundle": "Android/bundles/fx_texture_common_smoke.npk",
+       "bytes": 1141950,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "9a9571b7ba7e999ea3dc41d7a7f5d79a9461e79fc83bda2428686fca444ad01d"
+      },
+      "fx_texture_common_stone.npk": {
+       "bundle": "Android/bundles/fx_texture_common_stone.npk",
+       "bytes": 33528,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "bfbb6983684ea4caaf7aee6a405bc60f89b4733e4e04b256f11bcda0fc43ec8a"
+      }
+     },
+     "fx_key": "Character/Fighter/Effect/ATTyphoon/Stone.img",
+     "kind": "fx_image",
+     "logical_key": "fighter_fximg_Stone",
+     "note": "FX .img 图集键来自动作帧 fx_image 引用；atlas.sqlite 无该页，fx_*.npk bundle 在盘但未被逐名解析",
+     "status": "keyed"
+    },
+    {
+     "bundles": {
+      "fx_animation_character_fighter.npk": {
+       "bundle": "Android/bundles/fx_animation_character_fighter.npk",
+       "bytes": 14491,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "3f2662073fc36083ddf4fbbb4700fc6e4a128b7ff3f92eed0453cb8826dc6605"
+      },
+      "fx_texture_common_explosion.npk": {
+       "bundle": "Android/bundles/fx_texture_common_explosion.npk",
+       "bytes": 807459,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "a41bf09bda0166570c60882b7bedfcc47aca87777cc7787337cb746fbcc725d5"
+      },
+      "fx_texture_common_fire.npk": {
+       "bundle": "Android/bundles/fx_texture_common_fire.npk",
+       "bytes": 3048899,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "b869ef38d97e40397f913c5587fa9f5ae3f1feefb301981037d0d666a374255f"
+      },
+      "fx_texture_common_glow.npk": {
+       "bundle": "Android/bundles/fx_texture_common_glow.npk",
+       "bytes": 980943,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "bff3325f72b3fdf4ceb181f3cdb0a60f0e5b88c03539f5272512c4466f1f2329"
+      },
+      "fx_texture_common_smoke.npk": {
+       "bundle": "Android/bundles/fx_texture_common_smoke.npk",
+       "bytes": 1141950,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "9a9571b7ba7e999ea3dc41d7a7f5d79a9461e79fc83bda2428686fca444ad01d"
+      },
+      "fx_texture_common_stone.npk": {
+       "bundle": "Android/bundles/fx_texture_common_stone.npk",
+       "bytes": 33528,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "bfbb6983684ea4caaf7aee6a405bc60f89b4733e4e04b256f11bcda0fc43ec8a"
+      }
+     },
+     "fx_key": "Character/Fighter/Effect/ATTyphoon/dust.img",
+     "kind": "fx_image",
+     "logical_key": "fighter_fximg_dust",
+     "note": "FX .img 图集键来自动作帧 fx_image 引用；atlas.sqlite 无该页，fx_*.npk bundle 在盘但未被逐名解析",
+     "status": "keyed"
+    },
+    {
+     "atlas_page": {
+      "atlas": "particle",
+      "frames": 3,
+      "h": 64,
+      "status": "exact_texture_path",
+      "texture_path": "Assets/Bundle/Sprite/Character/Fighter/Effect/ATWildCannonSpike/particle.img_0.png",
+      "w": 60
+     },
+     "fx_key": "Character/Fighter/Effect/ATWildCannonSpike/particle.img",
+     "kind": "fx_image",
+     "logical_key": "fighter_fximg_particle",
+     "note": "动作帧 fx_image 引用 → atlas.sqlite exact_texture_path 页（含尺寸/帧数）",
+     "status": "located"
+    },
+    {
+     "atlas_page": {
+      "atlas": "BlockBuster_BlockParticle",
+      "frames": 13,
+      "h": 32,
+      "status": "exact_texture_path",
+      "texture_path": "Assets/Bundle/sprite/Character/Fighter/Effect/BlockBuster/BlockBuster_BlockParticle.img_0.png",
+      "w": 48
+     },
+     "fx_key": "Character/Fighter/Effect/BlockBuster/BlockBuster_BlockParticle.img",
+     "kind": "fx_image",
+     "logical_key": "fighter_fximg_BlockBuster_BlockParticle",
+     "note": "动作帧 fx_image 引用 → atlas.sqlite exact_texture_path 页（含尺寸/帧数）",
+     "status": "located"
+    },
+    {
+     "bundles": {
+      "fx_animation_character_fighter.npk": {
+       "bundle": "Android/bundles/fx_animation_character_fighter.npk",
+       "bytes": 14491,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "3f2662073fc36083ddf4fbbb4700fc6e4a128b7ff3f92eed0453cb8826dc6605"
+      },
+      "fx_texture_common_explosion.npk": {
+       "bundle": "Android/bundles/fx_texture_common_explosion.npk",
+       "bytes": 807459,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "a41bf09bda0166570c60882b7bedfcc47aca87777cc7787337cb746fbcc725d5"
+      },
+      "fx_texture_common_fire.npk": {
+       "bundle": "Android/bundles/fx_texture_common_fire.npk",
+       "bytes": 3048899,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "b869ef38d97e40397f913c5587fa9f5ae3f1feefb301981037d0d666a374255f"
+      },
+      "fx_texture_common_glow.npk": {
+       "bundle": "Android/bundles/fx_texture_common_glow.npk",
+       "bytes": 980943,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "bff3325f72b3fdf4ceb181f3cdb0a60f0e5b88c03539f5272512c4466f1f2329"
+      },
+      "fx_texture_common_smoke.npk": {
+       "bundle": "Android/bundles/fx_texture_common_smoke.npk",
+       "bytes": 1141950,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "9a9571b7ba7e999ea3dc41d7a7f5d79a9461e79fc83bda2428686fca444ad01d"
+      },
+      "fx_texture_common_stone.npk": {
+       "bundle": "Android/bundles/fx_texture_common_stone.npk",
+       "bytes": 33528,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "bfbb6983684ea4caaf7aee6a405bc60f89b4733e4e04b256f11bcda0fc43ec8a"
+      }
+     },
+     "fx_key": "Character/Fighter/Effect/BlockBusterEx/block_particle.img",
+     "kind": "fx_image",
+     "logical_key": "fighter_fximg_block_particle",
+     "note": "FX .img 图集键来自动作帧 fx_image 引用；atlas.sqlite 无该页，fx_*.npk bundle 在盘但未被逐名解析",
+     "status": "keyed"
+    },
+    {
+     "atlas_page": {
+      "atlas": "particle",
+      "frames": 4,
+      "h": 112,
+      "status": "exact_texture_path",
+      "texture_path": "Assets/Bundle/sprite/Character/Fighter/Effect/NenFlower/particle.img_0.png",
+      "w": 104
+     },
+     "fx_key": "Character/Fighter/Effect/NenFlower/particle.img",
+     "kind": "fx_image",
+     "logical_key": "fighter_fximg_particle",
+     "note": "动作帧 fx_image 引用 → atlas.sqlite exact_texture_path 页（含尺寸/帧数）",
+     "status": "located"
+    },
+    {
+     "atlas_page": {
+      "atlas": "NenGuard",
+      "frames": 23,
+      "h": 512,
+      "status": "exact_texture_path",
+      "texture_path": "Assets/Bundle/Sprite/Character/Fighter/Effect/NenGuard.img_0.png",
+      "w": 1024
+     },
+     "fx_key": "Character/Fighter/Effect/NenGuard.img",
+     "kind": "fx_image",
+     "logical_key": "fighter_fximg_NenGuard",
+     "note": "动作帧 fx_image 引用 → atlas.sqlite exact_texture_path 页（含尺寸/帧数）",
+     "status": "located"
+    },
+    {
+     "atlas_page": {
+      "atlas": "stone",
+      "frames": 5,
+      "h": 76,
+      "status": "exact_texture_path",
+      "texture_path": "Assets/Bundle/sprite/Character/Fighter/Effect/RisingUpperEx/stone.img_0.png",
+      "w": 68
+     },
+     "fx_key": "Character/Fighter/Effect/RisingUpperEx/stone.img",
+     "kind": "fx_image",
+     "logical_key": "fighter_fximg_stone",
+     "note": "动作帧 fx_image 引用 → atlas.sqlite exact_texture_path 页（含尺寸/帧数）",
+     "status": "located"
+    },
+    {
+     "bundles": {
+      "fx_animation_character_fighter.npk": {
+       "bundle": "Android/bundles/fx_animation_character_fighter.npk",
+       "bytes": 14491,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "3f2662073fc36083ddf4fbbb4700fc6e4a128b7ff3f92eed0453cb8826dc6605"
+      },
+      "fx_texture_common_explosion.npk": {
+       "bundle": "Android/bundles/fx_texture_common_explosion.npk",
+       "bytes": 807459,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "a41bf09bda0166570c60882b7bedfcc47aca87777cc7787337cb746fbcc725d5"
+      },
+      "fx_texture_common_fire.npk": {
+       "bundle": "Android/bundles/fx_texture_common_fire.npk",
+       "bytes": 3048899,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "b869ef38d97e40397f913c5587fa9f5ae3f1feefb301981037d0d666a374255f"
+      },
+      "fx_texture_common_glow.npk": {
+       "bundle": "Android/bundles/fx_texture_common_glow.npk",
+       "bytes": 980943,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "bff3325f72b3fdf4ceb181f3cdb0a60f0e5b88c03539f5272512c4466f1f2329"
+      },
+      "fx_texture_common_smoke.npk": {
+       "bundle": "Android/bundles/fx_texture_common_smoke.npk",
+       "bytes": 1141950,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "9a9571b7ba7e999ea3dc41d7a7f5d79a9461e79fc83bda2428686fca444ad01d"
+      },
+      "fx_texture_common_stone.npk": {
+       "bundle": "Android/bundles/fx_texture_common_stone.npk",
+       "bytes": 33528,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "bfbb6983684ea4caaf7aee6a405bc60f89b4733e4e04b256f11bcda0fc43ec8a"
+      }
+     },
+     "fx_key": "Character/Fighter/Effect/Typhoon/a.img",
+     "kind": "fx_image",
+     "logical_key": "fighter_fximg_a",
+     "note": "FX .img 图集键来自动作帧 fx_image 引用；atlas.sqlite 无该页，fx_*.npk bundle 在盘但未被逐名解析",
+     "status": "keyed"
+    },
+    {
+     "bundles": {
+      "fx_animation_character_fighter.npk": {
+       "bundle": "Android/bundles/fx_animation_character_fighter.npk",
+       "bytes": 14491,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "3f2662073fc36083ddf4fbbb4700fc6e4a128b7ff3f92eed0453cb8826dc6605"
+      },
+      "fx_texture_common_explosion.npk": {
+       "bundle": "Android/bundles/fx_texture_common_explosion.npk",
+       "bytes": 807459,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "a41bf09bda0166570c60882b7bedfcc47aca87777cc7787337cb746fbcc725d5"
+      },
+      "fx_texture_common_fire.npk": {
+       "bundle": "Android/bundles/fx_texture_common_fire.npk",
+       "bytes": 3048899,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "b869ef38d97e40397f913c5587fa9f5ae3f1feefb301981037d0d666a374255f"
+      },
+      "fx_texture_common_glow.npk": {
+       "bundle": "Android/bundles/fx_texture_common_glow.npk",
+       "bytes": 980943,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "bff3325f72b3fdf4ceb181f3cdb0a60f0e5b88c03539f5272512c4466f1f2329"
+      },
+      "fx_texture_common_smoke.npk": {
+       "bundle": "Android/bundles/fx_texture_common_smoke.npk",
+       "bytes": 1141950,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "9a9571b7ba7e999ea3dc41d7a7f5d79a9461e79fc83bda2428686fca444ad01d"
+      },
+      "fx_texture_common_stone.npk": {
+       "bundle": "Android/bundles/fx_texture_common_stone.npk",
+       "bytes": 33528,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "bfbb6983684ea4caaf7aee6a405bc60f89b4733e4e04b256f11bcda0fc43ec8a"
+      }
+     },
+     "fx_key": "Character/Fighter/Effect/Typhoon/b.img",
+     "kind": "fx_image",
+     "logical_key": "fighter_fximg_b",
+     "note": "FX .img 图集键来自动作帧 fx_image 引用；atlas.sqlite 无该页，fx_*.npk bundle 在盘但未被逐名解析",
+     "status": "keyed"
+    },
+    {
+     "bundles": {
+      "fx_animation_character_fighter.npk": {
+       "bundle": "Android/bundles/fx_animation_character_fighter.npk",
+       "bytes": 14491,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "3f2662073fc36083ddf4fbbb4700fc6e4a128b7ff3f92eed0453cb8826dc6605"
+      },
+      "fx_texture_common_explosion.npk": {
+       "bundle": "Android/bundles/fx_texture_common_explosion.npk",
+       "bytes": 807459,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "a41bf09bda0166570c60882b7bedfcc47aca87777cc7787337cb746fbcc725d5"
+      },
+      "fx_texture_common_fire.npk": {
+       "bundle": "Android/bundles/fx_texture_common_fire.npk",
+       "bytes": 3048899,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "b869ef38d97e40397f913c5587fa9f5ae3f1feefb301981037d0d666a374255f"
+      },
+      "fx_texture_common_glow.npk": {
+       "bundle": "Android/bundles/fx_texture_common_glow.npk",
+       "bytes": 980943,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "bff3325f72b3fdf4ceb181f3cdb0a60f0e5b88c03539f5272512c4466f1f2329"
+      },
+      "fx_texture_common_smoke.npk": {
+       "bundle": "Android/bundles/fx_texture_common_smoke.npk",
+       "bytes": 1141950,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "9a9571b7ba7e999ea3dc41d7a7f5d79a9461e79fc83bda2428686fca444ad01d"
+      },
+      "fx_texture_common_stone.npk": {
+       "bundle": "Android/bundles/fx_texture_common_stone.npk",
+       "bytes": 33528,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "bfbb6983684ea4caaf7aee6a405bc60f89b4733e4e04b256f11bcda0fc43ec8a"
+      }
+     },
+     "fx_key": "Character/Fighter/Effect/Typhoon/c.img",
+     "kind": "fx_image",
+     "logical_key": "fighter_fximg_c",
+     "note": "FX .img 图集键来自动作帧 fx_image 引用；atlas.sqlite 无该页，fx_*.npk bundle 在盘但未被逐名解析",
+     "status": "keyed"
+    },
+    {
+     "atlas_page": {
+      "atlas": "big_01",
+      "frames": 3,
+      "h": 96,
+      "status": "exact_texture_path",
+      "texture_path": "Assets/Bundle/Sprite/Character/Fighter/Effect/WildCannonSpike/big_01.img_0.png",
+      "w": 100
+     },
+     "fx_key": "Character/Fighter/Effect/WildCannonSpike/big_01.img",
+     "kind": "fx_image",
+     "logical_key": "fighter_fximg_big_01",
+     "note": "动作帧 fx_image 引用 → atlas.sqlite exact_texture_path 页（含尺寸/帧数）",
+     "status": "located"
+    },
+    {
+     "atlas_page": {
+      "atlas": "big_02",
+      "frames": 3,
+      "h": 64,
+      "status": "exact_texture_path",
+      "texture_path": "Assets/Bundle/Sprite/Character/Fighter/Effect/WildCannonSpike/big_02.img_0.png",
+      "w": 56
+     },
+     "fx_key": "Character/Fighter/Effect/WildCannonSpike/big_02.img",
+     "kind": "fx_image",
+     "logical_key": "fighter_fximg_big_02",
+     "note": "动作帧 fx_image 引用 → atlas.sqlite exact_texture_path 页（含尺寸/帧数）",
+     "status": "located"
+    },
+    {
+     "atlas_page": {
+      "atlas": "big_03",
+      "frames": 3,
+      "h": 92,
+      "status": "exact_texture_path",
+      "texture_path": "Assets/Bundle/Sprite/Character/Fighter/Effect/WildCannonSpike/big_03.img_0.png",
+      "w": 104
+     },
+     "fx_key": "Character/Fighter/Effect/WildCannonSpike/big_03.img",
+     "kind": "fx_image",
+     "logical_key": "fighter_fximg_big_03",
+     "note": "动作帧 fx_image 引用 → atlas.sqlite exact_texture_path 页（含尺寸/帧数）",
+     "status": "located"
+    },
+    {
+     "bundles": {
+      "fx_prefab_common_explosion.npk": {
+       "bundle": "Android/bundles/fx_prefab_common_explosion.npk",
+       "bytes": 160822,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "7ad09249a3d203744bdec8d30d284f7dc8d4d262bc7ca65b9f02159344b20e74"
+      },
+      "fx_prefab_common_lightning.npk": {
+       "bundle": "Android/bundles/fx_prefab_common_lightning.npk",
+       "bytes": 30406,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "abdf9adaf5bff96555b4e74cb04846f3fbc6cc9272fe8b8d3d61f44c31cfbe42"
+      }
+     },
+     "fx_key": "FX/Prefab/Common/Explosion/Common_Explosion_Lightning",
+     "kind": "prefab",
+     "logical_key": "fighter_prefab_Common_Explosion_Lightning",
+     "note": "prefab_info 引用；fx_prefab bundle 存在，逐名未验证",
+     "status": "keyed"
+    }
+   ],
+   "stats": {
+    "keyed": 14,
+    "located": 51,
+    "missing": 3
+   }
+  },
+  "goblinthrower": {
+   "audio": [
+    {
+     "entity": [
+      {
+       "bytes": 14982,
+       "channels": 1,
+       "clip": "gbn_dmg_01",
+       "duration_s": 0.339,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_mon_act1_voice.npk",
+       "npk_bundle": "Android/bundles/sounds_mon_act1_voice.npk",
+       "npk_sha256": "d21a8e5690e27d5be56f81f7a0c6e85bcc7cd7e2195157e2cd81b10600626b82",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01136_d21a8e5690e27d_-895648065027554942_gbn_dmg_01_gbn_dmg_01.wav"
+      },
+      {
+       "bytes": 19814,
+       "channels": 1,
+       "clip": "gbn_dmg_02",
+       "duration_s": 0.448,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_mon_act1_voice.npk",
+       "npk_bundle": "Android/bundles/sounds_mon_act1_voice.npk",
+       "npk_sha256": "d21a8e5690e27d5be56f81f7a0c6e85bcc7cd7e2195157e2cd81b10600626b82",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01136_d21a8e5690e27d_-2249470629204625186_gbn_dmg_02_gbn_dmg_02.wav"
+      },
+      {
+       "bytes": 18636,
+       "channels": 1,
+       "clip": "gbn_dmg_03",
+       "duration_s": 0.422,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_mon_act1_voice.npk",
+       "npk_bundle": "Android/bundles/sounds_mon_act1_voice.npk",
+       "npk_sha256": "d21a8e5690e27d5be56f81f7a0c6e85bcc7cd7e2195157e2cd81b10600626b82",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01136_d21a8e5690e27d_3109324522715506617_gbn_dmg_03_gbn_dmg_03.wav"
+      },
+      {
+       "bytes": 21540,
+       "channels": 1,
+       "clip": "gbn_dmg_04",
+       "duration_s": 0.487,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_mon_act1_voice.npk",
+       "npk_bundle": "Android/bundles/sounds_mon_act1_voice.npk",
+       "npk_sha256": "d21a8e5690e27d5be56f81f7a0c6e85bcc7cd7e2195157e2cd81b10600626b82",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01136_d21a8e5690e27d_7475193404059646514_gbn_dmg_04_gbn_dmg_04.wav"
+      }
+     ],
+     "events": [
+      {
+       "field": "mob_sound_key",
+       "source_path": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/2007006745_goblinthrower.mob",
+       "tag": "GOBLIN_DMG_04"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "goblinthrower_mob_damage",
+     "match": "inferred: mob 键 GOBLIN_DMG_04 → gbn_dmg_01-04（GOBLIN→GBN 缩写映射推断；wav 均已定位）",
+     "status": "located"
+    },
+    {
+     "entity": [
+      {
+       "bytes": 19368,
+       "channels": 1,
+       "clip": "gbn_die_01",
+       "duration_s": 0.438,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_mon_act1_voice.npk",
+       "npk_bundle": "Android/bundles/sounds_mon_act1_voice.npk",
+       "npk_sha256": "d21a8e5690e27d5be56f81f7a0c6e85bcc7cd7e2195157e2cd81b10600626b82",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01136_d21a8e5690e27d_-6121763673932157927_gbn_die_01_gbn_die_01.wav"
+      },
+      {
+       "bytes": 37456,
+       "channels": 1,
+       "clip": "gbn_die_02",
+       "duration_s": 0.848,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_mon_act1_voice.npk",
+       "npk_bundle": "Android/bundles/sounds_mon_act1_voice.npk",
+       "npk_sha256": "d21a8e5690e27d5be56f81f7a0c6e85bcc7cd7e2195157e2cd81b10600626b82",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01136_d21a8e5690e27d_1477925034223198001_gbn_die_02_gbn_die_02.wav"
+      }
+     ],
+     "events": [
+      {
+       "field": "mob_sound_key",
+       "source_path": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/2007006745_goblinthrower.mob",
+       "tag": "GOBLIN_DIE_01"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "goblinthrower_mob_die",
+     "match": "inferred: mob 键 GOBLIN_DIE_01 → gbn_die_01/02",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "clips": [
+       "gbn_comm",
+       "gbn_fright",
+       "gbn_scared",
+       "gbn_suicidal",
+       "gbn_talk_01..05"
+      ],
+      "npk": "sounds_mon_act1_voice.npk"
+     },
+     "kind": "audio",
+     "logical_key": "goblinthrower_extra_voice_candidates",
+     "match": "convention: 同包哥布林语音候选，无本地引用键",
+     "status": "keyed"
+    },
+    {
+     "kind": "audio",
+     "logical_key": "goblinthrower_attack0_throw_sound",
+     "note": "attack_0.ani 无 audio_tags 事件；无 .atk；投掷石声音无源键。候选需人工听验或后续在 .ai/代码层追认",
+     "status": "missing"
+    }
+   ],
+   "effects": [
+    {
+     "entity": {
+      "script_block": {
+       "block": 4407,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/monster/mdnf_scenario/renewal_monster/granflawless/goblinthrower/particle/throwstone.ptl",
+       "payload_bytes": 519,
+       "sha256": "6931a1557faeb600d60b2f84f99734a2190c9d694da00bbeefba2da04d1d6230",
+       "shard": 63
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "goblinthrower_particle_throwstone",
+     "note": "投掷物粒子脚本；ASCII 含 [animation] 段声明",
+     "status": "located"
+    }
+   ],
+   "stats": {
+    "keyed": 1,
+    "located": 3,
+    "missing": 1
+   }
+  },
+  "gunner": {
+   "audio": [
+    {
+     "bundles": {
+      "sounds_char_common_footstep.npk": {
+       "bundle": "Android/bundles/sounds_char_common_footstep.npk",
+       "bytes": 67337,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "93ddbf4062667dd37a681f33adc852c4b7d86c8c1401a5fd6aac4477dfda1972"
+      },
+      "sounds_char_common_move.npk": {
+       "bundle": "Android/bundles/sounds_char_common_move.npk",
+       "bytes": 137313,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "da904276ed594f1858f383aeb7cf09b6c663e5819eefc587961fad65ee86d232"
+      }
+     },
+     "events": [
+      {
+       "delay_ms": 100,
+       "field": "audio_tags",
+       "frame": 3,
+       "source_path": "script/character/gunner/animation/move.ani",
+       "tag": "R_FOOTSTEP_MALE_WALK"
+      },
+      {
+       "delay_ms": 100,
+       "field": "audio_tags",
+       "frame": 7,
+       "source_path": "script/character/gunner/animation/move.ani",
+       "tag": "R_FOOTSTEP_MALE_WALK"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "gunner_move_footstep",
+     "note": "脚步声包存在未被索引",
+     "status": "keyed"
+    },
+    {
+     "bundles": {
+      "sounds_char_common_footstep.npk": {
+       "bundle": "Android/bundles/sounds_char_common_footstep.npk",
+       "bytes": 67337,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "93ddbf4062667dd37a681f33adc852c4b7d86c8c1401a5fd6aac4477dfda1972"
+      },
+      "sounds_char_common_move.npk": {
+       "bundle": "Android/bundles/sounds_char_common_move.npk",
+       "bytes": 137313,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "da904276ed594f1858f383aeb7cf09b6c663e5819eefc587961fad65ee86d232"
+      }
+     },
+     "events": [
+      {
+       "delay_ms": 80,
+       "field": "audio_tags",
+       "frame": 3,
+       "source_path": "script/character/gunner/animation/dash.ani",
+       "tag": "R_FOOTSTEP_MALE_RUN"
+      },
+      {
+       "delay_ms": 80,
+       "field": "audio_tags",
+       "frame": 7,
+       "source_path": "script/character/gunner/animation/dash.ani",
+       "tag": "R_FOOTSTEP_MALE_RUN"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "gunner_dash_footstep",
+     "note": "脚步声包存在未被索引",
+     "status": "keyed"
+    },
+    {
+     "entity": [
+      {
+       "bytes": 37854,
+       "channels": 1,
+       "clip": "gn_fire",
+       "duration_s": 0.857,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_char_gunner.npk",
+       "npk_bundle": "Android/bundles/sounds_char_gunner.npk",
+       "npk_sha256": "27b66f0eed33b9250fa13570e199c161e6e512063ea0f2a0b85f0c1fde6514cc",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01073_27b66f0eed33b9_8030425234709366110_gn_fire_gn_fire.wav"
+      },
+      {
+       "bytes": 27118,
+       "channels": 1,
+       "clip": "gn_nshot",
+       "duration_s": 0.614,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_char_gunner.npk",
+       "npk_bundle": "Android/bundles/sounds_char_gunner.npk",
+       "npk_sha256": "27b66f0eed33b9250fa13570e199c161e6e512063ea0f2a0b85f0c1fde6514cc",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01073_27b66f0eed33b9_2135020253037307174_gn_nshot_gn_nshot.wav"
+      },
+      {
+       "bytes": 36830,
+       "channels": 1,
+       "clip": "bl_rifle_001",
+       "duration_s": 0.834,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_char_gunner_effect.npk",
+       "npk_bundle": "Android/bundles/sounds_char_gunner_effect.npk",
+       "npk_sha256": "9eb97c6739ddcd8baf28da9d81acaaa4585e0bc993224cff4127dd1e459f8419",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01074_9eb97c6739ddcd_4044309093787689349_bl_rifle_001_bl_rifle_001.wav"
+      }
+     ],
+     "events": [
+      {
+       "field": "audio_tags",
+       "frame": null,
+       "source_path": "script/character/gunner/animation/attack1.ani"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "gunner_attack1_shot",
+     "match": "convention: 枪声命名约定候选（触发点未证实）",
+     "status": "located"
+    },
+    {
+     "entity": [
+      {
+       "bytes": 67732,
+       "channels": 1,
+       "clip": "bl_rifle_002",
+       "duration_s": 1.535,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_char_gunner_effect.npk",
+       "npk_bundle": "Android/bundles/sounds_char_gunner_effect.npk",
+       "npk_sha256": "9eb97c6739ddcd8baf28da9d81acaaa4585e0bc993224cff4127dd1e459f8419",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01074_9eb97c6739ddcd_7225535998126115421_bl_rifle_002_bl_rifle_002.wav"
+      }
+     ],
+     "events": [
+      {
+       "field": "audio_tags",
+       "frame": null,
+       "source_path": "script/character/gunner/animation/attack2.ani"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "gunner_attack2_shot",
+     "match": "convention: 枪声命名约定候选",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "bytes": 27268,
+      "channels": 1,
+      "clip": "gn_die_01",
+      "duration_s": 0.617,
+      "format": "WAV PCM (已解码自 Unity AudioClip)",
+      "npk": "sounds_char_gunner.npk",
+      "npk_bundle": "Android/bundles/sounds_char_gunner.npk",
+      "npk_sha256": "27b66f0eed33b9250fa13570e199c161e6e512063ea0f2a0b85f0c1fde6514cc",
+      "rate_hz": 22050,
+      "sample_width_bytes": 2,
+      "wav": "audio/sounds/d01073_27b66f0eed33b9_-3946684150038558069_gn_die_01_gn_die_01.wav"
+     },
+     "kind": "audio",
+     "logical_key": "gunner_die_voice",
+     "match": "convention: 命名约定候选",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "bytes": 8222,
+      "channels": 1,
+      "clip": "gn_jump",
+      "duration_s": 0.185,
+      "format": "WAV PCM (已解码自 Unity AudioClip)",
+      "npk": "sounds_char_gunner.npk",
+      "npk_bundle": "Android/bundles/sounds_char_gunner.npk",
+      "npk_sha256": "27b66f0eed33b9250fa13570e199c161e6e512063ea0f2a0b85f0c1fde6514cc",
+      "rate_hz": 22050,
+      "sample_width_bytes": 2,
+      "wav": "audio/sounds/d01073_27b66f0eed33b9_5592599333997296850_gn_jump_gn_jump.wav"
+     },
+     "kind": "audio",
+     "logical_key": "gunner_jump_voice",
+     "match": "convention: 命名约定候选",
+     "status": "located"
+    },
+    {
+     "entity": [
+      {
+       "bytes": 9196,
+       "channels": 1,
+       "clip": "gn_dmg_01",
+       "duration_s": 0.208,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_char_gunner.npk",
+       "npk_bundle": "Android/bundles/sounds_char_gunner.npk",
+       "npk_sha256": "27b66f0eed33b9250fa13570e199c161e6e512063ea0f2a0b85f0c1fde6514cc",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01073_27b66f0eed33b9_6344461767190801816_gn_dmg_01_gn_dmg_01.wav"
+      },
+      {
+       "bytes": 8746,
+       "channels": 1,
+       "clip": "gn_dmg_02",
+       "duration_s": 0.197,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_char_gunner.npk",
+       "npk_bundle": "Android/bundles/sounds_char_gunner.npk",
+       "npk_sha256": "27b66f0eed33b9250fa13570e199c161e6e512063ea0f2a0b85f0c1fde6514cc",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01073_27b66f0eed33b9_7255982392327786132_gn_dmg_02_gn_dmg_02.wav"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "gunner_damage_voice",
+     "match": "convention: 受击命名约定候选",
+     "status": "located"
+    },
+    {
+     "entity": [
+      {
+       "bytes": 11816,
+       "channels": 1,
+       "clip": "pc_bullet_hit_01",
+       "duration_s": 0.267,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_char_common_hit.npk",
+       "npk_bundle": "Android/bundles/sounds_char_common_hit.npk",
+       "npk_sha256": "66fec1fc26c899fc94696cd2476c0887fda263744ca3e85d800de601bf08e373",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01052_66fec1fc26c899_-1277803494990453053_pc_bullet_hit_01_pc_bullet_hit_01.wav"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "gunner_bullet_hit_common",
+     "match": "inferred: 子弹命中 → pc_bullet_hit_01-04 候选",
+     "status": "located"
+    }
+   ],
+   "effects": [],
+   "stats": {
+    "keyed": 2,
+    "located": 6,
+    "missing": 0
+   }
+  },
+  "map_bamboo": {
+   "audio": [
+    {
+     "entity": [
+      {
+       "bytes": 9525640,
+       "channels": 2,
+       "clip": "hell_adventure",
+       "duration_s": 54.0,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "music_adventure_request_special.npk",
+       "npk_bundle": "Android/bundles/music_adventure_request_special.npk",
+       "npk_sha256": "66473bbb0da2fd04f92a7dbf26adac516fa351e63c5f5ef2af3dc5e52ca4203e",
+       "rate_hz": 44100,
+       "sample_width_bytes": 2,
+       "wav": "audio/music/d00742_66473bbb0da2fd_5369624765989615041_hell_adventure_hell_adventure.wav"
+      },
+      {
+       "bytes": 8678316,
+       "channels": 2,
+       "clip": "hellmonster",
+       "duration_s": 49.197,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "music_adventure_request_routine.npk",
+       "npk_bundle": "Android/bundles/music_adventure_request_routine.npk",
+       "npk_sha256": "607abd5c28f4300267d741310644c7f9b379d54418115a47964f34c0d82ac90f",
+       "rate_hz": 44100,
+       "sample_width_bytes": 2,
+       "wav": "audio/music/d00741_607abd5c28f430_5027180229603345898_hellmonster_hellmonster.wav"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "map_bamboo_bgm_candidate_hell",
+     "match": "inferred: 竹林候选地图预览引用 Map/Shonan_Hell/...（ hell 主题）；maps.sqlite 两图 raw_json/scene_json 均无 BGM/sound 声明字段，BGM 无源键，此为候选",
+     "status": "keyed"
+    },
+    {
+     "entity": [
+      {
+       "bytes": 2646044,
+       "channels": 2,
+       "clip": "amb_forest_01",
+       "duration_s": 15.0,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_amb.npk",
+       "npk_bundle": "Android/bundles/sounds_amb.npk",
+       "npk_sha256": "29ff7676869cac9f38c96b281d1636b4d40070c84e83b36655a57c136af4292f",
+       "rate_hz": 44100,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01043_29ff7676869cac_-877745833184856971_amb_forest_01_amb_forest_01.wav"
+      },
+      {
+       "bytes": 2646044,
+       "channels": 2,
+       "clip": "amb_forest_02",
+       "duration_s": 15.0,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_amb.npk",
+       "npk_bundle": "Android/bundles/sounds_amb.npk",
+       "npk_sha256": "29ff7676869cac9f38c96b281d1636b4d40070c84e83b36655a57c136af4292f",
+       "rate_hz": 44100,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01043_29ff7676869cac_-639677970909269053_amb_forest_02_amb_forest_02.wav"
+      },
+      {
+       "bytes": 2646044,
+       "channels": 2,
+       "clip": "amb_forest_03",
+       "duration_s": 15.0,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_amb.npk",
+       "npk_bundle": "Android/bundles/sounds_amb.npk",
+       "npk_sha256": "29ff7676869cac9f38c96b281d1636b4d40070c84e83b36655a57c136af4292f",
+       "rate_hz": 44100,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01043_29ff7676869cac_-8469302002649435908_amb_forest_03_amb_forest_03.wav"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "map_bamboo_amb_forest",
+     "match": "inferred: 竹林≈森林环境音候选，无源声明键",
+     "status": "keyed"
+    },
+    {
+     "entity": {
+      "clips": [
+       "bamboo_swish_01",
+       "bamboo_swish_02",
+       "bamboo_hit_01",
+       "bamboo_hit_02"
+      ],
+      "npk": "sounds_mon_event_effect.npk"
+     },
+     "kind": "audio",
+     "logical_key": "map_bamboo_bamboo_sfx",
+     "match": "convention: 竹子打击音效候选，无本地引用",
+     "status": "keyed"
+    }
+   ],
+   "effects": [
+    {
+     "kind": "prefab",
+     "logical_key": "map_bamboo_fx_deps",
+     "note": "地图对象特效依赖由 M8-005/M8-006 地图任务收口；本卡未发现音效声明",
+     "status": "missing"
+    }
+   ],
+   "stats": {
+    "keyed": 3,
+    "located": 0,
+    "missing": 1
+   }
+  },
+  "map_volcano": {
+   "audio": [
+    {
+     "entity": [
+      {
+       "bytes": 20916952,
+       "channels": 2,
+       "clip": "anton_phase1",
+       "duration_s": 118.577,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "music_antonraid.npk",
+       "npk_bundle": "Android/bundles/music_antonraid.npk",
+       "npk_sha256": "04638effadcf80d0184cf634f0b3e4d18c30f3b07654e990422f6f2a1b4a92fc",
+       "rate_hz": 44100,
+       "sample_width_bytes": 2,
+       "wav": "audio/music/d00745_04638effadcf80_-2591926087539798994_anton_phase1_anton_phase1.wav"
+      },
+      {
+       "bytes": 32552184,
+       "channels": 2,
+       "clip": "anton_phase2",
+       "duration_s": 184.536,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "music_antonraid.npk",
+       "npk_bundle": "Android/bundles/music_antonraid.npk",
+       "npk_sha256": "04638effadcf80d0184cf634f0b3e4d18c30f3b07654e990422f6f2a1b4a92fc",
+       "rate_hz": 44100,
+       "sample_width_bytes": 2,
+       "wav": "audio/music/d00745_04638effadcf80_4938381420518570311_anton_phase2_anton_phase2.wav"
+      },
+      {
+       "bytes": 14902320,
+       "channels": 2,
+       "clip": "anton_phase1_boss",
+       "duration_s": 84.48,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "music_antonraid.npk",
+       "npk_bundle": "Android/bundles/music_antonraid.npk",
+       "npk_sha256": "04638effadcf80d0184cf634f0b3e4d18c30f3b07654e990422f6f2a1b4a92fc",
+       "rate_hz": 44100,
+       "sample_width_bytes": 2,
+       "wav": "audio/music/d00745_04638effadcf80_-4811093798714021052_anton_phase1_boss_anton_phase1_boss.wav"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "map_volcano_bgm_candidate_anton",
+     "match": "inferred: 火山候选地图预览引用 Map/Raid/Anton_Guide/07_Black_Volcano/... → antonraid BGM 候选（anton_phase1 全长 118.6s 已定位）；无源声明键",
+     "status": "keyed"
+    },
+    {
+     "entity": {
+      "clips": [
+       "eclosion_samuela_normal",
+       "eclosion_samuela_phase1",
+       "eclosion_samuela_phase2"
+      ],
+      "npk": "music_elite_dungeon_eclosion_volcano.npk"
+     },
+     "kind": "audio",
+     "logical_key": "map_volcano_bgm_candidate_eclosion",
+     "match": "convention: 精英本火山主题 BGM 候选",
+     "status": "keyed"
+    },
+    {
+     "entity": [
+      {
+       "bytes": 1765808,
+       "channels": 2,
+       "clip": "amb_fire",
+       "duration_s": 10.01,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_amb.npk",
+       "npk_bundle": "Android/bundles/sounds_amb.npk",
+       "npk_sha256": "29ff7676869cac9f38c96b281d1636b4d40070c84e83b36655a57c136af4292f",
+       "rate_hz": 44100,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01043_29ff7676869cac_-4063402262933523472_amb_fire_amb_fire.wav"
+      },
+      {
+       "bytes": 2648692,
+       "channels": 2,
+       "clip": "amb_thunder_loop",
+       "duration_s": 15.015,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_amb.npk",
+       "npk_bundle": "Android/bundles/sounds_amb.npk",
+       "npk_sha256": "29ff7676869cac9f38c96b281d1636b4d40070c84e83b36655a57c136af4292f",
+       "rate_hz": 44100,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01043_29ff7676869cac_3546414782770573109_amb_thunder_loop_amb_thunder_loop.wav"
+      },
+      {
+       "bytes": 5290796,
+       "channels": 2,
+       "clip": "amb_anton_loop",
+       "duration_s": 29.993,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_amb.npk",
+       "npk_bundle": "Android/bundles/sounds_amb.npk",
+       "npk_sha256": "29ff7676869cac9f38c96b281d1636b4d40070c84e83b36655a57c136af4292f",
+       "rate_hz": 44100,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01043_29ff7676869cac_6476204971805911366_amb_anton_loop_amb_anton_loop.wav"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "map_volcano_amb",
+     "match": "inferred: 火山环境音候选（火/雷/anton 氛围），无源声明键",
+     "status": "keyed"
+    }
+   ],
+   "effects": [
+    {
+     "kind": "prefab",
+     "logical_key": "map_volcano_fx_deps",
+     "note": "地图对象特效依赖由 M8-005/M8-006 地图任务收口；本卡未发现音效声明",
+     "status": "missing"
+    }
+   ],
+   "stats": {
+    "keyed": 3,
+    "located": 0,
+    "missing": 1
+   }
+  },
+  "swordman": {
+   "audio": [
+    {
+     "bundles": {
+      "sounds_char_common_footstep.npk": {
+       "bundle": "Android/bundles/sounds_char_common_footstep.npk",
+       "bytes": 67337,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "93ddbf4062667dd37a681f33adc852c4b7d86c8c1401a5fd6aac4477dfda1972"
+      },
+      "sounds_char_common_move.npk": {
+       "bundle": "Android/bundles/sounds_char_common_move.npk",
+       "bytes": 137313,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "da904276ed594f1858f383aeb7cf09b6c663e5819eefc587961fad65ee86d232"
+      }
+     },
+     "events": [
+      {
+       "delay_ms": 100,
+       "field": "audio_tags",
+       "frame": 2,
+       "source_path": "script/character/swordman/animation/move.ani",
+       "tag": "R_FOOTSTEP_MALE_WALK"
+      },
+      {
+       "delay_ms": 100,
+       "field": "audio_tags",
+       "frame": 6,
+       "source_path": "script/character/swordman/animation/move.ani",
+       "tag": "R_FOOTSTEP_MALE_WALK"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "swordman_move_footstep",
+     "note": "脚步声包存在未被索引",
+     "status": "keyed"
+    },
+    {
+     "bundles": {
+      "sounds_char_common_footstep.npk": {
+       "bundle": "Android/bundles/sounds_char_common_footstep.npk",
+       "bytes": 67337,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "93ddbf4062667dd37a681f33adc852c4b7d86c8c1401a5fd6aac4477dfda1972"
+      },
+      "sounds_char_common_move.npk": {
+       "bundle": "Android/bundles/sounds_char_common_move.npk",
+       "bytes": 137313,
+       "format": "UnityFS (Unity 2022.3) asset bundle, .npk 扩展名",
+       "sha256": "da904276ed594f1858f383aeb7cf09b6c663e5819eefc587961fad65ee86d232"
+      }
+     },
+     "events": [
+      {
+       "delay_ms": 90,
+       "field": "audio_tags",
+       "frame": 2,
+       "source_path": "script/character/swordman/animation/dash.ani",
+       "tag": "R_FOOTSTEP_MALE_RUN"
+      },
+      {
+       "delay_ms": 90,
+       "field": "audio_tags",
+       "frame": 6,
+       "source_path": "script/character/swordman/animation/dash.ani",
+       "tag": "R_FOOTSTEP_MALE_RUN"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "swordman_dash_footstep",
+     "note": "脚步声包存在未被索引",
+     "status": "keyed"
+    },
+    {
+     "entity": {
+      "bytes": 12610,
+      "channels": 1,
+      "clip": "sm_atk_01",
+      "duration_s": 0.285,
+      "format": "WAV PCM (已解码自 Unity AudioClip)",
+      "npk": "sounds_char_swordman.npk",
+      "npk_bundle": "Android/bundles/sounds_char_swordman.npk",
+      "npk_sha256": "aa94a5379df2e322b064deca37f33008b8d4518d530a8548077d8fddd6e87663",
+      "rate_hz": 22050,
+      "sample_width_bytes": 2,
+      "wav": "audio/sounds/d01086_aa94a5379df2e3_2328720584492644602_sm_atk_01_sm_atk_01.wav"
+     },
+     "events": [
+      {
+       "field": "audio_tags",
+       "frame": null,
+       "source_path": "script/character/swordman/animation/attack1.ani"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "swordman_attack1_swing",
+     "match": "convention: 命名约定候选（触发点未证实）",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "bytes": 8914,
+      "channels": 1,
+      "clip": "sm_atk_02",
+      "duration_s": 0.201,
+      "format": "WAV PCM (已解码自 Unity AudioClip)",
+      "npk": "sounds_char_swordman.npk",
+      "npk_bundle": "Android/bundles/sounds_char_swordman.npk",
+      "npk_sha256": "aa94a5379df2e322b064deca37f33008b8d4518d530a8548077d8fddd6e87663",
+      "rate_hz": 22050,
+      "sample_width_bytes": 2,
+      "wav": "audio/sounds/d01086_aa94a5379df2e3_-2013636045303405109_sm_atk_02_sm_atk_02.wav"
+     },
+     "events": [
+      {
+       "field": "audio_tags",
+       "frame": null,
+       "source_path": "script/character/swordman/animation/attack2.ani"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "swordman_attack2_swing",
+     "match": "convention: 命名约定候选（触发点未证实）",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "bytes": 19632,
+      "channels": 1,
+      "clip": "sm_atk_03",
+      "duration_s": 0.444,
+      "format": "WAV PCM (已解码自 Unity AudioClip)",
+      "npk": "sounds_char_swordman.npk",
+      "npk_bundle": "Android/bundles/sounds_char_swordman.npk",
+      "npk_sha256": "aa94a5379df2e322b064deca37f33008b8d4518d530a8548077d8fddd6e87663",
+      "rate_hz": 22050,
+      "sample_width_bytes": 2,
+      "wav": "audio/sounds/d01086_aa94a5379df2e3_4349357324489851978_sm_atk_03_sm_atk_03.wav"
+     },
+     "events": [
+      {
+       "field": "audio_tags",
+       "frame": null,
+       "source_path": "script/character/swordman/animation/attack3.ani"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "swordman_attack3_swing",
+     "match": "convention: 命名约定候选（触发点未证实）",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "bytes": 67218,
+      "channels": 1,
+      "clip": "sm_die",
+      "duration_s": 1.523,
+      "format": "WAV PCM (已解码自 Unity AudioClip)",
+      "npk": "sounds_char_swordman.npk",
+      "npk_bundle": "Android/bundles/sounds_char_swordman.npk",
+      "npk_sha256": "aa94a5379df2e322b064deca37f33008b8d4518d530a8548077d8fddd6e87663",
+      "rate_hz": 22050,
+      "sample_width_bytes": 2,
+      "wav": "audio/sounds/d01086_aa94a5379df2e3_7930429183721005636_sm_die_sm_die.wav"
+     },
+     "kind": "audio",
+     "logical_key": "swordman_die_voice",
+     "match": "convention: 命名约定候选",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "bytes": 6060,
+      "channels": 1,
+      "clip": "sm_jump",
+      "duration_s": 0.136,
+      "format": "WAV PCM (已解码自 Unity AudioClip)",
+      "npk": "sounds_char_swordman.npk",
+      "npk_bundle": "Android/bundles/sounds_char_swordman.npk",
+      "npk_sha256": "aa94a5379df2e322b064deca37f33008b8d4518d530a8548077d8fddd6e87663",
+      "rate_hz": 22050,
+      "sample_width_bytes": 2,
+      "wav": "audio/sounds/d01086_aa94a5379df2e3_2063975687583027200_sm_jump_sm_jump.wav"
+     },
+     "kind": "audio",
+     "logical_key": "swordman_jump_voice",
+     "match": "convention: 命名约定候选",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "bytes": 10320,
+      "channels": 1,
+      "clip": "sm_guard",
+      "duration_s": 0.233,
+      "format": "WAV PCM (已解码自 Unity AudioClip)",
+      "npk": "sounds_char_swordman.npk",
+      "npk_bundle": "Android/bundles/sounds_char_swordman.npk",
+      "npk_sha256": "aa94a5379df2e322b064deca37f33008b8d4518d530a8548077d8fddd6e87663",
+      "rate_hz": 22050,
+      "sample_width_bytes": 2,
+      "wav": "audio/sounds/d01086_aa94a5379df2e3_-6010956879017931708_sm_guard_sm_guard.wav"
+     },
+     "kind": "audio",
+     "logical_key": "swordman_guard_voice",
+     "match": "convention: 命名约定候选",
+     "status": "located"
+    },
+    {
+     "entity": [
+      {
+       "bytes": 16548,
+       "channels": 1,
+       "clip": "sm_dmg_01",
+       "duration_s": 0.374,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_char_swordman.npk",
+       "npk_bundle": "Android/bundles/sounds_char_swordman.npk",
+       "npk_sha256": "aa94a5379df2e322b064deca37f33008b8d4518d530a8548077d8fddd6e87663",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01086_aa94a5379df2e3_-8976690413130963199_sm_dmg_01_sm_dmg_01.wav"
+      },
+      {
+       "bytes": 12422,
+       "channels": 1,
+       "clip": "sm_dmg_02",
+       "duration_s": 0.281,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_char_swordman.npk",
+       "npk_bundle": "Android/bundles/sounds_char_swordman.npk",
+       "npk_sha256": "aa94a5379df2e322b064deca37f33008b8d4518d530a8548077d8fddd6e87663",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01086_aa94a5379df2e3_97339159057968968_sm_dmg_02_sm_dmg_02.wav"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "swordman_damage_voice",
+     "match": "convention: 受击命名约定候选",
+     "status": "located"
+    },
+    {
+     "entity": [
+      {
+       "bytes": 28002,
+       "channels": 1,
+       "clip": "pc_sword_hit_01",
+       "duration_s": 0.634,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_char_common_hit.npk",
+       "npk_bundle": "Android/bundles/sounds_char_common_hit.npk",
+       "npk_sha256": "66fec1fc26c899fc94696cd2476c0887fda263744ca3e85d800de601bf08e373",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01052_66fec1fc26c899_-5629603880075917948_pc_sword_hit_01_pc_sword_hit_01.wav"
+      },
+      {
+       "bytes": 26326,
+       "channels": 1,
+       "clip": "pc_sword_middle_hit_01",
+       "duration_s": 0.596,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_char_common_hit.npk",
+       "npk_bundle": "Android/bundles/sounds_char_common_hit.npk",
+       "npk_sha256": "66fec1fc26c899fc94696cd2476c0887fda263744ca3e85d800de601bf08e373",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01052_66fec1fc26c899_6064443077356125967_pc_sword_middle_hit_01_pc_sword_middle_hit_01.wav"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "swordman_sword_hit_common",
+     "match": "inferred: ghostbreak.atk 事件 R_CHAR_SWORD_HIT → pc_sword_hit_01-03 候选（缩写映射推断）",
+     "status": "located"
+    }
+   ],
+   "effects": [
+    {
+     "entity": {
+      "script_block": {
+       "block": 753,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/character/swordman/attackinfo/bloodsword.atk",
+       "payload_bytes": 375,
+       "sha256": null,
+       "shard": 5
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "swordman_atk_bloodsword",
+     "sound_tags": [
+      "R_SLESSSWDA_HIT"
+     ],
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 794,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/character/swordman/attackinfo/ghostbreak.atk",
+       "payload_bytes": 589,
+       "sha256": null,
+       "shard": 5
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "swordman_atk_ghostbreak",
+     "sound_tags": [
+      "R_CHAR_SWORD_HIT"
+     ],
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 802,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/character/swordman/attackinfo/ghostmagicline.atk",
+       "payload_bytes": 692,
+       "sha256": null,
+       "shard": 5
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "swordman_atk_ghostmagicline",
+     "sound_tags": [
+      "R_CHAR_DARK_HIT"
+     ],
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 814,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/character/swordman/attackinfo/grandwaveslash.atk",
+       "payload_bytes": 465,
+       "sha256": null,
+       "shard": 5
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "swordman_atk_grandwaveslash",
+     "sound_tags": [
+      "R_CHAR_DARK_HIT"
+     ],
+     "status": "located"
+    },
+    {
+     "entity": {
+      "script_block": {
+       "block": 900,
+       "format": "原脚本载荷块（已解码 LZ4，字节级校验）",
+       "path": "script/character/swordman/attackinfo/zigstartattack.atk",
+       "payload_bytes": 469,
+       "sha256": null,
+       "shard": 5
+      }
+     },
+     "kind": "script_block",
+     "logical_key": "swordman_atk_zigstartattack",
+     "sound_tags": [
+      "GHOSTSTEPSLASH_HIT"
+     ],
+     "status": "located"
+    }
+   ],
+   "stats": {
+    "keyed": 2,
+    "located": 13,
+    "missing": 0
+   }
+  },
+  "taubeast": {
+   "audio": [
+    {
+     "entity": [
+      {
+       "bytes": 25244,
+       "channels": 1,
+       "clip": "tau_dmg_01",
+       "duration_s": 0.571,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_mon_act1_voice.npk",
+       "npk_bundle": "Android/bundles/sounds_mon_act1_voice.npk",
+       "npk_sha256": "d21a8e5690e27d5be56f81f7a0c6e85bcc7cd7e2195157e2cd81b10600626b82",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01136_d21a8e5690e27d_-3499185503458628653_tau_dmg_01_tau_dmg_01.wav"
+      },
+      {
+       "bytes": 27302,
+       "channels": 1,
+       "clip": "tau_dmg_02",
+       "duration_s": 0.618,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_mon_act1_voice.npk",
+       "npk_bundle": "Android/bundles/sounds_mon_act1_voice.npk",
+       "npk_sha256": "d21a8e5690e27d5be56f81f7a0c6e85bcc7cd7e2195157e2cd81b10600626b82",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01136_d21a8e5690e27d_3002886015171742206_tau_dmg_02_tau_dmg_02.wav"
+      },
+      {
+       "bytes": 21500,
+       "channels": 1,
+       "clip": "tau_dmg_03",
+       "duration_s": 0.487,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_mon_act1_voice.npk",
+       "npk_bundle": "Android/bundles/sounds_mon_act1_voice.npk",
+       "npk_sha256": "d21a8e5690e27d5be56f81f7a0c6e85bcc7cd7e2195157e2cd81b10600626b82",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01136_d21a8e5690e27d_-2863945672563290077_tau_dmg_03_tau_dmg_03.wav"
+      }
+     ],
+     "events": [
+      {
+       "field": "mob_sound_key",
+       "source_path": "script/monster/mdnf_scenario/renewal_monster/granflawless/taubeast/2007006750_taubeast.mob",
+       "tag": "TAU_DMG_02"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "taubeast_mob_damage",
+     "match": "exact+variants: TAU_DMG_02 小写==tau_dmg_02（wav 已定位），dmg_01/03 为同键族候选",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "bytes": 65774,
+      "channels": 1,
+      "clip": "tau_die",
+      "duration_s": 1.49,
+      "format": "WAV PCM (已解码自 Unity AudioClip)",
+      "npk": "sounds_mon_act1_voice.npk",
+      "npk_bundle": "Android/bundles/sounds_mon_act1_voice.npk",
+      "npk_sha256": "d21a8e5690e27d5be56f81f7a0c6e85bcc7cd7e2195157e2cd81b10600626b82",
+      "rate_hz": 22050,
+      "sample_width_bytes": 2,
+      "wav": "audio/sounds/d01136_d21a8e5690e27d_5446366614181549342_tau_die_tau_die.wav"
+     },
+     "events": [
+      {
+       "field": "mob_sound_key",
+       "source_path": "script/monster/mdnf_scenario/renewal_monster/granflawless/taubeast/2007006750_taubeast.mob",
+       "tag": "TAU_DIE"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "taubeast_mob_die",
+     "match": "exact: TAU_DIE 小写==tau_die",
+     "status": "located"
+    },
+    {
+     "entity": {
+      "bytes": 41604,
+      "channels": 1,
+      "clip": "tau_roar",
+      "duration_s": 0.942,
+      "format": "WAV PCM (已解码自 Unity AudioClip)",
+      "npk": "sounds_mon_act1_voice.npk",
+      "npk_bundle": "Android/bundles/sounds_mon_act1_voice.npk",
+      "npk_sha256": "d21a8e5690e27d5be56f81f7a0c6e85bcc7cd7e2195157e2cd81b10600626b82",
+      "rate_hz": 22050,
+      "sample_width_bytes": 2,
+      "wav": "audio/sounds/d01136_d21a8e5690e27d_9142712364294393544_tau_roar_tau_roar.wav"
+     },
+     "kind": "audio",
+     "logical_key": "taubeast_roar",
+     "match": "convention: roar.ani 无音频事件；tau_roar 剪辑已定位，触发键未证实",
+     "status": "keyed"
+    },
+    {
+     "entity": [
+      {
+       "bytes": 88290,
+       "channels": 1,
+       "clip": "hyper_tau_atk_01",
+       "duration_s": 2.001,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_mon_act1_voice.npk",
+       "npk_bundle": "Android/bundles/sounds_mon_act1_voice.npk",
+       "npk_sha256": "d21a8e5690e27d5be56f81f7a0c6e85bcc7cd7e2195157e2cd81b10600626b82",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01136_d21a8e5690e27d_8908848067503917129_hyper_tau_atk_01_hyper_tau_atk_01.wav"
+      },
+      {
+       "bytes": 50996,
+       "channels": 1,
+       "clip": "hyper_tau_atk_02",
+       "duration_s": 1.155,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_mon_act1_voice.npk",
+       "npk_bundle": "Android/bundles/sounds_mon_act1_voice.npk",
+       "npk_sha256": "d21a8e5690e27d5be56f81f7a0c6e85bcc7cd7e2195157e2cd81b10600626b82",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01136_d21a8e5690e27d_-8855189761788315161_hyper_tau_atk_02_hyper_tau_atk_02.wav"
+      },
+      {
+       "bytes": 57262,
+       "channels": 1,
+       "clip": "hyper_tau_atk_03",
+       "duration_s": 1.297,
+       "format": "WAV PCM (已解码自 Unity AudioClip)",
+       "npk": "sounds_mon_act1_voice.npk",
+       "npk_bundle": "Android/bundles/sounds_mon_act1_voice.npk",
+       "npk_sha256": "d21a8e5690e27d5be56f81f7a0c6e85bcc7cd7e2195157e2cd81b10600626b82",
+       "rate_hz": 22050,
+       "sample_width_bytes": 2,
+       "wav": "audio/sounds/d01136_d21a8e5690e27d_-8892730870021310276_hyper_tau_atk_03_hyper_tau_atk_03.wav"
+      }
+     ],
+     "kind": "audio",
+     "logical_key": "taubeast_attack0_voice",
+     "match": "convention: attack_0.ani 无音频事件；hyper_tau_atk_* 候选",
+     "status": "keyed"
+    },
+    {
+     "entity": {
+      "clips": [
+       "tau_breath",
+       "tau_comm",
+       "b_taubeast_01",
+       "captain_tau_dmg_01..03",
+       "minitau_roar",
+       "b_tau_talk_01"
+      ],
+      "npk": "sounds_mon_act1_voice.npk"
+     },
+     "kind": "audio",
+     "logical_key": "taubeast_extra_voice_candidates",
+     "match": "convention: 同包牛头系语音候选",
+     "status": "keyed"
+    }
+   ],
+   "effects": [
+    {
+     "atlas_pages": [
+      {
+       "atlas": "GrandWaveOnCharge",
+       "frames": 26,
+       "h": 340,
+       "status": "exact_texture_path",
+       "texture_path": "Assets/Bundle/Sprite/Character/Swordman/Effect/GrandWaveOnCharge.img_0.png",
+       "w": 508
+      }
+     ],
+     "frames_with_fx": 13,
+     "fx_keys": [
+      "Character/Swordman/Effect/GrandWaveOnCharge.img"
+     ],
+     "kind": "fx_image",
+     "logical_key": "taubeast_fx_charge1",
+     "note": "蓄力帧 fx_image 引用 → atlas.sqlite exact_texture_path 页（M8-008 已验证可裁切）",
+     "status": "located"
+    },
+    {
+     "atlas_pages": [
+      {
+       "atlas": "GrandWaveOnCharge",
+       "frames": 26,
+       "h": 340,
+       "status": "exact_texture_path",
+       "texture_path": "Assets/Bundle/Sprite/Character/Swordman/Effect/GrandWaveOnCharge.img_0.png",
+       "w": 508
+      }
+     ],
+     "frames_with_fx": 13,
+     "fx_keys": [
+      "Character/Swordman/Effect/GrandWaveOnCharge.img"
+     ],
+     "kind": "fx_image",
+     "logical_key": "taubeast_fx_charge2",
+     "note": "蓄力帧 fx_image 引用 → atlas.sqlite exact_texture_path 页（M8-008 已验证可裁切）",
+     "status": "located"
+    },
+    {
+     "atlas_pages": [
+      {
+       "atlas": "GrandWaveFullCharge",
+       "frames": 10,
+       "h": 360,
+       "status": "exact_texture_path",
+       "texture_path": "Assets/Bundle/Sprite/Character/Swordman/Effect/GrandWaveFullCharge.img_0.png",
+       "w": 256
+      }
+     ],
+     "frames_with_fx": 7,
+     "fx_keys": [
+      "Character/Swordman/Effect/GrandWaveFullCharge.img"
+     ],
+     "kind": "fx_image",
+     "logical_key": "taubeast_fx_fullcharge1",
+     "note": "蓄力帧 fx_image 引用 → atlas.sqlite exact_texture_path 页（M8-008 已验证可裁切）",
+     "status": "located"
+    },
+    {
+     "atlas_pages": [
+      {
+       "atlas": "Warning02",
+       "frames": 9,
+       "h": 128,
+       "status": "exact_texture_path",
+       "texture_path": "Assets/Bundle/Sprite/Character/Mage/Effect/LightSoul/Warning02.img_0.png",
+       "w": 256
+      }
+     ],
+     "bundles": null,
+     "frames_with_fx": 18,
+     "fx_keys": [
+      "Character/Mage/Effect/LightSoul/Warning02.img"
+     ],
+     "kind": "fx_image",
+     "logical_key": "taubeast_fx_warning",
+     "note": "warning.ani 全 18 帧 Warning02.img 预警特效引用（图集页 256×128 f9）",
+     "status": "located"
+    }
+   ],
+   "stats": {
+    "keyed": 3,
+    "located": 6,
+    "missing": 0
+   }
+  }
+ },
+ "method": {
+  "duration_parse": "python wave 模块读取 WAV 头（时长/采样率/声道/位宽）",
+  "event_fields": [
+   "audio_tags",
+   "audio_loop_tags",
+   "audio_tag_options",
+   "ani_tag",
+   "additional_tag",
+   "prefab_info",
+   "shader_effect_info",
+   "shader_effect",
+   "graphic_effect",
+   "shake",
+   "flashes"
+  ],
+  "tag_to_clip_rule": "audio tag 小写 == AudioClip 名（SINGLEKICK→singlekick、SHOULDER_ATK→shoulder_atk、TAU_DMG_02→tau_dmg_02、TAU_DIE→tau_die 精确验证）；GOBLIN→GBN 缩写映射为推断",
+  "tiers": {
+   "keyed": "有资源键或包级证据、实体逐名未定位/未验证",
+   "located": "实体文件已定位（含格式/大小/时长或脚本块字节证据）",
+   "missing": "无源键且无实体候选"
+  },
+  "wav_resolution": "decoded WAV 文件名 dNNNNN_<sha256前14>_<path_id>_<clip>_<clip>.wav，按 npk sha256 前缀+clip 名后缀严格匹配"
+ },
+ "source_roots": {
+  "bundles": "D:/Github-Poj/DNFM/DNFM_export_130.5.8.0/downloaded_130.5.8.202/Android/bundles",
+  "downloaded": "D:/Github-Poj/DNFM/DNFM_export_130.5.8.0/downloaded_130.5.8.202",
+  "export_root": "D:/Github-Poj/DNFM/DNFM_export_130.5.8.0",
+  "note": "wav 路径均相对 downloaded 根目录；全部只读（sqlite mode=ro，无写入）",
+  "restored": "D:/Github-Poj/DNFM/DNFM_export_130.5.8.0/downloaded_130.5.8.202/restored"
+ },
+ "stats": {
+  "per_group": {
+   "fighter": {
+    "keyed": 14,
+    "located": 51,
+    "missing": 3
+   },
+   "goblinthrower": {
+    "keyed": 1,
+    "located": 3,
+    "missing": 1
+   },
+   "gunner": {
+    "keyed": 2,
+    "located": 6,
+    "missing": 0
+   },
+   "map_bamboo": {
+    "keyed": 3,
+    "located": 0,
+    "missing": 1
+   },
+   "map_volcano": {
+    "keyed": 3,
+    "located": 0,
+    "missing": 1
+   },
+   "swordman": {
+    "keyed": 2,
+    "located": 13,
+    "missing": 0
+   },
+   "taubeast": {
+    "keyed": 3,
+    "located": 6,
+    "missing": 0
+   }
+  },
+  "total": {
+   "keyed": 28,
+   "located": 79,
+   "missing": 6
+  }
+ },
+ "task_id": "M8-009"
+}
