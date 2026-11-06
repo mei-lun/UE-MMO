@@ -43,6 +43,9 @@ PLACEMENT_PATH = DATA / 'bamboo_placement.json'
 ASSETS_DIR = DATA / 'bamboo_assets'
 ART = ROOT / 'Artifacts' / 'Tasks' / 'M8-011'
 
+# M8-013: fog objects (BossMap_fog) use the baked two-frame cycler path.
+FOG_INDICES = (46, 47, 48, 49)
+
 MODE = os.environ.get('UEMMO_DNFM_BAMBOO_MODE', 'import')
 RUN_ID = os.environ.get('UEMMO_DNFM_BAMBOO_RUN_ID', '')
 VARIANT = os.environ.get('UEMMO_DNFM_BAMBOO_TILE_VARIANT', 'P')
@@ -165,6 +168,13 @@ def load(path):
     return obj
 
 
+def bamboo_png_size(path):
+    """Baked fog PNG dimensions (stdlib PNG header read)."""
+    data = Path(path).read_bytes()
+    w, h = struct.unpack('>II', data[16:24])
+    return [int(w), int(h)]
+
+
 def tex_size(tex):
     try:
         return [tex.get_editor_property('source').get_editor_property('size_x'),
@@ -174,7 +184,9 @@ def tex_size(tex):
 
 
 def import_texture(name, rel_png, expected_size):
-    png = ASSETS_DIR / rel_png
+    png = Path(rel_png)
+    if not png.is_absolute():
+        png = ASSETS_DIR / rel_png
     task = unreal.AssetImportTask()
     task.filename = str(png)
     task.destination_path = DEST + '/T'
@@ -272,13 +284,28 @@ def expected_transforms(calib, place):
             'scale': (2.24 * s, 6.0 * s, 1.0), 'rot': {'pitch': 0.0, 'yaw': 0.0, 'roll': 0.0},
             'material_key': key}
     for obj in place['objects']:
+        obj_index = obj.get('index', 0)
+        if obj_index in FOG_INDICES:
+            # Fog objects place two mutually-exclusive frame quads with the
+            # same transform plus a cycler; verified separately below.
+            ff = obj['first_frame']
+            w_px, h_px = ff['png_size_px']
+            tlx, _tly = ff['top_left_px']
+            foot_y = ff['foot_point_px']['y']
+            for frame_idx in (0, 1):
+                expected[LABEL_PREFIX + 'Fog%02d_F%d' % (obj_index, frame_idx)] = {
+                    'center': ((tlx + w_px / 2.0) * s, foot_y * s, (h_px * s) / 2.0),
+                    'size_cm': (w_px * s, h_px * s),
+                    'scale': (w_px * s / 100.0, h_px * s / 100.0, 1.0),
+                    'rot': {'pitch': 0.0, 'yaw': 0.0, 'roll': 90.0}}
+            continue
         ff = obj['first_frame']
         w_px, h_px = ff['png_size_px']
         tlx, _tly = ff['top_left_px']
         foot_y = ff['foot_point_px']['y']
         base = Path(ff['image_file']).stem
-        key = 'L%d_%02d_%s' % (obj['draw_layer'], obj.get('index', 0), base.split('_')[-1])
-        expected[LABEL_PREFIX + 'L%d_%02d' % (obj['draw_layer'], obj.get('index', 0))] = {
+        key = 'L%d_%02d_%s' % (obj['draw_layer'], obj_index, base.split('_')[-1])
+        expected[LABEL_PREFIX + 'L%d_%02d' % (obj['draw_layer'], obj_index)] = {
             'center': ((tlx + w_px / 2.0) * s, foot_y * s, (h_px * s) / 2.0),
             'size_cm': (w_px * s, h_px * s),
             'scale': (w_px * s / 100.0, h_px * s / 100.0, 1.0),
@@ -290,6 +317,8 @@ def expected_transforms(calib, place):
 def spawn_expected(actors, expected, plane_mesh, material_of):
     counts = {'tile': 0, 'object': 0}
     for label, spec in expected.items():
+        if 'Fog' in label:
+            continue  # fog quads are placed by the cycler branch (M8-013)
         mat = material_of(spec['material_key'])
         actor = spawn_quad(actors, label, plane_mesh, mat, spec['center'], spec['size_cm'], spec['rot'])
         counts['tile' if 'Tile' in label else 'object'] += 1
@@ -354,12 +383,54 @@ def build():
         REPORT['textures'].append({'name': 'T_' + name, 'soft_share': round(hist['soft_share'], 6), 'blend': str(blend)})
 
     # --- object quads (vertical, roll=90, 1-v flip; bottom on ground Z=0 at
-    # the foot line depth)
+    # the foot line depth). Fog objects (M8-013) take the baked two-frame
+    # path instead: flip+tint are pre-baked into their PNGs, both frames are
+    # placed as mutually-exclusive quads, and an ADNFMPropFrameCycler toggles
+    # visibility on the source delays.
+    fog_timing = json.loads((DATA / 'bamboo_fog' / 'fog_timing.json').read_text(encoding='utf-8'))
+    fog_by_index = {entry['index']: entry for entry in fog_timing['objects']}
+    fog_cycles = []
     for obj in place['objects']:
         ff = obj['first_frame']
         w_px, h_px = ff['png_size_px']
+        obj_index = obj.get('index', 0)
+        fog = fog_by_index.get(obj_index)
+        if fog is not None and obj['draw_layer'] == fog['draw_layer']:
+            fog_entries = []
+            for frame in fog['frames']:
+                name = 'fog_%02d_f%d' % (obj_index, frame['frame'])
+                baked_png = DATA / 'bamboo_fog' / frame['baked_png']
+                tex = import_texture('T_' + name, str(baked_png),
+                                     list(bamboo_png_size(baked_png)))
+                hist = alpha_histogram(baked_png)
+                blend = unreal.BlendMode.BLEND_MASKED if hist['soft_share'] < 0.005 else unreal.BlendMode.BLEND_TRANSLUCENT
+                materials[name] = build_material('M_' + name, tex, blend, v_flip=True)
+                REPORT['textures'].append({'name': 'T_' + name, 'soft_share': round(hist['soft_share'], 6), 'blend': str(blend)})
+                tlx, _tly = ff['top_left_px']
+                foot_y = ff['foot_point_px']['y']
+                quad = spawn_quad(actors, LABEL_PREFIX + 'Fog%02d_F%d' % (obj_index, frame['frame']),
+                                  plane_mesh, materials[name],
+                                  ((tlx + w_px / 2.0) * s, foot_y * s, (h_px * s) / 2.0),
+                                  (w_px * s, h_px * s), {'pitch': 0.0, 'yaw': 0.0, 'roll': 90.0})
+                fog_entries.append((quad, frame['delay_ms']))
+            cycler_cls = unreal.load_class(None, '/Script/UEMMO.DNFMPropFrameCycler')
+            if cycler_cls is None:
+                raise RuntimeError('DNFMPropFrameCycler class not found in module UEMMO')
+            cycler = actors.spawn_actor_from_class(cycler_cls,
+                unreal.Vector(x=(ff['top_left_px'][0] + w_px / 2.0) * s,
+                              y=ff['foot_point_px']['y'] * s, z=(h_px * s) / 2.0),
+                unreal.Rotator(pitch=0.0, yaw=0.0, roll=0.0))
+            cycler.set_actor_label(LABEL_PREFIX + 'FogCycler%02d' % obj_index)
+            cycler.set_editor_property('frame_a_actor', fog_entries[0][0])
+            cycler.set_editor_property('frame_b_actor', fog_entries[1][0])
+            cycler.set_editor_property('frame_a_delay_seconds', fog_entries[0][1] / 1000.0)
+            cycler.set_editor_property('frame_b_delay_seconds', fog_entries[1][1] / 1000.0)
+            cycler.set_folder_path('DNFM_Bamboo')
+            fog_cycles.append({'index': obj_index,
+                               'delays_seconds': [fog_entries[0][1] / 1000.0, fog_entries[1][1] / 1000.0]})
+            continue
         base = Path(ff['image_file']).stem
-        name = 'L%d_%02d_%s' % (obj['draw_layer'], obj.get('index', 0), base.split('_')[-1])
+        name = 'L%d_%02d_%s' % (obj['draw_layer'], obj_index, base.split('_')[-1])
         tex = import_texture('T_' + name, ff['image_file'], [int(w_px), int(h_px)])
         hist = alpha_histogram(ASSETS_DIR / ff['image_file'])
         blend = unreal.BlendMode.BLEND_MASKED if hist['soft_share'] < 0.005 else unreal.BlendMode.BLEND_TRANSLUCENT
@@ -368,6 +439,8 @@ def build():
 
     expected = expected_transforms(calib, place)
     counts = spawn_expected(actors, expected, plane_mesh, material_of)
+    counts['fog_quad'] = 2 * len(FOG_INDICES)
+    counts['fog_cycler'] = len(fog_cycles)
 
     # --- hidden collision slab (top face exactly at Z=0): keeps the pawn on
     # the ground.
@@ -403,6 +476,34 @@ def build():
         wall.set_folder_path('DNFM_Bamboo')
     REPORT['walk_walls'] = [{'name': n, 'center': c, 'scale': sc} for n, c, sc in wall_specs]
     REPORT['walk_band_note'] = 'hypothesis A (value 0 walkable); variant %s' % VARIANT
+
+    # --- M8-014 exit marker at the east edge gap (no door art exists in the
+    # source set - M8-005 gaps; a translucent indicator column marks the exit
+    # as a PC adaptation, never presented as original art).
+    marker = actors.spawn_actor_from_class(unreal.StaticMeshActor,
+        unreal.Vector(x=1560.0, y=(y_walk[0] + y_walk[1]) / 2.0, z=150.0),
+        unreal.Rotator(pitch=0.0, yaw=0.0, roll=0.0))
+    marker.set_actor_label(LABEL_PREFIX + 'ExitMarker')
+    marker.static_mesh_component.set_static_mesh(cube_mesh)
+    marker.set_actor_scale3d(unreal.Vector(x=0.4, y=6.0, z=3.0))
+    marker_mat_path = DEST + '/M/M_ExitMarker'
+    if ASSETS.does_asset_exist(marker_mat_path):
+        ASSETS.delete_asset(marker_mat_path)
+    marker_mat = TOOLS.create_asset('M_ExitMarker', DEST + '/M', unreal.Material, unreal.MaterialFactoryNew())
+    marker_mat.set_editor_property('shading_model', unreal.MaterialShadingModel.MSM_UNLIT)
+    marker_mat.set_editor_property('two_sided', True)
+    marker_mat.set_editor_property('blend_mode', unreal.BlendMode.BLEND_TRANSLUCENT)
+    m_opacity = node(marker_mat, unreal.MaterialExpressionConstant, r=0.35)
+    output(m_opacity, '', unreal.MaterialProperty.MP_OPACITY)
+    m_color = node(marker_mat, unreal.MaterialExpressionConstant3Vector,
+                   constant=unreal.LinearColor(r=0.2, g=1.0, b=0.35, a=1.0))
+    output(m_color, '', unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+    unreal.MaterialEditingLibrary.recompile_material(marker_mat)
+    ASSETS.save_loaded_asset(marker_mat)
+    marker.static_mesh_component.set_material(0, marker_mat)
+    marker.set_folder_path('DNFM_Bamboo')
+    REPORT['exit_marker'] = {'center': [1560.0, (y_walk[0] + y_walk[1]) / 2.0, 150.0],
+                             'note': 'adaptation indicator (no source door art); walkable-to at the east gap'}
 
     # --- PlayerStart at hypothesis-A band center for this variant
     ps = actors.spawn_actor_from_class(unreal.PlayerStart,
@@ -453,7 +554,15 @@ def verify():
         raise RuntimeError('verify: found %d of %d expected quads' % (found, len(expected)))
     if mism:
         raise RuntimeError('verify: transform mismatches: %s' % mism[:5])
-    REPORT['actors'] = {'verified_quads': found, 'expected': len(expected)}
+    cyclers = [a for a in actors.get_all_level_actors()
+               if a.get_actor_label().startswith(LABEL_PREFIX + 'FogCycler')]
+    if len(cyclers) != len(FOG_INDICES):
+        raise RuntimeError('verify: expected %d fog cyclers, found %d' % (len(FOG_INDICES), len(cyclers)))
+    for cycler in cyclers:
+        if cycler.get_editor_property('frame_a_actor') is None or cycler.get_editor_property('frame_b_actor') is None:
+            raise RuntimeError('verify: cycler %s missing frame references' % cycler.get_actor_label())
+    REPORT['actors'] = {'verified_quads': found, 'expected': len(expected),
+                        'fog_cyclers': len(cyclers)}
 
 
 def capture_map():
@@ -493,6 +602,24 @@ def capture_map():
         ('game-entry', pose(951.0, band_mid_y - 300.0, 100.0, 2200.0, 60.0)),
         ('game-wide', pose(mid_x, band_mid_y, 100.0, 4600.0, 75.0)),
     ]
+    # M8-015: append the comparison poses from the offline reference manifest
+    compare = DATA / 'bamboo_compare' / 'compare_manifest.json'
+    if compare.is_file():
+        manifest = json.loads(compare.read_text(encoding='utf-8'))
+        points = manifest.get('points', manifest if isinstance(manifest, list) else [])
+        for point in points:
+            near = point.get('poses', {}).get('near')
+            if not near:
+                continue
+            loc = near.get('location_cm')
+            rot = near.get('rotation')
+            if not (loc and rot):
+                continue
+            shots.append(('compare-%s' % point.get('id', point.get('name', 'point')),
+                          (unreal.Vector(x=loc['x'], y=loc['y'], z=loc['z']),
+                           unreal.Rotator(pitch=rot['pitch'], yaw=rot['yaw'], roll=rot['roll']),
+                           near.get('fov', 60.0))))
+        REPORT['compare_points'] = len(points)
 
     ca = actors.spawn_actor_from_class(unreal.SceneCapture2D, shots[0][1][0], shots[0][1][1])
     ca.set_actor_label(LABEL_PREFIX + 'CaptureProbe')

@@ -34,7 +34,7 @@ try {
     $Summary.passed = $Parsed.Passed
     $Summary.failed = $Parsed.Failed
     if (-not $Parsed.Ok -or $Parsed.Matched -ne 1) { throw "Bamboo segment acceptance failed: $($Parsed.Error)" }
-    foreach ($Name in @('feet-ground.png','band-near-block.png','band-far-block.png','jump-air.png','occlusion.png')) {
+    foreach ($Name in @('feet-ground.png','band-near-block.png','band-far-block.png','jump-air.png','occlusion.png','exit-marker.png')) {
         $Shot = Join-Path $Evidence $Name
         if (-not (Test-Path -LiteralPath $Shot)) { throw "Missing screenshot: $Name" }
         $Bytes = [IO.File]::ReadAllBytes($Shot)

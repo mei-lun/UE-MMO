@@ -1,0 +1,239 @@
+{
+  "batch_stamp": "2026-11-07T03:50:00+08:00",
+  "camera_convention": {
+    "dist_cm": {
+      "far": 2200.0,
+      "near": 1200.0
+    },
+    "formula": "pos=target+dist*(0,cos18deg,sin18deg); rot=(pitch=-18,yaw=-90,roll=0); fov=60",
+    "fov": 60.0,
+    "pose_convention_source": "M8-011 capture mode, Scripts/Editor/import_dnfm_bamboo_map.py:486-495",
+    "rig": "fixed side-view yaw=-90 pitch=-18 (Source/UEMMO/Character/SideViewCameraComponent.h:101-102)",
+    "target_z_cm": 100.0
+  },
+  "generated_at": "2026-11-07T03:50:00+08:00",
+  "inputs": {
+    "calibration": "Data/DNFMReplica/bamboo_calibration.json",
+    "official_preview_label": "资源合成参考（首帧合成，游戏着色器与活动对象未参与）",
+    "official_preview_sha256": "3b8af8b4ccbbbe6d7173211bd46926bdf4d0537d0ef7ee95e4941fe3e65ba219",
+    "official_preview_size_px": {
+      "height": 758,
+      "width": 2440
+    },
+    "official_preview_source": "D:\\Github-Poj\\DNFM\\DNFM_export_130.5.8.0\\downloaded_130.5.8.202\\restored\\maps\\previews\\map_013_00595.png"
+  },
+  "outputs": {
+    "dir": "Data/DNFMReplica/bamboo_compare",
+    "official_preview": "Data/DNFMReplica/bamboo_compare/official_preview.png"
+  },
+  "points": [
+    {
+      "crop_box_px": {
+        "height": 758,
+        "left": 0,
+        "top": 0,
+        "width": 600
+      },
+      "crop_center_clamped": true,
+      "id": "entry",
+      "note": "西缘入口：暮色山峦全景与竹林密丛相接，石板地面自条带西段铺展并散布红顶竹桩与草丛，左下为地图西缘外暗场",
+      "poses": {
+        "far": {
+          "dist_cm": 2200.0,
+          "fov": 60.0,
+          "location_cm": {
+            "x": 100.0,
+            "y": 2692.32,
+            "z": 779.84
+          },
+          "rotation": {
+            "pitch": -18.0,
+            "roll": 0.0,
+            "yaw": -90.0
+          }
+        },
+        "near": {
+          "dist_cm": 1200.0,
+          "fov": 60.0,
+          "location_cm": {
+            "x": 100.0,
+            "y": 1741.27,
+            "z": 470.82
+          },
+          "rotation": {
+            "pitch": -18.0,
+            "roll": 0.0,
+            "yaw": -90.0
+          }
+        }
+      },
+      "preview_px": {
+        "x": 250,
+        "y": 567
+      },
+      "scene_px": {
+        "x": 56.77,
+        "y": 340.62
+      },
+      "source_crop": "Data/DNFMReplica/bamboo_compare/source_entry.png",
+      "walkable_band_cm": {
+        "x": [
+          0.0,
+          1578.3
+        ],
+        "y": [
+          422.76,
+          1127.36
+        ]
+      },
+      "world_cm": {
+        "x": 100.0,
+        "y": 600.0,
+        "z": 0.0
+      }
+    },
+    {
+      "crop_box_px": {
+        "height": 758,
+        "left": 255,
+        "top": 0,
+        "width": 600
+      },
+      "crop_center_clamped": false,
+      "id": "mid",
+      "note": "中段：竹林主丛与山峦河谷远景缺口相间，石板场地横贯并散布石堆、竹桩与草丛，为刷怪/对战空场",
+      "poses": {
+        "far": {
+          "dist_cm": 2200.0,
+          "fov": 60.0,
+          "location_cm": {
+            "x": 789.0,
+            "y": 2867.38,
+            "z": 779.84
+          },
+          "rotation": {
+            "pitch": -18.0,
+            "roll": 0.0,
+            "yaw": -90.0
+          }
+        },
+        "near": {
+          "dist_cm": 1200.0,
+          "fov": 60.0,
+          "location_cm": {
+            "x": 789.0,
+            "y": 1916.33,
+            "z": 470.82
+          },
+          "rotation": {
+            "pitch": -18.0,
+            "roll": 0.0,
+            "yaw": -90.0
+          }
+        }
+      },
+      "preview_px": {
+        "x": 555,
+        "y": 644
+      },
+      "scene_px": {
+        "x": 447.91,
+        "y": 440.0
+      },
+      "source_crop": "Data/DNFMReplica/bamboo_compare/source_mid.png",
+      "walkable_band_cm": {
+        "x": [
+          0.0,
+          1578.3
+        ],
+        "y": [
+          422.76,
+          1127.36
+        ]
+      },
+      "world_cm": {
+        "x": 789.0,
+        "y": 775.06,
+        "z": 0.0
+      }
+    },
+    {
+      "crop_box_px": {
+        "height": 758,
+        "left": 561,
+        "top": 0,
+        "width": 600
+      },
+      "crop_center_clamped": false,
+      "id": "exit",
+      "note": "东缘战区/出口：竹林密丛集中于条带中部，石板地面在场景 x≈896px（预览 x≈904）截止，向东为浓雾暗场缺口",
+      "poses": {
+        "far": {
+          "dist_cm": 2200.0,
+          "fov": 60.0,
+          "location_cm": {
+            "x": 1480.0,
+            "y": 2792.32,
+            "z": 779.84
+          },
+          "rotation": {
+            "pitch": -18.0,
+            "roll": 0.0,
+            "yaw": -90.0
+          }
+        },
+        "near": {
+          "dist_cm": 1200.0,
+          "fov": 60.0,
+          "location_cm": {
+            "x": 1480.0,
+            "y": 1841.27,
+            "z": 470.82
+          },
+          "rotation": {
+            "pitch": -18.0,
+            "roll": 0.0,
+            "yaw": -90.0
+          }
+        }
+      },
+      "preview_px": {
+        "x": 861,
+        "y": 611
+      },
+      "scene_px": {
+        "x": 840.19,
+        "y": 397.39
+      },
+      "source_crop": "Data/DNFMReplica/bamboo_compare/source_exit.png",
+      "walkable_band_cm": {
+        "x": [
+          0.0,
+          1578.3
+        ],
+        "y": [
+          422.76,
+          1127.36
+        ]
+      },
+      "world_cm": {
+        "x": 1480.0,
+        "y": 700.0,
+        "z": 0.0
+      }
+    }
+  ],
+  "task": "M8-015",
+  "world_to_preview_mapping": {
+    "bounds_json": "restored/maps/previews/map_013_00595.json bounds",
+    "evidence": "D:/Github-Poj/DNFM/DNFM_export_130.5.8.0/tools/render_dnf_map_preview.py compose(): scale=min(1,2400/(maxx-minx),1500/(maxy-miny)); paste offset (+20,+80); size check 2440x758 reproduced",
+    "ground_strip_preview_x_px": [
+      206,
+      904
+    ],
+    "scale": 0.78,
+    "scale_exact": "2400/3081",
+    "scene_x_px_of_world_x_cm": "world_cm / 1.7615",
+    "steps": "scene_x_px = world_X_cm / s; preview_x = round((scene_x_px - minx)*scale) + 20"
+  }
+}

@@ -1,0 +1,130 @@
+{
+ "bake": "vertical flip (flip_y=True) + RGB tint (color_rgba/255) baked into PNG",
+ "objects": [
+  {
+   "draw_layer": 2,
+   "frames": [
+    {
+     "baked_png": "fog_L2_46_5b7b43a5_baked.png",
+     "delay_ms": 50000,
+     "flip_y": true,
+     "frame": 0,
+     "source_png": "bamboo_assets\\objects\\L2_46_5b7b43a5.png",
+     "tint_rgb": [
+      255,
+      255,
+      100
+     ]
+    },
+    {
+     "baked_png": "fog_L2_46_5b7b43a5_f01_baked.png",
+     "delay_ms": 100,
+     "flip_y": true,
+     "frame": 1,
+     "source_png": "bamboo_assets\\objects_anim\\L2_46_5b7b43a5_f01.png",
+     "tint_rgb": [
+      255,
+      255,
+      100
+     ]
+    }
+   ],
+   "index": 46,
+   "loop_ms": 50100
+  },
+  {
+   "draw_layer": 2,
+   "frames": [
+    {
+     "baked_png": "fog_L2_47_5b7b43a5_baked.png",
+     "delay_ms": 50000,
+     "flip_y": true,
+     "frame": 0,
+     "source_png": "bamboo_assets\\objects\\L2_47_5b7b43a5.png",
+     "tint_rgb": [
+      255,
+      255,
+      100
+     ]
+    },
+    {
+     "baked_png": "fog_L2_47_5b7b43a5_f01_baked.png",
+     "delay_ms": 100,
+     "flip_y": true,
+     "frame": 1,
+     "source_png": "bamboo_assets\\objects_anim\\L2_47_5b7b43a5_f01.png",
+     "tint_rgb": [
+      255,
+      255,
+      100
+     ]
+    }
+   ],
+   "index": 47,
+   "loop_ms": 50100
+  },
+  {
+   "draw_layer": 2,
+   "frames": [
+    {
+     "baked_png": "fog_L2_48_5b7b43a5_baked.png",
+     "delay_ms": 50000,
+     "flip_y": true,
+     "frame": 0,
+     "source_png": "bamboo_assets\\objects\\L2_48_5b7b43a5.png",
+     "tint_rgb": [
+      255,
+      255,
+      100
+     ]
+    },
+    {
+     "baked_png": "fog_L2_48_5b7b43a5_f01_baked.png",
+     "delay_ms": 100,
+     "flip_y": true,
+     "frame": 1,
+     "source_png": "bamboo_assets\\objects_anim\\L2_48_5b7b43a5_f01.png",
+     "tint_rgb": [
+      255,
+      255,
+      100
+     ]
+    }
+   ],
+   "index": 48,
+   "loop_ms": 50100
+  },
+  {
+   "draw_layer": 2,
+   "frames": [
+    {
+     "baked_png": "fog_L2_49_5b7b43a5_baked.png",
+     "delay_ms": 50000,
+     "flip_y": true,
+     "frame": 0,
+     "source_png": "bamboo_assets\\objects\\L2_49_5b7b43a5.png",
+     "tint_rgb": [
+      255,
+      255,
+      100
+     ]
+    },
+    {
+     "baked_png": "fog_L2_49_5b7b43a5_f01_baked.png",
+     "delay_ms": 100,
+     "flip_y": true,
+     "frame": 1,
+     "source_png": "bamboo_assets\\objects_anim\\L2_49_5b7b43a5_f01.png",
+     "tint_rgb": [
+      255,
+      255,
+      100
+     ]
+    }
+   ],
+   "index": 49,
+   "loop_ms": 50100
+  }
+ ],
+ "source": "bamboo_placement.json frames[] (M8-013)"
+}
