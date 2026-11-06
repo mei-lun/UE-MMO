@@ -256,3 +256,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M8-010 | [P02-A 竹林像素/世界标定](Docs/Tasks/M8-010.md) | DONE | M8-005 | ZCode-20261107-J | 2026-11-07T02:45:00+08:00 | [report](Docs/Tasks/Reports/M8-010.md) |
 | M8-011 | [P02-B 竹林地面与分层材质 UE 构建](Docs/Tasks/M8-011.md) | DONE | M8-005,M8-010 | ZCode-20261107-K,ZCode-20261107-A | 2026-11-07T03:38:00+08:00 | [report](Docs/Tasks/Reports/M8-011.md) |
 | M8-012 | [P02-C 竹林碰撞与摄像边界](Docs/Tasks/M8-012.md) | DONE | M8-010,M8-011 | ZCode-20261107-A | 2026-11-07T03:38:00+08:00 | [report](Docs/Tasks/Reports/M8-012.md) |
+| M8-013 | [P03-A 竹林动态对象与雾动画](Docs/Tasks/M8-013.md) | IN_PROGRESS | M8-011,M8-012 | ZCode-20261107-A | 2026-11-07T03:50:00+08:00 | [report](Docs/Tasks/Reports/M8-013.md) |
+| M8-014 | [P03-B 竹林出入口标记与重启重载](Docs/Tasks/M8-014.md) | TODO | M8-013 | — | — | [report](Docs/Tasks/Reports/M8-014.md) |
+| M8-015 | [P03-C 竹林全图源对照验收](Docs/Tasks/M8-015.md) | TODO | M8-013,M8-014 | — | — | [report](Docs/Tasks/Reports/M8-015.md) |
+| M8-016 | [P04-A 三职业离线衣装/动作 manifest 合成](Docs/Tasks/M8-016.md) | TODO | M8-002,M8-003,M8-004 | — | — | [report](Docs/Tasks/Reports/M8-016.md) |
