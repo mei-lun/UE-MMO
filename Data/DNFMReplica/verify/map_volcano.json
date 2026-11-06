@@ -1,0 +1,3962 @@
+{
+  "boss_arena_candidates": {
+    "area_anchor_pairs_ccbhchbcbehegah": {
+      "raw": {
+        "dimensions": [
+          4,
+          2
+        ],
+        "values": [
+          40,
+          390,
+          1120,
+          400,
+          560,
+          200,
+          440,
+          538
+        ]
+      },
+      "semantics": "unproven (推断 candidate camera/boundary anchors: (40,390),(1120,400),(560,200),(440,538))"
+    },
+    "entrances_exits": {
+      "change_map_info": {
+        "afhcdagfddbdghd": {
+          "a": 0.0,
+          "b": 0.0,
+          "g": 0.0,
+          "r": 0.0
+        },
+        "dabagaagfcdhebe": -1,
+        "hebcbhehhecfbdf": 5.0
+      },
+      "conclusion": "no explicit entrance/exit/spawn-door rects exist in the map script; exits must be defined by project design (M8-005 caliber)",
+      "rect_ceafgdacgfaafhb": {
+        "m_Height": 0.0,
+        "m_Width": 0.0,
+        "m_XMin": 0.0,
+        "m_YMin": 0.0
+      },
+      "region_areas": "5 MapArea entries, all zeros (no usable rects)",
+      "town_paths": "both empty"
+    },
+    "grid_adedcfecabhfbgb": {
+      "raw": {
+        "dimensions": [
+          2,
+          3
+        ],
+        "values": [
+          56,
+          80,
+          110,
+          100,
+          100,
+          100
+        ]
+      },
+      "semantics": "unproven"
+    },
+    "map_kind_evidence": "map script daeabbbhbaecegd=\"[决斗]无名\" (duel arena), single open room, no room gates/doors found",
+    "monster_assign": {
+      "identity_via_script_index_paths": "not found (gap)",
+      "position": [
+        601,
+        347,
+        0
+      ],
+      "raw_id": 2007011965,
+      "sound_condition_M_ANTON_PHASE2_BOSS": "boss-phase ambience/music condition present (推断 boss phase usage)"
+    },
+    "open_area": {
+      "obstacles": "48 small passive-object stones (2009041870) x=106..1112 y=253..525, 5 geyser-like objects (2009049589..607) around (579..605, 371..401), NORMAL stone sprites",
+      "x_range_pixels": [
+        0,
+        1344
+      ],
+      "y_band_candidates": [
+        120,
+        520
+      ]
+    },
+    "rival_spawn_data_dfecfegadffhdbb": [
+      {
+        "bedfbeeffbdcagg": 0,
+        "cbecbhbacfbdgfg": 247,
+        "hfhfdcdbafbhbcb": 128
+      },
+      {
+        "bedfbeeffbdcagg": 0,
+        "cbecbhbacfbdgfg": 248,
+        "hfhfdcdbafbhbcb": 188
+      },
+      {
+        "bedfbeeffbdcagg": 0,
+        "cbecbhbacfbdgfg": 245,
+        "hfhfdcdbafbhbcb": 242
+      },
+      {
+        "bedfbeeffbdcagg": 0,
+        "cbecbhbacfbdgfg": 246,
+        "hfhfdcdbafbhbcb": 83
+      }
+    ],
+    "spawn_candidates_gdbabbhgefcchhe": [
+      {
+        "x": 150.0,
+        "y": 300.0
+      },
+      {
+        "x": 150.0,
+        "y": 400.0
+      },
+      {
+        "x": 150.0,
+        "y": 500.0
+      },
+      {
+        "x": 360.0,
+        "y": 300.0
+      },
+      {
+        "x": 360.0,
+        "y": 400.0
+      },
+      {
+        "x": 360.0,
+        "y": 500.0
+      },
+      {
+        "x": 570.0,
+        "y": 300.0
+      },
+      {
+        "x": 570.0,
+        "y": 400.0
+      },
+      {
+        "x": 570.0,
+        "y": 500.0
+      },
+      {
+        "x": 780.0,
+        "y": 300.0
+      },
+      {
+        "x": 780.0,
+        "y": 400.0
+      },
+      {
+        "x": 780.0,
+        "y": 500.0
+      },
+      {
+        "x": 990.0,
+        "y": 300.0
+      },
+      {
+        "x": 990.0,
+        "y": 400.0
+      },
+      {
+        "x": 990.0,
+        "y": 500.0
+      }
+    ]
+  },
+  "calibration_inputs": {
+    "calibration_plan_reference": "Docs/DNF-Research/07-DNFM资源替换与最小复刻计划.md 6.3: calibrate ground segment, foot points, front/back bounds, two height points, then expand",
+    "fields": {
+      "floats": {
+        "cbbfaaccdbhhhbf": 1.100000023841858,
+        "ehcefebadggcehg": 1.100000023841858,
+        "gdcadhgbeachcch": 0.0
+      },
+      "floor_heights": {
+        "base_4922d695b4b479b1": 120,
+        "extended_7d5a650c57219b1e": 0
+      },
+      "fx_prefab_positions_unity": [
+        {
+          "asset": "Fx_Anton_Volcano_Thunder",
+          "layer": 2,
+          "position": {
+            "x": 450.0,
+            "y": -350.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0
+          }
+        },
+        {
+          "asset": "Fx_Anton_Bridge_Magma_01",
+          "layer": 2,
+          "position": {
+            "x": 567.0,
+            "y": -271.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0
+          }
+        },
+        {
+          "asset": "Fx_Anton_Bridge_Magma_02",
+          "layer": 2,
+          "position": {
+            "x": 712.0,
+            "y": -289.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0
+          }
+        },
+        {
+          "asset": "Fx_Anton_Bridge_Magma_02",
+          "layer": 2,
+          "position": {
+            "x": 910.0,
+            "y": -285.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0
+          }
+        },
+        {
+          "asset": "Fx_Anton_Bridge_Smoke_01",
+          "layer": 2,
+          "position": {
+            "x": 71.0,
+            "y": -292.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0
+          }
+        },
+        {
+          "asset": "Fx_Anton_Bridge_Smoke_01",
+          "layer": 2,
+          "position": {
+            "x": 977.0,
+            "y": -271.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0
+          }
+        },
+        {
+          "asset": "Fx_Anton_Bridge_Smoke_04",
+          "layer": 2,
+          "position": {
+            "x": 490.0,
+            "y": -390.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0
+          }
+        },
+        {
+          "asset": "Fx_Anton_Bridge_Smoke_02",
+          "layer": 5,
+          "position": {
+            "x": 490.0,
+            "y": -540.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0
+          }
+        },
+        {
+          "asset": "Fx_Anton_Bridge_FloorMagma_01",
+          "layer": 5,
+          "position": {
+            "x": 591.0,
+            "y": -681.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": 1.0,
+            "y": -1.0,
+            "z": 1.0
+          }
+        },
+        {
+          "asset": "Fx_Anton_Volcano_FloorMagma",
+          "layer": 5,
+          "position": {
+            "x": 126.0,
+            "y": -503.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0
+          }
+        },
+        {
+          "asset": "Fx_Anton_Volcano_FloorMagma",
+          "layer": 5,
+          "position": {
+            "x": 34.0,
+            "y": -623.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": 1.0,
+            "y": 1.2000000476837158,
+            "z": 1.0
+          }
+        },
+        {
+          "asset": "Fx_Anton_Volcano_FloorMagma",
+          "layer": 5,
+          "position": {
+            "x": 611.0,
+            "y": -386.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": -0.800000011920929,
+            "y": 0.800000011920929,
+            "z": 1.0
+          }
+        },
+        {
+          "asset": "Fx_Anton_Volcano_FloorMagma",
+          "layer": 5,
+          "position": {
+            "x": 32.0,
+            "y": -506.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": -0.4000000059604645,
+            "y": -0.6000000238418579,
+            "z": 1.0
+          }
+        },
+        {
+          "asset": "Fx_Anton_Volcano_FloorMagma",
+          "layer": 5,
+          "position": {
+            "x": 425.0,
+            "y": -417.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": 0.5,
+            "y": 0.800000011920929,
+            "z": 1.0
+          }
+        },
+        {
+          "asset": "Fx_Anton_Volcano_FloorMagma",
+          "layer": 5,
+          "position": {
+            "x": 1025.0,
+            "y": -443.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": 0.6000000238418579,
+            "y": 1.0,
+            "z": 1.0
+          }
+        },
+        {
+          "asset": "Fx_Anton_Volcano_FloorMagma",
+          "layer": 5,
+          "position": {
+            "x": 804.0,
+            "y": -535.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": 0.800000011920929,
+            "y": 1.0,
+            "z": 1.0
+          }
+        },
+        {
+          "asset": "Fx_Anton_Volcano_FloorMagma",
+          "layer": 5,
+          "position": {
+            "x": 873.0,
+            "y": -512.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": 1.0,
+            "y": 1.100000023841858,
+            "z": 1.0
+          }
+        },
+        {
+          "asset": "Fx_Anton_Volcano_FloorMagma",
+          "layer": 5,
+          "position": {
+            "x": 790.0,
+            "y": -394.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": -0.5,
+            "y": 0.6000000238418579,
+            "z": 1.0
+          }
+        },
+        {
+          "asset": "Fx_Anton_Volcano_FloorMagma",
+          "layer": 5,
+          "position": {
+            "x": 802.0,
+            "y": -667.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": -0.6000000238418579,
+            "y": 1.0,
+            "z": 1.0
+          }
+        },
+        {
+          "asset": "Fx_Anton_Volcano_FloorMagma",
+          "layer": 5,
+          "position": {
+            "x": 1080.0,
+            "y": -545.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": 0.6000000238418579,
+            "y": 1.0,
+            "z": 1.0
+          }
+        },
+        {
+          "asset": "Fx_Anton_Bridge_Smoke_01",
+          "layer": 8,
+          "position": {
+            "x": 790.0,
+            "y": -868.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0
+          }
+        },
+        {
+          "asset": "Fx_Anton_Bridge_Smoke_01",
+          "layer": 8,
+          "position": {
+            "x": 89.0,
+            "y": -874.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0
+          }
+        },
+        {
+          "asset": "Fx_Anton_Bridge_Smoke_03",
+          "layer": 8,
+          "position": {
+            "x": 540.0,
+            "y": -900.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0
+          }
+        },
+        {
+          "asset": "Fx_Anton_Volcano_Dust_Black_01",
+          "layer": 8,
+          "position": {
+            "x": 490.0,
+            "y": -490.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0
+          }
+        },
+        {
+          "asset": "Fx_Anton_Volcano_Dust_Black_02",
+          "layer": 8,
+          "position": {
+            "x": 490.0,
+            "y": -490.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0
+          }
+        },
+        {
+          "asset": "Fx_Anton_Bridge_Ember_Mid",
+          "layer": 8,
+          "position": {
+            "x": 490.0,
+            "y": -490.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0
+          }
+        },
+        {
+          "asset": "Fx_Anton_Bridge_Ember_Near",
+          "layer": 8,
+          "position": {
+            "x": 490.0,
+            "y": -490.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0
+          }
+        },
+        {
+          "asset": "Bg_RampCover_Red_2001",
+          "layer": 8,
+          "position": {
+            "x": 490.0,
+            "y": -560.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0
+          }
+        }
+      ],
+      "map_shadow_info": {
+        "fbhddcdheddagbh": 0.0,
+        "fhdeheeaggadgeg": false,
+        "ggdggafgcbbechf": 335,
+        "hchcafcbfbaeahc": 0,
+        "hdgfabgdgchdefc": 1.0
+      },
+      "monster_assign": [
+        601,
+        347,
+        0
+      ],
+      "native_tile_formula": "x=224*tileIndex+controllerOriginX; unityY=floorHeight-80-controllerOriginY; controller origin runtime-only (gap)",
+      "object_positions_pixel": "45 animation objects, see objects_by_layer positions",
+      "passage_grids": {
+        "base_30x14": [
+          [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "extended_10x14": [
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ]
+      },
+      "passive_object_positions_hcebdggbafdfeac": [
+        {
+          "dgdgccbchfhecga": 204,
+          "ecbcfcgbecbbfbf": 1999008977,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 828
+        },
+        {
+          "dgdgccbchfhecga": 188,
+          "ecbcfcgbecbbfbf": 1999008976,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 447
+        },
+        {
+          "dgdgccbchfhecga": 401,
+          "ecbcfcgbecbbfbf": 2009041280,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 173
+        },
+        {
+          "dgdgccbchfhecga": 422,
+          "ecbcfcgbecbbfbf": 2009041280,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 1004
+        },
+        {
+          "dgdgccbchfhecga": 383,
+          "ecbcfcgbecbbfbf": 2009041281,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 597
+        },
+        {
+          "dgdgccbchfhecga": 305,
+          "ecbcfcgbecbbfbf": 2009041280,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 174
+        },
+        {
+          "dgdgccbchfhecga": 517,
+          "ecbcfcgbecbbfbf": 2009041280,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 172
+        },
+        {
+          "dgdgccbchfhecga": 316,
+          "ecbcfcgbecbbfbf": 2009041280,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 1004
+        },
+        {
+          "dgdgccbchfhecga": 520,
+          "ecbcfcgbecbbfbf": 2009041280,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 1007
+        },
+        {
+          "dgdgccbchfhecga": 304,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 196
+        },
+        {
+          "dgdgccbchfhecga": 377,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 194
+        },
+        {
+          "dgdgccbchfhecga": 457,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 194
+        },
+        {
+          "dgdgccbchfhecga": 516,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 192
+        },
+        {
+          "dgdgccbchfhecga": 303,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 314
+        },
+        {
+          "dgdgccbchfhecga": 376,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 312
+        },
+        {
+          "dgdgccbchfhecga": 456,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 312
+        },
+        {
+          "dgdgccbchfhecga": 515,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 310
+        },
+        {
+          "dgdgccbchfhecga": 303,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 435
+        },
+        {
+          "dgdgccbchfhecga": 376,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 433
+        },
+        {
+          "dgdgccbchfhecga": 456,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 433
+        },
+        {
+          "dgdgccbchfhecga": 515,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 431
+        },
+        {
+          "dgdgccbchfhecga": 306,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 548
+        },
+        {
+          "dgdgccbchfhecga": 379,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 546
+        },
+        {
+          "dgdgccbchfhecga": 459,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 546
+        },
+        {
+          "dgdgccbchfhecga": 518,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 544
+        },
+        {
+          "dgdgccbchfhecga": 306,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 655
+        },
+        {
+          "dgdgccbchfhecga": 379,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 653
+        },
+        {
+          "dgdgccbchfhecga": 459,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 653
+        },
+        {
+          "dgdgccbchfhecga": 518,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 651
+        },
+        {
+          "dgdgccbchfhecga": 308,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 750
+        },
+        {
+          "dgdgccbchfhecga": 381,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 748
+        },
+        {
+          "dgdgccbchfhecga": 461,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 748
+        },
+        {
+          "dgdgccbchfhecga": 520,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 746
+        },
+        {
+          "dgdgccbchfhecga": 308,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 844
+        },
+        {
+          "dgdgccbchfhecga": 381,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 842
+        },
+        {
+          "dgdgccbchfhecga": 461,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 842
+        },
+        {
+          "dgdgccbchfhecga": 520,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 840
+        },
+        {
+          "dgdgccbchfhecga": 309,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 942
+        },
+        {
+          "dgdgccbchfhecga": 382,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 940
+        },
+        {
+          "dgdgccbchfhecga": 462,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 940
+        },
+        {
+          "dgdgccbchfhecga": 521,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 938
+        },
+        {
+          "dgdgccbchfhecga": 313,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 1044
+        },
+        {
+          "dgdgccbchfhecga": 386,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 1042
+        },
+        {
+          "dgdgccbchfhecga": 466,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 1042
+        },
+        {
+          "dgdgccbchfhecga": 525,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 1040
+        },
+        {
+          "dgdgccbchfhecga": 304,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 111
+        },
+        {
+          "dgdgccbchfhecga": 377,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 109
+        },
+        {
+          "dgdgccbchfhecga": 457,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 109
+        },
+        {
+          "dgdgccbchfhecga": 516,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 107
+        },
+        {
+          "dgdgccbchfhecga": 257,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 106
+        },
+        {
+          "dgdgccbchfhecga": 253,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 192
+        },
+        {
+          "dgdgccbchfhecga": 258,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 315
+        },
+        {
+          "dgdgccbchfhecga": 257,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 428
+        },
+        {
+          "dgdgccbchfhecga": 261,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 546
+        },
+        {
+          "dgdgccbchfhecga": 260,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 659
+        },
+        {
+          "dgdgccbchfhecga": 259,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 750
+        },
+        {
+          "dgdgccbchfhecga": 255,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 848
+        },
+        {
+          "dgdgccbchfhecga": 257,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 940
+        },
+        {
+          "dgdgccbchfhecga": 261,
+          "ecbcfcgbecbbfbf": 2009041870,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 1041
+        },
+        {
+          "dgdgccbchfhecga": 738,
+          "ecbcfcgbecbbfbf": 2009041905,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 184
+        },
+        {
+          "dgdgccbchfhecga": 738,
+          "ecbcfcgbecbbfbf": 2009041905,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 221
+        },
+        {
+          "dgdgccbchfhecga": 738,
+          "ecbcfcgbecbbfbf": 2009041905,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 258
+        },
+        {
+          "dgdgccbchfhecga": 738,
+          "ecbcfcgbecbbfbf": 2009041905,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 295
+        },
+        {
+          "dgdgccbchfhecga": 813,
+          "ecbcfcgbecbbfbf": 2009041905,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 184
+        },
+        {
+          "dgdgccbchfhecga": 738,
+          "ecbcfcgbecbbfbf": 2009041905,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 330
+        },
+        {
+          "dgdgccbchfhecga": 813,
+          "ecbcfcgbecbbfbf": 2009041905,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 219
+        },
+        {
+          "dgdgccbchfhecga": 813,
+          "ecbcfcgbecbbfbf": 2009041905,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 255
+        },
+        {
+          "dgdgccbchfhecga": 813,
+          "ecbcfcgbecbbfbf": 2009041905,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 295
+        },
+        {
+          "dgdgccbchfhecga": 813,
+          "ecbcfcgbecbbfbf": 2009041905,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 330
+        },
+        {
+          "dgdgccbchfhecga": 831,
+          "ecbcfcgbecbbfbf": 2009041904,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 628
+        },
+        {
+          "dgdgccbchfhecga": 824,
+          "ecbcfcgbecbbfbf": 2009041907,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 750
+        },
+        {
+          "dgdgccbchfhecga": 366,
+          "ecbcfcgbecbbfbf": 2009039677,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 612
+        },
+        {
+          "dgdgccbchfhecga": 401,
+          "ecbcfcgbecbbfbf": 2009049589,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 581
+        },
+        {
+          "dgdgccbchfhecga": 371,
+          "ecbcfcgbecbbfbf": 2009049591,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 579
+        },
+        {
+          "dgdgccbchfhecga": 371,
+          "ecbcfcgbecbbfbf": 2009049592,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 605
+        },
+        {
+          "dgdgccbchfhecga": 398,
+          "ecbcfcgbecbbfbf": 2009049593,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 579
+        },
+        {
+          "dgdgccbchfhecga": 398,
+          "ecbcfcgbecbbfbf": 2009049594,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 605
+        },
+        {
+          "dgdgccbchfhecga": 480,
+          "ecbcfcgbecbbfbf": 2009049603,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 600
+        },
+        {
+          "dgdgccbchfhecga": 376,
+          "ecbcfcgbecbbfbf": 2009049604,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 579
+        },
+        {
+          "dgdgccbchfhecga": 376,
+          "ecbcfcgbecbbfbf": 2009049605,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 603
+        },
+        {
+          "dgdgccbchfhecga": 398,
+          "ecbcfcgbecbbfbf": 2009049606,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 579
+        },
+        {
+          "dgdgccbchfhecga": 399,
+          "ecbcfcgbecbbfbf": 2009049607,
+          "fchcdhgbbdheecc": 0,
+          "gbcbcgffcadfdcd": 603
+        }
+      ],
+      "prefab_transform_rule": "plan 6.3: Unity prefab coords use existing (x,y,z)->(x,z,y)x100 basis; map pixel coords need separate calibrated pixel/cm mapping - do NOT multiply pixels by 100",
+      "preview_bounds": [
+        -279,
+        -256,
+        1830,
+        701
+      ],
+      "screen_effect_info": {
+        "hefaaeeffeefedb": 14,
+        "video_ref": "DungeonVideo/MapVideo/Raid/Anton/Mateka_Appear_Video.mp4"
+      },
+      "spawn_grid_gdbabbhgefcchhe": [
+        {
+          "x": 150.0,
+          "y": 300.0
+        },
+        {
+          "x": 150.0,
+          "y": 400.0
+        },
+        {
+          "x": 150.0,
+          "y": 500.0
+        },
+        {
+          "x": 360.0,
+          "y": 300.0
+        },
+        {
+          "x": 360.0,
+          "y": 400.0
+        },
+        {
+          "x": 360.0,
+          "y": 500.0
+        },
+        {
+          "x": 570.0,
+          "y": 300.0
+        },
+        {
+          "x": 570.0,
+          "y": 400.0
+        },
+        {
+          "x": 570.0,
+          "y": 500.0
+        },
+        {
+          "x": 780.0,
+          "y": 300.0
+        },
+        {
+          "x": 780.0,
+          "y": 400.0
+        },
+        {
+          "x": 780.0,
+          "y": 500.0
+        },
+        {
+          "x": 990.0,
+          "y": 300.0
+        },
+        {
+          "x": 990.0,
+          "y": 400.0
+        },
+        {
+          "x": 990.0,
+          "y": 500.0
+        }
+      ],
+      "tile_horizontal_step": 224,
+      "unproven_semantics": [
+        "passage flag meanings (0/2)",
+        "ccbhchbcbehegah anchors",
+        "adedcfecabhfbgb grid",
+        "hedccefffecfhff=[2,8]",
+        "MapShadowInfo.ggdggafgcbbechf=335",
+        "extended tile key=0 placement"
+      ]
+    },
+    "pixel_axes": {
+      "x": "left->right",
+      "y": "far->near (depth, y-down)",
+      "z": "height (drawn as y-z in preview projection)"
+    },
+    "projection_used_in_composites": "screen_x=obj.x+frame.pos.x; screen_y=obj.y-obj.z+frame.pos.y; frame scale applied; painter order draw_layer then y"
+  },
+  "evidence_paths": {
+    "db_queries": [
+      "db_queries/q1_schema_and_rows.json",
+      "db_queries/q1_raw_f7d486ec4dcbc7d5.json",
+      "db_queries/q1_scene_f7d486ec4dcbc7d5.json",
+      "db_queries/q2_uncomposed_object.json",
+      "db_queries/q3_tiles.json",
+      "db_queries/q4_scene_audit.json",
+      "db_queries/q5_atlas_baddebt.json",
+      "db_queries/q6_render_manifest.json"
+    ],
+    "evidence_root": "Artifacts/Tasks/M8-006/2026-11-07T0030+0800",
+    "scripts": [
+      "scripts/q1_schema.py",
+      "scripts/q2_uncomposed.py",
+      "scripts/q3_tiles.py",
+      "scripts/q4_scene_audit.py",
+      "scripts/q5_atlas_baddebt.py",
+      "scripts/q6_render_layers.py",
+      "scripts/q7_build_json.py"
+    ],
+    "source_reports_used": [
+      "downloaded_130.5.8.202/reports/map_semantic_index.json",
+      "downloaded_130.5.8.202/reports/atlas_restore_unresolved_pages.jsonl",
+      "downloaded_130.5.8.202/reports/atlas_restore_validation.json",
+      "downloaded_130.5.8.202/reports/atlas_restore_summary.json",
+      "downloaded_130.5.8.202/reports/map_schema.json"
+    ],
+    "spotcheck": [
+      "spotcheck/layer1_distantback_DISTANTBACK.png",
+      "spotcheck/layer2_middleback_MIDDLEBACK.png",
+      "spotcheck/layer6_normal_NORMAL_ground.png",
+      "spotcheck/layer7_contact_CONTACT_front.png",
+      "spotcheck/panorama_all_layers.png",
+      "spotcheck/passage_grid_overlay.png",
+      "spotcheck/map_024_00000_source_preview.png"
+    ],
+    "spotcheck_sha256": {
+      "layer1_distantback_DISTANTBACK.png": "fd50b78fa306d5406b1c4f31ab72fc926829ab52c1fc1e43e01d6a8ce69e63fd",
+      "layer2_middleback_MIDDLEBACK.png": "e9d026332ba735ccd7dfe736409ffd7c02b56d1c8a171437856e02653aba3ec9",
+      "layer6_normal_NORMAL_ground.png": "81dd33664e830549eceb688f2515b4d601cf9bd4d2559df959fe1a04eab98586",
+      "layer7_contact_CONTACT_front.png": "daa31a62a097941353225a249b5e4f628b0cce1c8d673859b13c437c20458c94",
+      "map_024_00000_source_preview.png": "8efc27160ee22ad53860ac3657b0de963831552a3ec5122b761cdb10eac93a3b",
+      "panorama_all_layers.png": "cc7da9b5f3698ec52975d18a6de0377922c703537eff6d3a750aa007726ea9d3",
+      "passage_grid_overlay.png": "fc09b85a723dfadd311652f41e2477cdc6f05259fbdbaf36db87a3bb44394921"
+    }
+  },
+  "extended_tiles": {
+    "additional_tile_keys": [],
+    "conclusion": "1 extended tile (7d5a650c57219b1e), resolvable, floor_height=0, 10x14 passage grid all zeros, zero images; no global tile references in this map.",
+    "entries": [
+      {
+        "floor_height": 0,
+        "found_in_tiles_table": true,
+        "image_layers_count": 0,
+        "key": 0,
+        "passage_grid_cols": 14,
+        "passage_grid_rows": 10,
+        "passage_value_census": {
+          "0": 140
+        },
+        "source_bool_dbeahbfebbbbdbd": true,
+        "tile_hash64": "7d5a650c57219b1e"
+      }
+    ],
+    "extended_tile_placement_semantics": "key=0 placement rule (per screen column?) not established - no rect/position stored in map script for it",
+    "global_tile_refs_found_in_raw_fields": "none - exhaustive hash64 scan of all raw_fields found only base tiles (hagbdeahggadabf), extended tile (checcadgdbchabd[0]) and animation object keys (fddacaagcaebafc)",
+    "key_field_in_schema": "raw_fields.checcadgdbchabd (Dictionary<i32, ScriptPathKey>)"
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "impact": "P07 cannot derive collision flags purely from data; must calibrate in-engine with character foot points",
+      "item": "passage grid flag semantics (values 0 and 2) and row-to-Y mapping unproven",
+      "severity": "blocking_for_P07_calibration_only"
+    },
+    {
+      "id": "G2",
+      "impact": "absolute map-pixel origin must be fixed by calibration; relative placements are exact",
+      "item": "controller origin (controllerOriginX/Y in native tile formula) is runtime state, not in map script",
+      "severity": "medium"
+    },
+    {
+      "id": "G3",
+      "impact": "floor magma/smoke/ember look may need approximation; floor recognition risk noted in map_swap_trigger_judgment",
+      "item": "28 FX prefab payloads (Fx_Anton_Volcano_* etc.) are Unity-side assets; their recoverability was not verified in this task",
+      "severity": "medium"
+    },
+    {
+      "id": "G4",
+      "impact": "P08 monster selection decides actual enemies anyway; placement coordinates already recorded",
+      "item": "monster assign raw id 2007011965 has no match in script_index paths; identity unresolved",
+      "severity": "low"
+    },
+    {
+      "id": "G5",
+      "impact": "exits/spawn defined by project design, same caliber as M8-005",
+      "item": "no explicit entrance/exit/spawn-door rects (region areas all zero, town paths empty)",
+      "severity": "low"
+    },
+    {
+      "id": "G6",
+      "impact": "recorded raw; none blocks visuals",
+      "item": "extended tile key=0 placement rule and several scalar fields (ccbhchbcbehegah, adedcfecabhfbgb, hedccefffecfhff, MapShadowInfo 335, ScreenEffectInfo 14) semantics unproven",
+      "severity": "low"
+    },
+    {
+      "id": "G7",
+      "impact": "intersection with this map is 0 under all calibers; no action needed",
+      "item": "unresolved-material-page count has three calibers in source reports (41 current, 50 jsonl rows, 37 unique paths)",
+      "severity": "info"
+    }
+  ],
+  "generated_at": "2026-11-07T01:59:20+08:00",
+  "ground_completeness": {
+    "background_animations": [],
+    "floor_height_base_tile": 120,
+    "floor_height_extended_tile": 0,
+    "ground_visual_sources": {
+      "CONTACT_front": "4x High_Front_Stone at y 606..643",
+      "FX_prefabs": "28 Unity prefabs (Fx_Anton_Volcano_FloorMagma x11, Bridge_Magma x3, Bridge_Smoke x6, FloorMagma_01 x1, Thunder x1, Dust x2, Ember x2, Bg_RampCover_Red_2001 x1) - Unity-side payloads, NOT in atlas DB",
+      "MIDDLEBACK_band": [
+        {
+          "image": "High_Middle_Middle.img",
+          "objects": [
+            1,
+            8
+          ],
+          "page_size": [
+            708,
+            364
+          ],
+          "top_left": [
+            [
+              468,
+              120
+            ],
+            [
+              1169,
+              120
+            ]
+          ]
+        },
+        {
+          "image": "High_Middle_Boss.img",
+          "objects": [
+            2,
+            7
+          ],
+          "page_size": [
+            612,
+            412
+          ],
+          "top_left": [
+            [
+              368,
+              38
+            ],
+            [
+              142,
+              -4
+            ]
+          ]
+        }
+      ],
+      "NORMAL_stones": "11x High_Big_Stone, 13x High_Middle_Stone, 6x High_Small_Stone scattered across strip"
+    },
+    "passage_grid_base": {
+      "cols": 14,
+      "raw": [
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "rows": 30,
+      "rows_all_value_0": 11,
+      "rows_all_value_2": 19,
+      "semantics": "numeric flags preserved; walkability meaning NOT invented"
+    },
+    "row_to_y_mapping": "UNPROVEN - two candidate mappings recorded: (a) grid top at floorHeight-80 going down (native tile placement), (b) row 0 at floor line going down; both fail to fully explain spawn/monster Y placement; P07 must calibrate with character foot points per plan 6.3",
+    "sound_conditions": [
+      {
+        "name": "AMB_DARKSTAGE_01"
+      },
+      {
+        "name": "AMB_THUNDER_LOOP"
+      },
+      {
+        "name": "M_ANTON_PHASE2_BOSS"
+      }
+    ],
+    "tile_strip_formula": "x=224*placement_index (native LoadBaseTile; origin (0,0) used by preview)",
+    "tile_strip_x_extent_pixels": [
+      0,
+      1344
+    ],
+    "tiles_or_ground_not_drawn_in_preview_that_P07_must_supply": [
+      {
+        "P07_action": "build ground from MIDDLEBACK band images + dark basalt material + recovered FX prefabs; do NOT expect tile PNGs",
+        "item": "base tile strip visuals x=0..1344 (6 instances of 4922d695b4b479b1)",
+        "reason": "tile definition has empty image lists (chcehfdgcfadeaf=[]) - no source tile PNG exists"
+      },
+      {
+        "P07_action": "treat as collision/extra grid data only unless in-engine calibration proves otherwise",
+        "item": "extended tile key=0 (7d5a650c57219b1e) visuals",
+        "reason": "empty image lists; placement rule unestablished"
+      },
+      {
+        "P07_action": "recover or approximate Fx_Anton_Volcano_FloorMagma etc.; if floor remains unrecognizable in-engine, plan 6.3 forbids acceptance - see map_swap_trigger_judgment",
+        "item": "walkable band y~120..520 floor surface detail",
+        "reason": "first-frame composite shows dark/empty region between stone clusters where spawn grid (y 300..500) and monster (347) sit; runtime look depends on FloorMagma/Smoke/Ember FX prefabs (Unity payloads, recovery not verified in this task)"
+      }
+    ],
+    "walkable_range_evidence": {
+      "inference": "playable band sits BELOW the floor_height=120 line in map pixel coords (y-down depth axis), consistent with DNF depth convention; exact top/bottom of walkable band requires in-engine calibration (推断)",
+      "monster_assign": [
+        601,
+        347,
+        0
+      ],
+      "passive_objects_y_range": [
+        188,
+        831
+      ],
+      "spawn_grid": "15 points x in {150,360,570,780,990} y in {300,400,500}",
+      "tile_strip": "x 0..1344, 6 placements x 224px"
+    }
+  },
+  "identity": {
+    "block": 0,
+    "map_hash": "f7d486ec4dcbc7d5",
+    "map_script_string_fields": {
+      "daeabbbhbaecegd": "[决斗]无名",
+      "note": "map script configured as a duel arena (\"[决斗]无名\"); visual identity comes from Anton volcano image refs"
+    },
+    "maps_table_row_count_for_hash": 1,
+    "preview": {
+      "bounds": [
+        -279,
+        -256,
+        1830,
+        701
+      ],
+      "composed_objects": 44,
+      "failed_objects": 1,
+      "json": "restored/maps/previews/map_024_00000.json",
+      "limits": [
+        "first animation frame only",
+        "tile graphics absent (empty image lists)",
+        "game shaders/FX/moving actors excluded"
+      ],
+      "png": "restored/maps/previews/map_024_00000.png",
+      "total_animation_objects": 45
+    },
+    "raw_fields_top_count": 88,
+    "scalar_columns": {
+      "animation_count": 45,
+      "block": 0,
+      "hash": "f7d486ec4dcbc7d5",
+      "paths": "[]",
+      "shard": 24,
+      "tile_count": 6
+    },
+    "scene_list_lengths": {
+      "additional_tile_keys": 0,
+      "animation_objects": 45,
+      "background_animations": 0,
+      "base_tile_keys": 6,
+      "extended_tile_keys": 1,
+      "monster_objects": 1,
+      "npc_objects": 0,
+      "prefab_objects": 28,
+      "region_areas": 5,
+      "sound_conditions": 3
+    },
+    "shard": 24,
+    "units": "Original game 2D coordinates/pixels; not Unity metres.",
+    "visual_name": "Black Volcano (Anton raid 07_Black_Volcano background refs)"
+  },
+  "known_issue_intersections": {
+    "all_frames_crop_failures_across_45_objects": 0,
+    "all_referenced_atlases_resolved": true,
+    "conclusion": "This map has ZERO intersection with all four library-wide bad-debt classes; every one of its 9 image paths resolves with clean pages (0 out-of-bounds rects, 0 dimension mismatches, 0 unresolved pages), and both tile keys decode with exact roundtrip.",
+    "dimension_mismatch_hit_count": 0,
+    "dimension_mismatch_hits_on_this_map": [],
+    "library_bad_debt_sources": {
+      "dimension_mismatch_4": "reports/atlas_restore_validation.json:checks.page_dimension_mismatches=4",
+      "rect_outside_page_756": "reports/atlas_restore_validation.json:checks.rect_outside_page=756",
+      "tile_keys_54": "reports/map_semantic_index.json:tile_definition_failures (54)",
+      "unresolved_material_pages": "reports/atlas_restore_unresolved_pages.jsonl (50 rows status=texture_path_missing, 37 unique texture_path) and reports/atlas_restore_summary.json postprocessing.current_unresolved_non_none_pages=41 (current count after array-layer resolution; page_resolution_status.texture_path_missing=36 in validation report - three calibers recorded, intersection with this map is 0 under all of them)"
+    },
+    "rect_outside_page_hit_count": 0,
+    "rect_outside_page_hits_on_this_map": [],
+    "referenced_image_paths_audited": 9,
+    "referenced_pages_in_unresolved_material_pages": [],
+    "tile_keys_hit_count": 0,
+    "tile_keys_in_54_failures": [],
+    "unresolved_page_hit_count": 0
+  },
+  "map_swap_trigger_judgment": {
+    "reasoning": [
+      "Every reference this map makes resolves exactly: 45/45 object animations decode, 9/9 distinct image paths resolve to atlas pages with 0 out-of-bounds rects and 0 dimension mismatches, both tile keys decode with exact roundtrip.",
+      "Zero intersection with all four library-wide bad-debt classes (54 tile keys, unresolved material pages, 756 out-of-bounds rects, 4 size mismatches).",
+      "The single uncomposed preview object is a pure logic animation with no image references by design - not a missing visible resource.",
+      "Tile graphics are absent because the source tile scripts reference no images (empty lists) - an explained property of this map (its ground is drawn by background band images + FX prefabs), not a broken dependency."
+    ],
+    "residual_risk_not_a_swap_trigger": [
+      "Floor visuals in the walkable band depend on Unity FX prefabs (FloorMagma/Smoke/Ember) whose recovery was not verified in this task; if P07 cannot present a recognizable floor in-engine, plan 6.3 forbids acceptance and the swap alternative reopens."
+    ],
+    "triggered": false
+  },
+  "objects_by_layer": {
+    "1": {
+      "count": 6,
+      "draw_layer_name": "DISTANTBACK",
+      "images": {
+        "(no image: pure logic animation)": [
+          {
+            "index": 0,
+            "page_size": null,
+            "position": [
+              750,
+              -170,
+              0
+            ],
+            "script_hash64": "4efe3d3f3dbb63cb"
+          }
+        ],
+        "High_Back_BigVolcano.img": [
+          {
+            "index": 6,
+            "page_size": [
+              1404,
+              399
+            ],
+            "position": [
+              747,
+              -16,
+              0
+            ],
+            "script_hash64": "ed8362731f3b68b5"
+          }
+        ],
+        "High_Back_Sky.img": [
+          {
+            "index": 3,
+            "page_size": [
+              642,
+              404
+            ],
+            "position": [
+              -96,
+              -198,
+              0
+            ],
+            "script_hash64": "6e0ed3f950ca4e3c"
+          },
+          {
+            "index": 4,
+            "page_size": [
+              642,
+              404
+            ],
+            "position": [
+              546,
+              -199,
+              0
+            ],
+            "script_hash64": "6e0ed3f950ca4e3c"
+          },
+          {
+            "index": 5,
+            "page_size": [
+              642,
+              404
+            ],
+            "position": [
+              1188,
+              -199,
+              0
+            ],
+            "script_hash64": "6e0ed3f950ca4e3c"
+          }
+        ],
+        "Middle_Effect.img": [
+          {
+            "index": 25,
+            "page_size": [
+              544,
+              105
+            ],
+            "position": [
+              151,
+              -90,
+              0
+            ],
+            "script_hash64": "498214b0df6af5cf"
+          }
+        ]
+      }
+    },
+    "2": {
+      "count": 5,
+      "draw_layer_name": "MIDDLEBACK",
+      "images": {
+        "High_Middle_Boss.img": [
+          {
+            "index": 2,
+            "page_size": [
+              605,
+              408
+            ],
+            "position": [
+              368,
+              38,
+              0
+            ],
+            "script_hash64": "b6a646ebe8bf9d95"
+          },
+          {
+            "index": 7,
+            "page_size": [
+              605,
+              408
+            ],
+            "position": [
+              142,
+              -4,
+              0
+            ],
+            "script_hash64": "b6a646ebe8bf9d95"
+          }
+        ],
+        "High_Middle_Middle.img": [
+          {
+            "index": 1,
+            "page_size": [
+              701,
+              361
+            ],
+            "position": [
+              468,
+              120,
+              0
+            ],
+            "script_hash64": "ff5194504d219818"
+          },
+          {
+            "index": 8,
+            "page_size": [
+              701,
+              361
+            ],
+            "position": [
+              1169,
+              120,
+              0
+            ],
+            "script_hash64": "ff5194504d219818"
+          }
+        ],
+        "Middle_Effect.img": [
+          {
+            "index": 24,
+            "page_size": [
+              544,
+              105
+            ],
+            "position": [
+              381,
+              13,
+              0
+            ],
+            "script_hash64": "498214b0df6af5cf"
+          }
+        ]
+      }
+    },
+    "6": {
+      "count": 30,
+      "draw_layer_name": "NORMAL",
+      "images": {
+        "High_Big_Stone.img": [
+          {
+            "index": 9,
+            "page_size": [
+              475,
+              290
+            ],
+            "position": [
+              133,
+              152,
+              0
+            ],
+            "script_hash64": "7f066f137a398232"
+          },
+          {
+            "index": 14,
+            "page_size": [
+              475,
+              290
+            ],
+            "position": [
+              426,
+              113,
+              0
+            ],
+            "script_hash64": "181e9f438148968c"
+          },
+          {
+            "index": 15,
+            "page_size": [
+              475,
+              290
+            ],
+            "position": [
+              130,
+              124,
+              0
+            ],
+            "script_hash64": "c1d2d85f62fe9835"
+          },
+          {
+            "index": 26,
+            "page_size": [
+              475,
+              290
+            ],
+            "position": [
+              1347,
+              322,
+              0
+            ],
+            "script_hash64": "c1d2d85f62fe9835"
+          },
+          {
+            "index": 27,
+            "page_size": [
+              475,
+              290
+            ],
+            "position": [
+              1339,
+              466,
+              0
+            ],
+            "script_hash64": "c1d2d85f62fe9835"
+          },
+          {
+            "index": 28,
+            "page_size": [
+              475,
+              290
+            ],
+            "position": [
+              1319,
+              605,
+              0
+            ],
+            "script_hash64": "c1d2d85f62fe9835"
+          },
+          {
+            "index": 29,
+            "page_size": [
+              475,
+              290
+            ],
+            "position": [
+              1125,
+              170,
+              0
+            ],
+            "script_hash64": "c1d2d85f62fe9835"
+          },
+          {
+            "index": 32,
+            "page_size": [
+              475,
+              290
+            ],
+            "position": [
+              607,
+              122,
+              0
+            ],
+            "script_hash64": "181e9f438148968c"
+          },
+          {
+            "index": 34,
+            "page_size": [
+              475,
+              290
+            ],
+            "position": [
+              857,
+              116,
+              0
+            ],
+            "script_hash64": "7f066f137a398232"
+          },
+          {
+            "index": 41,
+            "page_size": [
+              475,
+              290
+            ],
+            "position": [
+              -62,
+              625,
+              0
+            ],
+            "script_hash64": "c1d2d85f62fe9835"
+          },
+          {
+            "index": 42,
+            "page_size": [
+              475,
+              290
+            ],
+            "position": [
+              -66,
+              211,
+              0
+            ],
+            "script_hash64": "c1d2d85f62fe9835"
+          }
+        ],
+        "High_Middle_Stone.img": [
+          {
+            "index": 19,
+            "page_size": [
+              184,
+              136
+            ],
+            "position": [
+              419,
+              205,
+              0
+            ],
+            "script_hash64": "5342f71520954126"
+          },
+          {
+            "index": 20,
+            "page_size": [
+              184,
+              136
+            ],
+            "position": [
+              511,
+              189,
+              0
+            ],
+            "script_hash64": "03eb7d82d00573ad"
+          },
+          {
+            "index": 30,
+            "page_size": [
+              184,
+              136
+            ],
+            "position": [
+              888,
+              204,
+              0
+            ],
+            "script_hash64": "03eb7d82d00573ad"
+          },
+          {
+            "index": 31,
+            "page_size": [
+              184,
+              136
+            ],
+            "position": [
+              955,
+              202,
+              0
+            ],
+            "script_hash64": "03eb7d82d00573ad"
+          },
+          {
+            "index": 33,
+            "page_size": [
+              184,
+              136
+            ],
+            "position": [
+              690,
+              202,
+              0
+            ],
+            "script_hash64": "5342f71520954126"
+          },
+          {
+            "index": 35,
+            "page_size": [
+              184,
+              136
+            ],
+            "position": [
+              1155,
+              268,
+              0
+            ],
+            "script_hash64": "5342f71520954126"
+          },
+          {
+            "index": 36,
+            "page_size": [
+              184,
+              136
+            ],
+            "position": [
+              1153,
+              396,
+              0
+            ],
+            "script_hash64": "5342f71520954126"
+          },
+          {
+            "index": 37,
+            "page_size": [
+              184,
+              136
+            ],
+            "position": [
+              1159,
+              527,
+              0
+            ],
+            "script_hash64": "5342f71520954126"
+          },
+          {
+            "index": 38,
+            "page_size": [
+              184,
+              136
+            ],
+            "position": [
+              788,
+              182,
+              0
+            ],
+            "script_hash64": "03eb7d82d00573ad"
+          },
+          {
+            "index": 39,
+            "page_size": [
+              184,
+              136
+            ],
+            "position": [
+              646,
+              212,
+              0
+            ],
+            "script_hash64": "03eb7d82d00573ad"
+          },
+          {
+            "index": 40,
+            "page_size": [
+              184,
+              136
+            ],
+            "position": [
+              606,
+              211,
+              0
+            ],
+            "script_hash64": "03eb7d82d00573ad"
+          },
+          {
+            "index": 43,
+            "page_size": [
+              184,
+              136
+            ],
+            "position": [
+              -65,
+              294,
+              0
+            ],
+            "script_hash64": "5342f71520954126"
+          },
+          {
+            "index": 44,
+            "page_size": [
+              184,
+              136
+            ],
+            "position": [
+              -65,
+              531,
+              0
+            ],
+            "script_hash64": "5342f71520954126"
+          }
+        ],
+        "High_Small_Stone.img": [
+          {
+            "index": 16,
+            "page_size": [
+              175,
+              136
+            ],
+            "position": [
+              380,
+              222,
+              0
+            ],
+            "script_hash64": "a0c4360752442912"
+          },
+          {
+            "index": 17,
+            "page_size": [
+              175,
+              136
+            ],
+            "position": [
+              323,
+              225,
+              0
+            ],
+            "script_hash64": "585d2dcf165084ba"
+          },
+          {
+            "index": 18,
+            "page_size": [
+              175,
+              136
+            ],
+            "position": [
+              347,
+              219,
+              0
+            ],
+            "script_hash64": "08f624b4695dc700"
+          },
+          {
+            "index": 21,
+            "page_size": [
+              175,
+              136
+            ],
+            "position": [
+              555,
+              204,
+              0
+            ],
+            "script_hash64": "a0c4360752442912"
+          },
+          {
+            "index": 22,
+            "page_size": [
+              175,
+              136
+            ],
+            "position": [
+              550,
+              189,
+              0
+            ],
+            "script_hash64": "585d2dcf165084ba"
+          },
+          {
+            "index": 23,
+            "page_size": [
+              175,
+              136
+            ],
+            "position": [
+              574,
+              183,
+              0
+            ],
+            "script_hash64": "08f624b4695dc700"
+          }
+        ]
+      }
+    },
+    "7": {
+      "count": 4,
+      "draw_layer_name": "CONTACT",
+      "images": {
+        "High_Front_Stone.img": [
+          {
+            "index": 10,
+            "page_size": [
+              436,
+              237
+            ],
+            "position": [
+              22,
+              606,
+              0
+            ],
+            "script_hash64": "5fa09805264c39c3"
+          },
+          {
+            "index": 11,
+            "page_size": [
+              436,
+              237
+            ],
+            "position": [
+              295,
+              643,
+              0
+            ],
+            "script_hash64": "89fd28a1dd7a415a"
+          },
+          {
+            "index": 12,
+            "page_size": [
+              436,
+              237
+            ],
+            "position": [
+              631,
+              610,
+              0
+            ],
+            "script_hash64": "267b396fac7c1174"
+          },
+          {
+            "index": 13,
+            "page_size": [
+              436,
+              237
+            ],
+            "position": [
+              1006,
+              616,
+              0
+            ],
+            "script_hash64": "89fd28a1dd7a415a"
+          }
+        ]
+      }
+    },
+    "_totals": {
+      "all_frames_crop_failures": 0,
+      "effect_fields_on_frames": "none of the 45 map-object animation frames carry graphic_effect/shader_effect/prefab_info/audio_tags/flashes/shake_tag/ani_tag (audit q4_scene_audit.json)",
+      "image_paths_distinct": [
+        "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Big_Stone.img",
+        "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Front_Stone.img",
+        "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Middle_Stone.img",
+        "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Small_Stone.img",
+        "Map/Raid/Anton_Guide/07_Black_Volcano/background/High_Back_BigVolcano.img",
+        "Map/Raid/Anton_Guide/07_Black_Volcano/background/High_Back_Sky.img",
+        "Map/Raid/Anton_Guide/07_Black_Volcano/background/High_Middle_Boss.img",
+        "Map/Raid/Anton_Guide/07_Black_Volcano/background/High_Middle_Middle.img",
+        "Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img"
+      ],
+      "non_object_entities": {
+        "background_animations": [],
+        "monster_objects": [
+          {
+            "raw": {
+              "accdbdhbfhcdhcf": false,
+              "aeafbheagfgceha": [
+                1,
+                1
+              ],
+              "bcacbfeecgcegbg": 3,
+              "ccdebagdfbedfff": 0,
+              "ccfehabegdecfeb": [
+                0,
+                0
+              ],
+              "cebbcfghcfgfahd": 2007011965,
+              "dbagcgdeefgffca": false,
+              "ddgaffgchgfgghf": true,
+              "dfhbfdfbdfbdbah": 0,
+              "dgdgccbchfhecga": 347,
+              "eaahhhegchcadeg": [],
+              "ecdfgaabhffahac": {},
+              "fcdedbdghhgdcbc": [],
+              "fchcdhgbbdheecc": 0,
+              "fegfffadafaeebc": false,
+              "ffbabbcadeddaff": [],
+              "fgcbdabfgedfebg": true,
+              "fhbcedcdhhadbcg": 0,
+              "gbcbcgffcadfdcd": 601,
+              "gdbgefehaefdabh": true,
+              "gecfbecbebcdccb": 100,
+              "gfgggbbgaefhhcb": false,
+              "hbbagghchcchfcg": -1,
+              "hdhcbcaegccgbbc": 0
+            }
+          }
+        ],
+        "npc_objects": [],
+        "prefab_census": {
+          "Bg_RampCover_Red_2001": 1,
+          "Fx_Anton_Bridge_Ember_Mid": 1,
+          "Fx_Anton_Bridge_Ember_Near": 1,
+          "Fx_Anton_Bridge_FloorMagma_01": 1,
+          "Fx_Anton_Bridge_Magma_01": 1,
+          "Fx_Anton_Bridge_Magma_02": 2,
+          "Fx_Anton_Bridge_Smoke_01": 4,
+          "Fx_Anton_Bridge_Smoke_02": 1,
+          "Fx_Anton_Bridge_Smoke_03": 1,
+          "Fx_Anton_Bridge_Smoke_04": 1,
+          "Fx_Anton_Volcano_Dust_Black_01": 1,
+          "Fx_Anton_Volcano_Dust_Black_02": 1,
+          "Fx_Anton_Volcano_FloorMagma": 11,
+          "Fx_Anton_Volcano_Thunder": 1
+        },
+        "prefab_draw_layers": {
+          "2": 7,
+          "5": 13,
+          "8": 8
+        },
+        "prefab_objects_count": 28
+      },
+      "total": 45
+    }
+  },
+  "read_only_compliance": "All DNFM databases opened with sqlite3 mode=ro URI; zero writes under D:/Github-Poj/DNFM (verified: only reads; spotcheck copies written to UE-MMO side).",
+  "tile_refs": {
+    "all_resolvable": true,
+    "conclusion": "6 base tile instances all reference one definition (4922d695b4b479b1) with floor_height=120 and a 30x14 passage grid; the definition references ZERO images - tile strip visuals do not exist in source data (explained absence, not a broken reference).",
+    "instance_count": 6,
+    "key_field_in_schema": "raw_fields.hagbdeahggadabf (List<ScriptPathKey>)",
+    "placements": [
+      {
+        "crop_status": "no image layers in tile definition (empty chcehfdgcfadeaf)",
+        "floor_height": 120,
+        "found_in_tiles_table": true,
+        "image_layers": [],
+        "image_layers_count": 0,
+        "native_x_pixels": 0,
+        "passage_grid_cols": 14,
+        "passage_grid_rows": 30,
+        "passage_value_census": {
+          "0": 154,
+          "2": 266
+        },
+        "placement_index": 0,
+        "tile_hash64": "4922d695b4b479b1"
+      },
+      {
+        "crop_status": "no image layers in tile definition (empty chcehfdgcfadeaf)",
+        "floor_height": 120,
+        "found_in_tiles_table": true,
+        "image_layers": [],
+        "image_layers_count": 0,
+        "native_x_pixels": 224,
+        "passage_grid_cols": 14,
+        "passage_grid_rows": 30,
+        "passage_value_census": {
+          "0": 154,
+          "2": 266
+        },
+        "placement_index": 1,
+        "tile_hash64": "4922d695b4b479b1"
+      },
+      {
+        "crop_status": "no image layers in tile definition (empty chcehfdgcfadeaf)",
+        "floor_height": 120,
+        "found_in_tiles_table": true,
+        "image_layers": [],
+        "image_layers_count": 0,
+        "native_x_pixels": 448,
+        "passage_grid_cols": 14,
+        "passage_grid_rows": 30,
+        "passage_value_census": {
+          "0": 154,
+          "2": 266
+        },
+        "placement_index": 2,
+        "tile_hash64": "4922d695b4b479b1"
+      },
+      {
+        "crop_status": "no image layers in tile definition (empty chcehfdgcfadeaf)",
+        "floor_height": 120,
+        "found_in_tiles_table": true,
+        "image_layers": [],
+        "image_layers_count": 0,
+        "native_x_pixels": 672,
+        "passage_grid_cols": 14,
+        "passage_grid_rows": 30,
+        "passage_value_census": {
+          "0": 154,
+          "2": 266
+        },
+        "placement_index": 3,
+        "tile_hash64": "4922d695b4b479b1"
+      },
+      {
+        "crop_status": "no image layers in tile definition (empty chcehfdgcfadeaf)",
+        "floor_height": 120,
+        "found_in_tiles_table": true,
+        "image_layers": [],
+        "image_layers_count": 0,
+        "native_x_pixels": 896,
+        "passage_grid_cols": 14,
+        "passage_grid_rows": 30,
+        "passage_value_census": {
+          "0": 154,
+          "2": 266
+        },
+        "placement_index": 4,
+        "tile_hash64": "4922d695b4b479b1"
+      },
+      {
+        "crop_status": "no image layers in tile definition (empty chcehfdgcfadeaf)",
+        "floor_height": 120,
+        "found_in_tiles_table": true,
+        "image_layers": [],
+        "image_layers_count": 0,
+        "native_x_pixels": 1120,
+        "passage_grid_cols": 14,
+        "passage_grid_rows": 30,
+        "passage_value_census": {
+          "0": 154,
+          "2": 266
+        },
+        "placement_index": 5,
+        "tile_hash64": "4922d695b4b479b1"
+      }
+    ],
+    "tile_definition": {
+      "def_block": 9194,
+      "def_shard": 27,
+      "floor_height": 120,
+      "hash64": "4922d695b4b479b1",
+      "image_lists_empty": true,
+      "native_placement": "x=224*index+originX; Unity view y=floorHeight-80-originY",
+      "passage_grid": [
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "passage_values_semantics": "Numeric flags preserved; no walkability meaning invented.",
+      "source_bool_dbeahbfebbbbdbd": false,
+      "tile_horizontal_step": 224
+    },
+    "tile_placement_native_evidence": "MapViewManager.LoadBaseTile native method 242386: x=224*tileIndex+controllerOriginX, unityY=tile.floorHeight-80-controllerOriginY; controller origin is runtime state, not in map script",
+    "unique_hashes": [
+      "4922d695b4b479b1"
+    ]
+  },
+  "unresolved_object": {
+    "animation_audit": {
+      "anim_declared_image_paths": [],
+      "decoded_frame_count": 1,
+      "duration_ms": 3000,
+      "frame_count": 1,
+      "frames_with_image": 0,
+      "frames_without_image": 1,
+      "loop": true,
+      "raw_item_fields": {
+        "accccacggbcccbh": false,
+        "bbdabcbchceaacf": true,
+        "ddcgbbaagfbdebd": {
+          "hash64": "4efe3d3f3dbb63cb"
+        },
+        "dgdgccbchfhecga": -170,
+        "dhcdahccegccggf": [],
+        "ebahfdagafbhggb": 1,
+        "ehfeebfdfeeggha": 0,
+        "fchcdhgbbdheecc": 0,
+        "gbcbcgffcadfdcd": 750,
+        "hgbcacfaecbcdce": -1
+      },
+      "script_location": {
+        "block": 11404,
+        "payload_bytes": 446,
+        "payload_offset": 9866754,
+        "shard": 25
+      }
+    },
+    "draw_layer": 1,
+    "draw_layer_name": "DISTANTBACK",
+    "error_chain_evidence": {
+      "render_dnf_map_preview.py": "frame(f[\"image_path\"], ...) -> get_atlas_by_path(None) -> atlas_hash(None) -> path.lower() on None",
+      "restore_dnf_atlas.py:153": "atlas_hash: xxhash64(path.lower()...UTF-16LE)"
+    },
+    "object_index": 0,
+    "preview_error": "'NoneType' object has no attribute 'lower'",
+    "script_hash64": "4efe3d3f3dbb63cb",
+    "source_position": [
+      750,
+      -170,
+      0
+    ],
+    "verdict": "NOT a missing asset: the object animation is a pure logic animation - exactly 1 frame, image_paths=[], no image reference in the entire animation (loop=true, 3000ms). Preview composition fails only because it unconditionally crops frame 0 image. No visual dependency to close for P07; treat as non-drawing logic object (visibility/timer logic, exact semantic unproven).",
+    "verdict_kind": "non_drawing_logic_object"
+  }
+}
