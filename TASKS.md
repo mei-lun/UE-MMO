@@ -244,7 +244,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M6-023 | [CombatPresentation 统一显示目标与战斗同步](Docs/Tasks/M6-023.md) | DONE | M6-021,M6-022 | ZCode-20261106-E | 2026-11-06T05:55:00+08:00 | [report](Docs/Tasks/Reports/M6-023.md) |
 | M6-024 | [完整状态与技能补齐](Docs/Tasks/M6-024.md) | DONE | M6-023 | ZCode-20261106-G | 2026-11-06T06:40:00+08:00 | [report](Docs/Tasks/Reports/M6-024.md) |
 | M6-025 | [固定开发包验收](Docs/Tasks/M6-025.md) | DONE | M6-024 | ZCode-20261106-H | 2026-11-06T07:05:00+08:00 | [report](Docs/Tasks/Reports/M6-025.md) |
-| M8-001 | [P00 复刻基线保护与回退点](Docs/Tasks/M8-001.md) | IN_PROGRESS | M8-000 | ZCode-20261107-A | 2026-11-07T00:28:00+08:00 | [report](Docs/Tasks/Reports/M8-001.md) |
+| M8-001 | [P00 复刻基线保护与回退点](Docs/Tasks/M8-001.md) | DONE | M8-000 | ZCode-20261107-A | 2026-11-07T00:46:00+08:00 | [report](Docs/Tasks/Reports/M8-001.md) |
 | M8-002 | [P01-A 格斗家源依赖核实](Docs/Tasks/M8-002.md) | TODO | M8-001 | — | — | [report](Docs/Tasks/Reports/M8-002.md) |
 | M8-003 | [P01-B 鬼剑士源依赖核实](Docs/Tasks/M8-003.md) | TODO | M8-001 | — | — | [report](Docs/Tasks/Reports/M8-003.md) |
 | M8-004 | [P01-C 神枪手源依赖核实](Docs/Tasks/M8-004.md) | TODO | M8-001 | — | — | [report](Docs/Tasks/Reports/M8-004.md) |
