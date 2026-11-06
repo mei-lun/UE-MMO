@@ -258,7 +258,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M8-012 | [P02-C 竹林碰撞与摄像边界](Docs/Tasks/M8-012.md) | DONE | M8-010,M8-011 | ZCode-20261107-A | 2026-11-07T03:38:00+08:00 | [report](Docs/Tasks/Reports/M8-012.md) |
 | M8-013 | [P03-A 竹林动态对象与雾动画](Docs/Tasks/M8-013.md) | DONE | M8-011,M8-012 | ZCode-20261107-A | 2026-11-07T04:02:00+08:00 | [report](Docs/Tasks/Reports/M8-013.md) |
 | M8-014 | [P03-B 竹林出入口标记与重启重载](Docs/Tasks/M8-014.md) | DONE | M8-013 | ZCode-20261107-A | 2026-11-07T04:02:00+08:00 | [report](Docs/Tasks/Reports/M8-014.md) |
-| M8-015 | [P03-C 竹林全图源对照验收](Docs/Tasks/M8-015.md) | IN_PROGRESS | M8-013,M8-014 | ZCode-20261107-M,ZCode-20261107-A | 2026-11-07T04:03:00+08:00 | [report](Docs/Tasks/Reports/M8-015.md) |
+| M8-015 | [P03-C 竹林全图源对照验收](Docs/Tasks/M8-015.md) | DONE | M8-013,M8-014 | ZCode-20261107-M,ZCode-20261107-A | 2026-11-07T04:30:00+08:00 | [report](Docs/Tasks/Reports/M8-015.md) |
 | M8-016 | [P04-A 三职业离线衣装/动作 manifest 合成](Docs/Tasks/M8-016.md) | DONE | M8-002,M8-003,M8-004 | ZCode-20261107-L | 2026-11-07T04:20:00+08:00 | [report](Docs/Tasks/Reports/M8-016.md) |
 | M8-017 | [P04-B 鬼剑士/神枪手 UE 视觉资产导入与重载](Docs/Tasks/M8-017.md) | DONE | M8-016 | ZCode-20261107-A | 2026-11-07T04:33:00+08:00 | [report](Docs/Tasks/Reports/M8-017.md) |
 | M8-018 | [P04-C 怪物显示资源（哥布林+taubeast）](Docs/Tasks/M8-018.md) | DONE | M8-007,M8-008 | ZCode-20261107-N,ZCode-20261107-A | 2026-11-07T04:55:00+08:00 | [report](Docs/Tasks/Reports/M8-018.md) |
