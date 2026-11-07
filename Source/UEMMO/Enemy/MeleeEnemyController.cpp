@@ -200,12 +200,12 @@ void AMeleeEnemyController::TickTelegraphState(AMeleeEnemy& Enemy, double NowSec
 		return;
 	}
 
-	// Wind-up complete: fire the attack through the enemy's own combat
-	// component (the shared M1 pipeline settles the damage; this controller
-	// never touches a victim's health directly).
+	// Wind-up complete: fire the attack through the enemy's own launch seam
+	// (the base runs the shared melee instance on the combat component; the
+	// goblin thrower spawns its stone projectile instead - M8-019B). This
+	// controller never touches a victim's health directly either way.
 	SetTelegraphVisual(Enemy, false);
-	UCombatComponent* Combat = Enemy.GetCombatComponent();
-	if (Combat != nullptr && Combat->TryStartAttack(EffectiveAttackId, LockedFacing))
+	if (Enemy.LaunchAttack(EffectiveAttackId, LockedFacing))
 	{
 		EnterState(EMeleeEnemyState::Attack, NowSeconds);
 		return;

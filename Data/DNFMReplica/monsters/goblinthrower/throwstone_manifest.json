@@ -1,0 +1,20 @@
+{
+ "generator": "Scripts/DNFM/build_throwstone_page.py (M8-019B)",
+ "generated_at": "2026-11-07T15:01:47.846234+08:00",
+ "source_atlas_path": "Monster/Goblin/PassiveObject/ThrowStone.img",
+ "source_atlas_id": 16665,
+ "px_to_cm": 1.7615,
+ "frame_count": 4,
+ "frame_ms": 30,
+ "loop": true,
+ "cell_px": [
+  17,
+  17
+ ],
+ "page_size_px": [
+  68,
+  17
+ ],
+ "page_sha256": "fd3c21916416473c3b75837a1eb9417b8f5b2ec441e6dcd82695ed8f59f8426f",
+ "note": "M8-007 provenance: 4f x 30ms looped flight, 20x20x20 attack box centered on the stone active the whole flight, anchor [-8,-8]. Release window in attack_0 (240-320ms) is visual inference."
+}

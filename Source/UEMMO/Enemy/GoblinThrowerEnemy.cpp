@@ -4,7 +4,13 @@
 #include "../Character/PlanarMovement.h"
 #include "../Character/SideViewCameraComponent.h"
 #include "../Combat/CombatComponent.h"
+#include "EnemyDefinition.h"
+#include "../PrototypeCharacter.h"
+#include "Engine/World.h"
+#include "Kismet/GameplayStatics.h"
+#include "Materials/MaterialInterface.h"
 #include "Components/CapsuleComponent.h"
+#include "ThrowStoneProjectile.h"
 
 AGoblinThrowerEnemy::AGoblinThrowerEnemy()
 {
@@ -104,12 +110,90 @@ void AGoblinThrowerEnemy::Tick(float DeltaSeconds)
 	}
 }
 
+bool AGoblinThrowerEnemy::LaunchAttack(FName AttackId, int32 Facing)
+{
+	// M8-019B: the throw replaces the melee instance entirely - the stone
+	// carries the damage through the unified health chain when its 20cm
+	// flight box reaches the target. The chase target IS the player pawn
+	// (the same target the spawner injects into the controller), so the
+	// release resolves it through the player pawn directly.
+	UWorld* World = GetWorld();
+	APrototypeCharacter* Target = World
+		? Cast<APrototypeCharacter>(UGameplayStatics::GetPlayerCharacter(World, 0))
+		: nullptr;
+	if (World == nullptr || Target == nullptr)
+	{
+		return false;
+	}
+
+	// The hand anchor: the foot position + the forward/up offsets (design
+	// defaults - no monster bone data; recorded in the report).
+	const float CapsuleHalfHeight = GetCapsuleComponent()
+		? GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight() : 90.f;
+	const FVector Foot = GetActorLocation() - FVector(0.f, 0.f, CapsuleHalfHeight);
+	const FVector HandAnchor = Foot + FVector(Facing >= 0 ? HandForwardCm : -HandForwardCm, 0.f, HandUpCm);
+
+	if (!StoneMaterialWeak.IsValid())
+	{
+		StoneMaterialWeak = LoadObject<UMaterialInterface>(nullptr,
+			TEXT("/Game/UEMMO/DNFM/Monsters/Goblinthrower/M/M_ThrowStoneVisual.M_ThrowStoneVisual"));
+	}
+	const float Damage = GetEnemyDefinition() ? GetEnemyDefinition()->AttackPower : DefaultThrowDamage;
+	AThrowStoneProjectile* Stone = AThrowStoneProjectile::Spawn(
+		World, HandAnchor, Facing, Damage, Target, StoneMaterialWeak.Get());
+	if (Stone == nullptr)
+	{
+		return false;
+	}
+
+	// The release pose holds for the attack_0 clip remainder before the
+	// state machine resolves stay/move again.
+	AttackClipHoldUntilSeconds = World->GetTimeSeconds() + AttackClipRemainderSeconds;
+	return true;
+}
+
+void AGoblinThrowerEnemy::ApplyTelegraphVisual(bool bActive)
+{
+	if (!bVisualActivated || GoblinVisual == nullptr)
+	{
+		// No picture yet (or none ever): the base's mesh swell is inert on
+		// the hidden template mesh but keeps its contract.
+		Super::ApplyTelegraphVisual(bActive);
+		return;
+	}
+	if (bActive)
+	{
+		// The source warning: attack_0's startup frames ARE the telegraph.
+		AttackClipHoldUntilSeconds = 0.0;
+		if (GoblinVisual->SetAction(FName(TEXT("attack_0"))))
+		{
+			CurrentDisplayAction = FName(TEXT("attack_0"));
+		}
+	}
+	// bActive=false (fire or cancel): the hold was set inside LaunchAttack on
+	// a real release; a cancel falls through to the state machine's own
+	// damage/down/stay resolution on the next tick.
+}
+
 void AGoblinThrowerEnemy::ResolveDisplayAction()
 {
 	const UCombatComponent* CombatComp = GetCombatComponent();
 	const bool bDead = CombatComp ? CombatComp->IsDead() : false;
 	const ECombatActionState State = CombatComp ? CombatComp->GetSnapshot().ActionState : ECombatActionState::Free;
 	const float Speed2D = GetVelocity().Size2D();
+
+	// M8-019B: hold the attack_0 release pose for the clip remainder after
+	// the stone is away (every interrupt - death/stun/knockdown - overrides
+	// the hold and resolves its own display action).
+	const double Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
+	const bool bInterrupted = bDead
+		|| State == ECombatActionState::HitStun
+		|| State == ECombatActionState::Knockdown
+		|| State == ECombatActionState::Recovering;
+	if (!bInterrupted && Now < AttackClipHoldUntilSeconds)
+	{
+		return;
+	}
 
 	FName Desired;
 	bool bHoldLastFrame = false;

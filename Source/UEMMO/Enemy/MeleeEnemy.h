@@ -78,9 +78,10 @@ public:
 	 * attack wind-up runs, restored when it ends (color tint or scale was
 	 * the card's allowed minimum; this is the scale variant). Pure
 	 * presentation: the mesh carries no collision, so the real hit query of
-	 * the combat component pipeline is unaffected either way.
+	 * the combat component pipeline is unaffected either way. M8-019B: made
+	 * virtual - the goblin thrower presents the attack_0 clip instead.
 	 */
-	void ApplyTelegraphVisual(bool bActive);
+	virtual void ApplyTelegraphVisual(bool bActive);
 
 	/**
 	 * M3-025 production wiring arming entry. UWaveSpawner calls this right
@@ -109,6 +110,15 @@ public:
 	 * on the mesh (the idle or the jog clip; null before the first switch).
 	 */
 	UAnimationAsset* PeekLocomotionAsset() const { return CurrentLocomotionAsset.Get(); }
+
+	/**
+	 * M8-019B: the telegraph-completed attack launch. The base enemy runs the
+	 * shared melee instance on its combat component (the M2-003 pipeline);
+	 * subclasses may replace the launch with their own attack shape (the
+	 * goblin thrower spawns its stone projectile instead). Returns true when
+	 * the attack actually started - false resumes the approach loop.
+	 */
+	virtual bool LaunchAttack(FName AttackId, int32 Facing);
 
 	/**
 	 * M3-027 test seam: the flash tint the overlay material carries while the

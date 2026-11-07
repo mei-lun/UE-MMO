@@ -24,5 +24,5 @@
    "melee_attack_id": "goblin_throw"
   }
  ],
- "comment": "M7-004: dungeon_goblin_proto carries the dungeon's real damage pressure (attack_power 8); melee_grunt keeps 0 for the old rooms. The goblin visual wires in MeleeEnemy's BeginPlay definition swap (ArtValidation DNF assets; Quinn fallback). M8-019A: monster_goblinthrower uses design defaults for values the source .ai did not expose (M8-007 gaps) - HP60/speed240/range500/attack6/telegraph0.3; melee_attack_id goblin_throw is added to the M1 catalog by M8-019B (forward reference, production wiring starts at M8-019C)."
+ "comment": "M7-004: dungeon_goblin_proto carries the dungeon's real damage pressure (attack_power 8); melee_grunt keeps 0 for the old rooms. The goblin visual wires in MeleeEnemy's BeginPlay definition swap (ArtValidation DNF assets; Quinn fallback). M8-019A: monster_goblinthrower uses design defaults for values the source .ai did not expose (M8-007 gaps) - HP60/speed240/range500/attack6/telegraph0.3; melee_attack_id goblin_throw is implemented at M8-019B as the dedicated throwstone projectile path (AMeleeEnemy::LaunchAttack override) - the goblin never resolves it through the combat attack catalog, so no combat-attacks.json row exists; production wave wiring starts at M8-019C."
 }

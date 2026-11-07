@@ -334,6 +334,15 @@ void AMeleeEnemy::ApplyFacingIntent(const FVector& MoveIntent)
 	SetActorRotation(FRotator(0.0f, NewYaw, 0.0f));
 }
 
+bool AMeleeEnemy::LaunchAttack(FName AttackId, int32 Facing)
+{
+	// M8-019B seam base: the shared melee instance on this enemy's combat
+	// component (the M2-003 pipeline; the controller's bool contract keeps
+	// its exact semantics - true = the Attack wait state, false = resume).
+	UCombatComponent* CombatComponent = GetCombatComponent();
+	return CombatComponent != nullptr && CombatComponent->TryStartAttack(AttackId, Facing);
+}
+
 void AMeleeEnemy::ApplyTelegraphVisual(bool bActive)
 {
 	USkeletalMeshComponent* MeshComponent = GetMesh();
