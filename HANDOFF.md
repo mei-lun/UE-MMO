@@ -1,3 +1,15 @@
+# 最新状态：P05 全清（M8-019A/B/C 三卡 DONE）——竹林生产循环 -game 打通，P06 试玩点就绪（2026-11-07）
+
+- Owner：ZCode-20261107-A。M8 累计 DONE **21**（P00～P05 全清）；任务板 244 项 **235 DONE / TODO 2 / 0 IN_PROGRESS**；提交 `b8071a2`→`eac94f0`。
+- **M8-019A（DONE）**："图片不渲染"根因结案——**新建材质 shader 异步编译 ~35s 的截图时序伪影**，渲染管线从未损坏；最小验收全绿（站立绿哥布林+倒地平躺帧）。
+- **M8-019B（DONE）**：投掷 AI 接入既有敌脑（LaunchAttack seam，零新状态）；AThrowStoneProjectile（4f×30ms、20³ 全程命中盒、统一 Health 链）；命中/不打/打空三场景专项绿+时序对应表。
+- **M8-019C（DONE）**：竹林生产波次全循环 -game 打通——rooms.json 行→DA 管线→图内触发器（**必须放在出生点前方**）→定义驱动出生类（UEnemyDefinition::EnemyActorClass）→击杀计数→MarkCleared→**Victory 结算 HUD 截图**；DA_dungeon_goblin_proto 退役。
+- 事故：中途误删哥布林视觉目录，已由脚本重导恢复（可再生，无损失）。
+- [检查点 6](Docs/Tasks/Handoffs/2026-11-07-ZCode-20261107-A-checkpoint6.md)；报告 [M8-019A](Docs/Tasks/Reports/M8-019A.md)～[M8-019C](Docs/Tasks/Reports/M8-019C.md)。
+- 下一步：**P06 首个可玩切片（用户试玩点）**→ P07 火山 → P08 Boss → P09/P10 双职业。用户事项：可试玩竹林关卡（主菜单目录 room_bamboo_01）。
+
+---
+
 # 最新状态：P05-A1 哥布林实体 PAUSED——图片渲染 UV 二分进行中（2026-11-07）
 
 - Owner：ZCode-20261107-A。M8 累计 DONE **18**（P00～P04 清零）；M8-019 拆为 **M8-019A（PAUSED）/B/C**。
