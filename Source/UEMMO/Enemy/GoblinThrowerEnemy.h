@@ -13,6 +13,7 @@
 
 class UDNFMCharacterVisualComponent;
 class UMaterialInterface;
+class USoundWave;
 
 /**
  * Display actions resolved from the combat/movement state each frame; the

@@ -504,6 +504,12 @@ void APrototypeCharacter::BeginPlay()
     // every tick (Reset/interrupt paths stop the montage and return to the
     // locomotion AnimBP). Null-safe on both arguments by contract.
     CombatPresentation->SetSources(Combat, GetMesh());
+    // M8-021: the fighter's own hit voice (the M8-009 located clip) - the
+    // first production wiring of the presenter's audio chain for the player.
+    CombatPresentation->SetAudioSounds(
+        TSoftObjectPtr<USoundWave>(FSoftObjectPath(
+            TEXT("/Game/UEMMO/DNFM/Audio/SND_ft_dmg_01.SND_ft_dmg_01"))),
+        TSoftObjectPtr<USoundWave>());
     // M1-023: the combat component cannot jump itself; both the Free-state
     // jump and the launcher jump-cancel consume a buffered jump intent into
     // this handler, which performs the real ACharacter::Jump synchronously in

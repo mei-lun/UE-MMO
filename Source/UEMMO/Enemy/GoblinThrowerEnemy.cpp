@@ -87,6 +87,11 @@ void AGoblinThrowerEnemy::BeginPlay()
 		// attachment chain's visibility and stays unrendered. The capsule
 		// draws nothing in game either way - the flag only gates children.
 		GetCapsuleComponent()->SetVisibility(true, false);
+	// M8-021: the goblin's own hit voice (the M8-009 located clip) through
+	// the presenter's existing audio chain - the slice's audible victim
+	// feedback for the monster side.
+	SetHitFeedbackSound(TSoftObjectPtr<USoundWave>(FSoftObjectPath(
+		TEXT("/Game/UEMMO/DNFM/Audio/SND_gbn_dmg_01.SND_gbn_dmg_01"))));
 		// The picture owns the body: the 3D template mesh stays hidden (the
 		// M6-021 mutual-exclusion rule).
 		GetMesh()->SetVisibility(false, true);

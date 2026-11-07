@@ -121,6 +121,13 @@ public:
 	virtual bool LaunchAttack(FName AttackId, int32 Facing);
 
 	/**
+	 * M8-021: the kind's victim-side hit voice through the EXISTING
+	 * presenter chain (SetAudioSounds; land stays null - no located land
+	 * clip in the slice). The kind-specific voices wire from subclasses.
+	 */
+	void SetHitFeedbackSound(TSoftObjectPtr<USoundWave> InHitSound);
+
+	/**
 	 * M3-027 test seam: the flash tint the overlay material carries while the
 	 * flash is active (read back from the first inherited vector parameter
 	 * the flash wrote; white when no flash overlay is applied).

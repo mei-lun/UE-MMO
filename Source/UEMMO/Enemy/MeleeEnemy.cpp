@@ -343,6 +343,16 @@ void AMeleeEnemy::ApplyFacingIntent(const FVector& MoveIntent)
 	SetActorRotation(FRotator(0.0f, NewYaw, 0.0f));
 }
 
+void AMeleeEnemy::SetHitFeedbackSound(TSoftObjectPtr<USoundWave> InHitSound)
+{
+	// M8-021: the first production wiring of the presenter's audio chain
+	// (SetAudioSounds was test-only before this card). Null-safe by contract.
+	if (Presentation != nullptr)
+	{
+		Presentation->SetAudioSounds(InHitSound, TSoftObjectPtr<USoundWave>());
+	}
+}
+
 bool AMeleeEnemy::LaunchAttack(FName AttackId, int32 Facing)
 {
 	// M8-019B seam base: the shared melee instance on this enemy's combat
