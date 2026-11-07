@@ -325,6 +325,15 @@ void AMeleeEnemy::SetEnemyDefinition(const UEnemyDefinition* InDefinition)
 	{
 		GetCharacterMovement()->MaxWalkSpeed = InDefinition->MoveSpeed;
 	}
+	// M8-020: the definition's MaxHP finally reaches the wave enemies' health
+	// pool (the field existed since M2-001 but only MoveSpeed was ever
+	// applied - every spawned enemy ran the default 100 pool). The spawner
+	// calls this right after the birth, so the clamp lands before any
+	// damage: the goblin's 60-design HP holds from full.
+	if (InDefinition != nullptr && Health != nullptr)
+	{
+		Health->SetMaxHealth(InDefinition->MaxHP);
+	}
 }
 
 void AMeleeEnemy::ApplyFacingIntent(const FVector& MoveIntent)
