@@ -240,8 +240,18 @@ bool UWaveSpawner::SpawnNextEnemy()
 	// pinned to the exact configured position instead of being nudged or
 	// refused by collision handling.
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	// M8-019C: the definition's actor class (data-driven per enemy kind - the
+	// goblin thrower births its own class); empty keeps the AMeleeEnemy base.
+	UClass* EnemyClass = AMeleeEnemy::StaticClass();
+	if (Definition != nullptr && Definition->EnemyActorClass.IsValid())
+	{
+		if (UClass* Resolved = Definition->EnemyActorClass.LoadSynchronous())
+		{
+			EnemyClass = Resolved;
+		}
+	}
 	AMeleeEnemy* Enemy = World->SpawnActor<AMeleeEnemy>(
-		AMeleeEnemy::StaticClass(), Location, FRotator::ZeroRotator, Params);
+		EnemyClass, Location, FRotator::ZeroRotator, Params);
 	if (Enemy == nullptr)
 	{
 		return FailWave(FString::Printf(

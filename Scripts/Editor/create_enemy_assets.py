@@ -152,6 +152,17 @@ def apply_fields(asset, entry):
     asset.set_editor_property('telegraph_seconds', float(entry['telegraph_seconds']))
     asset.set_editor_property('spawn_grace_seconds', float(entry['spawn_grace_seconds']))
     asset.set_editor_property('melee_attack_id', str(entry['melee_attack_id']))
+    # M8-019C: optional per-kind actor class (the wave spawner's birth class).
+    # Absent keeps the asset's current value (the AMeleeEnemy fallback).
+    enemy_class = entry.get('enemy_class')
+    if isinstance(enemy_class, str) and enemy_class:
+        # A TSoftClassPtr property takes the LOADED class object (the
+        # RoomTrigger TSoftObjectPtr precedent; a SoftClassPath value is
+        # rejected by the 5.8 python nativizer).
+        loaded_class = unreal.load_class(None, enemy_class)
+        if loaded_class is None:
+            raise RuntimeError('enemy_class did not resolve: ' + enemy_class)
+        asset.set_editor_property('enemy_actor_class', loaded_class)
 
 
 def run_generate():
@@ -233,6 +244,12 @@ def verify_entry(asset, entry, checks):
         record(field, expected, actual, floats_match(expected, actual))
     record('melee_attack_id', entry['melee_attack_id'], str(asset.get_editor_property('melee_attack_id')),
            str(asset.get_editor_property('melee_attack_id')) == entry['melee_attack_id'])
+    # M8-019C: the actor class matches when the row carries one (the soft
+    # class serializes its object path; absent rows keep the base fallback).
+    expected_class = str(entry.get('enemy_class', ''))
+    actual_class = str(asset.get_editor_property('enemy_actor_class'))
+    record('enemy_class', expected_class, actual_class,
+           (expected_class in actual_class) if expected_class else True)
     return ok
 
 

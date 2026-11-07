@@ -296,6 +296,70 @@
      ]
     }
    ]
+  },
+  {
+   "room_id": "room_bamboo_01",
+   "display_name": "Bamboo01",
+   "map_path": "/Game/UEMMO/DNFM/Bamboo/Maps/L_DNFM_Bamboo01",
+   "player_spawn_location_cm": {
+    "x": 789.15,
+    "y": 775.06,
+    "z": 100
+   },
+   "player_spawn_yaw_degrees": 0,
+   "bounds_center_cm": {
+    "x": 789,
+    "y": 599,
+    "z": 90
+   },
+   "bounds_size_cm": {
+    "x": 1578,
+    "y": 1057,
+    "z": 180
+   },
+   "reward_table_id": "starter",
+   "rules": [
+    {
+     "rule_id": "enter_start_wave_0",
+     "event": "PlayerEnteredRegion",
+     "region_id": "activation",
+     "effect": "StartWave",
+     "next_wave_index": 0,
+     "delay_s": 0.0,
+     "once": true
+    },
+    {
+     "rule_id": "wave_0_clear",
+     "event": "WaveCleared",
+     "wave_index": 0,
+     "effect": "MarkCleared",
+     "once": true
+    },
+    {
+     "rule_id": "player_dead_fail",
+     "event": "PlayerDied",
+     "effect": "FailRun",
+     "once": true
+    }
+   ],
+   "waves": [
+    {
+     "enemy_id": "monster_goblinthrower",
+     "count": 2,
+     "spawn_locations_cm": [
+      {
+       "x": 1100,
+       "y": 775,
+       "z": 96
+      },
+      {
+       "x": 1250,
+       "y": 950,
+       "z": 96
+      }
+     ]
+    }
+   ]
   }
  ],
  "comment": "M7-004 note: dungeon_goblin_proto is a validated enemy row (Data/enemies.json + DA asset + MeleeEnemy visual swap) awaiting the per-room enemy resolution in ARoomTrigger (the M2-016 single-enemy-path loads one fixed asset for every wave); the wave redirect lands with that refactor. The 02 doc's execution default (首期敌人行为可基于当前 melee_grunt 配置调整) sanctions this first slice."

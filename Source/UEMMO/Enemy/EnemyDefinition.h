@@ -59,6 +59,16 @@ public:
 	FName MeleeAttackId;
 
 	/**
+	 * M8-019C: the actor class the wave spawner births for this enemy kind.
+	 * Empty keeps the AMeleeEnemy base (the melee_grunt precedent); a set
+	 * class must derive from AMeleeEnemy (the spawner's contract). The
+	 * enemies.json row carries it as the native class path
+	 * ("/Script/UEMMO.<ClassName>").
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enemy|Identity")
+	TSoftClassPtr<class AMeleeEnemy> EnemyActorClass;
+
+	/**
 	 * Game clock value of the most recent spawn of this definition instance,
 	 * injected by callers through MarkSpawned (interface contract section 2:
 	 * tests and early systems pass explicit times; no wall clock is read).
