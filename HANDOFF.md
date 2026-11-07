@@ -1,3 +1,14 @@
+# 最新状态：P06 切片就绪——固定包产出+包内战斗全链实证，待用户试玩（2026-11-07）
+
+- Owner：ZCode-20261107-A。M8 累计 DONE **23**（P00～P05 + 06-A/B）；**M8-022 IN_PROGRESS（READY FOR USER，H 类）**；提交 `141f9c3`→`448e776`。
+- **M8-020（DONE）**：玩家攻击链竹林清波（Victory 6.9s）；**修复 M2-001 起定义 MaxHP 从未接线的存量缺陷**（哥布林 60 设计血量首次生效，每只恰 6 刀）。
+- **M8-021（DONE）**：六条受害者原声（ft_dmg/gbn_dmg）确定性导入 + SetAudioSounds 链首次生产接线；攻击挥击/石击/死亡声留 P13。
+- **M8-022（IN_PROGRESS）**：固定包产出（存档先备份后恢复）；**包内自动化冒烟绿**（切片全链在包内成立）；等待用户试玩（H 类验收点在报告）。
+- [检查点 7](Docs/Tasks/Handoffs/2026-11-07-ZCode-20261107-A-checkpoint7.md)；报告 [M8-020](Docs/Tasks/Reports/M8-020.md)～[M8-022](Docs/Tasks/Reports/M8-022.md)。
+- 下一步：**用户试玩固定包** → P07 火山图。用户事项：试玩 `Artifacts/Package/Windows/UEMMO/Binaries/Win64/UEMMO.exe`（菜单第 5 项 Bamboo01；验收点见 M8-022 报告）。
+
+---
+
 # 最新状态：P05 全清（M8-019A/B/C 三卡 DONE）——竹林生产循环 -game 打通，P06 试玩点就绪（2026-11-07）
 
 - Owner：ZCode-20261107-A。M8 累计 DONE **21**（P00～P05 全清）；任务板 244 项 **235 DONE / TODO 2 / 0 IN_PROGRESS**；提交 `b8071a2`→`eac94f0`。
