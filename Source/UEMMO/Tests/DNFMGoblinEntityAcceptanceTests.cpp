@@ -87,6 +87,11 @@ bool FDNFMGoblinEntityAcceptance::RunTest(const FString& Parameters)
             AGoblinThrowerEnemy::StaticClass(), Loc, FRotator::ZeroRotator, Params);
         if (!TestNotNull(TEXT("goblin spawned"), G)) return true;
         G->SetActorHiddenInGame(false);
+        // M8-019A: re-apply the material+set+action sequence AFTER BeginPlay
+        // completed — discriminates BeginPlay-time creation racing
+        // actor/component registration.
+        G->RefreshGoblinMaterial();
+        AddInfo(TEXT("RefreshGoblinMaterial applied post-spawn"));
         TestTrue(TEXT("visual activated on the monster atlas"),
             G->GetGoblinVisual() != nullptr && G->GetGoblinVisual()->IsVisualActive()
             && G->GetGoblinVisual()->GetVisualSet() != nullptr

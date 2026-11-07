@@ -32,6 +32,12 @@ public:
 	UFUNCTION(BlueprintPure, Category = "DNFM")
 	UDNFMCharacterVisualComponent* GetGoblinVisual() const { return GoblinVisual; }
 
+	/** M8-019A: re-applies the material+set+action sequence post-BeginPlay. */
+	void RefreshGoblinMaterial()
+	{
+		if (RefreshVisual) RefreshVisual();
+	}
+
 protected:
 	/** Monster atlas set (M8-018): 8 actions, 21 drawn frames. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DNFM")
@@ -47,6 +53,8 @@ protected:
 	TObjectPtr<UDNFMCharacterVisualComponent> GoblinVisual;
 
 private:
+	TFunction<void()> RefreshVisual;
+
 	void ResolveDisplayAction();
 
 	bool bVisualActivated = false;
