@@ -21,17 +21,17 @@ void AGoblinThrowerEnemy::BeginPlay()
 	// The goblin has no 3D alternative: the picture mode is its only display.
 	if (UDNFMCharacterVisualSet* Set = MonsterVisualSet.LoadSynchronous())
 	{
-		// M8-019A: use the FIGHTER's proven in-game material as the MID parent;
-		// the component's ApplyCurrentFrame then binds PageTex to the GOBLIN
-		// page texture from the DA (the same contract the player's fighter
-		// page follows). M_GoblinthrowerVisual (the v2 from-scratch build)
-		// rendered nothing as a MID parent despite identical node dumps -
-		// root cause unconfirmed, its assets stay on disk for P04 investigation.
-		UMaterialInterface* FighterMaterial = LoadObject<UMaterialInterface>(nullptr,
-			TEXT("/Game/UEMMO/Imported/DNFM130_5_8_202/Characters/Fighter/Materials/M_DNFMFighterVisual.M_DNFMFighterVisual"));
-		if (FighterMaterial == nullptr)
+		// M8-019A: use the GOBLIN's own material (node default = the goblin
+		// page) as the MID parent. The v2 from-scratch build rendered nothing
+		// as a MID parent (rebuilt as a duplicate of the fighter material —
+		// same node graph, proven shader lineage). The PageTex runtime
+		// override to the goblin page is then a no-op (same texture), which
+		// sidesteps the texture-override path entirely.
+		UMaterialInterface* GoblinMaterial = LoadObject<UMaterialInterface>(nullptr,
+			TEXT("/Game/UEMMO/DNFM/Monsters/Goblinthrower/M/M_GoblinthrowerVisual.M_GoblinthrowerVisual"));
+		if (GoblinMaterial == nullptr)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("UEMMO M8-019A: fighter material missing; picture may stay hidden."));
+			UE_LOG(LogTemp, Warning, TEXT("UEMMO M8-019A: goblin material missing; picture may stay hidden."));
 		}
 		// M8-019A ROOT CAUSE: the goblin has no SideViewCameraComponent and no
 		// rig; the component's camera-basis fallback produced a basis whose
@@ -49,11 +49,11 @@ void AGoblinThrowerEnemy::BeginPlay()
 		// helper so it can be re-applied AFTER BeginPlay (the test calls
 		// RefreshGoblinMaterial post-spawn; if the re-created MID renders
 		// where the BeginPlay-time MID didn't, BeginPlay raced registration).
-		auto ApplyVisual = [this, Set, FighterMaterial]()
+		auto ApplyVisual = [this, Set, GoblinMaterial]()
 		{
-			if (FighterMaterial != nullptr)
+			if (GoblinMaterial != nullptr)
 			{
-				GoblinVisual->SetMaterialInterface(FighterMaterial);
+				GoblinVisual->SetMaterialInterface(GoblinMaterial);
 			}
 			GoblinVisual->SetVisualSet(Set);
 			if (const FDNFMActionClip* Stay = Set->FindAction(FName(TEXT("stay"))))

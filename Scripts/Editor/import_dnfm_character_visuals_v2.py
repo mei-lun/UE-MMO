@@ -90,6 +90,11 @@ def import_texture(index, page):
     if disk_sha != page['sha256']:
         raise RuntimeError('page png hash drift: %s' % page['file'])
     name = 'T_%s_page%d' % (ROLE, index)
+    # M8-019A: a previously-failed import can leave an empty texture whose
+    # source data replace_existing never repopulates; delete and re-import.
+    tex_path = DEST + '/T/' + name
+    if ASSETS.does_asset_exist(tex_path):
+        ASSETS.delete_asset(tex_path)
     task = unreal.AssetImportTask()
     task.filename = str(png)
     task.destination_path = DEST + '/T'
@@ -118,46 +123,28 @@ def import_texture(index, page):
 
 
 def build_material(textures):
+    """M8-019A: build the role material by DUPLICATING the proven fighter
+    material and retargeting its PageTex node texture. The from-scratch
+    graph build (identical node dump!) produced MIDs that rendered nothing
+    in-game; the duplicated material carries the fighter's proven shader
+    lineage. The UVRect parameter contract is inherited unchanged."""
     name = 'M_%sVisual' % ROLE.capitalize()
     mat_path = DEST + '/M/' + name
     if ASSETS.does_asset_exist(mat_path):
         ASSETS.delete_asset(mat_path)
-    mat = TOOLS.create_asset(name, DEST + '/M', unreal.Material, unreal.MaterialFactoryNew())
-    mat.set_editor_property('shading_model', unreal.MaterialShadingModel.MSM_UNLIT)
-    mat.set_editor_property('two_sided', True)
-    mat.set_editor_property('blend_mode', unreal.BlendMode.BLEND_MASKED)
-    uv0 = node(mat, unreal.MaterialExpressionTextureCoordinate, u_tiling=1.0, v_tiling=1.0)
-    mask_u = node(mat, unreal.MaterialExpressionComponentMask, r=True, g=False, b=False, a=False)
-    connect(uv0, '', mask_u, '')
-    mask_v = node(mat, unreal.MaterialExpressionComponentMask, r=False, g=True, b=False, a=False)
-    connect(uv0, '', mask_v, '')
-    v_flip = node(mat, unreal.MaterialExpressionOneMinus)
-    connect(mask_v, '', v_flip, '')
-    quad_uv = node(mat, unreal.MaterialExpressionAppendVector)
-    connect(mask_u, '', quad_uv, 'A')
-    connect(v_flip, '', quad_uv, 'B')
-    uv_size = node(mat, unreal.MaterialExpressionVectorParameter, parameter_name='UVRectSize',
-                   default_value=unreal.LinearColor(1.0, 1.0, 0.0, 0.0))
-    uv_min = node(mat, unreal.MaterialExpressionVectorParameter, parameter_name='UVRectMin',
-                  default_value=unreal.LinearColor(0.0, 0.0, 0.0, 0.0))
-    mask_size = node(mat, unreal.MaterialExpressionComponentMask, r=True, g=True, b=False, a=False)
-    connect(uv_size, '', mask_size, '')
-    mask_min = node(mat, unreal.MaterialExpressionComponentMask, r=True, g=True, b=False, a=False)
-    connect(uv_min, '', mask_min, '')
-    scaled = node(mat, unreal.MaterialExpressionMultiply)
-    connect(quad_uv, '', scaled, 'A')
-    connect(mask_size, '', scaled, 'B')
-    offset = node(mat, unreal.MaterialExpressionAdd)
-    connect(scaled, '', offset, 'A')
-    connect(mask_min, '', offset, 'B')
-    sample = node(mat, unreal.MaterialExpressionTextureSampleParameter2D, parameter_name='PageTex',
-                  texture=textures[0])
-    connect(offset, '', sample, 'UVs')
-    output(sample, 'RGB', unreal.MaterialProperty.MP_EMISSIVE_COLOR)
-    output(sample, 'A', unreal.MaterialProperty.MP_OPACITY_MASK)
+    fighter_path = ('/Game/UEMMO/Imported/DNFM130_5_8_202/Characters/Fighter/'
+                    'Materials/M_DNFMFighterVisual.M_DNFMFighterVisual')
+    mat = unreal.EditorAssetLibrary.duplicate_asset(fighter_path, mat_path)
+    if mat is None:
+        raise RuntimeError('material duplication failed: ' + fighter_path)
+    for expr in unreal.MaterialEditingLibrary.get_material_expressions(mat):
+        cls = expr.get_class().get_name()
+        if cls == 'MaterialExpressionTextureSampleParameter2D':
+            expr.set_editor_property('texture', textures[0])
     unreal.MaterialEditingLibrary.recompile_material(mat)
     ASSETS.save_loaded_asset(mat)
     REPORT['material'] = {'name': name, 'path': mat_path,
+                          'method': 'duplicate fighter + retarget PageTex',
                           'uv_formula': 'pageUV = UVRectMin + vec(u, 1-v) * UVRectSize'}
     return mat
 
@@ -220,6 +207,12 @@ def run_verify():
     REPORT['material'] = {'verified': True, 'path': DEST + '/M/M_%sVisual' % ROLE.capitalize()}
 
 
+def save_report():
+    ART.mkdir(parents=True, exist_ok=True)
+    (ART / ('ue-%s-%s.json' % (MODE, ROLE))).write_text(
+        json.dumps(REPORT, ensure_ascii=False, indent=1, sort_keys=True), encoding='utf-8')
+
+
 try:
     if MODE == 'import':
         run_import()
@@ -233,7 +226,47 @@ except Exception:
     REPORT['errors'].append(traceback.format_exc())
     raise
 finally:
-    ART.mkdir(parents=True, exist_ok=True)
-    (ART / ('ue-%s-%s.json' % (MODE, ROLE))).write_text(
-        json.dumps(REPORT, ensure_ascii=False, indent=1, sort_keys=True), encoding='utf-8')
-    unreal.log('UEMMO M8-017 %s %s done: report %s' % (MODE, ROLE, ART / ('ue-%s-%s.json' % (MODE, ROLE))))
+    if MODE != 'import' or not REPORT['success']:
+        ART.mkdir(parents=True, exist_ok=True)
+        save_report()
+        unreal.log('UEMMO M8-017 %s %s done (no keepalive): report %s' % (MODE, ROLE, ART / ('ue-%s-%s.json' % (MODE, ROLE))))
+
+if MODE == 'import' and REPORT['success']:
+    # M8-019A: BC7 compression runs ASYNC after import. The first import
+    # saved textures immediately, capturing EMPTY compressed mips - every
+    # MID sampling them rendered nothing in-game (the editor renders from
+    # source data and looked fine, which masked this). Idle ~300 ticks to
+    # let the compression queue finish, then RE-SAVE all imported assets.
+    state = {'frame': 0}
+
+    def resave_tick(_dt):
+        try:
+            state['frame'] += 1
+            if state['frame'] < 300:
+                return
+            for row in REPORT['textures']:
+                tex = unreal.load_asset(DEST + '/T/' + row['name'])
+                if tex is not None:
+                    ASSETS.save_loaded_asset(tex, only_if_is_dirty=False)
+            mat = unreal.load_asset(DEST + '/M/M_%sVisual' % ROLE.capitalize())
+            if mat is not None:
+                ASSETS.save_loaded_asset(mat, only_if_is_dirty=False)
+            da_path = DEST + '/' + SET_NAME
+            if ASSETS.does_asset_exist(da_path):
+                ASSETS.save_loaded_asset(unreal.load_asset(da_path), only_if_is_dirty=False)
+            unreal.log('UEMMO M8-017 %s: post-compression resave done' % ROLE)
+            REPORT['post_compression_resave'] = True
+            REPORT['success'] = True
+            save_report()
+            unreal.unregister_slate_post_tick_callback(handle)
+            unreal.EditorPythonScripting.set_keep_python_script_alive(False)
+        except Exception:
+            import traceback as tb2
+            REPORT['errors'].append(tb2.format_exc())
+            save_report()
+            unreal.unregister_slate_post_tick_callback(handle)
+            unreal.EditorPythonScripting.set_keep_python_script_alive(False)
+
+    handle = unreal.register_slate_post_tick_callback(resave_tick)
+    unreal.EditorPythonScripting.set_keep_python_script_alive(True)
+    globals()['_resave_keepalive'] = (handle,)

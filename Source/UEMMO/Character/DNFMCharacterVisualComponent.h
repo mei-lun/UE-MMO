@@ -179,6 +179,9 @@ public:
     /** The plane component (created lazily; null before the first activation). */
     UStaticMeshComponent* GetPlaneComponent() const { return PlaneComponent; }
 
+    /** The dynamic material instance this component applied (test access). */
+    UMaterialInstanceDynamic* GetVisualMaterial() const { return VisualMaterial; }
+
     /** Whether the plane is currently visible (the calibrated playback state). */
     bool IsPlaneVisible() const;
 

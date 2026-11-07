@@ -17,7 +17,11 @@ $Report = Join-Path $Evidence "ue-$Mode-$Role.json"
 try {
     $Editor = Join-Path $EngineRoot 'Engine\Binaries\Win64\UnrealEditor-Cmd.exe'
     $Arguments = @($ProjectFile,'-unattended','-nosplash','-nosound','-NoSourceControl','-ScriptErrorsAreFatal',"-abslog=$Evidence\ue-$Mode-$Role.log","-ExecutePythonScript=$PSScriptRoot\Editor\import_dnfm_character_visuals_v2.py")
-    if ($Mode -ne 'verify') { $Arguments += '-nullrhi' }
+    # M8-019A: import under a REAL rendering device. Materials imported
+    # under -nullrhi save with empty/invalid shader maps and every MID made
+    # from them renders nothing in-game (the goblin invisibility root cause).
+    # -RenderOffscreen keeps the run headless while compiling real shaders.
+    if ($Mode -ne 'verify') { $Arguments += '-RenderOffscreen' }
     Invoke-UEProcess $Editor $Arguments "dnfm-visual-v2-$Role-$Mode" 1800
     if (-not (Test-Path $Report)) { throw "Missing $Report" }
     $Result = Get-Content -LiteralPath $Report -Raw | ConvertFrom-Json

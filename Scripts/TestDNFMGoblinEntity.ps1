@@ -33,7 +33,7 @@ try {
     $Summary.passed = $Parsed.Passed
     $Summary.failed = $Parsed.Failed
     if (-not $Parsed.Ok -or $Parsed.Matched -ne 1) { throw "Goblin entity acceptance failed: $($Parsed.Error)" }
-    foreach ($Name in @('config-a-goblin-mid.png','config-b-goblin-mid-fighter-page.png','config-c-player-mid.png','goblin-dead.png')) {
+    foreach ($Name in @('goblin-alive.png','goblin-dead.png')) {
         $Shot = Join-Path $Evidence $Name
         if (-not (Test-Path -LiteralPath $Shot)) { throw "Missing screenshot: $Name" }
         $Bytes = [IO.File]::ReadAllBytes($Shot)
