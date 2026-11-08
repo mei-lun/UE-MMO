@@ -1,3 +1,12 @@
+# 最新状态：取景第二轮标定——扁平舞台视角（FOV40+臂长1050），第四版包待用户确认（2026-11-08）
+
+- Owner：ZCode-20261107-A。M8 累计 DONE **24**；M8-022 IN_PROGRESS（第四版包 READY FOR USER）；提交 `141f9c3`→HEAD。
+- **取景迭代**：1700（太远，角色 11%）→ 660/FOV55（用户："太近、体验感不对"——广角畸变+强视差）→ **1050/FOV40**（长焦扁平舞台视角：角色约 25-28% 屏高、纵深层同移，截图 `Artifacts/Tasks/M8-020/2026-11-08T18-18-36+0800-slice-combat/slice-settled.png`）。
+- 第四版包：PKG exit=0 → 包内切片复测绿（killed=2、Cleared、主目标=竹林）。报告 [M8-023](Docs/Tasks/Reports/M8-023.md)（第二轮标定节）。
+- 下一步：**用户四轮试玩确认手感**（仍不合适可继续调：下一旋钮=PivotHeightAboveGround/YFollowRatio/逐图覆写）→ P07 火山图。用户事项：重试 `Artifacts/Package/Windows/UEMMO/Binaries/Win64/UEMMO.exe`。
+
+---
+
 # 最新状态：M8-023 取景重对齐 DONE——DNF 构图在包内实证，待用户三轮试玩（2026-11-08）
 
 - Owner：ZCode-20261107-A。M8 累计 DONE **24**；M8-022 IN_PROGRESS（第三版包 READY FOR USER）；提交 `141f9c3`→`636814a`。
