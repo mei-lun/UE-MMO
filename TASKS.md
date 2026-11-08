@@ -273,3 +273,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M8-024 | [P06-E 工会图补色](Docs/Tasks/M8-024.md) | DONE | M8-021 | ZCode-20261107-A | 2026-11-08T19:05:00+08:00 | [report](Docs/Tasks/Reports/M8-024.md) |
 | M8-026 | [P06-F 窗口默认窗口化 1280x720](Docs/Tasks/M8-026.md) | DONE | M8-021 | ZCode-20261107-A | 2026-11-08T19:50:00+08:00 | [report](Docs/Tasks/Reports/M8-026.md) |
 | M8-025 | [P07-A 工会图 2D 层全量导入](Docs/Tasks/M8-025.md) | SUPERSEDED | M8-024 | ZCode-20261107-A | 2026-11-08T22:10:00+08:00 | [report](Docs/Tasks/Reports/M8-025.md) |
+| M8-027 | [P07-A 火山图资产提取与标定输入](Docs/Tasks/M8-027.md) | TODO | M8-019C | — | — | [report](Docs/Tasks/Reports/M8-027.md) |
+| M8-028 | [P07-B 火山图地图导入与全景层](Docs/Tasks/M8-028.md) | TODO | M8-027 | — | — | [report](Docs/Tasks/Reports/M8-028.md) |
+| M8-029 | [P07-C 火山图碰撞/出生出口与专项](Docs/Tasks/M8-029.md) | TODO | M8-028 | — | — | [report](Docs/Tasks/Reports/M8-029.md) |
+| M8-030 | [P07-D 火山图动态环境](Docs/Tasks/M8-030.md) | TODO | M8-029 | — | — | [report](Docs/Tasks/Reports/M8-030.md) |

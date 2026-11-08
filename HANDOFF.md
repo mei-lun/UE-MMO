@@ -1,3 +1,13 @@
+# 最新状态：P07 火山图拆卡完成（M8-027~030 四卡），M8-027 就绪待执行（2026-11-09）
+
+- Owner：ZCode-20261107-A。M8 累计 DONE **26**；M8-022 IN_PROGRESS（第九版包 H 类待试玩）；M8-025 SUPERSEDED；**M8-027~030 登记（P07 四卡）**；提交 `141f9c3`→HEAD。
+- **P07 拆卡**：M8-027 资产提取与标定输入（适配 M8-011 会话脚本 build_bamboo_assets.py 到火山图；源=restored maps 火山脚本+图集；确定性双跑）→ M8-028 地图导入与全景层（DISTANTBACK 远景层+room_volcano 接线）→ M8-029 碰撞/出生出口与专项 → M8-030 动态环境（28 个 FX 预fab）。
+- 源数据盘点：`Data/DNFMReplica/verify/map_volcano.json` 完备（对象分层/地面完整性/标定输入/缺口 G1 通道语义 G2 原点=引擎内标定口径）。
+- [检查点 8](Docs/Tasks/Handoffs/2026-11-08-ZCode-20261107-A-checkpoint8.md)；报告 [M8-024](Docs/Tasks/Reports/M8-024.md)～[M8-025](Docs/Tasks/Reports/M8-025.md)。
+- 下一步：**M8-027 执行**（火山资产提取双跑）→ M8-028~030 顺序推进。用户事项：试玩第九版包 `Artifacts/Package/Windows/UEMMO/Binaries/Win64/UEMMO.exe`。
+
+---
+
 # 最新状态：第九版包菜单可见性实证（Map Select 完整渲染），待用户试玩（2026-11-08）
 
 - Owner：ZCode-20261107-A。M8 累计 DONE **26**；M8-022 IN_PROGRESS（第九版包 READY FOR USER，H 类）；提交 `141f9c3`→`835dae4`。
