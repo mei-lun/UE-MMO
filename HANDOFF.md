@@ -1,3 +1,13 @@
+# 最新状态：M8-023 取景重对齐 DONE——DNF 构图在包内实证，待用户三轮试玩（2026-11-08）
+
+- Owner：ZCode-20261107-A。M8 累计 DONE **24**；M8-022 IN_PROGRESS（第三版包 READY FOR USER）；提交 `141f9c3`→`636814a`。
+- **M8-023（DONE）**：用户"贴图位置都不对"自查定位=游戏内相机取景（M0 臂长 1700 → 世界拉远 2.8 倍，构图整体失真；世界坐标本身正确）。修复：臂长 660（角色约 1/3 屏高+脚下石板地面+竹丛近景——与源构图一致，两轮截图迭代实证）；**相机锚点房间边界首次按图接线**（默认 ±1200 会让玩家在竹林东段走出镜头）；车辆相机断言随新值更新；全量回归绿。
+- 第三版包：PKG 5m56s exit=0 → boot 日志主目标=room_bamboo_01 ✓ → 包内切片复测绿（killed=2、Cleared）→ **包内截图实证 DNF 构图**（`Artifacts/Tasks/M8-022/pkg3-verify/slice-settled.png`）。
+- [检查点 7](Docs/Tasks/Handoffs/2026-11-07-ZCode-20261107-A-checkpoint7.md)；报告 [M8-022](Docs/Tasks/Reports/M8-022.md)、[M8-023](Docs/Tasks/Reports/M8-023.md)。
+- 下一步：**用户三轮试玩**（主 Enter 直进竹林，构图应与原作一致）→ P07 火山图。用户事项：重试 `Artifacts/Package/Windows/UEMMO/Binaries/Win64/UEMMO.exe`。
+
+---
+
 # 最新状态：M8-022 首轮反馈修复完毕——菜单主入口指向竹林，重包待用户二轮试玩（2026-11-08）
 
 - Owner：ZCode-20261107-A。M8 累计 DONE **23**；M8-022 IN_PROGRESS（第二轮 READY FOR USER）；提交 `141f9c3`→`38e4d30`。
