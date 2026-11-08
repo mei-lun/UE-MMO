@@ -271,4 +271,5 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M8-022 | [P06-C 固定包与用户试玩](Docs/Tasks/M8-022.md) | IN_PROGRESS | M8-021 | ZCode-20261107-A | 2026-11-07T18:05:00+08:00 | [report](Docs/Tasks/Reports/M8-022.md) |
 | M8-023 | [P06-D 侧视取景重对齐](Docs/Tasks/M8-023.md) | DONE | M8-020 | ZCode-20261107-A | 2026-11-08T18:05:00+08:00 | [report](Docs/Tasks/Reports/M8-023.md) |
 | M8-024 | [P06-E 工会图补色](Docs/Tasks/M8-024.md) | DONE | M8-021 | ZCode-20261107-A | 2026-11-08T19:05:00+08:00 | [report](Docs/Tasks/Reports/M8-024.md) |
+| M8-026 | [P06-F 窗口默认窗口化 1280x720](Docs/Tasks/M8-026.md) | DONE | M8-022 | ZCode-20261107-A | 2026-11-08T19:50:00+08:00 | [report](Docs/Tasks/Reports/M8-026.md) |
 | M8-025 | [P07-A 工会图 2D 层全量导入](Docs/Tasks/M8-025.md) | TODO | M8-024 | — | — | [report](Docs/Tasks/Reports/M8-025.md) |
