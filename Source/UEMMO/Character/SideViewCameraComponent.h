@@ -23,17 +23,14 @@ struct FSideViewCameraConfig
 
     /** Camera field of view (M0 value kept). */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Side View Camera", meta = (ClampMin = "1.0", ClampMax = "179.0"))
-    float FieldOfView = 40.0f;
+    float FieldOfView = 55.0f;
 
-    /**
-     * Spring arm length in cm. M8-023: recalibrated from the M0 1700 to the
-     * DNF framing - the 192cm character fills about a third of the screen (the second calibration round: the user read 660/FOV55 as too close and distorted - the DNF look is the flat stage view, so the FOV narrows to 40 and the arm lengthens to keep the character at ~25% with the compressed depth parallax)
-     * height (the visible pivot-plane height ~600cm), which is what the
-     * source game's camera shows. 1700 framed the character at ~11% and made
-     * every DNFM map read as a zoomed-out diorama with misplaced textures.
-     */
+    /** Spring arm length in cm (M0 value kept). M8-023: the two DNF-framing
+     * recalibration rounds (660/FOV55 then 1050/FOV40) were both rejected by
+     * the user playtest - the high wide view IS the project's chosen look;
+     * the per-room anchor bounds stay as the real fix. */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Side View Camera", meta = (ClampMin = "0.0"))
-    float ArmLength = 1050.0f;
+    float ArmLength = 1700.0f;
 
     /** Anchor pivot height above the traced ground in cm (M0: 96 capsule half height + 100 boom target offset). */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Side View Camera")
