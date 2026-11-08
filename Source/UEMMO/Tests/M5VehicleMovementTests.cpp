@@ -685,7 +685,7 @@ namespace UE::UEMMO::Tasks::M5_042
 		TestTrue(TEXT("the baseline rig hangs on the pawn root"),
 			Rig->GetAttachParent() == Scene.Player->GetRootComponent());
 		TestTrue(TEXT("the baseline rig keeps the M0 boom"),
-			FMath::IsNearlyEqual(Rig->TargetArmLength, 1700.0f));
+			FMath::IsNearlyEqual(Rig->TargetArmLength, 560.0f));
 		TestTrue(TEXT("the baseline rig tick is enabled"), Rig->IsComponentTickEnabled());
 
 		// The bridge: re-parent onto the hull with the definition's follow
@@ -729,7 +729,7 @@ namespace UE::UEMMO::Tasks::M5_042
 		TestTrue(TEXT("the restored rig hangs on the pawn root again"),
 			Rig->GetAttachParent() == Scene.Player->GetRootComponent());
 		TestTrue(TEXT("the restored boom is the saved M0 value"),
-			FMath::IsNearlyEqual(Rig->TargetArmLength, 1700.0f, 0.01f));
+			FMath::IsNearlyEqual(Rig->TargetArmLength, 560.0f, 0.01f));
 		TestTrue(TEXT("the restored rig tick resumed"), Rig->IsComponentTickEnabled());
 		const FVector PawnLocation = Scene.Player->GetActorLocation();
 		const FVector ExpectedAnchor = UE::UEMMO::Tasks::M1_030::ComputeAnchorLocation(
@@ -823,7 +823,7 @@ namespace UE::UEMMO::Tasks::M5_042
 		TestTrue(TEXT("the self-restored rig hangs on the pawn root"),
 			Rig->GetAttachParent() == Scene.Player->GetRootComponent());
 		TestTrue(TEXT("the self-restored boom is the saved M0 value"),
-			FMath::IsNearlyEqual(Rig->TargetArmLength, 1700.0f, 0.01f));
+			FMath::IsNearlyEqual(Rig->TargetArmLength, 560.0f, 0.01f));
 		TestTrue(TEXT("the self-restored rig tick resumed"), Rig->IsComponentTickEnabled());
 
 		// The bridge's own EndPlay face: a bridge torn down with its pawn hands
@@ -834,7 +834,7 @@ namespace UE::UEMMO::Tasks::M5_042
 		TestTrue(TEXT("the EndPlay-restored rig hangs on the pawn root"),
 			Rig->GetAttachParent() == Scene.Player->GetRootComponent());
 		TestTrue(TEXT("the EndPlay-restored boom is the saved M0 value"),
-			FMath::IsNearlyEqual(Rig->TargetArmLength, 1700.0f, 0.01f));
+			FMath::IsNearlyEqual(Rig->TargetArmLength, 560.0f, 0.01f));
 
 		// The destroyed bridge never answers again (the weak references died
 		// with it): the hull's later destroy broadcast reaches nobody.

@@ -25,9 +25,15 @@ struct FSideViewCameraConfig
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Side View Camera", meta = (ClampMin = "1.0", ClampMax = "179.0"))
     float FieldOfView = 55.0f;
 
-    /** Spring arm length in cm (M0 value kept). */
+    /**
+     * Spring arm length in cm. M8-023: recalibrated from the M0 1700 to the
+     * DNF framing - the 192cm character fills about a third of the screen (660 frames the legs and some ground; 560 cropped the feet)
+     * height (the visible pivot-plane height ~600cm), which is what the
+     * source game's camera shows. 1700 framed the character at ~11% and made
+     * every DNFM map read as a zoomed-out diorama with misplaced textures.
+     */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Side View Camera", meta = (ClampMin = "0.0"))
-    float ArmLength = 1700.0f;
+    float ArmLength = 660.0f;
 
     /** Anchor pivot height above the traced ground in cm (M0: 96 capsule half height + 100 boom target offset). */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Side View Camera")
@@ -81,6 +87,15 @@ public:
     /** Tunable framing and follow parameters; defaults keep the M0 values. */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Side View Camera")
     FSideViewCameraConfig Config;
+
+    /**
+     * M8-023: the entered room's legal-play X range drives the anchor clamp.
+     * The ±1200 defaults predate the DNFM maps (the bamboo spans 0..1578),
+     * so without this the player walks out of the camera's clamp near the
+     * east exit. Re-applies the config; the anchor re-clamps on the next
+     * tick.
+     */
+    void ApplyRoomBounds(float MinX, float MaxX);
 
 private:
     void ApplyConfig();

@@ -24,6 +24,8 @@
 #include "GameFramework/PlayerController.h"
 #include "PrototypeCharacter.h"
 #include "Room/RoomDefinition.h"
+#include "Character/SideViewCameraComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Room/RoomRetryService.h"
 #include "Room/RoomSessionSubsystem.h"
 #include "UI/DamageNumberModel.h"
@@ -1070,6 +1072,22 @@ void APrototypeHUD::EndPlay(const EEndPlayReason::Type EndPlayReason)
     Super::EndPlay(EndPlayReason);
 }
 
+void APrototypeHUD::HandleRoomRunStartedForCamera()
+{
+    UGameFlowSubsystem* Flow = ResolveGameFlowSubsystem();
+    const URoomDefinition* Room = Flow ? Flow->GetCurrentRoomDefinition() : nullptr;
+    APrototypeCharacter* Player = Cast<APrototypeCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
+    if (Room == nullptr || Player == nullptr || Player->GetCameraRig() == nullptr)
+    {
+        return;
+    }
+    const float MinX = Room->BoundsCenter.X - Room->BoundsSize.X * 0.5f;
+    const float MaxX = Room->BoundsCenter.X + Room->BoundsSize.X * 0.5f;
+    Player->GetCameraRig()->ApplyRoomBounds(MinX, MaxX);
+    UE_LOG(LogTemp, Display, TEXT("UEMMO M8-023: camera room bounds [%.0f, %.0f] applied for %s."),
+        MinX, MaxX, *Room->RoomId.ToString());
+}
+
 void APrototypeHUD::BindRoomSessionEvents()
 {
     if (bRoomSessionBound || GetWorld() == nullptr)
@@ -1086,6 +1104,9 @@ void APrototypeHUD::BindRoomSessionEvents()
     // M3-012: a run starting while the inventory screen is open must disable
     // the equip actions immediately (the visible half of the two-layer gate).
     RoomRunStartedHandle = Session->OnRunStarted().AddUObject(this, &APrototypeHUD::HandleRoomRunStartedForInventory);
+    // M8-023: the entered room's X range becomes the camera anchor clamp
+    // (the ±1200 defaults predate the DNFM maps; the bamboo spans 0..1578).
+    RoomRunStartedCameraHandle = Session->OnRunStarted().AddUObject(this, &APrototypeHUD::HandleRoomRunStartedForCamera);
     bRoomSessionBound = true;
 }
 
@@ -1099,6 +1120,7 @@ void APrototypeHUD::UnbindRoomSessionEvents()
     {
         Session->OnRunEnded().Remove(RoomRunEndedHandle);
         Session->OnRunStarted().Remove(RoomRunStartedHandle);
+        Session->OnRunStarted().Remove(RoomRunStartedCameraHandle);
     }
     RoomSessionPtr = nullptr;
     RoomRunEndedHandle.Reset();

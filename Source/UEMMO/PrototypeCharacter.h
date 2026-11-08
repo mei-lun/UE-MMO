@@ -86,6 +86,9 @@ public:
      */
     UHealthComponent* GetHealth() const { return Health; }
 
+    /** M8-023: the fixed side-view rig (the room-bounds application). */
+    USideViewCameraComponent* GetCameraRig() const { return CameraRig; }
+
     /**
      * M1-012: public combat intent entry (M1-040 keys: X = Light, Z =
      * Launcher). PressedAt

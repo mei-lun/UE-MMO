@@ -46,6 +46,13 @@ void USideViewCameraComponent::ApplyConfig()
     }
 }
 
+void USideViewCameraComponent::ApplyRoomBounds(float MinX, float MaxX)
+{
+    Config.RoomMinX = MinX;
+    Config.RoomMaxX = MaxX;
+    ApplyConfig();
+}
+
 bool USideViewCameraComponent::TraceGroundZ(float& OutHitZ)
 {
     OutHitZ = 0.0f;

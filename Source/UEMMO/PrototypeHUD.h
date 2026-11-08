@@ -534,6 +534,8 @@ private:
 
     /** M3-012: OnRunStarted handler - disables the equip actions live. */
     void HandleRoomRunStartedForInventory();
+    /** M8-023: applies the entered room's X range to the camera anchor clamp. */
+    void HandleRoomRunStartedForCamera();
 
     /** M3-011: the presented inventory screen (weak; recreated per presentation). */
     TWeakObjectPtr<UInventoryWidget> InventoryWidgetPtr;
@@ -615,6 +617,7 @@ private:
     FDelegateHandle RoomRunEndedHandle;
     /** M3-012: handle of the run-started binding (the equip actions' disable push). */
     FDelegateHandle RoomRunStartedHandle;
+    FDelegateHandle RoomRunStartedCameraHandle;
     bool bRoomSessionBound = false;
 
 private:
