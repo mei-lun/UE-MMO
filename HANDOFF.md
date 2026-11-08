@@ -1,3 +1,12 @@
+# 最新状态：第九版包菜单可见性实证（Map Select 完整渲染），待用户试玩（2026-11-08）
+
+- Owner：ZCode-20261107-A。M8 累计 DONE **26**；M8-022 IN_PROGRESS（第九版包 READY FOR USER，H 类）；提交 `141f9c3`→`835dae4`。
+- **菜单可见性实证**：第九版包内 M8-027 延迟实拍（8 秒）——**Map Select 完整渲染**（主 Enter=竹林、五行目录含 Bamboo01、SystemTestRoom）。此前"无菜单"=早期截图竞态（HighResShot 抢在菜单首帧前）+菜单挂载在开机后约 2-3 秒。
+- 全链修复清单（第六~九版包累积）：竹林主入口、工会补色（35/35 贴图、0 占位槽）、窗口化 1280x720 开机强制、菜单指向竹林。
+- 下一步：**用户试玩第九版包**（等待 2-3 秒菜单出现→选 Bamboo01/GuildagitScene）→ M8-022 收口 → P07 火山图。用户事项：试玩 `Artifacts/Package/Windows/UEMMO/Binaries/Win64/UEMMO.exe`。
+
+---
+
 [检查点 8](Docs/Tasks/Handoffs/2026-11-08-ZCode-20261107-A-checkpoint8.md)
 
 # 最新状态：M8-025 前提核查作废（工会图=DNFM 重制版原貌），下一步 P07 火山图拆卡（2026-11-08）
