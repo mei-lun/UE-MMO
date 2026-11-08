@@ -1,3 +1,14 @@
+# 最新状态：M8-026 窗口化 1280x720 DONE——第七版包待用户试玩（2026-11-08）
+
+- Owner：ZCode-20261107-A。M8 累计 DONE **26**；M8-022 IN_PROGRESS（第七版包 READY FOR USER，H 类）；提交 `141f9c3`→`cfd7b5c`。
+- **M8-026（DONE）**：用户"窗口不应默认全屏，按原始资源大小适配"——取证=DNFM 源视频资源 tkhd 帧尺寸 **1280x720**（设计分辨率）；`Config/DefaultGameUserSettings.ini` 打包默认窗口化 1280x720；第七版包 boot 日志实证 `r.setres:1280x720`。
+- M8-024（DONE）：工会图补色——35/35 缺失贴图提取导入、78 占位材质重建、1012 槽 0 占位（白图→暮色纹理）。
+- M8-025（TODO）：工会图视觉密度（5050 个 2D 层对象 vs 已导入 279 网格）——竹林 2D 管线套用。
+- [检查点 7](Docs/Tasks/Handoffs/2026-11-07-ZCode-20261107-A-checkpoint7.md)；报告 [M8-022](Docs/Tasks/Reports/M8-022.md)～[M8-026](Docs/Tasks/Reports/M8-026.md)。
+- 下一步：**用户试玩第七版包**（窗口化 1280x720 启动）→ M8-025 工会密度 → P07 火山图。用户事项：试玩 `Artifacts/Package/Windows/UEMMO/Binaries/Win64/UEMMO.exe`。
+
+---
+
 # 最新状态：M8-024 工会图补色 DONE——白图已除，第六版包待用户试玩（2026-11-08）
 
 - Owner：ZCode-20261107-A。M8 累计 DONE **25**；M8-022 IN_PROGRESS（第六版包 READY FOR USER）；M8-025 TODO（工会图密度）；提交 `141f9c3`→HEAD。
