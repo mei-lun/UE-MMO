@@ -1,3 +1,5 @@
+[检查点 8](Docs/Tasks/Handoffs/2026-11-08-ZCode-20261107-A-checkpoint8.md)
+
 # 最新状态：M8-025 前提核查作废（工会图=DNFM 重制版原貌），下一步 P07 火山图拆卡（2026-11-08）
 
 - Owner：ZCode-20261107-A。M8 累计 DONE **26**；M8-022 IN_PROGRESS（第八版包 READY FOR USER，H 类）；M8-025 SUPERSEDED；提交 `141f9c3`→`f5f883c`。
