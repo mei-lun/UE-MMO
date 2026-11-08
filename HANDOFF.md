@@ -1,3 +1,14 @@
+# 最新状态：M8-026 第二轮——开机强制窗口化已实证，第八版包待用户试玩（2026-11-08）
+
+- Owner：ZCode-20261107-A。M8 累计 DONE **26**；M8-022 IN_PROGRESS（第八版包 READY FOR USER，H 类）；提交 `141f9c3`→`799a35a`。
+- **M8-026 第二轮**：用户"没有看到变化"——根因=包内 Saved/Config 的 GameUserSettings.ini（历次全屏运行写入）**穿越重打包**并覆盖 Default 种子（分辨率生效了、模式没有）。修复=HUD BeginPlay **开机强制 Windowed 1280x720**；第八版包+人为预埋陈旧全屏档验证：开机改写为 FullscreenMode=2+1280x720 ✓。
+- M8-024（DONE）：工会补色（35/35 贴图、1012 槽 0 占位）。M8-025（TODO）：工会密度（5050 2D 层对象）。取景终局：M0 高视野（用户选定）。
+- 第六/七/八版包均恢复存档；第八版含开机强制+全部既有修复。
+- [检查点 7](Docs/Tasks/Handoffs/2026-11-07-ZCode-20261107-A-checkpoint7.md)；报告 [M8-022](Docs/Tasks/Reports/M8-022.md)～[M8-026](Docs/Tasks/Reports/M8-026.md)。
+- 下一步：**用户试玩第八版包**（必为 1280x720 窗口）→ M8-025 工会密度 → P07 火山图。用户事项：试玩 `Artifacts/Package/Windows/UEMMO/Binaries/Win64/UEMMO.exe`。
+
+---
+
 # 最新状态：M8-026 窗口化 1280x720 DONE——第七版包待用户试玩（2026-11-08）
 
 - Owner：ZCode-20261107-A。M8 累计 DONE **26**；M8-022 IN_PROGRESS（第七版包 READY FOR USER，H 类）；提交 `141f9c3`→`cfd7b5c`。
