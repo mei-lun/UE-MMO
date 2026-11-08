@@ -1,3 +1,12 @@
+# 最新状态：M8-022 首轮反馈修复完毕——菜单主入口指向竹林，重包待用户二轮试玩（2026-11-08）
+
+- Owner：ZCode-20261107-A。M8 累计 DONE **23**；M8-022 IN_PROGRESS（第二轮 READY FOR USER）；提交 `141f9c3`→`38e4d30`。
+- **首轮用户反馈三问题自查定位**：①菜单主 Enter 被 M6-013 硬编码指向工会图→已修复为主目的地=竹林（新包 boot 日志实证）；②"无贴图"=被送入的工会图的 M7 存量占位材质（公会补色期外）——竹林图在包内贴图完好（包内自动化自截图实证）；③包内切片战斗全链复测绿（hp=43/60、killed=2、Cleared）。
+- [检查点 7](Docs/Tasks/Handoffs/2026-11-07-ZCode-20261107-A-checkpoint7.md)+[M8-022 报告](Docs/Tasks/Reports/M8-022.md)（首轮反馈与修复节）。
+- 下一步：**用户二轮试玩**（启动 UEMMO.exe→主 Enter 直进竹林）→ P07 火山图。用户事项：重试 `Artifacts/Package/Windows/UEMMO/Binaries/Win64/UEMMO.exe`。
+
+---
+
 # 最新状态：P06 切片就绪——固定包产出+包内战斗全链实证，待用户试玩（2026-11-07）
 
 - Owner：ZCode-20261107-A。M8 累计 DONE **23**（P00～P05 + 06-A/B）；**M8-022 IN_PROGRESS（READY FOR USER，H 类）**；提交 `141f9c3`→`448e776`。
