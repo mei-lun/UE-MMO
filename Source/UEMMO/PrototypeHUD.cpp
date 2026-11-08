@@ -1655,20 +1655,39 @@ void APrototypeHUD::ShowMenuOverlay()
     }
     UMapSelectWidget* Widget = MenuWidgetPtr.Get();
 
-    // M6-013: make the imported scene the primary playtest destination. The
-    // legacy rooms remain individually selectable in the catalog.
+    // M6-013: the primary playtest destination. M8-022: the DNFM slice is
+    // the newest production level, so the bamboo room takes the primary
+    // Enter button; the guild scene and the legacy rooms remain individually
+    // selectable in the catalog below.
     if (UGameFlowSubsystem* Flow = ResolveGameFlowSubsystem())
     {
         const URoomDefinition* PrimaryRoom = Flow->GetCombatRoomDefinition();
-        for (const URoomDefinition* Candidate : Flow->GetSelectableRoomDefinitions())
+        const TCHAR* PrimaryCandidates[] = {
+            TEXT("room_bamboo_01"),
+            TEXT("room_guildagit_01"),
+        };
+        for (const TCHAR* CandidateId : PrimaryCandidates)
         {
-            if (Candidate && Candidate->RoomId == FName(TEXT("room_guildagit_01")))
+            bool bFound = false;
+            for (const URoomDefinition* Candidate : Flow->GetSelectableRoomDefinitions())
             {
-                PrimaryRoom = Candidate;
+                if (Candidate && Candidate->RoomId == FName(CandidateId))
+                {
+                    PrimaryRoom = Candidate;
+                    bFound = true;
+                    break;
+                }
+            }
+            if (bFound)
+            {
                 break;
             }
         }
         Widget->SetEnterRoomDefinition(PrimaryRoom);
+        // M8-022: the packaged-run evidence line - the menu's primary Enter
+        // target must name the slice room, not the M6-013 guild hardcode.
+        UE_LOG(LogTemp, Display, TEXT("UEMMO M8-022: menu primary enter target = %s."),
+            PrimaryRoom ? *PrimaryRoom->RoomId.ToString() : TEXT("null"));
     }
     // A fresh presentation re-arms the enter button and clears a stale error
     // line (the M3-017 BindMenu re-presentation contract).
