@@ -137,7 +137,7 @@ def run_import():
 
         actor = ACTORS.spawn_actor_from_class(unreal.StaticMeshActor,
             unreal.Vector(x=w['x_cm'], y=w['foot_y_cm'], z=w['height_cm'] / 2.0),
-            unreal.Rotator(pitch=0.0, yaw=0.0, roll=0.0))
+            unreal.Rotator(pitch=-18.0, yaw=-90.0, roll=90.0))
         if actor is None:
             print('UEMMO_VOLCANO: spawn failed for %s' % name)
             continue
@@ -146,7 +146,6 @@ def run_import():
         if smc:
             smc.set_static_mesh(plane_mesh)
             smc.set_world_scale3d(unreal.Vector(w['width_cm'] / 100.0, w['height_cm'] / 100.0, 1.0))
-            smc.set_world_rotation(QUAT_ROT.rotação() if hasattr(QUAT_ROT,"rotação") else QUAT_ROT)
             smc.set_material(0, mat)
             smc.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
         REPORT['objects'].append({'name': name, 'layer': layer, 'world': w})
