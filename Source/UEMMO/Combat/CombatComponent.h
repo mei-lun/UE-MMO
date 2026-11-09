@@ -18,6 +18,7 @@
 #include "CombatComponent.generated.h"
 
 class UAttackCatalog;
+class UCombatStateMachine;
 class UAttackDefinition;
 
 /**
@@ -254,6 +255,9 @@ public:
 	bool IsInLandingRecovery() const;
 
 	FCombatSnapshot GetSnapshot() const;
+
+	/** M8-031: the phase state machine (read access for tests/display). */
+	UCombatStateMachine* GetStateMachine() const { return StateMachine; }
 
 	/**
 	 * M1-028: read-only debug view of the definition the running attack
@@ -753,6 +757,11 @@ private:
 	/** Injected catalog; UPROPERTY keeps it alive for the GC. */
 	UPROPERTY(Transient)
 	TObjectPtr<UAttackCatalog> Catalog;
+
+	/** M8-031: the explicit combat phase state machine (the frame tables'
+	 * wrapper; the display layer subscribes to the phase events). */
+	UPROPERTY(VisibleAnywhere, Category = "Combat")
+	TObjectPtr<UCombatStateMachine> StateMachine;
 
 	/**
 	 * M3-010: growth attributes injected via SetCombatStats (profile snapshot

@@ -2,6 +2,7 @@
 
 #include "AttackCatalog.h"
 #include "AttackDefinition.h"
+#include "CombatStateMachine.h"
 #include "CombatGeometry.h"
 #include "CombatHitQuery.h"
 #include "CombatPresentationComponent.h"
@@ -220,6 +221,7 @@ namespace
 UCombatComponent::UCombatComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+	StateMachine = CreateDefaultSubobject<UCombatStateMachine>(TEXT("CombatStateMachine"));
 	CachedInstigatorId = M1_019_NextInstigatorId.fetch_add(1) + 1;
 	// M5-013: the unified entry's dedup face verifies epochs and entities
 	// against this component's own registry (the member address is stable for
@@ -249,6 +251,12 @@ bool UCombatComponent::TryStartAttack(FName AttackId, int32 NewFacing)
 	}
 	// One action at a time: an in-flight attack rejects unconditional reentry.
 	if (ActionState != ECombatActionState::Free)
+	{
+		return false;
+	}
+	// M8-031: the phase transition table gates the start (Idle/CancelWindow
+	// -> Windup are the legal entries; the recovery/stun/knockdown refuse).
+	if (StateMachine != nullptr && !StateMachine->CanStartAttack())
 	{
 		return false;
 	}
@@ -424,6 +432,25 @@ void UCombatComponent::TickCombat(float DeltaSeconds)
 		{
 			return;
 		}
+	}
+	// M8-031: the phase state machine derives from the settled snapshot
+	// (the frame counters advanced, the victim timers applied this frame).
+	if (StateMachine != nullptr)
+	{
+		FCombatPhaseFacts Facts;
+		Facts.bDead = bDead;
+		Facts.bHitStun = ActionState == ECombatActionState::HitStun;
+		Facts.bKnockdown = ActionState == ECombatActionState::Knockdown;
+		Facts.bRecovering = ActionState == ECombatActionState::Recovering;
+		Facts.Frame = CurrentFrame;
+		if (const UAttackDefinition* PhaseDef = (Catalog != nullptr) ? Catalog->Find(ActiveAttackId) : nullptr)
+		{
+			Facts.ActiveStartFrame = PhaseDef->ActiveWindow.StartFrame;
+			Facts.ActiveEndFrame = PhaseDef->ActiveWindow.EndFrame;
+			Facts.CancelStartFrame = PhaseDef->CancelWindow.StartFrame;
+			Facts.DurationFrames = PhaseDef->DurationFrames;
+		}
+		StateMachine->UpdateFromFacts(Facts);
 	}
 }
 
