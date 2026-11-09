@@ -1,3 +1,12 @@
+# 最新状态：M8-027 火山资产提取 DONE（确定性双跑），下一步 M8-028 导入（2026-11-09）
+
+- Owner：ZCode-20261107-A。M8 累计 DONE **27**；M8-022 IN_PROGRESS（H 类）；M8-028 就绪；提交 `141f9c3`→`a81f9bf`。
+- **M8-027（DONE）**：火山图 44 对象/64 图帧/66 PNG 提取落盘（`Data/DNFMReplica/volcano_assets/` + placement），**双跑字节级确定性 ✓**；两处火山结构差异（零图扩展 tile、纯逻辑动画对象）按 map_volcano.json 审计口径容忍记录。`build_volcano_assets.py` + `check_volcano_determinism.py`。
+- 下一步：**M8-028 火山图导入**（对象式地面适配——tile 空集；DISTANTBACK 全景层；room_volcano 行+触发/出口）→ M8-029 碰撞/专项 → M8-030 动态环境 → P08 Boss。
+- 用户事项：试玩第九版包 `Artifacts/Package/Windows/UEMMO/Binaries/Win64/UEMMO.exe`（窗口化+菜单已实证）。
+
+---
+
 # 最新状态：P07 火山图拆卡完成（M8-027~030 四卡），M8-027 就绪待执行（2026-11-09）
 
 - Owner：ZCode-20261107-A。M8 累计 DONE **26**；M8-022 IN_PROGRESS（第九版包 H 类待试玩）；M8-025 SUPERSEDED；**M8-027~030 登记（P07 四卡）**；提交 `141f9c3`→HEAD。
