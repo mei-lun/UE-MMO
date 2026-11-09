@@ -6,6 +6,7 @@
 #include "Character/AttackMovementGate.h"
 #include "Character/DNFMCharacterVisualComponent.h"
 #include "Character/SideViewCameraComponent.h"
+#include "Combat/SkillAbilityComponent.h"
 #include "Combat/AttackCatalog.h"
 #include "Combat/CombatComponent.h"
 #include "Combat/CombatPresentationComponent.h"
@@ -504,6 +505,10 @@ void APrototypeCharacter::BeginPlay()
     // every tick (Reset/interrupt paths stop the montage and return to the
     // locomotion AnimBP). Null-safe on both arguments by contract.
     CombatPresentation->SetSources(Combat, GetMesh());
+    // M8-031: the six skill ability components (the component-loaded skills;
+    // configured from the loadout in CreateSkillAbilities below). The input
+    // layer routes slot presses to these components generically.
+    CreateSkillAbilities(SkillLoadout);
     // M8-021: the fighter's own hit voice (the M8-009 located clip) - the
     // first production wiring of the presenter's audio chain for the player.
     CombatPresentation->SetAudioSounds(
@@ -1340,6 +1345,28 @@ void APrototypeCharacter::SubmitSkillSlot(int32 SlotIndex)
         UE_LOG(LogTemp, Verbose, TEXT("UEMMO: skill slot %d pressed (no effect; M2+ placeholder)."), SlotIndex);
     }
 }
+void APrototypeCharacter::CreateSkillAbilities(USkillLoadoutComponent* Loadout)
+{
+	// M8-031: one ability component per skill slot. The launcher (slot 3 =
+	// the Z key) delivers through its own projectile; the rest through the
+	// shared combat chain. The loadout backfills the skill/attack ids from
+	// the profession rows.
+	for (int32 i = 0; i < 6; ++i)
+	{
+		USkillAbilityComponent* Ability = NewObject<USkillAbilityComponent>(this,
+			*FString::Printf(TEXT("SkillAbility%d"), i));
+		Ability->RegisterComponent();
+		SkillAbilities.Add(Ability);
+	}
+	if (Loadout != nullptr && SkillAbilities.Num() >= 4)
+	{
+		FSkillProjectileSpec LauncherSpec;
+		LauncherSpec.bProjectile = true;
+		SkillAbilities[2]->Configure(FName(TEXT("skill_launcher")), FName(TEXT("launcher")),
+			20, 3.0f, LauncherSpec, Loadout);
+	}
+}
+
 void APrototypeCharacter::DevSetMoveAxes(float AxisX, float AxisY)
 {
     // M7-visual acceptance: the exact writes MoveHorizontal/MoveDepth perform

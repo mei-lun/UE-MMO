@@ -11,6 +11,9 @@
 //   UnifiedHitApplier bottoms out at; never a second removal path)
 // - the display is the 4f x 30ms looping ThrowStone page (68x17, 17px cells)
 // - landing destroys the stone with a short linger (the impact feedback)
+// M8-031: the flight profile became per-instance (SpawnSkillProjectile
+// configures it for the player's skill delivery; the monster throw keeps
+// the M8-007 defaults).
 #pragma once
 
 #include "CoreMinimal.h"
@@ -34,12 +37,30 @@ public:
 	 * Spawns one stone at the thrower's hand anchor. Facing mirrors the X
 	 * axis convention (+1 right / -1 left); the stone keeps the anchor's Y
 	 * (the thrower was depth-aligned before the release). Returns null when
-	 * the world/class is unusable.
+	 * the world/class is unusable. The monster throw profile (the M8-007
+	 * defaults).
 	 */
 	static AThrowStoneProjectile* Spawn(UWorld* World, const FVector& HandWorldLocation,
 		int32 Facing, float Damage, AActor* InTarget,
 		UMaterialInterface* StoneMaterial);
 
+	/** M8-031: the skill-ability entry - the configurable flight profile and
+	 * the enemy-path hit mode (the first alive melee enemy in the flight box
+	 * takes the hit through the unified Health chain). */
+	static AThrowStoneProjectile* SpawnSkillProjectile(UWorld* World,
+		const FVector& HandWorldLocation, int32 Facing, float Damage,
+		float InSpeedCmPerSecond, float InRangeCm, float InBoxHalfCm,
+		UMaterialInterface* StoneMaterial);
+
+private:
+	/** Applies the launch parameters to the spawned instance (the entries'
+	 * shared body - the two public entries only differ in their defaults). */
+	static AThrowStoneProjectile* SpawnCore(UWorld* World, AThrowStoneProjectile* Stone,
+		const FVector& HandWorldLocation, int32 InFacing, float InDamage,
+		UMaterialInterface* StoneMaterial, AActor* InTarget, float SpeedCmPerSecond,
+		float RangeCm, float BoxHalfCm);
+
+public:
 	/** Test seams: flight state, the locked data, and the hand anchor. */
 	bool IsInFlight() const { return bInFlight; }
 	bool HasLanded() const { return bLanded; }
@@ -69,12 +90,20 @@ protected:
 	// ---------------- flight state ----------------
 	bool bInFlight = false;
 	bool bLanded = false;
+	/** M8-031: the skill mode - the flight hits the melee enemies (the
+	 * player's projectiles) instead of the bound target (the monster throw). */
+	bool bHitEnemies = false;
 	double LandAtSeconds = 0.0;
 	double BornSeconds = 0.0;
 	float ElapsedMs = 0.f;
 	float TravelledCm = 0.f;
 
-	// ---------------- M8-007 proven values / project adaptations ----------------
+	// ---------------- per-instance flight profile (M8-031) ----------------
+	float FlightSpeedCmPerSecond = 400.f;
+	float MaxFlightDistanceCm = 500.f;
+	float HitBoxHalfCm = 10.f;
+
+	// ---------------- M8-007 proven values ----------------
 	/** M8-007: 4 flight frames, 30ms each (120ms loop). */
 	static constexpr int32 FrameCount = 4;
 	static constexpr float FrameMs = 30.f;
@@ -83,22 +112,8 @@ protected:
 	static constexpr float PageWidthPx = 68.f;
 	/** M6-022/M8-010 calibration: the stone quad is 17px * 1.7615 = ~30cm. */
 	static constexpr float CmPerPixel = 1.7615f;
-	/** M8-007: the flight hit box is a 20cm cube centered on the stone. */
-	static constexpr float HitBoxHalfCm = 10.f;
-	/**
-	 * Design default (recorded in the report): the source .obj physics are
-	 * not decoded; the daydungeon family sibling authors a 1400ms flight for
-	 * the 500cm range (~357cm/s). 400cm/s keeps a comparable dodge window.
-	 */
-	static constexpr float FlightSpeedCmPerSecond = 400.f;
 	/** Design default: hard flight time cap (safety; the range end lands first). */
 	static constexpr float MaxFlightSeconds = 3.f;
-	/**
-	 * The landing distance: the M8-007/enemies.json throw range (500cm) - the
-	 * AI only fires within it and the straight stone lands at that distance
-	 * (the decoded source carries no gravity for the renewal flight).
-	 */
-	static constexpr float MaxFlightDistanceCm = 500.f;
 	/** Design default: the landing linger (the impact feedback) before removal. */
 	static constexpr float LandLingerSeconds = 0.15f;
 };

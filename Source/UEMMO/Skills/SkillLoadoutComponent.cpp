@@ -250,6 +250,23 @@ FSkillActivationOutcome USkillLoadoutComponent::PrecheckSkill(FName SkillId, dou
 	return Out;
 }
 
+FSkillActivationOutcome USkillLoadoutComponent::TryActivateSkillByAttack(FName AttackId)
+{
+	// M8-031: resolve the hotbar slot that maps this attack (the profession
+	// rows carry the attack id per skill) and run the same gates verbatim.
+	for (int32 Slot = 1; Slot <= 8; ++Slot)
+	{
+		if (GetSlotSkill(Slot) == AttackId)
+		{
+			return TryActivateSkill(Slot);
+		}
+	}
+	FSkillActivationOutcome Out;
+	Out.Error = ESkillActivationError::MissingAttack;
+	Out.Message = FString::Printf(TEXT("no hotbar slot maps attack '%s'"), *AttackId.ToString());
+	return Out;
+}
+
 FSkillActivationOutcome USkillLoadoutComponent::TryActivateSkill(int32 SlotIndex)
 {
 	FSkillActivationOutcome Out;

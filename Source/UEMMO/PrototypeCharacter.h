@@ -27,6 +27,7 @@ class UStaticMeshComponent;
 
 class ACombatProjectile;
 class USkillLoadoutComponent;
+class USkillAbilityComponent;
 class UProfessionCatalogSubsystem;
 class UDNFMCharacterVisualComponent;
 struct FSkillActivationOutcome;
@@ -88,6 +89,13 @@ public:
 
     /** M8-023: the fixed side-view rig (the room-bounds application). */
     USideViewCameraComponent* GetCameraRig() const { return CameraRig; }
+
+    /** M8-031: the six skill ability components (the component-loaded skills). */
+    UPROPERTY(VisibleAnywhere, Category = "Combat")
+    TArray<TObjectPtr<USkillAbilityComponent>> SkillAbilities;
+
+    /** M8-031: creates and configures the six skill ability components. */
+    void CreateSkillAbilities(USkillLoadoutComponent* Loadout);
 
     /**
      * M1-012: public combat intent entry (M1-040 keys: X = Light, Z =

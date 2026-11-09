@@ -2,6 +2,8 @@
 
 #include "../Combat/HealthComponent.h"
 #include "../PrototypeCharacter.h"
+#include "../Enemy/MeleeEnemy.h"
+#include "EngineUtils.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -40,23 +42,16 @@ AThrowStoneProjectile::AThrowStoneProjectile()
 	Plane->SetVisibility(false);
 }
 
-AThrowStoneProjectile* AThrowStoneProjectile::Spawn(UWorld* World, const FVector& HandWorldLocation,
-	int32 InFacing, float InDamage, AActor* InTarget, UMaterialInterface* StoneMaterial)
+AThrowStoneProjectile* AThrowStoneProjectile::SpawnCore(UWorld* World, AThrowStoneProjectile* Stone,
+	const FVector& HandWorldLocation, int32 InFacing, float InDamage,
+	UMaterialInterface* StoneMaterial, AActor* InTarget, float SpeedCmPerSecond,
+	float RangeCm, float BoxHalfCm)
 {
-	if (World == nullptr || InTarget == nullptr)
-	{
-		return nullptr;
-	}
-	FActorSpawnParameters Params;
-	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	AThrowStoneProjectile* Stone = World->SpawnActor<AThrowStoneProjectile>(
-		AThrowStoneProjectile::StaticClass(), HandWorldLocation, FRotator::ZeroRotator, Params);
-	if (Stone == nullptr)
-	{
-		return nullptr;
-	}
 	Stone->Facing = InFacing >= 0 ? 1 : -1;
 	Stone->Damage = InDamage;
+	Stone->FlightSpeedCmPerSecond = SpeedCmPerSecond;
+	Stone->MaxFlightDistanceCm = RangeCm;
+	Stone->HitBoxHalfCm = BoxHalfCm;
 	Stone->HandAnchor = HandWorldLocation;
 	Stone->TargetWeak = InTarget;
 	Stone->BornSeconds = World->GetTimeSeconds();
@@ -65,7 +60,6 @@ AThrowStoneProjectile* AThrowStoneProjectile::Spawn(UWorld* World, const FVector
 		Stone->StoneMID = UMaterialInstanceDynamic::Create(StoneMaterial, Stone);
 		if (Stone->StoneMID != nullptr)
 		{
-			// Frame 0 of the 4-cell strip; Tick keeps cycling the rect.
 			Stone->StoneMID->SetVectorParameterValue(TEXT("UVRectMin"),
 				FLinearColor(0.f, 0.f, 0.f, 0.f));
 			Stone->StoneMID->SetVectorParameterValue(TEXT("UVRectSize"),
@@ -76,6 +70,43 @@ AThrowStoneProjectile* AThrowStoneProjectile::Spawn(UWorld* World, const FVector
 	Stone->Plane->SetVisibility(true);
 	Stone->bInFlight = true;
 	return Stone;
+}
+
+AThrowStoneProjectile* AThrowStoneProjectile::Spawn(UWorld* World, const FVector& HandWorldLocation,
+	int32 InFacing, float InDamage, AActor* InTarget, UMaterialInterface* StoneMaterial)
+{
+	// The monster throw: the target-bound flight with the M8-007 proven
+	// profile (400cm/s, 500cm range, 20cm box).
+	FActorSpawnParameters Params;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	AThrowStoneProjectile* Stone = World->SpawnActor<AThrowStoneProjectile>(
+		AThrowStoneProjectile::StaticClass(), HandWorldLocation, FRotator::ZeroRotator, Params);
+	if (Stone == nullptr)
+	{
+		return nullptr;
+	}
+	// The M8-007 proven profile (the class defaults): 400cm/s, 500cm, 10cm.
+	return SpawnCore(World, Stone, HandWorldLocation, InFacing, InDamage,
+		StoneMaterial, InTarget, 400.f, 500.f, 10.f);
+}
+
+AThrowStoneProjectile* AThrowStoneProjectile::SpawnSkillProjectile(UWorld* World,
+	const FVector& HandWorldLocation, int32 InFacing, float InDamage,
+	float InSpeedCmPerSecond, float InRangeCm, float InBoxHalfCm,
+	UMaterialInterface* StoneMaterial)
+{
+	// The player's skill projectile: the target-less flight, the first melee
+	// enemy in the path takes the hit.
+	FActorSpawnParameters Params;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	AThrowStoneProjectile* Stone = World->SpawnActor<AThrowStoneProjectile>(
+		AThrowStoneProjectile::StaticClass(), HandWorldLocation, FRotator::ZeroRotator, Params);
+	if (Stone == nullptr)
+	{
+		return nullptr;
+	}
+	return SpawnCore(World, Stone, HandWorldLocation, InFacing, InDamage,
+		StoneMaterial, nullptr, InSpeedCmPerSecond, InRangeCm, InBoxHalfCm);
 }
 
 void AThrowStoneProjectile::Tick(float DeltaSeconds)
@@ -128,10 +159,10 @@ void AThrowStoneProjectile::Tick(float DeltaSeconds)
 	// The whole-flight 20cm cube hit box against the target's actor bounds
 	// (the M8-007 source rule: one attack cube per frame, active during the
 	// entire looped flight).
+	const FBox StoneBox(Location - FVector(HitBoxHalfCm), Location + FVector(HitBoxHalfCm));
 	AActor* Target = TargetWeak.Get();
 	if (Target != nullptr)
 	{
-		const FBox StoneBox(Location - FVector(HitBoxHalfCm), Location + FVector(HitBoxHalfCm));
 		if (StoneBox.Intersect(Target->GetComponentsBoundingBox()))
 		{
 			// The unified health chain: the same single removal entry the
@@ -146,6 +177,29 @@ void AThrowStoneProjectile::Tick(float DeltaSeconds)
 			}
 			Destroy();
 			return;
+		}
+	}
+	else if (bHitEnemies)
+	{
+		// The skill projectile (the player's): the first melee enemy whose
+		// bounds the flight box touches takes the damage.
+		for (TActorIterator<AMeleeEnemy> It(World); It; ++It)
+		{
+			AMeleeEnemy* Enemy = *It;
+			if (Enemy == nullptr || Enemy->GetHealthComponent() == nullptr
+				|| !Enemy->GetHealthComponent()->IsAlive())
+			{
+				continue;
+			}
+			if (StoneBox.Intersect(Enemy->GetComponentsBoundingBox()))
+			{
+				if (Enemy->GetHealthComponent()->IsAlive())
+				{
+					Enemy->GetHealthComponent()->ApplyDamage(Damage);
+				}
+				Destroy();
+				return;
+			}
 		}
 	}
 

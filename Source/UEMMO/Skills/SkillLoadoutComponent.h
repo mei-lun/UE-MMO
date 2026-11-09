@@ -111,6 +111,11 @@ public:
 	 */
 	FSkillActivationOutcome TryActivateSkill(int32 SlotIndex);
 
+	/** M8-031: the by-attack activation (the skill ability components call
+	 * this with their own attack id - the same economy gates, no slot
+	 * indirection). */
+	FSkillActivationOutcome TryActivateSkillByAttack(FName AttackId);
+
 	/**
 	 * The Z-launcher precheck (NO side effects - the payment happens on the
 	 * combat OnStarted). The input layer refuses the buffered press when this
