@@ -1,4 +1,5 @@
 # 最新状态：M8-027 火山资产提取 DONE（确定性双跑），下一步 M8-028 导入（2026-11-09）
+- **M8-028 part 1 DONE（17be80d）**：volcano_calibration.json（s=1.7615、深度方向 y-down→+Y、CONTACT 近景带 608-645px、内容范围 X -491..2093cm）+ placement world 全量回填（44 对象 x/foot_y/宽高 cm）。剩余：import_dnfm_volcano_map.py 适配（300 行级）→ room_volcano 接线 → 实拍。
 - **M8-028 执行计划（下轮接续）**：①建 `volcano_calibration.json`（s=1.7615 全局 px 密度沿用；原点=placement px(0,0)；临时走带由 44 个地面对象的 y 带推导，G1 引擎内标定归 M8-029）；②适配 import_dnfm_bamboo_map.py→import_dnfm_volcano_map.py（tile 空集跳过——manifest 的 empty tile def 需守卫；44 对象按层深度放置；DISTANTBACK 远景；spawn/出口按内容）；③rooms.json 加 room_volcano 行→PrepareRooms 管线→触发/出口；④渲染探针实拍对照源预览。
 
 - Owner：ZCode-20261107-A。M8 累计 DONE **27**；M8-022 IN_PROGRESS（H 类）；M8-028 就绪；提交 `141f9c3`→`a81f9bf`。
