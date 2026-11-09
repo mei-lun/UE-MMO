@@ -1,3 +1,13 @@
+# 最新状态：M8-031 全部完成（part1 状态机 + part2 技能组件化），下一步 M8-032 手感调校（2026-11-09）
+
+- Owner：ZCode-20261107-A。M8 累计 DONE **27**；M8-031 全部完成；M8-032/033 就绪；M8-022 IN_PROGRESS（H 类）；提交 `141f9c3`→`c3fee6a`。
+- **M8-031 part1（DONE e731cd8）**：UCombatStateMachine 十相位显式状态机+转换表+相位事件；集成进 UCombatComponent；验收绿。
+- **M8-031 part2（DONE c3fee6a）**：USkillAbilityComponent 每技能一个实例（施放条件/弹体规格/命中反馈声音自包含）；AThrowStoneProjectile 泛化（每实例飞行剖面+敌人路径命中模式）；角色携带六技能组件；输入层纯路由（零特判）；launcher 弹体从 M5 管线迁入技能弹道。验收 SkillAbilityTests 绿。
+- 下一步：**M8-032 手感调校**（命中反馈栈+逐技能节奏）→ M8-033 美术审计 → 统一重打包交付。
+- 用户事项：试玩第九版包。
+
+---
+
 # 最新状态：M8-031 part1 状态机 DONE（验收测试全绿），part2 技能组件化下轮（2026-11-09）
 
 - Owner：ZCode-20261107-A。M8 累计 DONE **27**；M8-022 IN_PROGRESS（H 类）；提交 `141f9c3`→`e731cd8`。
