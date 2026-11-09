@@ -1,3 +1,19 @@
+# 最新状态：08 方案质量收口全部完成——第十二版包交付，待用户试玩确认（2026-11-09）
+
+- Owner：ZCode-20261107-A。M8 累计 DONE **30**；M8-022 IN_PROGRESS（H 类——第十二版包 READY FOR USER）；M8-025 SUPERSEDED；M8-028~030 TODO（P07 火山挂起待质量确认后恢复）；提交 `141f9c3`→HEAD。
+- **08 方案六问题收口状态**：
+  - 问题一 状态机 ✅（M8-031 part1 e731cd8，验收 UEMMO.Acceptance.M8_031.StateMachine 绿）
+  - 问题二 技能组件化 ✅（M8-031 part2 c3fee6a，USkillAbilityComponent 六技能+launcher 迁出 M5 管线，验收 SkillAbilityTests 绿）
+  - 问题三 手感调校 ✅（M8-032 bb808fe，相机 punch+时间微膨胀+受击原声，回归绿）
+  - 问题四 美术缺损 ✅（M8-033，四图审计完成、P13 延期明确记录）
+  - 问题五 显示段表覆盖 ✅（aaf3a51，四 legacy 攻击段表全覆盖校验绿）
+  - 问题六 旧弹道 ✅（M8-031 part2 launcher 迁出 M5 管线）
+- **第十二版包**（PKG exit=0）：包含全部修复+存档恢复。全量回归绿。
+- 下一步：**用户试玩第十二版包确认六问题消除** → M8-022 收口 → P07 火山恢复（M8-028~030）→ P08 Boss。用户事项：试玩 `Artifacts/Package/Windows/UEMMO/Binaries/Win64/UEMMO.exe`。
+- 报告 [M8-024](Docs/Tasks/Reports/M8-024.md)～[M8-033](Docs/Tasks/Reports/M8-033.md)；方案文档 [08](Docs/DNF-Research/08-战斗质量收口方案.md)。
+
+---
+
 # 最新状态：第十一版包（质量收口全部包含），READY FOR USER——待用户试玩确认（2026-11-09）
 
 - Owner：ZCode-20261107-A。M8 累计 DONE **30**；M8-022 IN_PROGRESS（H 类——第十一版包 READY FOR USER）；M8-028~030 TODO（P07 火山挂起）；提交 `141f9c3`→HEAD。
