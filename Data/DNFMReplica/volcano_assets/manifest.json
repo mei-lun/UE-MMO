@@ -1,0 +1,3078 @@
+{
+  "assets_root": "Data/DNFMReplica/volcano_assets/",
+  "build_stamp": "2026-11-09T00:00+0800",
+  "counts": {
+    "object_anim_png": 22,
+    "object_first_frame_png": 44,
+    "object_image_frames_exported": 64,
+    "png_total": 66,
+    "tile_png": 0
+  },
+  "files": [
+    {
+      "draw_layer": 1,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L1_03_6e0ed3f9.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 3,
+      "png_sha256": "bc5de97149f602d678c4a62a7a589d9ccce25e14e42cc4d9f539b2a9c0e3ff1f",
+      "png_size_px": [
+        642,
+        404
+      ],
+      "script_hash64": "6e0ed3f950ca4e3c",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135306,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/High_Back_Sky.img",
+        "atlas_lookup_hash": "f4bcdda721b8cb88",
+        "atlas_name": "High_Back_Sky",
+        "atlas_payload_sha256": "560b9ff44f319033d48cda4327e6636f8de5d4ebd060b7c7a0b762c20ae5e66e",
+        "canvas_px": [
+          642,
+          404
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          648,
+          408
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_2487206285347651792_High_Back_Sky.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/High_Back_Sky.img_0.png",
+        "rect_pixels": [
+          2.0,
+          2.0,
+          642.0,
+          404.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 1,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L1_04_6e0ed3f9.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 4,
+      "png_sha256": "bc5de97149f602d678c4a62a7a589d9ccce25e14e42cc4d9f539b2a9c0e3ff1f",
+      "png_size_px": [
+        642,
+        404
+      ],
+      "script_hash64": "6e0ed3f950ca4e3c",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135306,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/High_Back_Sky.img",
+        "atlas_lookup_hash": "f4bcdda721b8cb88",
+        "atlas_name": "High_Back_Sky",
+        "atlas_payload_sha256": "560b9ff44f319033d48cda4327e6636f8de5d4ebd060b7c7a0b762c20ae5e66e",
+        "canvas_px": [
+          642,
+          404
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          648,
+          408
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_2487206285347651792_High_Back_Sky.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/High_Back_Sky.img_0.png",
+        "rect_pixels": [
+          2.0,
+          2.0,
+          642.0,
+          404.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 1,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L1_05_6e0ed3f9.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 5,
+      "png_sha256": "bc5de97149f602d678c4a62a7a589d9ccce25e14e42cc4d9f539b2a9c0e3ff1f",
+      "png_size_px": [
+        642,
+        404
+      ],
+      "script_hash64": "6e0ed3f950ca4e3c",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135306,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/High_Back_Sky.img",
+        "atlas_lookup_hash": "f4bcdda721b8cb88",
+        "atlas_name": "High_Back_Sky",
+        "atlas_payload_sha256": "560b9ff44f319033d48cda4327e6636f8de5d4ebd060b7c7a0b762c20ae5e66e",
+        "canvas_px": [
+          642,
+          404
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          648,
+          408
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_2487206285347651792_High_Back_Sky.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/High_Back_Sky.img_0.png",
+        "rect_pixels": [
+          2.0,
+          2.0,
+          642.0,
+          404.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 1,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L1_06_ed836273.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 6,
+      "png_sha256": "76bed448f6842f89f5bdb2047e54b9d5e26728d9f9eba15d95e0da762dc58f19",
+      "png_size_px": [
+        1404,
+        399
+      ],
+      "script_hash64": "ed8362731f3b68b5",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135305,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/High_Back_BigVolcano.img",
+        "atlas_lookup_hash": "58e52ae3c49a27d8",
+        "atlas_name": "High_Back_BigVolcano",
+        "atlas_payload_sha256": "65aca9ccd8e8a2a00c8965993a6d20633cbe3520b404853724468320476cded0",
+        "canvas_px": [
+          1404,
+          399
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          25,
+          29
+        ],
+        "page_declared_size_px": [
+          1384,
+          376
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_-6765802873908182339_High_Back_BigVolcano.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/High_Back_BigVolcano.img_0.png",
+        "rect_pixels": [
+          2.0,
+          2.0,
+          1379.0,
+          370.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 1,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L1_25_498214b0.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 25,
+      "png_sha256": "d0ae39d8e70431ebc39431af429b3a3814b70d296c8bd2ff40b7e06f059db37e",
+      "png_size_px": [
+        544,
+        105
+      ],
+      "script_hash64": "498214b0df6af5cf",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135315,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img",
+        "atlas_lookup_hash": "4367ec8577188a5e",
+        "atlas_name": "Middle_Effect",
+        "atlas_payload_sha256": "2dcdc43a9af72d21f7b25f812a2b11c0711b1687076ea31238faddb9053a9199",
+        "canvas_px": [
+          544,
+          105
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          548,
+          1180
+        ],
+        "page_format_code": 1,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_-405200769393916061_Middle_Effect.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img_0.png",
+        "rect_pixels": [
+          2.0,
+          2.0,
+          544.0,
+          105.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L2_01_ff519450.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 1,
+      "png_sha256": "ed5e9d8ef7e02743576da07980735338478bf2b829bf0975a3864164ae924695",
+      "png_size_px": [
+        701,
+        361
+      ],
+      "script_hash64": "ff5194504d219818",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135310,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/High_Middle_Middle.img",
+        "atlas_lookup_hash": "52e4a3fa5e3de8aa",
+        "atlas_name": "High_Middle_Middle",
+        "atlas_payload_sha256": "21aed3c5590a46a38789dbf67b494457c1b7eb11575fca59f70ed9393ce170b0",
+        "canvas_px": [
+          701,
+          361
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          2
+        ],
+        "page_declared_size_px": [
+          708,
+          364
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_-7244070049810427716_High_Middle_Middle.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/High_Middle_Middle.img_0.png",
+        "rect_pixels": [
+          2.0,
+          2.0,
+          701.0,
+          359.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L2_02_b6a646eb.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 2,
+      "png_sha256": "571705c312b9f0ee3e97b94db9f39a2c508fa826aeda2d4ffb28803d75a313d8",
+      "png_size_px": [
+        605,
+        408
+      ],
+      "script_hash64": "b6a646ebe8bf9d95",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135308,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/High_Middle_Boss.img",
+        "atlas_lookup_hash": "c03b9542e9287867",
+        "atlas_name": "High_Middle_Boss",
+        "atlas_payload_sha256": "5611c42f8407ec3e020b91e4e2791db7d26b05bb2f21afebb28d99a3e9d8afac",
+        "canvas_px": [
+          605,
+          408
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          612,
+          412
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_-4201814598151342216_High_Middle_Boss.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/High_Middle_Boss.img_0.png",
+        "rect_pixels": [
+          2.0,
+          2.0,
+          605.0,
+          408.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L2_07_b6a646eb.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 7,
+      "png_sha256": "571705c312b9f0ee3e97b94db9f39a2c508fa826aeda2d4ffb28803d75a313d8",
+      "png_size_px": [
+        605,
+        408
+      ],
+      "script_hash64": "b6a646ebe8bf9d95",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135308,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/High_Middle_Boss.img",
+        "atlas_lookup_hash": "c03b9542e9287867",
+        "atlas_name": "High_Middle_Boss",
+        "atlas_payload_sha256": "5611c42f8407ec3e020b91e4e2791db7d26b05bb2f21afebb28d99a3e9d8afac",
+        "canvas_px": [
+          605,
+          408
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          612,
+          412
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_-4201814598151342216_High_Middle_Boss.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/High_Middle_Boss.img_0.png",
+        "rect_pixels": [
+          2.0,
+          2.0,
+          605.0,
+          408.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L2_08_ff519450.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 8,
+      "png_sha256": "ed5e9d8ef7e02743576da07980735338478bf2b829bf0975a3864164ae924695",
+      "png_size_px": [
+        701,
+        361
+      ],
+      "script_hash64": "ff5194504d219818",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135310,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/High_Middle_Middle.img",
+        "atlas_lookup_hash": "52e4a3fa5e3de8aa",
+        "atlas_name": "High_Middle_Middle",
+        "atlas_payload_sha256": "21aed3c5590a46a38789dbf67b494457c1b7eb11575fca59f70ed9393ce170b0",
+        "canvas_px": [
+          701,
+          361
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          2
+        ],
+        "page_declared_size_px": [
+          708,
+          364
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_-7244070049810427716_High_Middle_Middle.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/High_Middle_Middle.img_0.png",
+        "rect_pixels": [
+          2.0,
+          2.0,
+          701.0,
+          359.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L2_24_498214b0.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 24,
+      "png_sha256": "d0ae39d8e70431ebc39431af429b3a3814b70d296c8bd2ff40b7e06f059db37e",
+      "png_size_px": [
+        544,
+        105
+      ],
+      "script_hash64": "498214b0df6af5cf",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135315,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img",
+        "atlas_lookup_hash": "4367ec8577188a5e",
+        "atlas_name": "Middle_Effect",
+        "atlas_payload_sha256": "2dcdc43a9af72d21f7b25f812a2b11c0711b1687076ea31238faddb9053a9199",
+        "canvas_px": [
+          544,
+          105
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          548,
+          1180
+        ],
+        "page_format_code": 1,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_-405200769393916061_Middle_Effect.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img_0.png",
+        "rect_pixels": [
+          2.0,
+          2.0,
+          544.0,
+          105.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_09_7f066f13.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 9,
+      "png_sha256": "78a53b95b108eaeaab884503c48da4b30e153e0c3d1cf2df5dc45fda417d03e2",
+      "png_size_px": [
+        475,
+        290
+      ],
+      "script_hash64": "7f066f137a398232",
+      "source": {
+        "atlas_frame_index": 2,
+        "atlas_id": 135289,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Big_Stone.img",
+        "atlas_lookup_hash": "5912fd026bd8e55f",
+        "atlas_name": "High_Big_Stone",
+        "atlas_payload_sha256": "bf6ed4731c55356bf37c6adba6e9d18d94829fe3390159a2dff506df8a1035d5",
+        "canvas_px": [
+          475,
+          290
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          1,
+          58
+        ],
+        "page_declared_size_px": [
+          468,
+          748
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_-6514840225682991349_High_Big_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Big_Stone.img_0.png",
+        "rect_pixels": [
+          2.0,
+          2.0,
+          463.0,
+          222.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_14_181e9f43.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 14,
+      "png_sha256": "39bafe4e7d39267607a1cae68242962d385c85304b47c8bd628688159d7a073f",
+      "png_size_px": [
+        475,
+        290
+      ],
+      "script_hash64": "181e9f438148968c",
+      "source": {
+        "atlas_frame_index": 1,
+        "atlas_id": 135289,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Big_Stone.img",
+        "atlas_lookup_hash": "5912fd026bd8e55f",
+        "atlas_name": "High_Big_Stone",
+        "atlas_payload_sha256": "bf6ed4731c55356bf37c6adba6e9d18d94829fe3390159a2dff506df8a1035d5",
+        "canvas_px": [
+          475,
+          290
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          112,
+          24
+        ],
+        "page_declared_size_px": [
+          468,
+          748
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_-6514840225682991349_High_Big_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Big_Stone.img_0.png",
+        "rect_pixels": [
+          2.0,
+          493.0,
+          276.0,
+          251.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_15_c1d2d85f.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 15,
+      "png_sha256": "364632aef9db4ce961c2da4fa54670015390c4fbb8bd7354d3a6b47b640e6b35",
+      "png_size_px": [
+        475,
+        290
+      ],
+      "script_hash64": "c1d2d85f62fe9835",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135289,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Big_Stone.img",
+        "atlas_lookup_hash": "5912fd026bd8e55f",
+        "atlas_name": "High_Big_Stone",
+        "atlas_payload_sha256": "bf6ed4731c55356bf37c6adba6e9d18d94829fe3390159a2dff506df8a1035d5",
+        "canvas_px": [
+          475,
+          290
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          3,
+          10
+        ],
+        "page_declared_size_px": [
+          468,
+          748
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_-6514840225682991349_High_Big_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Big_Stone.img_0.png",
+        "rect_pixels": [
+          2.0,
+          226.0,
+          458.0,
+          265.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_16_a0c43607.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 16,
+      "png_sha256": "472cb510d41265d99000f1d92aa7de75f7da25084db722105648f6a116cc420b",
+      "png_size_px": [
+        175,
+        136
+      ],
+      "script_hash64": "a0c4360752442912",
+      "source": {
+        "atlas_frame_index": 3,
+        "atlas_id": 135294,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Small_Stone.img",
+        "atlas_lookup_hash": "0856708a3a6ba483",
+        "atlas_name": "High_Small_Stone",
+        "atlas_payload_sha256": "a2e0c90128e09883c04f4d79ff55b5687a2a3954d0129845192926933a6989a7",
+        "canvas_px": [
+          175,
+          136
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "High_Small_Stone_0003",
+        "offset_px": [
+          77,
+          51
+        ],
+        "page_declared_size_px": [
+          128,
+          128
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_-4664640990437057594_High_Small_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Small_Stone.img_0.png",
+        "rect_pixels": [
+          49.0,
+          9.0,
+          38.0,
+          49.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_17_585d2dcf.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 17,
+      "png_sha256": "63803cb9cca65cddfd89272861a579b9edb7c8e47db968d21509111c55419c8d",
+      "png_size_px": [
+        175,
+        136
+      ],
+      "script_hash64": "585d2dcf165084ba",
+      "source": {
+        "atlas_frame_index": 4,
+        "atlas_id": 135294,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Small_Stone.img",
+        "atlas_lookup_hash": "0856708a3a6ba483",
+        "atlas_name": "High_Small_Stone",
+        "atlas_payload_sha256": "a2e0c90128e09883c04f4d79ff55b5687a2a3954d0129845192926933a6989a7",
+        "canvas_px": [
+          175,
+          136
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "High_Small_Stone_0004",
+        "offset_px": [
+          77,
+          64
+        ],
+        "page_declared_size_px": [
+          128,
+          128
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_-4664640990437057594_High_Small_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Small_Stone.img_0.png",
+        "rect_pixels": [
+          91.0,
+          35.0,
+          35.0,
+          23.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_18_08f624b4.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 18,
+      "png_sha256": "d8141999a5da79722f277582e8c51f5a1f9b346abb389038d86cabb27490f42c",
+      "png_size_px": [
+        175,
+        136
+      ],
+      "script_hash64": "08f624b4695dc700",
+      "source": {
+        "atlas_frame_index": 5,
+        "atlas_id": 135294,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Small_Stone.img",
+        "atlas_lookup_hash": "0856708a3a6ba483",
+        "atlas_name": "High_Small_Stone",
+        "atlas_payload_sha256": "a2e0c90128e09883c04f4d79ff55b5687a2a3954d0129845192926933a6989a7",
+        "canvas_px": [
+          175,
+          136
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "High_Small_Stone_0005",
+        "offset_px": [
+          88,
+          60
+        ],
+        "page_declared_size_px": [
+          128,
+          128
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_-4664640990437057594_High_Small_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Small_Stone.img_0.png",
+        "rect_pixels": [
+          91.0,
+          0.0,
+          25.0,
+          31.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_19_5342f715.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 19,
+      "png_sha256": "9195dc95a760bb5895eb3ff22c8663b2234b2e07758fca7c397fd6c90f3f6bd5",
+      "png_size_px": [
+        184,
+        136
+      ],
+      "script_hash64": "5342f71520954126",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135293,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Middle_Stone.img",
+        "atlas_lookup_hash": "4fe5fc60d0d26efb",
+        "atlas_name": "High_Middle_Stone",
+        "atlas_payload_sha256": "ad041ce11fc82f5c41f72c2746c02e7ad4bde6f8603c1012446881dfb1c630cb",
+        "canvas_px": [
+          184,
+          136
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          27,
+          17
+        ],
+        "page_declared_size_px": [
+          264,
+          220
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_8173654596144788078_High_Middle_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Middle_Stone.img_0.png",
+        "rect_pixels": [
+          2.0,
+          10.0,
+          146.0,
+          109.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_20_03eb7d82.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 20,
+      "png_sha256": "3c0db095c996fd61349209d8224993a5174095e3947afd3e1d51bc6fe8e451e9",
+      "png_size_px": [
+        184,
+        136
+      ],
+      "script_hash64": "03eb7d82d00573ad",
+      "source": {
+        "atlas_frame_index": 1,
+        "atlas_id": 135293,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Middle_Stone.img",
+        "atlas_lookup_hash": "4fe5fc60d0d26efb",
+        "atlas_name": "High_Middle_Stone",
+        "atlas_payload_sha256": "ad041ce11fc82f5c41f72c2746c02e7ad4bde6f8603c1012446881dfb1c630cb",
+        "canvas_px": [
+          184,
+          136
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          67,
+          36
+        ],
+        "page_declared_size_px": [
+          264,
+          220
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_8173654596144788078_High_Middle_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Middle_Stone.img_0.png",
+        "rect_pixels": [
+          189.0,
+          153.0,
+          71.0,
+          64.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_21_a0c43607.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 21,
+      "png_sha256": "472cb510d41265d99000f1d92aa7de75f7da25084db722105648f6a116cc420b",
+      "png_size_px": [
+        175,
+        136
+      ],
+      "script_hash64": "a0c4360752442912",
+      "source": {
+        "atlas_frame_index": 3,
+        "atlas_id": 135294,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Small_Stone.img",
+        "atlas_lookup_hash": "0856708a3a6ba483",
+        "atlas_name": "High_Small_Stone",
+        "atlas_payload_sha256": "a2e0c90128e09883c04f4d79ff55b5687a2a3954d0129845192926933a6989a7",
+        "canvas_px": [
+          175,
+          136
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "High_Small_Stone_0003",
+        "offset_px": [
+          77,
+          51
+        ],
+        "page_declared_size_px": [
+          128,
+          128
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_-4664640990437057594_High_Small_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Small_Stone.img_0.png",
+        "rect_pixels": [
+          49.0,
+          9.0,
+          38.0,
+          49.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_22_585d2dcf.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 22,
+      "png_sha256": "63803cb9cca65cddfd89272861a579b9edb7c8e47db968d21509111c55419c8d",
+      "png_size_px": [
+        175,
+        136
+      ],
+      "script_hash64": "585d2dcf165084ba",
+      "source": {
+        "atlas_frame_index": 4,
+        "atlas_id": 135294,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Small_Stone.img",
+        "atlas_lookup_hash": "0856708a3a6ba483",
+        "atlas_name": "High_Small_Stone",
+        "atlas_payload_sha256": "a2e0c90128e09883c04f4d79ff55b5687a2a3954d0129845192926933a6989a7",
+        "canvas_px": [
+          175,
+          136
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "High_Small_Stone_0004",
+        "offset_px": [
+          77,
+          64
+        ],
+        "page_declared_size_px": [
+          128,
+          128
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_-4664640990437057594_High_Small_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Small_Stone.img_0.png",
+        "rect_pixels": [
+          91.0,
+          35.0,
+          35.0,
+          23.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_23_08f624b4.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 23,
+      "png_sha256": "d8141999a5da79722f277582e8c51f5a1f9b346abb389038d86cabb27490f42c",
+      "png_size_px": [
+        175,
+        136
+      ],
+      "script_hash64": "08f624b4695dc700",
+      "source": {
+        "atlas_frame_index": 5,
+        "atlas_id": 135294,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Small_Stone.img",
+        "atlas_lookup_hash": "0856708a3a6ba483",
+        "atlas_name": "High_Small_Stone",
+        "atlas_payload_sha256": "a2e0c90128e09883c04f4d79ff55b5687a2a3954d0129845192926933a6989a7",
+        "canvas_px": [
+          175,
+          136
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "High_Small_Stone_0005",
+        "offset_px": [
+          88,
+          60
+        ],
+        "page_declared_size_px": [
+          128,
+          128
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_-4664640990437057594_High_Small_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Small_Stone.img_0.png",
+        "rect_pixels": [
+          91.0,
+          0.0,
+          25.0,
+          31.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_26_c1d2d85f.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 26,
+      "png_sha256": "364632aef9db4ce961c2da4fa54670015390c4fbb8bd7354d3a6b47b640e6b35",
+      "png_size_px": [
+        475,
+        290
+      ],
+      "script_hash64": "c1d2d85f62fe9835",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135289,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Big_Stone.img",
+        "atlas_lookup_hash": "5912fd026bd8e55f",
+        "atlas_name": "High_Big_Stone",
+        "atlas_payload_sha256": "bf6ed4731c55356bf37c6adba6e9d18d94829fe3390159a2dff506df8a1035d5",
+        "canvas_px": [
+          475,
+          290
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          3,
+          10
+        ],
+        "page_declared_size_px": [
+          468,
+          748
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_-6514840225682991349_High_Big_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Big_Stone.img_0.png",
+        "rect_pixels": [
+          2.0,
+          226.0,
+          458.0,
+          265.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_27_c1d2d85f.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 27,
+      "png_sha256": "364632aef9db4ce961c2da4fa54670015390c4fbb8bd7354d3a6b47b640e6b35",
+      "png_size_px": [
+        475,
+        290
+      ],
+      "script_hash64": "c1d2d85f62fe9835",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135289,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Big_Stone.img",
+        "atlas_lookup_hash": "5912fd026bd8e55f",
+        "atlas_name": "High_Big_Stone",
+        "atlas_payload_sha256": "bf6ed4731c55356bf37c6adba6e9d18d94829fe3390159a2dff506df8a1035d5",
+        "canvas_px": [
+          475,
+          290
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          3,
+          10
+        ],
+        "page_declared_size_px": [
+          468,
+          748
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_-6514840225682991349_High_Big_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Big_Stone.img_0.png",
+        "rect_pixels": [
+          2.0,
+          226.0,
+          458.0,
+          265.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_28_c1d2d85f.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 28,
+      "png_sha256": "364632aef9db4ce961c2da4fa54670015390c4fbb8bd7354d3a6b47b640e6b35",
+      "png_size_px": [
+        475,
+        290
+      ],
+      "script_hash64": "c1d2d85f62fe9835",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135289,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Big_Stone.img",
+        "atlas_lookup_hash": "5912fd026bd8e55f",
+        "atlas_name": "High_Big_Stone",
+        "atlas_payload_sha256": "bf6ed4731c55356bf37c6adba6e9d18d94829fe3390159a2dff506df8a1035d5",
+        "canvas_px": [
+          475,
+          290
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          3,
+          10
+        ],
+        "page_declared_size_px": [
+          468,
+          748
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_-6514840225682991349_High_Big_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Big_Stone.img_0.png",
+        "rect_pixels": [
+          2.0,
+          226.0,
+          458.0,
+          265.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_29_c1d2d85f.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 29,
+      "png_sha256": "364632aef9db4ce961c2da4fa54670015390c4fbb8bd7354d3a6b47b640e6b35",
+      "png_size_px": [
+        475,
+        290
+      ],
+      "script_hash64": "c1d2d85f62fe9835",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135289,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Big_Stone.img",
+        "atlas_lookup_hash": "5912fd026bd8e55f",
+        "atlas_name": "High_Big_Stone",
+        "atlas_payload_sha256": "bf6ed4731c55356bf37c6adba6e9d18d94829fe3390159a2dff506df8a1035d5",
+        "canvas_px": [
+          475,
+          290
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          3,
+          10
+        ],
+        "page_declared_size_px": [
+          468,
+          748
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_-6514840225682991349_High_Big_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Big_Stone.img_0.png",
+        "rect_pixels": [
+          2.0,
+          226.0,
+          458.0,
+          265.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_30_03eb7d82.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 30,
+      "png_sha256": "3c0db095c996fd61349209d8224993a5174095e3947afd3e1d51bc6fe8e451e9",
+      "png_size_px": [
+        184,
+        136
+      ],
+      "script_hash64": "03eb7d82d00573ad",
+      "source": {
+        "atlas_frame_index": 1,
+        "atlas_id": 135293,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Middle_Stone.img",
+        "atlas_lookup_hash": "4fe5fc60d0d26efb",
+        "atlas_name": "High_Middle_Stone",
+        "atlas_payload_sha256": "ad041ce11fc82f5c41f72c2746c02e7ad4bde6f8603c1012446881dfb1c630cb",
+        "canvas_px": [
+          184,
+          136
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          67,
+          36
+        ],
+        "page_declared_size_px": [
+          264,
+          220
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_8173654596144788078_High_Middle_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Middle_Stone.img_0.png",
+        "rect_pixels": [
+          189.0,
+          153.0,
+          71.0,
+          64.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_31_03eb7d82.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 31,
+      "png_sha256": "3c0db095c996fd61349209d8224993a5174095e3947afd3e1d51bc6fe8e451e9",
+      "png_size_px": [
+        184,
+        136
+      ],
+      "script_hash64": "03eb7d82d00573ad",
+      "source": {
+        "atlas_frame_index": 1,
+        "atlas_id": 135293,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Middle_Stone.img",
+        "atlas_lookup_hash": "4fe5fc60d0d26efb",
+        "atlas_name": "High_Middle_Stone",
+        "atlas_payload_sha256": "ad041ce11fc82f5c41f72c2746c02e7ad4bde6f8603c1012446881dfb1c630cb",
+        "canvas_px": [
+          184,
+          136
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          67,
+          36
+        ],
+        "page_declared_size_px": [
+          264,
+          220
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_8173654596144788078_High_Middle_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Middle_Stone.img_0.png",
+        "rect_pixels": [
+          189.0,
+          153.0,
+          71.0,
+          64.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_32_181e9f43.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 32,
+      "png_sha256": "39bafe4e7d39267607a1cae68242962d385c85304b47c8bd628688159d7a073f",
+      "png_size_px": [
+        475,
+        290
+      ],
+      "script_hash64": "181e9f438148968c",
+      "source": {
+        "atlas_frame_index": 1,
+        "atlas_id": 135289,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Big_Stone.img",
+        "atlas_lookup_hash": "5912fd026bd8e55f",
+        "atlas_name": "High_Big_Stone",
+        "atlas_payload_sha256": "bf6ed4731c55356bf37c6adba6e9d18d94829fe3390159a2dff506df8a1035d5",
+        "canvas_px": [
+          475,
+          290
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          112,
+          24
+        ],
+        "page_declared_size_px": [
+          468,
+          748
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_-6514840225682991349_High_Big_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Big_Stone.img_0.png",
+        "rect_pixels": [
+          2.0,
+          493.0,
+          276.0,
+          251.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_33_5342f715.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 33,
+      "png_sha256": "9195dc95a760bb5895eb3ff22c8663b2234b2e07758fca7c397fd6c90f3f6bd5",
+      "png_size_px": [
+        184,
+        136
+      ],
+      "script_hash64": "5342f71520954126",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135293,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Middle_Stone.img",
+        "atlas_lookup_hash": "4fe5fc60d0d26efb",
+        "atlas_name": "High_Middle_Stone",
+        "atlas_payload_sha256": "ad041ce11fc82f5c41f72c2746c02e7ad4bde6f8603c1012446881dfb1c630cb",
+        "canvas_px": [
+          184,
+          136
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          27,
+          17
+        ],
+        "page_declared_size_px": [
+          264,
+          220
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_8173654596144788078_High_Middle_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Middle_Stone.img_0.png",
+        "rect_pixels": [
+          2.0,
+          10.0,
+          146.0,
+          109.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_34_7f066f13.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 34,
+      "png_sha256": "78a53b95b108eaeaab884503c48da4b30e153e0c3d1cf2df5dc45fda417d03e2",
+      "png_size_px": [
+        475,
+        290
+      ],
+      "script_hash64": "7f066f137a398232",
+      "source": {
+        "atlas_frame_index": 2,
+        "atlas_id": 135289,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Big_Stone.img",
+        "atlas_lookup_hash": "5912fd026bd8e55f",
+        "atlas_name": "High_Big_Stone",
+        "atlas_payload_sha256": "bf6ed4731c55356bf37c6adba6e9d18d94829fe3390159a2dff506df8a1035d5",
+        "canvas_px": [
+          475,
+          290
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          1,
+          58
+        ],
+        "page_declared_size_px": [
+          468,
+          748
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_-6514840225682991349_High_Big_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Big_Stone.img_0.png",
+        "rect_pixels": [
+          2.0,
+          2.0,
+          463.0,
+          222.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_35_5342f715.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 35,
+      "png_sha256": "9195dc95a760bb5895eb3ff22c8663b2234b2e07758fca7c397fd6c90f3f6bd5",
+      "png_size_px": [
+        184,
+        136
+      ],
+      "script_hash64": "5342f71520954126",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135293,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Middle_Stone.img",
+        "atlas_lookup_hash": "4fe5fc60d0d26efb",
+        "atlas_name": "High_Middle_Stone",
+        "atlas_payload_sha256": "ad041ce11fc82f5c41f72c2746c02e7ad4bde6f8603c1012446881dfb1c630cb",
+        "canvas_px": [
+          184,
+          136
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          27,
+          17
+        ],
+        "page_declared_size_px": [
+          264,
+          220
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_8173654596144788078_High_Middle_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Middle_Stone.img_0.png",
+        "rect_pixels": [
+          2.0,
+          10.0,
+          146.0,
+          109.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_36_5342f715.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 36,
+      "png_sha256": "9195dc95a760bb5895eb3ff22c8663b2234b2e07758fca7c397fd6c90f3f6bd5",
+      "png_size_px": [
+        184,
+        136
+      ],
+      "script_hash64": "5342f71520954126",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135293,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Middle_Stone.img",
+        "atlas_lookup_hash": "4fe5fc60d0d26efb",
+        "atlas_name": "High_Middle_Stone",
+        "atlas_payload_sha256": "ad041ce11fc82f5c41f72c2746c02e7ad4bde6f8603c1012446881dfb1c630cb",
+        "canvas_px": [
+          184,
+          136
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          27,
+          17
+        ],
+        "page_declared_size_px": [
+          264,
+          220
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_8173654596144788078_High_Middle_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Middle_Stone.img_0.png",
+        "rect_pixels": [
+          2.0,
+          10.0,
+          146.0,
+          109.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_37_5342f715.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 37,
+      "png_sha256": "9195dc95a760bb5895eb3ff22c8663b2234b2e07758fca7c397fd6c90f3f6bd5",
+      "png_size_px": [
+        184,
+        136
+      ],
+      "script_hash64": "5342f71520954126",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135293,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Middle_Stone.img",
+        "atlas_lookup_hash": "4fe5fc60d0d26efb",
+        "atlas_name": "High_Middle_Stone",
+        "atlas_payload_sha256": "ad041ce11fc82f5c41f72c2746c02e7ad4bde6f8603c1012446881dfb1c630cb",
+        "canvas_px": [
+          184,
+          136
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          27,
+          17
+        ],
+        "page_declared_size_px": [
+          264,
+          220
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_8173654596144788078_High_Middle_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Middle_Stone.img_0.png",
+        "rect_pixels": [
+          2.0,
+          10.0,
+          146.0,
+          109.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_38_03eb7d82.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 38,
+      "png_sha256": "3c0db095c996fd61349209d8224993a5174095e3947afd3e1d51bc6fe8e451e9",
+      "png_size_px": [
+        184,
+        136
+      ],
+      "script_hash64": "03eb7d82d00573ad",
+      "source": {
+        "atlas_frame_index": 1,
+        "atlas_id": 135293,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Middle_Stone.img",
+        "atlas_lookup_hash": "4fe5fc60d0d26efb",
+        "atlas_name": "High_Middle_Stone",
+        "atlas_payload_sha256": "ad041ce11fc82f5c41f72c2746c02e7ad4bde6f8603c1012446881dfb1c630cb",
+        "canvas_px": [
+          184,
+          136
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          67,
+          36
+        ],
+        "page_declared_size_px": [
+          264,
+          220
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_8173654596144788078_High_Middle_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Middle_Stone.img_0.png",
+        "rect_pixels": [
+          189.0,
+          153.0,
+          71.0,
+          64.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_39_03eb7d82.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 39,
+      "png_sha256": "3c0db095c996fd61349209d8224993a5174095e3947afd3e1d51bc6fe8e451e9",
+      "png_size_px": [
+        184,
+        136
+      ],
+      "script_hash64": "03eb7d82d00573ad",
+      "source": {
+        "atlas_frame_index": 1,
+        "atlas_id": 135293,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Middle_Stone.img",
+        "atlas_lookup_hash": "4fe5fc60d0d26efb",
+        "atlas_name": "High_Middle_Stone",
+        "atlas_payload_sha256": "ad041ce11fc82f5c41f72c2746c02e7ad4bde6f8603c1012446881dfb1c630cb",
+        "canvas_px": [
+          184,
+          136
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          67,
+          36
+        ],
+        "page_declared_size_px": [
+          264,
+          220
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_8173654596144788078_High_Middle_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Middle_Stone.img_0.png",
+        "rect_pixels": [
+          189.0,
+          153.0,
+          71.0,
+          64.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_40_03eb7d82.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 40,
+      "png_sha256": "3c0db095c996fd61349209d8224993a5174095e3947afd3e1d51bc6fe8e451e9",
+      "png_size_px": [
+        184,
+        136
+      ],
+      "script_hash64": "03eb7d82d00573ad",
+      "source": {
+        "atlas_frame_index": 1,
+        "atlas_id": 135293,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Middle_Stone.img",
+        "atlas_lookup_hash": "4fe5fc60d0d26efb",
+        "atlas_name": "High_Middle_Stone",
+        "atlas_payload_sha256": "ad041ce11fc82f5c41f72c2746c02e7ad4bde6f8603c1012446881dfb1c630cb",
+        "canvas_px": [
+          184,
+          136
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          67,
+          36
+        ],
+        "page_declared_size_px": [
+          264,
+          220
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_8173654596144788078_High_Middle_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Middle_Stone.img_0.png",
+        "rect_pixels": [
+          189.0,
+          153.0,
+          71.0,
+          64.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_41_c1d2d85f.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 41,
+      "png_sha256": "364632aef9db4ce961c2da4fa54670015390c4fbb8bd7354d3a6b47b640e6b35",
+      "png_size_px": [
+        475,
+        290
+      ],
+      "script_hash64": "c1d2d85f62fe9835",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135289,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Big_Stone.img",
+        "atlas_lookup_hash": "5912fd026bd8e55f",
+        "atlas_name": "High_Big_Stone",
+        "atlas_payload_sha256": "bf6ed4731c55356bf37c6adba6e9d18d94829fe3390159a2dff506df8a1035d5",
+        "canvas_px": [
+          475,
+          290
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          3,
+          10
+        ],
+        "page_declared_size_px": [
+          468,
+          748
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_-6514840225682991349_High_Big_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Big_Stone.img_0.png",
+        "rect_pixels": [
+          2.0,
+          226.0,
+          458.0,
+          265.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_42_c1d2d85f.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 42,
+      "png_sha256": "364632aef9db4ce961c2da4fa54670015390c4fbb8bd7354d3a6b47b640e6b35",
+      "png_size_px": [
+        475,
+        290
+      ],
+      "script_hash64": "c1d2d85f62fe9835",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135289,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Big_Stone.img",
+        "atlas_lookup_hash": "5912fd026bd8e55f",
+        "atlas_name": "High_Big_Stone",
+        "atlas_payload_sha256": "bf6ed4731c55356bf37c6adba6e9d18d94829fe3390159a2dff506df8a1035d5",
+        "canvas_px": [
+          475,
+          290
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          3,
+          10
+        ],
+        "page_declared_size_px": [
+          468,
+          748
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_-6514840225682991349_High_Big_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Big_Stone.img_0.png",
+        "rect_pixels": [
+          2.0,
+          226.0,
+          458.0,
+          265.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_43_5342f715.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 43,
+      "png_sha256": "9195dc95a760bb5895eb3ff22c8663b2234b2e07758fca7c397fd6c90f3f6bd5",
+      "png_size_px": [
+        184,
+        136
+      ],
+      "script_hash64": "5342f71520954126",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135293,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Middle_Stone.img",
+        "atlas_lookup_hash": "4fe5fc60d0d26efb",
+        "atlas_name": "High_Middle_Stone",
+        "atlas_payload_sha256": "ad041ce11fc82f5c41f72c2746c02e7ad4bde6f8603c1012446881dfb1c630cb",
+        "canvas_px": [
+          184,
+          136
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          27,
+          17
+        ],
+        "page_declared_size_px": [
+          264,
+          220
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_8173654596144788078_High_Middle_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Middle_Stone.img_0.png",
+        "rect_pixels": [
+          2.0,
+          10.0,
+          146.0,
+          109.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 6,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L6_44_5342f715.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 44,
+      "png_sha256": "9195dc95a760bb5895eb3ff22c8663b2234b2e07758fca7c397fd6c90f3f6bd5",
+      "png_size_px": [
+        184,
+        136
+      ],
+      "script_hash64": "5342f71520954126",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135293,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Middle_Stone.img",
+        "atlas_lookup_hash": "4fe5fc60d0d26efb",
+        "atlas_name": "High_Middle_Stone",
+        "atlas_payload_sha256": "ad041ce11fc82f5c41f72c2746c02e7ad4bde6f8603c1012446881dfb1c630cb",
+        "canvas_px": [
+          184,
+          136
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          27,
+          17
+        ],
+        "page_declared_size_px": [
+          264,
+          220
+        ],
+        "page_format_code": 5,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_8173654596144788078_High_Middle_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Middle_Stone.img_0.png",
+        "rect_pixels": [
+          2.0,
+          10.0,
+          146.0,
+          109.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 7,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L7_10_5fa09805.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 10,
+      "png_sha256": "1e072cea3cfd9baa2205598fa73df13d9eb4b40cdaed54693b4213e4b440304e",
+      "png_size_px": [
+        436,
+        237
+      ],
+      "script_hash64": "5fa09805264c39c3",
+      "source": {
+        "atlas_frame_index": 2,
+        "atlas_id": 135292,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Front_Stone.img",
+        "atlas_lookup_hash": "fd3a2d9f00cc0eed",
+        "atlas_name": "High_Front_Stone",
+        "atlas_payload_sha256": "11d131c015fe7beaa32a86a46ffd519832fcd9447674f51ca55d400a4566e8a5",
+        "canvas_px": [
+          436,
+          237
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          1,
+          28
+        ],
+        "page_declared_size_px": [
+          420,
+          464
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_7464860366367371268_High_Front_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Front_Stone.img_0.png",
+        "rect_pixels": [
+          2.0,
+          2.0,
+          416.0,
+          209.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 7,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L7_11_89fd28a1.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 11,
+      "png_sha256": "a86fe1c2cac68959a974350658ba30b02fc9d1071fc25f0622a7f1e71155cbe5",
+      "png_size_px": [
+        436,
+        237
+      ],
+      "script_hash64": "89fd28a1dd7a415a",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135292,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Front_Stone.img",
+        "atlas_lookup_hash": "fd3a2d9f00cc0eed",
+        "atlas_name": "High_Front_Stone",
+        "atlas_payload_sha256": "11d131c015fe7beaa32a86a46ffd519832fcd9447674f51ca55d400a4566e8a5",
+        "canvas_px": [
+          436,
+          237
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          32,
+          105
+        ],
+        "page_declared_size_px": [
+          420,
+          464
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_7464860366367371268_High_Front_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Front_Stone.img_0.png",
+        "rect_pixels": [
+          2.0,
+          213.0,
+          344.0,
+          132.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 7,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L7_12_267b396f.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 12,
+      "png_sha256": "a928020f880319edc2f95f5fe2dd0c8b6a49b9f6f9f26d93220e63c75a97d62d",
+      "png_size_px": [
+        436,
+        237
+      ],
+      "script_hash64": "267b396fac7c1174",
+      "source": {
+        "atlas_frame_index": 1,
+        "atlas_id": 135292,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Front_Stone.img",
+        "atlas_lookup_hash": "fd3a2d9f00cc0eed",
+        "atlas_name": "High_Front_Stone",
+        "atlas_payload_sha256": "11d131c015fe7beaa32a86a46ffd519832fcd9447674f51ca55d400a4566e8a5",
+        "canvas_px": [
+          436,
+          237
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          48,
+          125
+        ],
+        "page_declared_size_px": [
+          420,
+          464
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_7464860366367371268_High_Front_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Front_Stone.img_0.png",
+        "rect_pixels": [
+          2.0,
+          347.0,
+          268.0,
+          112.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 7,
+      "file": "Data/DNFMReplica/volcano_assets/objects/L7_13_89fd28a1.png",
+      "frame_position": 0,
+      "kind": "object_first",
+      "object_index": 13,
+      "png_sha256": "a86fe1c2cac68959a974350658ba30b02fc9d1071fc25f0622a7f1e71155cbe5",
+      "png_size_px": [
+        436,
+        237
+      ],
+      "script_hash64": "89fd28a1dd7a415a",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135292,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Front_Stone.img",
+        "atlas_lookup_hash": "fd3a2d9f00cc0eed",
+        "atlas_name": "High_Front_Stone",
+        "atlas_payload_sha256": "11d131c015fe7beaa32a86a46ffd519832fcd9447674f51ca55d400a4566e8a5",
+        "canvas_px": [
+          436,
+          237
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          32,
+          105
+        ],
+        "page_declared_size_px": [
+          420,
+          464
+        ],
+        "page_format_code": 0,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05366_b5c9c4cc246fa5_7464860366367371268_High_Front_Stone.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/Obj/High_Front_Stone.img_0.png",
+        "rect_pixels": [
+          2.0,
+          213.0,
+          344.0,
+          132.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 1,
+      "file": "Data/DNFMReplica/volcano_assets/objects_anim/L1_25_498214b0_f00.png",
+      "frame_position": 0,
+      "kind": "object_anim",
+      "object_index": 25,
+      "png_sha256": "d0ae39d8e70431ebc39431af429b3a3814b70d296c8bd2ff40b7e06f059db37e",
+      "png_size_px": [
+        544,
+        105
+      ],
+      "script_hash64": "498214b0df6af5cf",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135315,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img",
+        "atlas_lookup_hash": "4367ec8577188a5e",
+        "atlas_name": "Middle_Effect",
+        "atlas_payload_sha256": "2dcdc43a9af72d21f7b25f812a2b11c0711b1687076ea31238faddb9053a9199",
+        "canvas_px": [
+          544,
+          105
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          548,
+          1180
+        ],
+        "page_format_code": 1,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_-405200769393916061_Middle_Effect.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img_0.png",
+        "rect_pixels": [
+          2.0,
+          2.0,
+          544.0,
+          105.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 1,
+      "file": "Data/DNFMReplica/volcano_assets/objects_anim/L1_25_498214b0_f01.png",
+      "frame_position": 1,
+      "kind": "object_anim",
+      "object_index": 25,
+      "png_sha256": "2c84feee4867aafa33304f0c7dfdb9228f332155194f5b34e04291275b06b155",
+      "png_size_px": [
+        544,
+        105
+      ],
+      "script_hash64": "498214b0df6af5cf",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 1,
+        "atlas_id": 135315,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img",
+        "atlas_lookup_hash": "4367ec8577188a5e",
+        "atlas_name": "Middle_Effect",
+        "atlas_payload_sha256": "2dcdc43a9af72d21f7b25f812a2b11c0711b1687076ea31238faddb9053a9199",
+        "canvas_px": [
+          544,
+          105
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          548,
+          1180
+        ],
+        "page_format_code": 1,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_-405200769393916061_Middle_Effect.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img_0.png",
+        "rect_pixels": [
+          2.0,
+          109.0,
+          544.0,
+          105.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 1,
+      "file": "Data/DNFMReplica/volcano_assets/objects_anim/L1_25_498214b0_f02.png",
+      "frame_position": 2,
+      "kind": "object_anim",
+      "object_index": 25,
+      "png_sha256": "3875d3f9722544cd94920f063cf0a1339863d8cd5c9454cf6f12741f51b20090",
+      "png_size_px": [
+        544,
+        105
+      ],
+      "script_hash64": "498214b0df6af5cf",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 2,
+        "atlas_id": 135315,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img",
+        "atlas_lookup_hash": "4367ec8577188a5e",
+        "atlas_name": "Middle_Effect",
+        "atlas_payload_sha256": "2dcdc43a9af72d21f7b25f812a2b11c0711b1687076ea31238faddb9053a9199",
+        "canvas_px": [
+          544,
+          105
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          548,
+          1180
+        ],
+        "page_format_code": 1,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_-405200769393916061_Middle_Effect.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img_0.png",
+        "rect_pixels": [
+          2.0,
+          216.0,
+          544.0,
+          105.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 1,
+      "file": "Data/DNFMReplica/volcano_assets/objects_anim/L1_25_498214b0_f03.png",
+      "frame_position": 3,
+      "kind": "object_anim",
+      "object_index": 25,
+      "png_sha256": "e289eef429f9f3eff9edfecefd5855fb7b8ec0fe2d38a45db4dc0e26fea04d00",
+      "png_size_px": [
+        544,
+        105
+      ],
+      "script_hash64": "498214b0df6af5cf",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 3,
+        "atlas_id": 135315,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img",
+        "atlas_lookup_hash": "4367ec8577188a5e",
+        "atlas_name": "Middle_Effect",
+        "atlas_payload_sha256": "2dcdc43a9af72d21f7b25f812a2b11c0711b1687076ea31238faddb9053a9199",
+        "canvas_px": [
+          544,
+          105
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          548,
+          1180
+        ],
+        "page_format_code": 1,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_-405200769393916061_Middle_Effect.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img_0.png",
+        "rect_pixels": [
+          2.0,
+          323.0,
+          544.0,
+          105.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 1,
+      "file": "Data/DNFMReplica/volcano_assets/objects_anim/L1_25_498214b0_f04.png",
+      "frame_position": 4,
+      "kind": "object_anim",
+      "object_index": 25,
+      "png_sha256": "bac916530f186a7263a7b4ac23655c24284525096d231e29f5b230e09fbc96ea",
+      "png_size_px": [
+        544,
+        105
+      ],
+      "script_hash64": "498214b0df6af5cf",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 4,
+        "atlas_id": 135315,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img",
+        "atlas_lookup_hash": "4367ec8577188a5e",
+        "atlas_name": "Middle_Effect",
+        "atlas_payload_sha256": "2dcdc43a9af72d21f7b25f812a2b11c0711b1687076ea31238faddb9053a9199",
+        "canvas_px": [
+          544,
+          105
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          548,
+          1180
+        ],
+        "page_format_code": 1,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_-405200769393916061_Middle_Effect.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img_0.png",
+        "rect_pixels": [
+          2.0,
+          430.0,
+          544.0,
+          105.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 1,
+      "file": "Data/DNFMReplica/volcano_assets/objects_anim/L1_25_498214b0_f05.png",
+      "frame_position": 5,
+      "kind": "object_anim",
+      "object_index": 25,
+      "png_sha256": "317040b36ab8a961f0a20d6df3bfb05104f46c39ab11a461232fae4e7322d965",
+      "png_size_px": [
+        544,
+        105
+      ],
+      "script_hash64": "498214b0df6af5cf",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 5,
+        "atlas_id": 135315,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img",
+        "atlas_lookup_hash": "4367ec8577188a5e",
+        "atlas_name": "Middle_Effect",
+        "atlas_payload_sha256": "2dcdc43a9af72d21f7b25f812a2b11c0711b1687076ea31238faddb9053a9199",
+        "canvas_px": [
+          544,
+          105
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          548,
+          1180
+        ],
+        "page_format_code": 1,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_-405200769393916061_Middle_Effect.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img_0.png",
+        "rect_pixels": [
+          2.0,
+          537.0,
+          544.0,
+          105.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 1,
+      "file": "Data/DNFMReplica/volcano_assets/objects_anim/L1_25_498214b0_f06.png",
+      "frame_position": 6,
+      "kind": "object_anim",
+      "object_index": 25,
+      "png_sha256": "1efd8121cb01fada5333479b6b850818501cedccd435df30dbbda88d9044d023",
+      "png_size_px": [
+        544,
+        105
+      ],
+      "script_hash64": "498214b0df6af5cf",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 6,
+        "atlas_id": 135315,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img",
+        "atlas_lookup_hash": "4367ec8577188a5e",
+        "atlas_name": "Middle_Effect",
+        "atlas_payload_sha256": "2dcdc43a9af72d21f7b25f812a2b11c0711b1687076ea31238faddb9053a9199",
+        "canvas_px": [
+          544,
+          105
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          548,
+          1180
+        ],
+        "page_format_code": 1,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_-405200769393916061_Middle_Effect.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img_0.png",
+        "rect_pixels": [
+          2.0,
+          644.0,
+          544.0,
+          105.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 1,
+      "file": "Data/DNFMReplica/volcano_assets/objects_anim/L1_25_498214b0_f07.png",
+      "frame_position": 7,
+      "kind": "object_anim",
+      "object_index": 25,
+      "png_sha256": "d5a76b80e0be614b512dd385956b7b317a0b565ce8e5d824dbd20384f9afa8a8",
+      "png_size_px": [
+        544,
+        105
+      ],
+      "script_hash64": "498214b0df6af5cf",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 7,
+        "atlas_id": 135315,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img",
+        "atlas_lookup_hash": "4367ec8577188a5e",
+        "atlas_name": "Middle_Effect",
+        "atlas_payload_sha256": "2dcdc43a9af72d21f7b25f812a2b11c0711b1687076ea31238faddb9053a9199",
+        "canvas_px": [
+          544,
+          105
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          548,
+          1180
+        ],
+        "page_format_code": 1,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_-405200769393916061_Middle_Effect.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img_0.png",
+        "rect_pixels": [
+          2.0,
+          751.0,
+          544.0,
+          105.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 1,
+      "file": "Data/DNFMReplica/volcano_assets/objects_anim/L1_25_498214b0_f08.png",
+      "frame_position": 8,
+      "kind": "object_anim",
+      "object_index": 25,
+      "png_sha256": "7265cd3db2ed95c7c85741e041d7ed9e65acad54bbbd98a52b0333bc1593d0a2",
+      "png_size_px": [
+        544,
+        105
+      ],
+      "script_hash64": "498214b0df6af5cf",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 8,
+        "atlas_id": 135315,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img",
+        "atlas_lookup_hash": "4367ec8577188a5e",
+        "atlas_name": "Middle_Effect",
+        "atlas_payload_sha256": "2dcdc43a9af72d21f7b25f812a2b11c0711b1687076ea31238faddb9053a9199",
+        "canvas_px": [
+          544,
+          105
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          548,
+          1180
+        ],
+        "page_format_code": 1,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_-405200769393916061_Middle_Effect.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img_0.png",
+        "rect_pixels": [
+          2.0,
+          858.0,
+          544.0,
+          105.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 1,
+      "file": "Data/DNFMReplica/volcano_assets/objects_anim/L1_25_498214b0_f09.png",
+      "frame_position": 9,
+      "kind": "object_anim",
+      "object_index": 25,
+      "png_sha256": "058d208a79a8c1b2aaf9982efafc2b97e791d4938f9ecd37b010e4c6ebe8490d",
+      "png_size_px": [
+        544,
+        105
+      ],
+      "script_hash64": "498214b0df6af5cf",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 9,
+        "atlas_id": 135315,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img",
+        "atlas_lookup_hash": "4367ec8577188a5e",
+        "atlas_name": "Middle_Effect",
+        "atlas_payload_sha256": "2dcdc43a9af72d21f7b25f812a2b11c0711b1687076ea31238faddb9053a9199",
+        "canvas_px": [
+          544,
+          105
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          548,
+          1180
+        ],
+        "page_format_code": 1,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_-405200769393916061_Middle_Effect.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img_0.png",
+        "rect_pixels": [
+          2.0,
+          965.0,
+          544.0,
+          105.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 1,
+      "file": "Data/DNFMReplica/volcano_assets/objects_anim/L1_25_498214b0_f10.png",
+      "frame_position": 10,
+      "kind": "object_anim",
+      "object_index": 25,
+      "png_sha256": "1fd75b6e9da7fc658933e1cc934f6c721edad2a1ed243d81a81fb9387301a09b",
+      "png_size_px": [
+        544,
+        105
+      ],
+      "script_hash64": "498214b0df6af5cf",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 10,
+        "atlas_id": 135315,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img",
+        "atlas_lookup_hash": "4367ec8577188a5e",
+        "atlas_name": "Middle_Effect",
+        "atlas_payload_sha256": "2dcdc43a9af72d21f7b25f812a2b11c0711b1687076ea31238faddb9053a9199",
+        "canvas_px": [
+          544,
+          105
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          548,
+          1180
+        ],
+        "page_format_code": 1,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_-405200769393916061_Middle_Effect.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img_0.png",
+        "rect_pixels": [
+          2.0,
+          1072.0,
+          544.0,
+          105.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/volcano_assets/objects_anim/L2_24_498214b0_f00.png",
+      "frame_position": 0,
+      "kind": "object_anim",
+      "object_index": 24,
+      "png_sha256": "d0ae39d8e70431ebc39431af429b3a3814b70d296c8bd2ff40b7e06f059db37e",
+      "png_size_px": [
+        544,
+        105
+      ],
+      "script_hash64": "498214b0df6af5cf",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 0,
+        "atlas_id": 135315,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img",
+        "atlas_lookup_hash": "4367ec8577188a5e",
+        "atlas_name": "Middle_Effect",
+        "atlas_payload_sha256": "2dcdc43a9af72d21f7b25f812a2b11c0711b1687076ea31238faddb9053a9199",
+        "canvas_px": [
+          544,
+          105
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          548,
+          1180
+        ],
+        "page_format_code": 1,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_-405200769393916061_Middle_Effect.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img_0.png",
+        "rect_pixels": [
+          2.0,
+          2.0,
+          544.0,
+          105.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/volcano_assets/objects_anim/L2_24_498214b0_f01.png",
+      "frame_position": 1,
+      "kind": "object_anim",
+      "object_index": 24,
+      "png_sha256": "2c84feee4867aafa33304f0c7dfdb9228f332155194f5b34e04291275b06b155",
+      "png_size_px": [
+        544,
+        105
+      ],
+      "script_hash64": "498214b0df6af5cf",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 1,
+        "atlas_id": 135315,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img",
+        "atlas_lookup_hash": "4367ec8577188a5e",
+        "atlas_name": "Middle_Effect",
+        "atlas_payload_sha256": "2dcdc43a9af72d21f7b25f812a2b11c0711b1687076ea31238faddb9053a9199",
+        "canvas_px": [
+          544,
+          105
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          548,
+          1180
+        ],
+        "page_format_code": 1,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_-405200769393916061_Middle_Effect.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img_0.png",
+        "rect_pixels": [
+          2.0,
+          109.0,
+          544.0,
+          105.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/volcano_assets/objects_anim/L2_24_498214b0_f02.png",
+      "frame_position": 2,
+      "kind": "object_anim",
+      "object_index": 24,
+      "png_sha256": "3875d3f9722544cd94920f063cf0a1339863d8cd5c9454cf6f12741f51b20090",
+      "png_size_px": [
+        544,
+        105
+      ],
+      "script_hash64": "498214b0df6af5cf",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 2,
+        "atlas_id": 135315,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img",
+        "atlas_lookup_hash": "4367ec8577188a5e",
+        "atlas_name": "Middle_Effect",
+        "atlas_payload_sha256": "2dcdc43a9af72d21f7b25f812a2b11c0711b1687076ea31238faddb9053a9199",
+        "canvas_px": [
+          544,
+          105
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          548,
+          1180
+        ],
+        "page_format_code": 1,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_-405200769393916061_Middle_Effect.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img_0.png",
+        "rect_pixels": [
+          2.0,
+          216.0,
+          544.0,
+          105.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/volcano_assets/objects_anim/L2_24_498214b0_f03.png",
+      "frame_position": 3,
+      "kind": "object_anim",
+      "object_index": 24,
+      "png_sha256": "e289eef429f9f3eff9edfecefd5855fb7b8ec0fe2d38a45db4dc0e26fea04d00",
+      "png_size_px": [
+        544,
+        105
+      ],
+      "script_hash64": "498214b0df6af5cf",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 3,
+        "atlas_id": 135315,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img",
+        "atlas_lookup_hash": "4367ec8577188a5e",
+        "atlas_name": "Middle_Effect",
+        "atlas_payload_sha256": "2dcdc43a9af72d21f7b25f812a2b11c0711b1687076ea31238faddb9053a9199",
+        "canvas_px": [
+          544,
+          105
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          548,
+          1180
+        ],
+        "page_format_code": 1,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_-405200769393916061_Middle_Effect.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img_0.png",
+        "rect_pixels": [
+          2.0,
+          323.0,
+          544.0,
+          105.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/volcano_assets/objects_anim/L2_24_498214b0_f04.png",
+      "frame_position": 4,
+      "kind": "object_anim",
+      "object_index": 24,
+      "png_sha256": "bac916530f186a7263a7b4ac23655c24284525096d231e29f5b230e09fbc96ea",
+      "png_size_px": [
+        544,
+        105
+      ],
+      "script_hash64": "498214b0df6af5cf",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 4,
+        "atlas_id": 135315,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img",
+        "atlas_lookup_hash": "4367ec8577188a5e",
+        "atlas_name": "Middle_Effect",
+        "atlas_payload_sha256": "2dcdc43a9af72d21f7b25f812a2b11c0711b1687076ea31238faddb9053a9199",
+        "canvas_px": [
+          544,
+          105
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          548,
+          1180
+        ],
+        "page_format_code": 1,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_-405200769393916061_Middle_Effect.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img_0.png",
+        "rect_pixels": [
+          2.0,
+          430.0,
+          544.0,
+          105.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/volcano_assets/objects_anim/L2_24_498214b0_f05.png",
+      "frame_position": 5,
+      "kind": "object_anim",
+      "object_index": 24,
+      "png_sha256": "317040b36ab8a961f0a20d6df3bfb05104f46c39ab11a461232fae4e7322d965",
+      "png_size_px": [
+        544,
+        105
+      ],
+      "script_hash64": "498214b0df6af5cf",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 5,
+        "atlas_id": 135315,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img",
+        "atlas_lookup_hash": "4367ec8577188a5e",
+        "atlas_name": "Middle_Effect",
+        "atlas_payload_sha256": "2dcdc43a9af72d21f7b25f812a2b11c0711b1687076ea31238faddb9053a9199",
+        "canvas_px": [
+          544,
+          105
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          548,
+          1180
+        ],
+        "page_format_code": 1,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_-405200769393916061_Middle_Effect.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img_0.png",
+        "rect_pixels": [
+          2.0,
+          537.0,
+          544.0,
+          105.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/volcano_assets/objects_anim/L2_24_498214b0_f06.png",
+      "frame_position": 6,
+      "kind": "object_anim",
+      "object_index": 24,
+      "png_sha256": "1efd8121cb01fada5333479b6b850818501cedccd435df30dbbda88d9044d023",
+      "png_size_px": [
+        544,
+        105
+      ],
+      "script_hash64": "498214b0df6af5cf",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 6,
+        "atlas_id": 135315,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img",
+        "atlas_lookup_hash": "4367ec8577188a5e",
+        "atlas_name": "Middle_Effect",
+        "atlas_payload_sha256": "2dcdc43a9af72d21f7b25f812a2b11c0711b1687076ea31238faddb9053a9199",
+        "canvas_px": [
+          544,
+          105
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          548,
+          1180
+        ],
+        "page_format_code": 1,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_-405200769393916061_Middle_Effect.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img_0.png",
+        "rect_pixels": [
+          2.0,
+          644.0,
+          544.0,
+          105.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/volcano_assets/objects_anim/L2_24_498214b0_f07.png",
+      "frame_position": 7,
+      "kind": "object_anim",
+      "object_index": 24,
+      "png_sha256": "d5a76b80e0be614b512dd385956b7b317a0b565ce8e5d824dbd20384f9afa8a8",
+      "png_size_px": [
+        544,
+        105
+      ],
+      "script_hash64": "498214b0df6af5cf",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 7,
+        "atlas_id": 135315,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img",
+        "atlas_lookup_hash": "4367ec8577188a5e",
+        "atlas_name": "Middle_Effect",
+        "atlas_payload_sha256": "2dcdc43a9af72d21f7b25f812a2b11c0711b1687076ea31238faddb9053a9199",
+        "canvas_px": [
+          544,
+          105
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          548,
+          1180
+        ],
+        "page_format_code": 1,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_-405200769393916061_Middle_Effect.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img_0.png",
+        "rect_pixels": [
+          2.0,
+          751.0,
+          544.0,
+          105.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/volcano_assets/objects_anim/L2_24_498214b0_f08.png",
+      "frame_position": 8,
+      "kind": "object_anim",
+      "object_index": 24,
+      "png_sha256": "7265cd3db2ed95c7c85741e041d7ed9e65acad54bbbd98a52b0333bc1593d0a2",
+      "png_size_px": [
+        544,
+        105
+      ],
+      "script_hash64": "498214b0df6af5cf",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 8,
+        "atlas_id": 135315,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img",
+        "atlas_lookup_hash": "4367ec8577188a5e",
+        "atlas_name": "Middle_Effect",
+        "atlas_payload_sha256": "2dcdc43a9af72d21f7b25f812a2b11c0711b1687076ea31238faddb9053a9199",
+        "canvas_px": [
+          544,
+          105
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          548,
+          1180
+        ],
+        "page_format_code": 1,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_-405200769393916061_Middle_Effect.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img_0.png",
+        "rect_pixels": [
+          2.0,
+          858.0,
+          544.0,
+          105.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/volcano_assets/objects_anim/L2_24_498214b0_f09.png",
+      "frame_position": 9,
+      "kind": "object_anim",
+      "object_index": 24,
+      "png_sha256": "058d208a79a8c1b2aaf9982efafc2b97e791d4938f9ecd37b010e4c6ebe8490d",
+      "png_size_px": [
+        544,
+        105
+      ],
+      "script_hash64": "498214b0df6af5cf",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 9,
+        "atlas_id": 135315,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img",
+        "atlas_lookup_hash": "4367ec8577188a5e",
+        "atlas_name": "Middle_Effect",
+        "atlas_payload_sha256": "2dcdc43a9af72d21f7b25f812a2b11c0711b1687076ea31238faddb9053a9199",
+        "canvas_px": [
+          544,
+          105
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          548,
+          1180
+        ],
+        "page_format_code": 1,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_-405200769393916061_Middle_Effect.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img_0.png",
+        "rect_pixels": [
+          2.0,
+          965.0,
+          544.0,
+          105.0
+        ]
+      }
+    },
+    {
+      "draw_layer": 2,
+      "file": "Data/DNFMReplica/volcano_assets/objects_anim/L2_24_498214b0_f10.png",
+      "frame_position": 10,
+      "kind": "object_anim",
+      "object_index": 24,
+      "png_sha256": "1fd75b6e9da7fc658933e1cc934f6c721edad2a1ed243d81a81fb9387301a09b",
+      "png_size_px": [
+        544,
+        105
+      ],
+      "script_hash64": "498214b0df6af5cf",
+      "sequence_note": "multi-frame object full sequence; _f00 duplicates the objects/ first frame byte-for-byte",
+      "source": {
+        "atlas_frame_index": 10,
+        "atlas_id": 135315,
+        "atlas_image_path": "Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img",
+        "atlas_lookup_hash": "4367ec8577188a5e",
+        "atlas_name": "Middle_Effect",
+        "atlas_payload_sha256": "2dcdc43a9af72d21f7b25f812a2b11c0711b1687076ea31238faddb9053a9199",
+        "canvas_px": [
+          544,
+          105
+        ],
+        "crop_rule": "atlas rect cropped then alpha-composited at frame offset on frame canvas (restore_dnf_atlas.crop_frame full_canvas=True); no 1-v flip, no scale baked (transforms left to UE material layer)",
+        "frame_name": "",
+        "offset_px": [
+          0,
+          0
+        ],
+        "page_declared_size_px": [
+          548,
+          1180
+        ],
+        "page_format_code": 1,
+        "page_index": 0,
+        "page_palette": false,
+        "page_resolved_png": "downloaded_130.5.8.202/2D/bundles/Texture2D/d05365_fe72608925a040_-405200769393916061_Middle_Effect.img_0.png",
+        "page_texture_path": "Assets/Bundle/sprite/Map/Raid/Anton_Guide/07_Black_Volcano/background/Middle_Effect.img_0.png",
+        "rect_pixels": [
+          2.0,
+          1072.0,
+          544.0,
+          105.0
+        ]
+      }
+    }
+  ],
+  "map_hash": "f7d486ec4dcbc7d5",
+  "map_shard_block": [
+    24,
+    0
+  ],
+  "read_only_statement": "源库以 sqlite mode=ro URI 打开，页面 PNG 只读打开；D:/Github-Poj/DNFM 零写入。",
+  "task": "M8-027 P07-A 火山图资产提取与标定输入 — 离线裁切与放置中间数据（UE 部分由协调者执行）"
+}
