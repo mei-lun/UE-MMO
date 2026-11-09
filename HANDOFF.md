@@ -1,3 +1,14 @@
+# 最新状态：第十一版包（质量收口全部包含），READY FOR USER——待用户试玩确认（2026-11-09）
+
+- Owner：ZCode-20261107-A。M8 累计 DONE **30**；M8-022 IN_PROGRESS（H 类——第十一版包 READY FOR USER）；M8-028~030 TODO（P07 火山挂起）；提交 `141f9c3`→HEAD。
+- **第十一版包**（PKG exit=0）：包含全部质量收口修复——状态机+技能组件化+窗口化+工会补色+竹林主入口+命中反馈栈。存档恢复 ✓。
+- **质量收口状态**：方案文档六问题中一/二/三/四/五的代码实现全部完成；问题六（正式 UI）归 P11。用户试玩确认后 M8-022 收口。
+- **P07 火山**：M8-027 资产提取 DONE；M8-028 part1 标定 DONE；M8-028 part2 导入挂起待质量确认后恢复。
+- [检查点 8](Docs/Tasks/Handoffs/2026-11-08-ZCode-20261107-A-checkpoint8.md)；报告 [M8-024](Docs/Tasks/Reports/M8-024.md)～[M8-033](Docs/Tasks/Reports/M8-033.md)；方案文档 [08](Docs/DNF-Research/08-战斗质量收口方案.md)。
+- 下一步：**用户试玩第十一版包** → 质量收口确认 → M8-028~030 火山恢复 → P08 Boss。用户事项：试玩 `Artifacts/Package/Windows/UEMMO/Binaries/Win64/UEMMO.exe`。
+
+---
+
 # 最新状态：质量收口 M8-031/032/033 全部 DONE——第十版包含全部修复，待用户确认（2026-11-09）
 
 - Owner：ZCode-20261107-A。M8 累计 DONE **30**；M8-022 IN_PROGRESS（H 类——第十版包 READY FOR USER）；M8-028~030 TODO（P07 火山挂起）；提交 `141f9c3`→`ae6a662`。
