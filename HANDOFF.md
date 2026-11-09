@@ -1,3 +1,16 @@
+# 最新状态：质量收口 M8-031/032/033 全部 DONE——第十版包含全部修复，待用户确认（2026-11-09）
+
+- Owner：ZCode-20261107-A。M8 累计 DONE **30**；M8-022 IN_PROGRESS（H 类——第十版包 READY FOR USER）；M8-028~030 TODO（P07 火山挂起）；提交 `141f9c3`→`ae6a662`。
+- **质量收口三卡全部 DONE**：
+  - M8-031：UCombatStateMachine 十相位状态机+转换表+施放门控（part1 e731cd8）+ USkillAbilityComponent 六技能组件化+launcher 弹体迁出 M5 管线（part2 c3fee6a）
+  - M8-032：命中反馈栈（相机 punch+时间微膨胀）+ 受害者原声链确认（bb808fe）
+  - M8-033：四图缺损审计（工会补色 ✓/竹林 ✓/训练 ✓/主菜单 ✓）+ P13 延期项明确记录
+- **第十版包**：PKG exit=0 → 全部修复包含 → 切片回归绿 → 存档恢复 ✓
+- 下一步：**用户试玩第十版包确认六问题逐条消除** → M8-028~030 火山恢复 → P08 Boss。用户事项：试玩 `Artifacts/Package/Windows/UEMMO/Binaries/Win64/UEMMO.exe`。
+- 报告 [M8-024](Docs/Tasks/Reports/M8-024.md)～[M8-033](Docs/Tasks/Reports/M8-033.md)；方案文档 [08](Docs/DNF-Research/08-战斗质量收口方案.md)。
+
+---
+
 # 最新状态：M8-031 全部完成（part1 状态机 + part2 技能组件化），下一步 M8-032 手感调校（2026-11-09）
 
 - Owner：ZCode-20261107-A。M8 累计 DONE **27**；M8-031 全部完成；M8-032/033 就绪；M8-022 IN_PROGRESS（H 类）；提交 `141f9c3`→`c3fee6a`。
