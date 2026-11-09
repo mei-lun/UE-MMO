@@ -1,0 +1,46 @@
+{
+ "task": "M8-032",
+ "source": "audio_effects.json (M8-009)",
+ "clips": [
+  {
+   "clip": "ft_atk_01",
+   "file": "audio/sounds/d01069_753b1ab0e0c68c_-5658854479975510258_ft_atk_01_ft_atk_01.wav",
+   "bytes": 11266,
+   "duration_s": 0.254,
+   "rate_hz": 22050,
+   "sha256": "30a2c1592da98bc9c42dcbecb7db486b8a341635b16481508505cafddd7c401a"
+  },
+  {
+   "clip": "ft_atk_02",
+   "file": "audio/sounds/d01069_753b1ab0e0c68c_-8143136364734689028_ft_atk_02_ft_atk_02.wav",
+   "bytes": 8412,
+   "duration_s": 0.19,
+   "rate_hz": 22050,
+   "sha256": "8a8fa37c3af1392e07121b5757fb030c4b8fbc0fbd37a9a6adad4d69bf5a03e3"
+  },
+  {
+   "clip": "ft_atk_03",
+   "file": "audio/sounds/d01069_753b1ab0e0c68c_-3724771454157208451_ft_atk_03_ft_atk_03.wav",
+   "bytes": 14464,
+   "duration_s": 0.327,
+   "rate_hz": 22050,
+   "sha256": "49bf8aec23b60a44135411b43a58b07ee9cb4ef10fe8ef47810b17eb2162dd2f"
+  },
+  {
+   "clip": "1st_strong_lowkick_hit",
+   "file": "audio/sounds/d01070_c11661dfa0312a_-2578689775982885699_1st_strong_lowkick_hit_1st_strong_lowkick_hit.wav",
+   "bytes": 16230,
+   "duration_s": 0.367,
+   "rate_hz": 22050,
+   "sha256": "cfc5a1a06fec8646c7598beeaf14583e3021acd5397c6431444df5905e073a1c"
+  },
+  {
+   "clip": "lowKick_impact",
+   "file": "audio/sounds/d01070_c11661dfa0312a_-2108650391018269009_lowKick_impact_lowKick_impact.wav",
+   "bytes": 47360,
+   "duration_s": 1.073,
+   "rate_hz": 22050,
+   "sha256": "f533d59135d0071d55bc734f14cdfe80d5e5c92b8074210a8700a979a40cbd97"
+  }
+ ]
+}
