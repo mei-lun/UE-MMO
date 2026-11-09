@@ -1,3 +1,12 @@
+# 最新状态：M8-031 part1 状态机 DONE（验收测试全绿），part2 技能组件化下轮（2026-11-09）
+
+- Owner：ZCode-20261107-A。M8 累计 DONE **27**；M8-022 IN_PROGRESS（H 类）；提交 `141f9c3`→`e731cd8`。
+- **M8-031 part1（DONE）**：`UCombatStateMachine`——十相位显式状态机（Idle/Windup/Active/Recovery/CancelWindow/HitStun/LaunchAir/Knockdown/GetUp/Dead）+数据镜像转换表+相位派生（帧计数对攻击窗口）+相位事件；集成进 UCombatComponent（子对象+每 TickCombat 推进+施放门控 CanStartAttack）。验收 `UEMMO.Acceptance.M8_031.StateMachine` 绿（合法/非法转换对、light_01 窗口相位派生、受击覆盖、门控拒绝）。
+- **part2（下轮）**：USkillAbilityComponent 六技能首批组件化（施放/帧段/命中盒/弹体/特效/声音自包含；launcher 弹道从 M5 管线迁入）→ M8-032 手感 → M8-033 美术。
+- 用户事项：试玩第九版包。
+
+---
+
 # 最新状态：M8-027 火山资产提取 DONE（确定性双跑），下一步 M8-028 导入（2026-11-09）
 - **M8-028 part 1 DONE（17be80d）**：volcano_calibration.json（s=1.7615、深度方向 y-down→+Y、CONTACT 近景带 608-645px、内容范围 X -491..2093cm）+ placement world 全量回填（44 对象 x/foot_y/宽高 cm）。剩余：import_dnfm_volcano_map.py 适配（300 行级）→ room_volcano 接线 → 实拍。
 - **M8-028 执行计划（下轮接续）**：①建 `volcano_calibration.json`（s=1.7615 全局 px 密度沿用；原点=placement px(0,0)；临时走带由 44 个地面对象的 y 带推导，G1 引擎内标定归 M8-029）；②适配 import_dnfm_bamboo_map.py→import_dnfm_volcano_map.py（tile 空集跳过——manifest 的 empty tile def 需守卫；44 对象按层深度放置；DISTANTBACK 远景；spawn/出口按内容）；③rooms.json 加 room_volcano 行→PrepareRooms 管线→触发/出口；④渲染探针实拍对照源预览。
