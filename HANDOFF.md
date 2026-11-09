@@ -1,4 +1,5 @@
 # 最新状态：08 方案质量收口全部完成——第十三版包交付（含攻击音效 SND_* 资产），待用户试玩确认（2026-11-09）
+- **M8-028 进行中（4fb4a51）**：volcano map import script 创建（适配竹林管线：tile 空集跳过、44 对象按标定放置、材料从 goblin 母材质 duplicate、空 tile 记录）。剩余：UE Python API 兼容问题（rotation/scale 方法名）需修复后重跑导入 → room_volcano 接线 → 实拍验证。
 - **M8-032 补充**：攻击者侧挥击音/打击音（ft_atk_01..03 + lowKick_impact + 1st_strong_lowkick_hit）已从 M8-009 定位清单提取并 sha 钉档（b5f4e2a）；导入 SND_* + 经技能组件 CastSound 接线=下轮。
 - **段表覆盖校验**（aaf3a51）：四 legacy 攻击段表全覆盖校验绿——方案文档问题五完成。
 
