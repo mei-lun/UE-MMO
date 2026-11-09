@@ -1,4 +1,6 @@
 # 最新状态：08 方案质量收口全部完成——第十二版包交付，待用户试玩确认（2026-11-09）
+- **M8-032 补充**：攻击者侧挥击音/打击音（ft_atk_01..03 + lowKick_impact + 1st_strong_lowkick_hit）已从 M8-009 定位清单提取并 sha 钉档（b5f4e2a）；导入 SND_* + 经技能组件 CastSound 接线=下轮。
+- **段表覆盖校验**（aaf3a51）：四 legacy 攻击段表全覆盖校验绿——方案文档问题五完成。
 
 - Owner：ZCode-20261107-A。M8 累计 DONE **30**；M8-022 IN_PROGRESS（H 类——第十二版包 READY FOR USER）；M8-025 SUPERSEDED；M8-028~030 TODO（P07 火山挂起待质量确认后恢复）；提交 `141f9c3`→HEAD。
 - **08 方案六问题收口状态**：
