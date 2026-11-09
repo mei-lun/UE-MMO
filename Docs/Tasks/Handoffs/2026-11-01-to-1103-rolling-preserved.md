@@ -1,0 +1,240 @@
+# 最近一轮交付：DNFM 静态资源适配（2026-11-04）
+
+- Owner：Codex-20261104-DNFM-UE；本轮新增 DONE **1 项 M6-009**。基线 `51c9d38`，实现 `4d96388`，main 本机提交、未推送。当前任务表 204 项、199 DONE、0 IN_PROGRESS；M5-H03 REVIEW、M7-005 BLOCKED 保持用户人工关状态。
+- 已导入 `/Game/UEMMO/Imported/DNFM130_5_8`：279 Static Mesh、137 来源材质 + 2 辅助材质、39 Texture、独立 `Maps/L_DNFM_ResourceGallery`。资产和源素材在本机忽略目录，脚本/文档已提交。
+- 验证：279 FBX 新 Blender 进程回读（顶点/面/UV/实际RGBA）；UE 导入→新进程重载全部279；39纹理寻址（23Clamp/16Repeat）；渲染展示与3个近景共4张新PNG已查看；Test -Render success=true（X421.415/Y-463.878/跳高130.743cm）。无C++变更，未重打开发包。独立代码复查问题已修复。
+- **内容限制**：154 网格有缺失底色引用，公会36材质依赖首包缺失CAB；中性占位明确标记。自定义Shader为参数可追溯的UE近似，不是原效果完整复现；原动画/Spine/粒子未转换为UE运行逻辑。静态资源适配完成，不冒充完整原版地图或模型外观已还原。
+- [任务报告](Docs/Tasks/Reports/M6-009.md)、[使用与重跑说明](Docs/DNF-Research/05-DNFM静态资源UE适配.md)。证据：`Artifacts/Tasks/M6-009/20261104T005828+0800`；预览 `Artifacts/Tasks/M6-009/DNFM_UE_Gallery.jpg`。历史本轮记录见 [handoff](Docs/Tasks/Handoffs/2026-11-04-Codex-DNFM-UE.md)。
+- 下一步：可直接打开展示图检查或拖网格入自己的地图；若继续恢复原色，需要提供缺失纹理包。既有人工试玩仍由用户签收。本任务无需新授权即可使用已落盘素材。
+
+# 最近一轮交付：试玩包三个运行时缺陷修复 + 实机验收（2026-11-03 深夜）
+
+> 本轮 0 张任务卡：用户报告"人物模型不正常、需实际验证技能释放"。实机自测发现并修复**三个独立
+> 运行时缺陷 + 一处动画架构缺陷**（全部编辑器 919/919 不可见——它们不断言实机渲染与包内发布路径）。
+> 交付包：`Artifacts/Package/Windows`（源码 `5fe9fcb`，exe SHA 前 16 位 `F9C61FF0AADD859D`）。
+
+- **缺陷 1·材质全灰**：M6-008 Interchange 导入的 M_DNFArtBase 缺 `bUsedWithSkeletalMesh` 使用标志，
+  包内 24 个英雄/哥布林材质实例全部回落默认灰材质（编辑器里不触发）。修复：`Scripts/Editor/
+  fix_dnf_material_usage.py` 打标志+保存+二进程验证。
+- **缺陷 2·技能层失活**：`UProfessionCatalogSubsystem` 资产发布路径只写**实例成员**，而
+  `IsPublished()/GetConfigRevision()` 读**进程级静态**——包内永远"未发布"，技能槽全 None、拒绝
+  一切释放。编辑器走源目录回退（正确设静态）所以全绿。修复：资产路径补设静态（`5fe9fcb`）。
+- **缺陷 3·资产重生成静默失效**：职业 DA builder 先 `NewObject` 再 `Package->FullyLoad()`——磁盘
+  旧对象影子胜出，M7-001 之后每次"重生成"都保留旧数据（盘上烙着 `attack_pending=true` 的五行
+  M7-003 技能，而源表是 false；生成报告里的新 revision 从未落盘）。修复：builder 改为先
+  `LoadObject` 再改同一对象；DA_ProfessionConfig 重生成并验证（rev `874037eca0cc664a`，pending 全 false）。
+- **缺陷 4·玩家动画冻结**：构造器 `AnimationSingleNode` + 运行时改 `AnimationData` 在包内完全不播
+  （运行时写 AnimationData 不重启节点；Montage 无法经 UAnimSingleNodeInstance 渲染）——玩家恒定
+  一个姿势。修复：为 DNF 骨架建 `ABP_DNFHero`+`BS_DNFHero_Locomotion`（idle/run 采样 + 原生
+  EditorBuildLocomotionGraph 的跳跃三态 + MNT_* 走的 DefaultSlot），复用 mannequin ABP 管线；
+  死代码 M7_004 单节点切换在 ABP 模式下自禁用。
+- **验收工具**：HUD `UEMMOSkillCast <槽>` exec + `-M7SkillCastTest` 包内序列（idle/run 截图 +
+  五槽真实 SubmitSkillSlot + M7DEMO 状态日志）。
+- **验证**：编辑器全量 919/919 ×3（builder 修复、AnimBP 切换各一轮 + 收尾）；包内实机 cast test
+  （最终包）：wired=true、四技能接受（MP 115→69、冷却 1.5/2.5/4.0/6.0s、OpLog Skill Activated 四行）、
+  截图证实彩色格斗家站立/跑步/出招三种不同姿势、HUD 技能条带实时冷却。用户存档逐字节还原。
+- **下一步**：用户重新人工验收（模型/动画/六技能/地城）；M5-H03、M7-005 仍等用户。
+
+# 最近一轮交付：人工验收包重打与包级缺口修复（2026-11-03）
+
+> 本轮 0 张任务卡：按用户指令重打人工验收包。期间包内全量 gate 暴露 6 个意外失败，
+> 全部为包级缺口（非游戏逻辑缺陷），已修复并两次复验全绿。任务板 203 项、198 DONE、
+> 0 IN_PROGRESS、TODO 1（M5-H04）；M5-H03 REVIEW、M7-005 BLOCKED 仍等用户。
+
+- **交付包**：`Artifacts/Package/Windows`（唯一开发包目录），源码 `285f573`，exe SHA-256 前 16 位
+  `9B0239F17A7E0FA2`。包内 Data 运行时配置齐全：test_room/CombatSystem/items/rooms/Professions/
+  dungeon_sequences/**enemies/combat-attacks**（后两个本轮新增；drops.json 有意不进包——M5-018B
+  断言包内拒绝）。用户存档（Profile_A/B/Index + 已迁移 Roster/Char）逐字节还原回包内，首启继续
+  原进度、不重复迁移；备份在 Artifacts/Tasks/Accept-Package-20261103/saves-backup。
+- **修复（提交 e48ccb6 + 285f573）**：①`Package.ps1` 补 Data/Professions 与 dungeon_sequences 搬运
+  （5fe27b5 提交信息声称过但 diff 从未落地，v3 包靠手工补齐）+ 新增 enemies/combat-attacks 搬运；
+  ②`M5PackagedReactionTests` 镜像回退目录补 item_scatter_training（M5-048 给启动表加第四行时
+  测试内第三份拷贝漏同步——目录完整性检查拒绝整表；该分支编辑器下跳过，只有包内全量能暴露）。
+  ③M7-002 真实存档夹具照旧由验收流程放入包内 `UEMMO/Artifacts/Tasks/M7-Package/`。
+- **验证**：Build Succeeded；编辑器全量回归 **919/919** ×2（audit-main-regression、
+  audit-package-fix-regression）；包内全量 gate（TestPackage -IncludeCombat，最终包
+  Accept-Package-20261103-Final）**912 通过 + 5 个文档化容忍失败**（M3_005/M3_007/M3_019×2/
+  M5_020A——读开发树源 JSON 的测试族，包内按设计失败）+ M0 渲染冒烟 success + 暂存打击证据 8 行。
+- **教训**：提交信息声称的脚本改动要对着脚本正文核实；新增"按运行时读 Data/*.json"的测试时，
+  TestPackage 的容忍名单与包内搬运集合要同步扩展。
+- **下一步**：用户按包内 README 的 M7 试玩清单人工验收（`UEMMOSkillDemo` 六技能 + 老四招 +
+  地城）；M5-H03 载具试玩签收仍待用户。
+
+# 最近一轮交接：M7-002 迁移 + M7-003 六技能 + M7-004 连续地城（2026-11-01/02）
+
+> 本轮新完成 DONE 3 项：M7-002、M7-003、M7-004。任务板 203 项、198 DONE、0 IN_PROGRESS、
+> TODO 1（M7-005）；M5-H03/H04 仍等用户。延续会话指令：M7-005 第二职业证明为剩余项
+> （其 A/B/C 资源门属用户人工验收范畴，见 02 文档 §9 第 6 步）。
+
+- **M7 试玩包已产出（2026-11-02）**：Artifacts/Package/Windows（源码 `5fe27b5`，exe SHA 前 16 位
+  0F4DACA3DB764E18）。旧用户存档已放回包内——首启即自动迁移。包内 README 附 M7 试玩清单
+  （UEMMOSkillDemo 切格斗家、六键位、已知边界）。Package.ps1 已补 Data/Professions 与
+  dungeon_sequences.json 携带（本次包为手工补齐，等价生效）。
+- **M7 试玩包第三版（2026-11-02，源码 `976bddd`，分支 art/hero-v2-rework）**：全链路包内验证绿——
+  ①用户畸形旧档恢复触发（插桩证明 stored/recomputed 摘要差 + 职业状态修复）→ ②旧档导入 →
+  ③启动恢复（11 件物品进度回来）→ ④HUD-exec SkillDemo 生效（屏幕横幅）→ ⑤证据截图产出。
+  前两版包的问题：v1 无恢复代码；v2 验证时用了错误时代的存档副本。
+- **视觉集成（976bddd）**：玩家=DNF 格斗家模型（单节点 idle/run 切换；mannequin AnimBP 无法驱动
+  DNF 骨架）；旧四招换真实 DNF 动作（clip_end 对齐导入时长）；9 个 MNT montage 在 DNF 骨架上
+  重建并二进程验证；M3-032 占位决策解锁（全部 placeholder=false）；M3_024/M3_028 测试恢复
+  mannequin 表现层以继续验证 AnimBP 契约。**全量回归 919/919**。
+- **M7-005 已设 BLOCKED（依赖外部条件）**：其 A/B/C 资源门由用户签收（任务卡原文），第二职业
+  造型/动作资源需用户先给出方向（03 文档的建模例外按职业逐个过审）；阻塞原因与剩余步骤：
+  ①用户选定第二职业与两项结构差异能力 → ②Blender 建模+用户 A/B/C 签收 → ③配置行接入（不复制
+  CombatComponent，架构复用面已由 M7-003 的四策略/曲线/装备许可铺好）→ ④六技能+曲线+装备差异
+  验证+全量回归。解锁后 AI 侧可直接续做 ③④。
+
+- Owner：ZCode-20261101-DNFArt。M7-002 `ec5705b`；M7-003 `cb9bf57`；M7-004 `9e5ab7e`。
+  报告：[M7-002](Docs/Tasks/Reports/M7-002.md)、[M7-003](Docs/Tasks/Reports/M7-003.md)、[M7-004](Docs/Tasks/Reports/M7-004.md)。
+- **M7-002**：Roster 三槽事务 + schema v4 六列 + 显式迁移链（修复三个真缺口：Validate 漏 v3 门、
+  迁移输出必播种职业状态、LoadActiveProfile 静默丢 RoomClears）+ GameFlow roster-first 启动。
+- **M7-003**：USkillLoadoutComponent（预检-提交九类拒绝）+ 目录发布门子系统 + 购技能/SP/MaxMP
+  resolver + 逐实例伤害系数 + 四策略白名单（弹体复用统一命中；SelfBuff 无消费者已实现）+
+  Z 经济门 + HUD 五槽条；DNF 五条技能动画导入并二进程 verify；数据表/DataAsset 重生成。
+- **M7-004**：地城运行态（FDungeonRunState 仅运行态）+ 严格序列解析 + 协调器（门口快照→过图→
+  一次结算→DungeonClears；失败不结算；陈旧回调按房 id 丢弃）+ OnExitAccepted 门事件 +
+  过图 MP/冷却携带 + HUD 结算区分 + dungeon_goblin_proto（配置/资产/哥布林换装；两房 waves
+  重定向因 M2-016 单敌路径重构推迟，02 文档默认认可）。
+- **验证**：M7_002 10/10、M7_003 7/7、M7_004 2/2；**全量回归 917/917** 0 失败（含 M1_008/M1_010/
+  M5_004/M5_005/M2_001 五处陈旧钉诚实更新）。
+- **限制**：技能帧截图自动化环境不出图（M6-008 同类限制，留给试玩）；地城菜单入口按钮未接
+  （启动 API 就绪）；TravelProvider 的生产绑定（GameFlow::EnterRoom）待一行接线。
+- **下一步**：M7-005 第二职业证明（TODO）——需要第二职业造型资源与 A/B/C 门（用户人工验收）。
+
+# 最近一轮交接：M7-002 存档迁移 + M7-003 首职业六技能（2026-11-01）
+
+> 本轮新完成 DONE 2 项：M7-002、M7-003。任务板 203 项、197 DONE、0 IN_PROGRESS、TODO 2
+> （M7-004/005）+ M5-H04；M5-H03 仍等用户试玩签收。延续会话指令：继续 M7-004～005。
+
+- Owner：ZCode-20261101-DNFArt。M7-002 实现提交 `ec5705b`（+收口 962634f）；M7-003 实现提交
+  `cb9bf57`。[M7-002 报告](Docs/Tasks/Reports/M7-002.md)、[M7-003 报告](Docs/Tasks/Reports/M7-003.md)。
+- **M7-002 多角色存档与旧档迁移**：URosterService 三槽事务（staging→读回→索引提交）、
+  `Char_<32hex>` 前缀、一次性 ImportLegacyProfile（旧档只读迁移/全新安装引导/坏档保留）；
+  schema v4 六新列 + 摘要仅 schema 4 覆盖；迁移链修复三个真缺口（Validate 漏 v3 门、迁移输出
+  必须播种职业状态、LoadActiveProfile 静默丢 RoomClears）；GameFlow roster-first 启动通道。
+- **M7-003 首职业六技能**：USkillLoadoutComponent（8 槽/MP/冷却/预检-提交九类拒绝原因）+
+  UProfessionCatalogSubsystem 发布门 + TryPurchaseSkillRank/SP 累积/MaxMP resolver +
+  CombatComponent 逐实例伤害系数 + 四策略白名单（弹体复用 ACombatProjectile+统一命中+M5-077
+  退役；SelfBuff 无消费者已实现）+ Z 经济门（连段付费底 0）+ HUD 五槽条。DNF 五条技能动画导入
+  并第二进程 verify；combat-attacks 五新招行（命中窗取自 actions_manifest）+ sand_throw +
+  DataAsset 全量重生成（profession rev `874037eca0cc664a`）。
+- **验证**：M7_002 10/10、M7_003 7/7；**全量回归 915/915** 0 失败（含 M1_008/M1_010/M5_004/
+  M5_005 四处陈旧钉的诚实更新——攻击清单 4→9、弹体行 5→6、合同箱限定旧四招）。
+- **限制**：技能帧截图两条自动化路（编辑器 SceneCapture/自动化 FScreenshotRequest）在本工作区
+  均出不了图（M6-008 同类限制已记录），真实动作帧留给用户试玩；技能图标/Montage 留空为
+  placeholder。
+- **未动项**：旧存档/M5-H03 判定/固定包未触碰；ArtValidation 与 blender-work 保持本机不入库。
+- **下一步**：M7-004 连续双房间地城（依赖已满足）；随后 M7-005 第二职业证明。
+
+# 最近一轮交接：M7-002 多角色存档与旧档迁移（2026-11-01）
+
+> 本轮新完成 DONE 1 项：M7-002。任务板 203 项、196 DONE、0 IN_PROGRESS、TODO 3（M7-003..005）；
+> M5-H03 仍等用户试玩签收。延续会话指令：M7-002 完成后继续 M7-003～005。
+
+- Owner：ZCode-20261101-DNFArt；实现提交 `ec5705b`（21 文件 +3773）；[M7-002 报告](Docs/Tasks/Reports/M7-002.md)。
+- **Roster 事务**：URosterService 三槽 staging→读回→索引提交；`Char_<32hex>` 前缀派生；一次性
+  ImportLegacyProfile（旧档只读迁移保留 CharacterId/全部 v3 字段；全新安装引导 prototype；坏档
+  LegacyRecoveryError 保留文件；健康 Roster 拒绝重复导入）。
+- **schema v4**：ProfessionId/SkillRanks/UnspentSP/SkillLoadout/ProfessionConfigRevision/
+  DungeonClears；摘要 v4 覆盖仅限 schema 4（v1/v2/v3 摘要冻结）；ToSaveGame 缺省盖章
+  MakeLegacyPrototype。
+- **迁移链修复（测试暴露的三个真缺口）**：Validate 可迁移集合漏 v3（会孤立全部 M6 存档）；
+  三条迁移通道统一播种职业状态（"一步到当前 schema"契约下输出必为 v4 载荷）；
+  LoadActiveProfile 此前静默丢弃 RoomClears（M6 遗留缺口，导入路径暴露后补透传）。
+- **GameFlow**：启动先探测 Roster → 一次性旧档导入 → 损坏报错不 wipe；16 参数 RestoreFromSave
+  把职业状态推进 ProfileSubsystem；UI 角色列表属后续功能卡。
+- **验证**：M7_002 套件 10/10；全量回归 **908/908** 0 失败（regression6 曾 907/908，M3_013
+  原始档补职业 id 后全绿）；Build Succeeded。
+- **未动项**：旧存档/M5-H03 判定/固定包未触碰；Content/UEMMO/ArtValidation 与 blender-work
+  保持本机不入库。
+- **下一步**：M7-003 首职业六技能（依赖已满足）；之后 M7-004 连续双房间、M7-005 第二职业。
+
+# 最近一轮交接：M7-001 职业与等级配置底座 + DNFArt 资源 A/B 验收（2026-11-01）
+
+> 本轮新完成 DONE 2 项：DNFArt-AB-Acceptance（验收记录，非任务卡）与 M7-001。任务板 203 项、195 DONE、
+> 0 IN_PROGRESS、TODO 4（M7-002..005 已登记待领）；M5-H03 仍等用户试玩签收。
+> 延续会话指令：完成资源 A/B 验收 → 通过后按 02 文档 §9 第 2 步开始实施。
+
+- Owner：ZCode-20261101-DNFArt；实施提交 ad4456a（本报告提交后如有文档修订以后续提交为准）；[M7-001 报告](Docs/Tasks/Reports/M7-001.md)、[A/B 验收记录](Docs/Tasks/Reports/DNFArt-AB-Acceptance.md)。
+- **资源 A/B 验收（会话内执行，用户可推翻）**：按 03 文档验收表逐项审阅 ART-01～06 产物 + UE 导入数据，结论**通过**（3 项已记录限制：高踢胯部小扇面、无 tick 截图材质黑/动作帧静态、格斗家面数略低）。基线快照：固定包 identity（642aee5 / exe SHA-256 9E0D89...）+ 当前无用户存档（M5-H03 未试玩，旧档迁移测试将用合成夹具）。
+- **M7-001 职业与等级配置底座**：Data/Professions 六表（prototype 与 FExperienceCurve 逐值等价 + fighter MP/SP 默认值）+ 严格解析器（复用 combat JSON 解析器）+ 跨表门 + FProfessionCatalog 发布门 + UProfessionConfigAsset（一资产一包）+ generate/verify 编辑器包装 + 6 条 Automation 测试。
+- **验证**：Automation 904/904（898 既有 + 6 新增）0 失败；DataAsset generate→verify 第二进程逐字段+revision 一致（18b86af4e3c7b63f）；CheckTaskBoard valid=True。
+- **关键修复**：FName::Sort 需 LexicalLess lambda；combat-attacks.json attacks 是数组；DataAsset 首版误以文件夹路径落盘；测试文本突变注意源文件 CRLF。
+- **未动项**：旧功能/旧存档/M5-H03 判定/固定包未触碰；ArtValidation uassets 与 blender-work 保持本机不入库（gitignore 已加）。
+- **下一步**：M7-002 多角色存档与旧档迁移（TODO，依赖已满足）；M7-003/004/005 依次排队。
+
+# 最近一轮交接：M6-008 DNFArt Blender 交付包 UE 导入验收（2026-11-01）
+
+> 本轮新完成 DONE 1 项：M6-008。任务板 198 项、194 DONE、0 IN_PROGRESS；M5-H03 仍等用户试玩签收。
+> 用户指令：按 Docs/DNF-Research 三份最终文档完整执行设计任务并交付；建模工具选用 Blender CLI
+> （ART 全部阶段），UE 侧只做 ART-06 资源验收。
+
+- Owner：ZCode-20261101-DNFArt；实施提交 091767aec77a22d32d78ceeeb02b7ce6f4e4c119；[M6-008 报告](Docs/Tasks/Reports/M6-008.md)。
+- **Blender 管线 ART-01～06 全部完成**（产物在 Git 忽略的 SourceAssets/Unpacked/DNFPrivateReference/blender-work/，
+  1099 个文件、manifest.json 含全量 SHA-256）：格斗家（棕发/橙上衣/深长裤/厚底鞋/护腕/可开关后发束）
+  与哥布林（绿皮/灰胸甲/腰布/裹腕裹踝/木骨刺武器）低模-细化-UV 程序贴图-LOD-规则蒙皮-
+  19+8 条 60fps 动作-逐动作 FBX 导出；blender_validation.json（骨骼 23/22、高度 1.825/1.25m、
+  FBX 抽检）全过；4 极端姿势测试渲染通过（高踢残留胯部小扇面已记录）。
+- **UE 导入验收（M6-008）**：/Game/UEMMO/ArtValidation/DNFArt 独立命名空间；高度 182.5/125.0cm 与
+  Blender 逐值一致；13/11 材质槽接 MIC+贴图（数据链验证）；6 条动作序列时长与源一致
+  （FBX 曾落场景默认帧范围 1..250 → art06_export.py 修正为动作范围）；mode=verify 第二进程复核
+  success=true；12 张验收截图在 Artifacts/Tasks/M6-008/。
+- **两项渲染级限制（已在报告"限制"记录）**：无 tick 会话的 SceneCapture 材质呈黑（数据链逐级
+  验证正确，需 GUI 编辑器目视复核）+ 动作冻结帧呈绑定姿势（set_position 无 tick 无法求值）。
+  动作/材质数据本身已验证；GUI 打开 /Game/UEMMO/ArtValidation/DNFArt 可查看真实表现。
+- **未动项**：旧四功能/旧存档/M5-H03 判定均未触碰；Content/UEMMO/ArtValidation/** 与
+  blender-work/** 不入 Git（可由脚本从 FBX 重建）；AGENTS.md 已按 02 文档 §9.1 写入 Blender
+  建模例外条目。
+- **下一步（等用户）**：资源 A/B 验收（审阅 blender-work 转台/概念图 + 本报告截图，或 GUI 打开
+  验收命名空间）→ 通过后按 02-多职业功能实施方案.md 第 2 步建多职业功能任务卡；不通过则按
+  审阅意见回 Blender 修改（ART-04/05 迭代路径已在交接文档中定义）。
+
+# 最近一轮交接：M6-007 DNF 研究文档最终版收敛（2026-11-01）
+
+> 本轮新完成 DONE 1 项：M6-007。任务板当前 197 项、193 DONE、0 IN_PROGRESS；M5-H03 仍等用户试玩，M5-H04 保留原依赖。之前的 M6-006 迁入事实与历史记录仍保留在下文和 [本轮独立交接](Docs/Tasks/Handoffs/2026-11-01-Codex-DNFFinal.md)。
+
+- Owner：Codex-20261101-DNFFinal；实施提交 9dae27b564c009f075306f153c943c79b39b9e1e；[M6-007 报告](Docs/Tasks/Reports/M6-007.md)。
+- [Docs/DNF-Research](Docs/DNF-Research/README.md) 现在只保留 README、研究依据、功能实施方案、Blender 建模交接三份有效文档；11 份旧草稿和旧迁入生成脚本从当前树删除，历史 Git 与任务报告不删。私有参考文件和外部完整归档不受影响。
+- 下一步建模 Agent 直接按 [最终建模交接](Docs/DNF-Research/03-Blender建模与资源交接.md) ART-01～ART-03 做穿衣格斗家和带护具哥布林的转台；当前未制作 3D 模型、未实施多职业或新技能功能。
+- 验证：最终文档及参考资源脚本 success=true，任务板 valid=True。原有未跟踪 .zcode/ 未触碰。
+
+# 前一轮交接：M6-006 DNF 研究资料迁入（2026-11-01）
+
+> 本轮新完成 DONE 1 项：M6-006。任务板现为 196 项、192 DONE、0 IN_PROGRESS；M5-H03 仍由用户试玩签收，M5-H04 仍依赖该人工关。此前 M5/M6 交接历史保留在下文和 [本轮独立交接](Docs/Tasks/Handoffs/2026-11-01-Codex-DNFDocs.md)。
+
+- Owner：Codex-20261101-DNFDocs；实施提交 f5d69ec7303298921580251a3bad282b9f326193，验证见 [M6-006 报告](Docs/Tasks/Reports/M6-006.md)。
+- 11 份逆向/多职业/Blender 规划文档集中在 [Docs/DNF-Research](Docs/DNF-Research/README.md)。218 张 PNG 样本、10 个 IMG 样本、必要索引等位于 Git 忽略的 SourceAssets/Unpacked/DNFPrivateReference。完整原始包仍在 D:/DOF/DNF-REA-Output，未入 Git 或 UE Content。
+- 本轮未制作 3D 模型、未改游戏功能、未签 M5-H03。资料已由 M6-007 收敛为三份最终文档，下一步建模 Agent 可按 [Blender 建模与资源交接](Docs/DNF-Research/03-Blender建模与资源交接.md) 执行 ART-01～ART-03 并交用户审阅转台；私有 DNF 图像不发布。
+- 工作区原有未跟踪 .zcode/ 不是本次产物，未触碰。结束前 CheckTaskBoard 验证通过；本轮报告有命令和结果。
+
+# 第十六批交接：M5 收尾链收官（M5-049/054/055——当时任务板 AI 侧全部清零）
+
+> 本批新增 DONE **3 项：M5-049、M5-054、M5-055**——连同此前批次，**任务板 195 项中 191 DONE，AI 侧可领取任务清零**；剩余 M5-H03（REVIEW 等用户签收）与 M5-H04（最终人工关）。历史批次见 Docs/Tasks/Handoffs/（M6 两批、batch13 归档等）。
+
+- Owner：ZCode-20261029-B；2026-10-30T09:20+08:00 至 11:20+08:00。**main 分支**，起 `71a4493` 止本批末提交，未自动推送。
+- 任务板：**191/195 DONE、0 IN_PROGRESS、valid=true；Ready:（空）；Awaiting human: M5-H03**。剩余 TODO 仅 M5-H04。
+- 提交：049 实现 `ac3df64`/收口 `642aee5`；054 实现 `f423655`/收口 `e4b6653`；055 文档 `c47ea54`。
+
+## 本批实际内容
+
+1. **M5-049 表驱动装甲载具**：vehicles/seats/mounts 三表加行（vehicle_armored_test：HP500/防25/速400/12 发线性弹炮塔；seat/mount 跨表闭合），生成器双 pass 落 3 个新 DA；三套件喂真实表实证差异（统一入口伤害公式分流：致死轮样车 252 死/armored 268 活；生产武装挂本行武器；弹匣按行消耗）。**全量回归 892/892**——首跑暴露 M6-004 真旅行在共享进程强制 GC 使 M5-067 既有世界泄漏变致命 → 旅行链加 `-UEMMOFullTravelChain` 专用进程门（TestAutomation 加 -ExtraArgs 透传）；连带陈旧钉诚实更新（房间行数/载具表行数/M3-024 启动图钉/M6-005 会话钉）。H03 依赖按用户"继续下一个阶段"指令豁免（H03 本体保持 REVIEW 未代签，报告记录原文）。
+2. **M5-054 全链发布验证**：`M5FullLoopScenarioTests`（空档→三关目录菜单→装甲车炮塔段→真实 2+3 波清怪（M2-008 泵自行结算）→M6-003 记录/BeginReward/原子申领/装备→显式保存→**第二个实例经 M3-015 恢复**（身份/库存/装备/已领/武器状态形状/通关记录/目录））编辑器 1/1 + **包内直跑 Success**；`-Section Full` 场景段；**源表隔离**：TestPackage 多级通道全程改名开发树 Data/（包只能跑自携副本）+ 恢复后 18 文件 SHA256 字节一致；固定包重打包（发布候选）。
+3. **M5-055 配置作者手册与最终交接**：[M5-配置作者手册](Docs/Tasks/M5-配置作者手册.md)（武器/载具/关卡的表驱动实证路径 + 三条硬约束 + 占位与边界）；README/验证记录/验收摘要同步；H04 操作清单见 [M5-055 报告](Docs/Tasks/Reports/M5-055.md)。
+
+## 限制与注意
+
+- **固定包已是发布候选**（含 M5-049/M6 全部内容）——H03/H04 按本包验收；包身份以 package-info.json 为准。
+- M5-067 夹具世界泄漏以旅行链专用进程门隔离在外（根治属 M5-067 域）；手册与报告已记录。
+- 并行会话共用工作树（TASKS/HANDOFF 编辑前先重读）。
+
+## 下一步
+
+- **用户事项（仅剩）**：M5-H03 载具试玩签收（按 [M5-H03 报告](Docs/Tasks/Reports/M5-H03.md) 骑乘语义 + 本包）→ M5-H04 最终人工关（清单见 [M5-055 报告](Docs/Tasks/Reports/M5-055.md)）。
+- **AI 侧无可领取任务**；M5/M6 全部收官，下一阶段范围待用户定义。
+
+# 第十五批交接（M6 第二批收官：M6-002/004/005——M6 阶段五卡全部 DONE）
+
+> 本批新增 DONE **3 项：M6-002、M6-004、M5-055 前身的 M6-002/004/005 详见本节**；历史：M6 第一批见 [M6Batch1](Docs/Tasks/Handoffs/2026-10-29-ZCode-20261029-B-M6Batch1.md)。
+
+- Owner：ZCode-20261029-B；2026-10-29T23:29+08:00 至 2026-10-30T01:05+08:00。main，起 `3d04e41` 止 `ba8b7e6`。
+- **M6-002 菜单自由选关列表**、**M6-004 新战斗房生产与打包冒烟**、**M6-005 独立主菜单启动图**——三卡 DONE；M6 阶段五卡（001..005）全部完成。提交：002 `7f5849b`/`3d04e41`；004 `eafbb8d`/`647fde8`；005 `128bcae`/`ba8b7e6`。详见各任务报告与 [M6Batch2 交接](Docs/Tasks/Handoffs/2026-10-30-ZCode-20261029-B-M6Batch2.md)。

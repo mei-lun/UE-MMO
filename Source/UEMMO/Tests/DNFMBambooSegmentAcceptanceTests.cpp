@@ -207,6 +207,36 @@ bool FDNFMBambooSegmentAcceptance::RunTest(const FString& Parameters)
         return true;
     }));
 
+    // M8-014: walk to the east exit marker (translucent column at X=1560)
+    // and capture it; also record mid-map waypoint shots for M8-015.
+    ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, Player]()
+    {
+        static double Start = 0;
+        APrototypeCharacter* Pawn = Player();
+        if (!Pawn) { Start = 0; return true; }
+        if (Start == 0) Start = FPlatformTime::Seconds();
+        if (Pawn->GetActorLocation().X >= 1500.f || FPlatformTime::Seconds() - Start > 10.0)
+        {
+            Pawn->DevSetMoveAxes(0.f, 0.f);
+            Start = 0;
+            TestTrue(TEXT("exit marker reachable: pawn walked to the east gap"),
+                Pawn->GetActorLocation().X >= 1500.f);
+            return true;
+        }
+        Pawn->DevSetMoveAxes(1.f, 0.f);
+        return false;
+    }));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(0.4f));
+    ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, Player, Output]()
+    {
+        APrototypeCharacter* Pawn = Player();
+        if (!TestNotNull(TEXT("player remains for exit evidence"), Pawn)) return true;
+        const FVector Loc = Pawn->GetActorLocation();
+        AddInfo(FString::Printf(TEXT("exit pose X=%.1f Y=%.1f"), Loc.X, Loc.Y));
+        FScreenshotRequest::RequestScreenshot(Output / TEXT("exit-marker.png"), true, false);
+        return true;
+    }));
+
     // Jump: rises, is captured in the air, and lands back on Z=0.
     ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, Player]()
     {

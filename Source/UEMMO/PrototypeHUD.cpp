@@ -19,7 +19,6 @@
 #include "Enemy/EnemyDefinition.h"
 #include "Enemy/TrainingEnemy.h"
 #include "Engine/GameInstance.h"
-#include "GameFramework/GameUserSettings.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
@@ -1036,18 +1035,6 @@ void APrototypeHUD::StartDebugRepeatStrike()
 
 void APrototypeHUD::BeginPlay()
 {
-    // M8-026: enforce the packaged design frame at boot - a WINDOWED
-    // 1280x720 (the DNFM design resolution, the source's own video frame
-    // size). The per-user Saved GameUserSettings.ini persists across
-    // package updates and would otherwise resurrect the fullscreen mode
-    // from earlier sessions; no in-game settings UI exists yet, so the
-    // boot-time application is the contract until one does.
-    if (UGameUserSettings* Settings = UGameUserSettings::GetGameUserSettings())
-    {
-        Settings->SetFullscreenMode(EWindowMode::Windowed);
-        Settings->SetScreenResolution(FIntPoint(1280, 720));
-        Settings->ApplySettings(false);
-    }
     UGameFlowSubsystem* StartupFlow = ResolveGameFlowSubsystem();
     const bool bExperienceAutoEntry = StartupFlow && StartupFlow->ConsumeResourceExperienceAutoEntry();
     if (bExperienceAutoEntry || (!StartupFlow || !StartupFlow->IsResourceExperience())

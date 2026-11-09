@@ -15,6 +15,7 @@
 #include "../Room/RoomSessionSubsystem.h"
 
 #include "Engine/GameInstance.h"
+#include "GameFramework/GameUserSettings.h"
 #include "Engine/World.h"
 #include "CoreGlobals.h"
 #include "Misc/App.h"
@@ -74,6 +75,18 @@ FString UGameFlowSubsystem::LevelCatalogSourcePathOverride;
 void UGameFlowSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
+	// M8-026: enforce the packaged design frame BEFORE any viewport exists -
+	// a WINDOWED 1280x720 (the DNFM design resolution, the source's own
+	// video frame size). The per-user Saved GameUserSettings.ini persists
+	// across package updates and would otherwise resurrect the fullscreen
+	// mode from earlier sessions; the first viewport reads the applied
+	// settings, so the HUD and its menu mount into the correct frame.
+	if (UGameUserSettings* Settings = UGameUserSettings::GetGameUserSettings())
+	{
+		Settings->SetFullscreenMode(EWindowMode::Windowed);
+		Settings->SetScreenResolution(FIntPoint(1280, 720));
+		Settings->ApplySettings(false);
+	}
 	// Interactive game launches use the current resource experience. Dedicated
 	// unattended regression processes keep their explicit scenarios; the flag
 	// runs this same production path in a dedicated rendered acceptance process.
