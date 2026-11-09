@@ -505,6 +505,10 @@ void APrototypeCharacter::BeginPlay()
     // every tick (Reset/interrupt paths stop the montage and return to the
     // locomotion AnimBP). Null-safe on both arguments by contract.
     CombatPresentation->SetSources(Combat, GetMesh());
+    // M8-032: the hit feedback stack - when THIS combatant takes a hit
+    // (the hit stop activates), the camera punches and the pawn dilates
+    // briefly (the combat feel's victim-side feedback).
+    Combat->OnHitStopChanged.AddUObject(this, &APrototypeCharacter::HandleCombatHitStop);
     // M8-031: the six skill ability components (the component-loaded skills;
     // configured from the loadout in CreateSkillAbilities below). The input
     // layer routes slot presses to these components generically.
@@ -2323,6 +2327,25 @@ void APrototypeCharacter::SubmitCombatInput(ECombatInput Action, double PressedA
     // ignored: the character counter stays monotonic either way.
     Combat->QueueInput(Intent);
 }
+void APrototypeCharacter::HandleCombatHitStop(bool bFrozen)
+{
+	// M8-032: the combat feel's victim-side feedback. The camera punch is
+	// the primary visible response; the time dilation is a one-frame
+	// micro-dilation (0.3x for one tick via the custom dilation).
+	if (bFrozen && CameraRig != nullptr)
+	{
+		CameraRig->PunchCamera(10.0f);
+	}
+	if (bFrozen)
+	{
+		CustomTimeDilation = 0.3f;
+	}
+	else
+	{
+		CustomTimeDilation = 1.0f;
+	}
+}
+
 void APrototypeCharacter::SetTrainingResetService(UTrainingResetService* InService)
 {
     TrainingResetService = InService;

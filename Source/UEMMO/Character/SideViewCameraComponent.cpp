@@ -46,6 +46,11 @@ void USideViewCameraComponent::ApplyConfig()
     }
 }
 
+void USideViewCameraComponent::PunchCamera(float IntensityCm)
+{
+	PunchOffset = FVector(0.f, 0.f, IntensityCm);
+}
+
 void USideViewCameraComponent::ApplyRoomBounds(float MinX, float MaxX)
 {
     Config.RoomMinX = MinX;
@@ -93,8 +98,9 @@ void USideViewCameraComponent::InitializeAnchor()
     }
     float HitZ = 0.0f;
     GroundZ = ResolveGroundZ(TraceGroundZ(HitZ), HitZ, InitialGroundZ);
-    CurrentAnchor = ComputeAnchorLocation(PawnLocation, GroundZ, ReferenceY, Config);
-    SetWorldLocation(CurrentAnchor);
+    	PunchOffset *= FMath::Max(0.0f, 1.0f - GetWorld()->GetDeltaSeconds() * 12.0f);
+	CurrentAnchor = ComputeAnchorLocation(PawnLocation, GroundZ, ReferenceY, Config);
+    SetWorldLocation(CurrentAnchor + PunchOffset);
 }
 
 void USideViewCameraComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -118,5 +124,5 @@ void USideViewCameraComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
     Anchor.Y = TargetAnchor.Y;
     Anchor.Z = TargetAnchor.Z;
     CurrentAnchor = Anchor;
-    SetWorldLocation(CurrentAnchor);
+    SetWorldLocation(CurrentAnchor + PunchOffset);
 }

@@ -90,6 +90,9 @@ public:
     /** M8-023: the fixed side-view rig (the room-bounds application). */
     USideViewCameraComponent* GetCameraRig() const { return CameraRig; }
 
+    /** M8-032: the combat feel victim-side camera punch + time dilation. */
+    void HandleCombatHitStop(bool bFrozen);
+
     /** M8-031: the six skill ability components (the component-loaded skills). */
     UPROPERTY(VisibleAnywhere, Category = "Combat")
     TArray<TObjectPtr<USkillAbilityComponent>> SkillAbilities;

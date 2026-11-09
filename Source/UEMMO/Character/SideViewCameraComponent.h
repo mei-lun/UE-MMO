@@ -94,6 +94,10 @@ public:
      */
     void ApplyRoomBounds(float MinX, float MaxX);
 
+    /** M8-032: a brief camera punch on hit (the combat feel feedback).
+     * The offset decays over ~0.1s via the per-tick lerp back. */
+    void PunchCamera(float IntensityCm = 8.0f);
+
 private:
     void ApplyConfig();
     bool TraceGroundZ(float& OutHitZ);
@@ -103,6 +107,7 @@ private:
     TObjectPtr<UCameraComponent> Camera;
 
     FVector CurrentAnchor = FVector::ZeroVector;
+    FVector PunchOffset = FVector::ZeroVector;
     float GroundZ = 0.0f;
     float ReferenceY = 0.0f;
 };
