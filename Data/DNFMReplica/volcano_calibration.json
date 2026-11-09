@@ -1,0 +1,39 @@
+{
+ "task": "M8-028 P07-B 火山图标定（派生自 M8-027 提取与 M8-010 口径）",
+ "scale": {
+  "cm_per_px": 1.7615,
+  "derivation": "DNF 全局像素密度与竹林同源（共享精灵管线）；竹林标定 s=1.7615 沿用"
+ },
+ "origin": {
+  "px": [
+   0,
+   0
+  ],
+  "convention": "placement px(0,0) → 世界 (0,0)；G2 绝对原点缺口按 placement 相对坐标口径处理"
+ },
+ "depth_convention": "y-down → +Y（与竹林 A1 实测一致：下屏=近景=Y 增大）；DISTANTBACK foot_y 15-205=远景，CONTACT foot_y 608-645=近景",
+ "ground_plane_z_cm": 0.0,
+ "walk_band_provisional": {
+  "y_px": [
+   560,
+   701
+  ],
+  "y_cm": [
+   986,
+   1234
+  ],
+  "note": "CONTACT 层脚点带（近景石台）；G1 通道语义引擎内标定归 M8-029"
+ },
+ "content_extent_cm": {
+  "x": [
+   -491,
+   2093
+  ],
+  "y": [
+   26,
+   1234
+  ],
+  "note": "top_left/scaled_size 全集换算"
+ },
+ "map_kind": "决斗场竞技场（map 脚本 [决斗]无名；视觉=Anton 火山图 refs）"
+}
