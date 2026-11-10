@@ -418,6 +418,21 @@ bool FUEMMOTasksM8_031TeardownNeverLocksThePhaseMachine::RunTest(const FString& 
 		Machine->CanStartAttack());
 	TestTrue(TEXT("a fresh attack starts after the teardown"),
 		Component->TryStartAttack(FName(TEXT("light_01")), 1));
+
+	// M8-039: the LIVE gate proof - a mid-Active teardown followed by an
+	// IMMEDIATE restart (no TickCombat in between). The stored phase is
+	// still Active here (no tick has re-derived it), so a stored-phase gate
+	// would refuse; the live derivation reads the current facts (Free,
+	// Frame -1 -> Idle) and allows the start.
+	Component->ResetCombat();
+	for (int32 Step = 0; Step < 26; ++Step)
+	{
+		TickN(*Component, 1);
+		if (Component->GetStateMachine()->GetPhase() == ECombatPhase::Active) break;
+	}
+	Component->ResetCombat();
+	TestTrue(TEXT("an immediate restart after the mid-Active teardown (the live gate, no tick)"),
+		Component->TryStartAttack(FName(TEXT("light_01")), 1));
 	return true;
 }
 

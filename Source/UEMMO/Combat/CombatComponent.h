@@ -15,6 +15,8 @@
 #include "System/HitLedger.h"
 #include "System/ReactionResolver.h"
 
+#include "CombatStateMachine.h"
+
 #include "CombatComponent.generated.h"
 
 class UAttackCatalog;
@@ -258,6 +260,14 @@ public:
 
 	/** M8-031: the phase state machine (read access for tests/display). */
 	UCombatStateMachine* GetStateMachine() const { return StateMachine; }
+
+	/**
+	 * M8-039: the live attack-start gate - the transition table applied to
+	 * the phase derived from the CURRENT facts at decision time (never the
+	 * one-tick-lagged stored phase). True without a machine (the bare
+	 * component keeps its legacy always-allow behavior).
+	 */
+	bool CanStartAttackLive() const;
 
 	/**
 	 * M1-028: read-only debug view of the definition the running attack
@@ -577,6 +587,13 @@ private:
 	 * start. No-op without the subobject.
 	 */
 	void UpdatePhaseMachine();
+
+	/**
+	 * M8-039: assembles the phase facts from the CURRENT component state
+	 * (the live snapshot the phase machine and the attack-start gate both
+	 * consume).
+	 */
+	FCombatPhaseFacts BuildPhaseFacts() const;
 
 	/**
 	 * M1-014: when the running attack is inside its cancel window, prunes

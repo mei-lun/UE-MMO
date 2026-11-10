@@ -112,6 +112,29 @@ bool FUEMMOM8_031StateMachine::RunTest(const FString& Parameters)
     SM->UpdateFromFacts(Facts);
     TestTrue(TEXT("the cancel window allows the chain start"), SM->CanStartAttack());
 
+    // M8-039: the LIVE gate derives the phase from the given facts at the
+    // decision site (the stored phase stays untouched) - the one-tick-lag
+    // fix the re-enabled gates consume.
+    FCombatPhaseFacts LiveFacts;
+    TestTrue(TEXT("live: Idle allows the start"), SM->CanStartAttackLive(LiveFacts));
+    LiveFacts.ActiveStartFrame = 7;
+    LiveFacts.ActiveEndFrame = 11;
+    LiveFacts.CancelStartFrame = 12;
+    LiveFacts.CancelEndFrame = 24;
+    LiveFacts.DurationFrames = 26;
+    LiveFacts.Frame = 8;
+    TestFalse(TEXT("live: mid-active refuses the re-entry"), SM->CanStartAttackLive(LiveFacts));
+    LiveFacts.Frame = 12;
+    TestTrue(TEXT("live: the first cancel-window frame allows the chain"), SM->CanStartAttackLive(LiveFacts));
+    LiveFacts.Frame = 24;
+    TestFalse(TEXT("live: the post-cancel recovery tail refuses"), SM->CanStartAttackLive(LiveFacts));
+    LiveFacts.Frame = 8;
+    LiveFacts.bHitStun = true;
+    TestFalse(TEXT("live: hit stun refuses"), SM->CanStartAttackLive(LiveFacts));
+    LiveFacts.bHitStun = false;
+    LiveFacts.bDead = true;
+    TestFalse(TEXT("live: dead refuses"), SM->CanStartAttackLive(LiveFacts));
+
     return true;
 }
 #endif

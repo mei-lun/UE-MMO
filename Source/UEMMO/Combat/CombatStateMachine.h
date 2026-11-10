@@ -84,6 +84,21 @@ public:
 	void UpdateFromFacts(const FCombatPhaseFacts& Facts);
 
 	/**
+	 * M8-039: the pure derivation (the same cascade UpdateFromFacts applies),
+	 * exposed for the live-facts gate - the attack-start decision derives the
+	 * phase from the CALLER'S current snapshot instead of the stored
+	 * (one-tick-lagged) phase. Static and side-effect-free.
+	 */
+	static ECombatPhase DerivePhase(const FCombatPhaseFacts& Facts);
+
+	/**
+	 * M8-039: the live attack-start gate - the transition table applied to
+	 * the phase derived from the given facts AT DECISION TIME. True = the
+	 * start may enter Windup. Does not touch the stored state.
+	 */
+	bool CanStartAttackLive(const FCombatPhaseFacts& Facts) const;
+
+	/**
 	 * The attack-start gate: true when the current phase may legally enter
 	 * Windup (the transition table). The combat component consults this
 	 * before accepting an attack intent.

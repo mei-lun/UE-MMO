@@ -254,16 +254,15 @@ bool UCombatComponent::TryStartAttack(FName AttackId, int32 NewFacing)
 	{
 		return false;
 	}
-	// M8-031: the state machine gate is DISABLED (the M8-034 regression fix).
-	// The phase derivation used to run only at the end of the Attacking path
-	// (every non-Attacking TickCombat path returned before it), so after a
-	// finish/cancel/interrupt the phase froze at its last attack value and
-	// this gate then refused every later start - the user's "attacks
-	// completely failed" package report. UpdatePhaseMachine now derives on
-	// every path and the teardown force-resets to Idle, but the gate stays
-	// off until a follow-up task proves it across all maps (the one-tick
-	// phase lag vs the live-frame chain check also needs resolving first).
-	// if (StateMachine != nullptr && !StateMachine->CanStartAttack()) { return false; }
+	// M8-031/M8-039: the state machine gate, re-enabled on the LIVE seam.
+	// The stored phase lags one tick by construction (the M8-034 regression:
+	// a chain check on the first cancel-window frame read the stale Active
+	// and ate the buffered press); this gate derives the phase from the
+	// CURRENT facts at the decision site instead, so the lag cannot bite.
+	if (!CanStartAttackLive())
+	{
+		return false;
+	}
 
 	const UAttackDefinition* Definition = (Catalog != nullptr) ? Catalog->Find(AttackId) : nullptr;
 	if (Definition == nullptr)
@@ -302,15 +301,8 @@ bool UCombatComponent::TryStartAttack(FName AttackId, int32 NewFacing)
 	return true;
 }
 
-void UCombatComponent::UpdatePhaseMachine()
+FCombatPhaseFacts UCombatComponent::BuildPhaseFacts() const
 {
-	// M8-034: see the header - this must run on every TickCombat path, not
-	// only the Attacking tail, so a finished/cancelled/interrupted instance
-	// never freezes the phase away from Idle.
-	if (StateMachine == nullptr)
-	{
-		return;
-	}
 	FCombatPhaseFacts Facts;
 	Facts.bDead = bDead;
 	Facts.bHitStun = ActionState == ECombatActionState::HitStun;
@@ -325,7 +317,27 @@ void UCombatComponent::UpdatePhaseMachine()
 		Facts.CancelEndFrame = PhaseDef->CancelWindow.EndFrame;
 		Facts.DurationFrames = PhaseDef->DurationFrames;
 	}
-	StateMachine->UpdateFromFacts(Facts);
+	return Facts;
+}
+
+bool UCombatComponent::CanStartAttackLive() const
+{
+	// M8-039: the live gate - the phase derives from the CURRENT facts at
+	// the decision site (the stored phase lags one tick by construction).
+	// No machine = the bare-component legacy behavior (always allow).
+	return (StateMachine != nullptr) ? StateMachine->CanStartAttackLive(BuildPhaseFacts()) : true;
+}
+
+void UCombatComponent::UpdatePhaseMachine()
+{
+	// M8-034: see the header - this must run on every TickCombat path, not
+	// only the Attacking tail, so a finished/cancelled/interrupted instance
+	// never freezes the phase away from Idle.
+	if (StateMachine == nullptr)
+	{
+		return;
+	}
+	StateMachine->UpdateFromFacts(BuildPhaseFacts());
 }
 
 void UCombatComponent::TickCombat(float DeltaSeconds)

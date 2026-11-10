@@ -72,12 +72,14 @@ bool USkillAbilityComponent::TryCast(UCombatComponent* Combat, USkillLoadoutComp
 		return false;
 	}
 
-	// M8-031: the state machine gate is DISABLED (the M8-034 regression fix):
-	// the same frozen-phase issue as the TryStartAttack gate (see the
-	// CombatComponent M8-034 note). The economy + the Free-state check
-	// already gate the cast; the state machine stays observation-only until
-	// a follow-up task proves the phase tracking across all maps.
-	// if (Combat->GetStateMachine() != nullptr && !Combat->GetStateMachine()->CanStartAttack()) { return false; }
+	// M8-031/M8-039: the state machine gate, re-enabled on the LIVE seam -
+	// the phase derives from the combat component's CURRENT facts at the
+	// decision site (see the CombatComponent M8-039 note for the one-tick
+	// lag this replaces).
+	if (!Combat->CanStartAttackLive())
+	{
+		return false;
+	}
 
 	// The economy through the existing skill loadout (the MP/cooldown/profession
 	// gates stay in their own component - the ability composes, not duplicates).
