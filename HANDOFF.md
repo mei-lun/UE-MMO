@@ -1,3 +1,16 @@
+# 最新状态：M8-037 四命名攻击组件化+槽位组件路由 DONE——问题二收口，顺带修绿 M8_031 验收红，重打包待用户复测（2026-11-11）
+
+- **M8-037（25f5b10）**：light_01/light_02/aerial_01 加入 launcher 完成四组件配置（[4][5] 留空待用户技能表）；热吧槽位经 `FindAbilityForSlotAttack` 静态查找走组件路由，未配置槽位直调逐字保留；`TryCast` 语义修正消除**双重起手缺陷**（loadout 在线=经济+交付全走 loadout，组件不重复交付；缺席=组件按 spec 交付）。
+- **顺带修复（问题一验收红）**：转换表 CancelWindow 不可达（补 Active/Recovery→CancelWindow、CancelWindow→Recovery 三边）+ 推导吞掉 `[cancel_end, duration)` 尾段（`FCombatPhaseFacts` 增 `CancelEndFrame` 对齐帧表半开窗）。**教训：M8-031 验收带红上线**（报告称绿但验收未单独重跑）——验收命令必须逐条实跑核对 matched/passed。
+- **验证**：Build exit=0；`UEMMO.Acceptance.M8_031` **3/3 绿**（含新增 SkillComponentCastAndIsolation：四攻击独立施放+施放后派生 Windup+弹体从组件 spec+隔离+路由查找）；全量冒烟 exit=0。证据 `Artifacts/Tasks/M8-037/`。
+- Owner：ZCode-20261111-A。本轮 goal 累计 DONE：**M8-034、M8-035、M8-036、M8-037**（4 项）。
+- **08 方案剩余开放项**：问题一收尾（显示层订阅 OnPhaseChanged、门控重启用需先修一帧滞后——另开卡）；"手动：六技能逐一施放形态一致"用户确认随 M8-022；两个待定技能待用户技能表。
+- 工作区遗留（非本轮，未提交）：三张 umap 编辑器漂移、火山未提交内容（待甄别）。
+- 下一步：**重打包 → 用户复测** → M8-030 火山动态环境 → P08 Boss。
+- 报告 [M8-037](Docs/Tasks/Reports/M8-037.md)；方案文档 [08](Docs/DNF-Research/08-战斗质量收口方案.md)。
+
+---
+
 # 最新状态：M8-036 技能特效最小集 DONE——08方案"特效/声音引用全可加载"验收全句闭环，重打包待用户复测（2026-11-11）
 
 - **M8-036（1775027）**：八个 fighter 源图集页（M8-009 exact_texture_path 命中，restore_dnf_atlas 提取、sha 钉档双跑一致）→ `/Game/UEMMO/Combat/FX/` 八纹理+八材质（duplicate M_ThrowStoneVisual 换 PageTex）；四命名攻击行 `cast_fx_*`/`hit_fx_*` 数据引用；新 `AFxFlipbookActor`（一次性播放自毁）由 presenter Started/HitConfirmed 按攻击目录解析生成（launcher 命中=上挑家族原生 RisingUpperEx/stone）。两个待定技能槽位留空待用户技能表。
