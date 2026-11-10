@@ -1,3 +1,15 @@
+# 最新状态：M8-035 攻击音补接+第三hit节奏 DONE——08方案问题三/四音频缺口收口，重打包待用户复测（2026-11-11）
+
+- **M8-035（22fedb3）**：combat-attacks.json 四玩家攻击行携带 `swing_sound_path`/`hit_sound_path`（方案问题二.1 的数据驱动资产引用口径）；UAttackDefinition 解析；create_combat_assets.py 校验/加载/应用/校对；presenter 追加 Swing 事件类型（预解析非空才提交，敌人行静默形态）+Hit 事件按攻击解析打击音（缺省回退 ft_dmg_01）；launcher hit_stop 0.04→0.05（"第三 hit 加大"）。
+- **验证**：Build exit=0；PrepareCombat updated=9 校对零失败（json-vs-assets 音频 8 项对齐）；`TestAutomation -Filter UEMMO.Tasks.M1_009` **5/5 绿**；全量冒烟 exit=0。证据 `Artifacts/Tasks/M8-035/2026-11-11T02-39-21+0800`。
+- Owner：ZCode-20261111-A。本轮新增 DONE：**M8-034、M8-035**（2 项）。
+- **08 方案剩余开放项**：问题二收尾（light_01/light_02/aerial_01 组件化+两个待定技能需用户确认技能表）；问题四.2 技能特效最小集（M8-036 候选）；问题一收尾（显示层订阅 OnPhaseChanged、门控重启用需先修一帧滞后）；问题五组件数据随问题二。总验收的用户试玩确认项随 M8-022。
+- 工作区遗留（非本轮，未提交）：三张 umap 编辑器漂移、`Content/UEMMO/DNFM/Volcano/`+`DA_room_volcano_01`+`place_volcano_room_actors.py`（M8-028/029 已提交过火山内容，此为后续漂移，待甄别）。
+- 下一步：**重打包 → 用户复测（攻击/技能恢复 + 每击打击音 + 第三hit更重手感）** → M8-036 技能特效最小集 → M8-030 火山动态环境。
+- 报告 [M8-034](Docs/Tasks/Reports/M8-034.md)、[M8-035](Docs/Tasks/Reports/M8-035.md)；方案文档 [08](Docs/DNF-Research/08-战斗质量收口方案.md)。
+
+---
+
 # 最新状态：M8-034 攻击/技能失效回归修复 DONE——相位机冻结根因消除，重打包待用户复测（2026-11-11）
 
 - **回归根因（用户包日志+回归测试双重实证）**：M8-031 相位推导注入只活在 TickCombat 的 Attacking 路径末尾，非 Attacking 分支提前 return——攻击一结束推导永停，相位冻结在最后攻击相位；`CanStartAttack` 门控从此静默拒绝一切攻击/技能启动（用户："攻击完全失效了，技能也没有了"）。技能失效同源（M5 技能是给下一击上增益，攻击起不来增益永不到账）。
