@@ -1,3 +1,14 @@
+# 最新状态：M8-039 门控重启用（实时事实重推导）DONE——08 方案问题一解决条款全部落地，重打包待用户复测（2026-11-11）
+
+- **M8-039（64b025e）**：`DerivePhase` 抽纯静态函数（UpdateFromFacts 复用同一派生）；`CanStartAttackLive` 在判定现场用当前 facts 重推导（存储相位仅作显示记录，滞后从机制上消除）；`UCombatComponent::BuildPhaseFacts` 单一事实装配（门控与每 tick 推导共用）；`TryStartAttack`+`TryCast` 双门重启用（M8-034 回退项闭环）。修复 CombatComponent.h 缺 CombatStateMachine.h include（FCombatPhaseFacts 完整类型）。
+- **验证**：Build exit=0；无 tick 间隔直启断言+实时门 facts 表新断言绿；`UEMMO.Acceptance.M8_031` **3/3**、`UEMMO.Acceptance.M8_038` **1/1**、`UEMMO.Tasks.M1_038` 连招 **4/4**、`UEMMO.Tasks.M1_009` **5/5**、全量冒烟 exit=0。证据 `Artifacts/Tasks/M8-039/`。
+- Owner：ZCode-20261111-A。本轮 goal 累计 DONE：**M8-034~M8-039（6 项）**。任务板 valid=True。
+- **08 方案剩余**：两个待定技能（用户技能表）；总验收"用户试玩确认六问题逐条消除"随 M8-022。
+- 下一步：**重打包 → 用户复测（重点：门控重启用后连招/技能/受击观感）** → M8-030 火山动态环境 → P08 Boss。
+- 报告 [M8-039](Docs/Tasks/Reports/M8-039.md)；方案文档 [08](Docs/DNF-Research/08-战斗质量收口方案.md)。
+
+---
+
 # 最新状态：M8-038 显示层订阅相位事件 DONE——问题一解决条款 3 落地，音频/特效链回归不退化，重打包待用户复测（2026-11-11）
 
 - **M8-038（c67138a）**：presenter 订阅 `OnPhaseChanged`（受击相位打断攻击表现/Idle 拆除当 tick 即时重同步，闭合预留的"future interrupt"一轮延迟盲区）；哥布林显示动作=事件决策+每 tick 幂等重应用（解析器只剩保持门/死亡钉/Idle 速度切换）。**事件定动作族，采样定族内位置**。顺带矫正：哥布林受击姿态不再每 2 tick 闪烁（每次受击单一稳定姿态）。
