@@ -2,6 +2,8 @@
 #include "UObject/UObjectGlobals.h"
 #include "UObject/SoftObjectPath.h"
 
+#include "Sound/SoundWave.h"
+
 #include "../Combat/AttackDefinition.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -35,6 +37,10 @@ namespace UE::UEMMO::Tasks::M1_009
 		float ClipStartSeconds;
 		float ClipEndSeconds;
 		bool bPlaceholderAnimation;
+		// M8-035: the optional attacker-side audio references (null = the
+		// row carries none).
+		const TCHAR* SwingSoundPath;
+		const TCHAR* HitImpactSoundPath;
 	};
 
 	// next_attack_ids keep JSON order; function-local static const arrays
@@ -65,6 +71,9 @@ namespace UE::UEMMO::Tasks::M1_009
 		Expected.ClipStartSeconds = 0.0f;
 		Expected.ClipEndSeconds = 0.35f;
 		Expected.bPlaceholderAnimation = false;
+		// M8-035: the attacker-side audio references.
+		Expected.SwingSoundPath = TEXT("/Game/UEMMO/DNFM/Audio/SND_ft_atk_01");
+		Expected.HitImpactSoundPath = TEXT("/Game/UEMMO/DNFM/Audio/SND_1st_strong_lowkick_hit");
 		return Expected;
 	}
 
@@ -94,6 +103,9 @@ namespace UE::UEMMO::Tasks::M1_009
 		Expected.ClipStartSeconds = 0.0f;
 		Expected.ClipEndSeconds = 0.4167f;
 		Expected.bPlaceholderAnimation = false;
+		// M8-035: the attacker-side audio references.
+		Expected.SwingSoundPath = TEXT("/Game/UEMMO/DNFM/Audio/SND_ft_atk_02");
+		Expected.HitImpactSoundPath = TEXT("/Game/UEMMO/DNFM/Audio/SND_1st_strong_lowkick_hit");
 		return Expected;
 	}
 
@@ -117,9 +129,13 @@ namespace UE::UEMMO::Tasks::M1_009
 		Expected.KnockbackSpeed = 70.0f;
 		Expected.LaunchSpeed = 700.0f;
 		Expected.HitStunSeconds = 1.0f;
-		Expected.HitStopSeconds = 0.04f;
+		// M8-035: the light chain's third hit lands heavier (0.04 -> 0.05).
+		Expected.HitStopSeconds = 0.05f;
 		// M7-004: the real DNF launcher clip (the placeholder unlocked).
 		Expected.AnimationPath = TEXT("/Game/UEMMO/ArtValidation/DNFArt/Hero/hero_launcher_Anim");
+		// M8-035: the attacker-side audio references.
+		Expected.SwingSoundPath = TEXT("/Game/UEMMO/DNFM/Audio/SND_ft_atk_03");
+		Expected.HitImpactSoundPath = TEXT("/Game/UEMMO/DNFM/Audio/SND_lowKick_impact");
 		Expected.ClipStartSeconds = 0.0f;
 		Expected.ClipEndSeconds = 0.4833f;
 		Expected.bPlaceholderAnimation = false; // M7-004: the real DNF clip
@@ -152,6 +168,9 @@ namespace UE::UEMMO::Tasks::M1_009
 		Expected.ClipStartSeconds = 0.0f;
 		Expected.ClipEndSeconds = 0.3167f;
 		Expected.bPlaceholderAnimation = false; // M7-004: the real DNF clip
+		// M8-035: the attacker-side audio references.
+		Expected.SwingSoundPath = TEXT("/Game/UEMMO/DNFM/Audio/SND_ft_atk_03");
+		Expected.HitImpactSoundPath = TEXT("/Game/UEMMO/DNFM/Audio/SND_lowKick_impact");
 		return Expected;
 	}
 
@@ -213,6 +232,26 @@ namespace UE::UEMMO::Tasks::M1_009
 	UAnimSequence* ExpectedResolved = Cast<UAnimSequence>(ExpectedAnimation.TryLoad());
 	if (Test.TestTrue(TEXT("stored animation soft reference resolves to an asset"), StoredResolved != nullptr) &&
 		Test.TestTrue(TEXT("JSON animation_path resolves to an asset"), ExpectedResolved != nullptr))
+	{
+		Test.TestEqual(TEXT("stored animation asset matches the JSON-referenced asset"),
+			StoredResolved, ExpectedResolved);
+	}
+
+	// M8-035: every player attack row carries both audio references; each
+	// must match the JSON path and resolve to a USoundWave (the acceptance
+	// "特效/声音资产引用全部可加载（非空非缺）" - the audio half).
+	const FSoftObjectPath StoredSwing = Attack->SwingSound.ToSoftObjectPath();
+	const FSoftObjectPath ExpectedSwing(Expected.SwingSoundPath);
+	Test.TestEqual(TEXT("SwingSound package path matches swing_sound_path"),
+		StoredSwing.GetAssetPath().GetPackageName().ToString(), FString(Expected.SwingSoundPath));
+	Test.TestTrue(TEXT("SwingSound resolves to a SoundWave asset"),
+		Cast<USoundWave>(StoredSwing.TryLoad()) != nullptr);
+	const FSoftObjectPath StoredHitImpact = Attack->HitImpactSound.ToSoftObjectPath();
+	const FSoftObjectPath ExpectedHitImpact(Expected.HitImpactSoundPath);
+	Test.TestEqual(TEXT("HitImpactSound package path matches hit_sound_path"),
+		StoredHitImpact.GetAssetPath().GetPackageName().ToString(), FString(Expected.HitImpactSoundPath));
+	Test.TestTrue(TEXT("HitImpactSound resolves to a SoundWave asset"),
+		Cast<USoundWave>(StoredHitImpact.TryLoad()) != nullptr);
 	{
 		Test.TestEqual(TEXT("stored soft reference and animation_path resolve to the same UAnimSequence"),
 			StoredResolved, ExpectedResolved);

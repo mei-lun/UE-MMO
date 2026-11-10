@@ -10,6 +10,7 @@
 
 #include "CombatPresentationComponent.generated.h"
 
+class UAttackCatalog;
 class UAttackDefinition;
 class UAnimInstance;
 class UAnimMontage;
@@ -64,12 +65,15 @@ struct FHitReactionPresentationRow
 /**
  * M1-034: kind of one combat audio request routed through the dispatcher.
  * Hit requests originate from UCombatComponent::OnHitConfirmed (one accepted
- * damage application); Land requests originate from ATrainingEnemy::Landed.
+ * damage application); Land requests originate from ATrainingEnemy::Landed;
+ * Swing requests (M8-035) originate from UCombatComponent::OnStarted when the
+ * attack definition carries a swing sound.
  */
 enum class ECombatAudioEventType : uint8
 {
 	Hit = 0,
-	Land = 1
+	Land = 1,
+	Swing = 2
 };
 
 /**
@@ -83,6 +87,14 @@ enum class ECombatAudioEventType : uint8
 struct FCombatAudioEvent
 {
 	ECombatAudioEventType Type = ECombatAudioEventType::Hit;
+
+	/**
+	 * M8-035: the attack definition id that produced the event (hit = the id
+	 * on the confirmed hit; swing = the started attack). The per-attack audio
+	 * resolution reads the definition's sound references through the catalog
+	 * injected with SetAttackSoundCatalog.
+	 */
+	FName AttackId = NAME_None;
 
 	/** World-space play location (hit box center / landing feet location). */
 	FVector WorldLocation = FVector::ZeroVector;
@@ -263,6 +275,15 @@ public:
 	 * diagnostic while the request stays accepted.
 	 */
 	void SetAudioSounds(TSoftObjectPtr<USoundWave> InHitSound, TSoftObjectPtr<USoundWave> InLandSound);
+
+	/**
+	 * M8-035: injects the attack catalog backing the per-attack audio
+	 * resolution (Swing events and the per-attack HitImpactSound override).
+	 * Optional: without it the resolver keeps the static Hit/Land sounds
+	 * (the pre-M8-035 behavior) and Swing events resolve to null (no swing
+	 * sound is submitted at all).
+	 */
+	void SetAttackSoundCatalog(UAttackCatalog* InCatalog);
 
 	/** M1-034: read-only dispatcher observation (accepted request history). */
 	const FCombatAudioDispatcher& GetAudioDispatcher() const { return AudioDispatcher; }
@@ -529,6 +550,9 @@ private:
 	 * are configurable per instance.
 	 */
 	UPROPERTY(EditAnywhere, Category = "Combat Audio")
+	/** M8-035: the catalog behind the per-attack audio resolution (weak; optional). */
+	TWeakObjectPtr<UAttackCatalog> AttackSoundCatalog;
+
 	TSoftObjectPtr<USoundWave> HitSound;
 
 	UPROPERTY(EditAnywhere, Category = "Combat Audio")

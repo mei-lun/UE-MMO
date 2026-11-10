@@ -151,6 +151,18 @@ def validate_entry(entry, index, id_set, problems):
         elif not animation_path.startswith('/Game/'):
             problem('animation_path', "must start with '/Game/'.")
 
+    # M8-035: optional attacker-side audio references. Absent means "no
+    # sound for this attack" (the enemy/legacy rows); present means a
+    # loadable /Game/ sound asset path.
+    for field in ('swing_sound_path', 'hit_sound_path'):
+        value = entry.get(field)
+        if value is None:
+            continue
+        if not isinstance(value, str) or not value.strip():
+            problem(field, 'when present it must be a non-empty asset path.')
+        elif not value.startswith('/Game/'):
+            problem(field, "must start with '/Game/'.")
+
     next_ids = entry.get('next_attack_ids')
     if isinstance(next_ids, list):
         for element in next_ids:
@@ -261,7 +273,28 @@ def apply_window(asset, property_name, start_frame, end_frame):
     asset.set_editor_property(property_name, window)
 
 
-def apply_fields(asset, entry, animations):
+def load_sounds(entries):
+    """M8-035: returns {attack_id: {'swing': obj|None, 'hit': obj|None}} for
+    the optional audio references; the caller has already validated the
+    paths, so a load failure here raises (same hard-abort contract as the
+    animation loads)."""
+    sounds = {}
+    for entry in entries:
+        loaded = {'swing': None, 'hit': None}
+        for field, key in (('swing_sound_path', 'swing'), ('hit_sound_path', 'hit')):
+            path = entry.get(field)
+            if not path:
+                continue
+            obj = unreal.load_asset(path)
+            if obj is None or not isinstance(obj, unreal.SoundWave):
+                raise RuntimeError("attack '" + entry['attack_id'] + "' field '" + field
+                                   + "': asset is not a loadable SoundWave: " + path)
+            loaded[key] = obj
+        sounds[entry['attack_id']] = loaded
+    return sounds
+
+
+def apply_fields(asset, entry, animations, sounds):
     """Fills every UAttackDefinition UPROPERTY from one JSON entry."""
     offset = entry['hit_offset_cm']
     extent = entry['hit_half_extent_cm']
@@ -283,6 +316,15 @@ def apply_fields(asset, entry, animations):
     # object, which stores the same FSoftObjectPath on disk (no hard
     # dependency is serialized).
     asset.set_editor_property('animation', animations[entry['attack_id']])
+    # M8-035: the optional audio references follow the animation pattern
+    # (set from the already-loaded SoundWave object). Rows without the field
+    # are skipped: the property keeps whatever the asset already had, which
+    # for these rows was never written.
+    entry_sounds = sounds.get(entry['attack_id']) or {}
+    if entry_sounds.get('swing') is not None:
+        asset.set_editor_property('swing_sound', entry_sounds['swing'])
+    if entry_sounds.get('hit') is not None:
+        asset.set_editor_property('hit_impact_sound', entry_sounds['hit'])
     asset.set_editor_property('clip_start_seconds', float(entry['clip_start_seconds']))
     asset.set_editor_property('clip_end_seconds', float(entry['clip_end_seconds']))
     asset.set_editor_property('placeholder_animation', bool(entry['placeholder_animation']))
@@ -305,6 +347,11 @@ def run_generate():
         raise RuntimeError('combat-attacks.json validation failed; no asset was written.\n'
                            + '\n'.join(problems))
 
+    # M8-035: the optional audio references load here too (after the
+    # structure is sound, before any asset write; a bad sound path aborts
+    # the whole run and leaves every asset untouched).
+    sounds = load_sounds(entries)
+
     asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
     created = []
     updated = []
@@ -321,7 +368,7 @@ def run_generate():
             if asset is None:
                 raise RuntimeError('create_asset returned null for ' + asset_path)
             created.append(asset_name)
-        apply_fields(asset, entry, animations)
+        apply_fields(asset, entry, animations, sounds)
 
     # UE 5.8 signature: save_directory(directory_path, only_if_is_dirty=True,
     # recursive=True); only dirty packages (the ones this run touched) save.
@@ -427,6 +474,26 @@ def verify_entry(asset, entry, checks):
 
     record('placeholder_animation', entry['placeholder_animation'], asset.get_editor_property('placeholder_animation'),
            bool(asset.get_editor_property('placeholder_animation')) == bool(entry['placeholder_animation']))
+
+    # M8-035: the optional audio references verify like the animation (load
+    # in-memory, accept Package.Object or the hidden-suffix form). Absent in
+    # JSON must mean unset on the asset (these properties were never written
+    # for the rows without the fields).
+    for field, property_name in (('swing_sound_path', 'swing_sound'),
+                                 ('hit_sound_path', 'hit_impact_sound')):
+        expected_path = entry.get(field) or ''
+        soft_object = asset.get_editor_property(property_name)
+        if not expected_path:
+            record(field, expected_path or None, None, soft_object is None)
+            continue
+        unreal.load_asset(expected_path)
+        if soft_object is None:
+            record(field, expected_path, None, False)
+            continue
+        actual_path = str(soft_object.get_path_name())
+        asset_base = expected_path.rsplit('/', 1)[-1]
+        match = actual_path in (expected_path, expected_path + '.' + asset_base)
+        record(field, expected_path, actual_path, match)
     return ok
 
 

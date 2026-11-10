@@ -37,7 +37,9 @@
    "animation_path": "/Game/UEMMO/ArtValidation/DNFArt/Hero/hero_attack_01_Anim",
    "clip_start_seconds": 0,
    "clip_end_seconds": 0.35,
-   "placeholder_animation": false
+   "placeholder_animation": false,
+   "swing_sound_path": "/Game/UEMMO/DNFM/Audio/SND_ft_atk_01.SND_ft_atk_01",
+   "hit_sound_path": "/Game/UEMMO/DNFM/Audio/SND_1st_strong_lowkick_hit.SND_1st_strong_lowkick_hit"
   },
   {
    "attack_id": "light_02",
@@ -71,7 +73,9 @@
    "animation_path": "/Game/UEMMO/ArtValidation/DNFArt/Hero/hero_attack_02_Anim",
    "clip_start_seconds": 0,
    "clip_end_seconds": 0.4167,
-   "placeholder_animation": false
+   "placeholder_animation": false,
+   "swing_sound_path": "/Game/UEMMO/DNFM/Audio/SND_ft_atk_02.SND_ft_atk_02",
+   "hit_sound_path": "/Game/UEMMO/DNFM/Audio/SND_1st_strong_lowkick_hit.SND_1st_strong_lowkick_hit"
   },
   {
    "attack_id": "launcher",
@@ -102,11 +106,13 @@
    "knockback_cm_per_s": 70,
    "launch_cm_per_s": 700,
    "hit_stun_seconds": 1.0,
-   "hit_stop_seconds": 0.04,
+   "hit_stop_seconds": 0.05,
    "animation_path": "/Game/UEMMO/ArtValidation/DNFArt/Hero/hero_launcher_Anim",
    "clip_start_seconds": 0,
    "clip_end_seconds": 0.4833,
-   "placeholder_animation": false
+   "placeholder_animation": false,
+   "swing_sound_path": "/Game/UEMMO/DNFM/Audio/SND_ft_atk_03.SND_ft_atk_03",
+   "hit_sound_path": "/Game/UEMMO/DNFM/Audio/SND_lowKick_impact.SND_lowKick_impact"
   },
   {
    "attack_id": "aerial_01",
@@ -138,7 +144,9 @@
    "animation_path": "/Game/UEMMO/ArtValidation/DNFArt/Hero/hero_aerial_Anim",
    "clip_start_seconds": 0,
    "clip_end_seconds": 0.3167,
-   "placeholder_animation": false
+   "placeholder_animation": false,
+   "swing_sound_path": "/Game/UEMMO/DNFM/Audio/SND_ft_atk_03.SND_ft_atk_03",
+   "hit_sound_path": "/Game/UEMMO/DNFM/Audio/SND_lowKick_impact.SND_lowKick_impact"
   },
   {
    "attack_id": "singlekick",

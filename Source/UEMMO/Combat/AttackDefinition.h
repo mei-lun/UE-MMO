@@ -5,6 +5,7 @@
 #include "Engine/DataAsset.h"
 #include "UObject/SoftObjectPtr.h"
 #include "Animation/AnimSequence.h"
+#include "Sound/SoundWave.h"
 
 #include "CombatWindow.h"
 
@@ -138,6 +139,22 @@ public:
 	/** True while the attack plays a placeholder animation; clip ordering is only checked for real animations. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Animation")
 	bool bPlaceholderAnimation = true;
+
+	/**
+	 * M8-035: the attacker-side swing sound, played once when the attack
+	 * starts; soft reference keeps the asset optional (enemy/legacy rows
+	 * carry none and the presenter then submits nothing).
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Audio")
+	TSoftObjectPtr<USoundWave> SwingSound;
+
+	/**
+	 * M8-035: the attacker-side hit impact sound, played per landed hit;
+	 * soft reference keeps the asset optional (an empty value falls back to
+	 * the presentation component's static hit sound).
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Audio")
+	TSoftObjectPtr<USoundWave> HitImpactSound;
 };
 
 /**

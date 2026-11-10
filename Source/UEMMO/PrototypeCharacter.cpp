@@ -519,6 +519,11 @@ void APrototypeCharacter::BeginPlay()
         TSoftObjectPtr<USoundWave>(FSoftObjectPath(
             TEXT("/Game/UEMMO/DNFM/Audio/SND_ft_dmg_01.SND_ft_dmg_01"))),
         TSoftObjectPtr<USoundWave>());
+    // M8-035: the per-attack swing/hit-impact resolution reads the same
+    // catalog the combat component runs on; a definition without the audio
+    // fields falls back to the static sounds above (an empty catalog is
+    // equally safe - every lookup just misses).
+    CombatPresentation->SetAttackSoundCatalog(Catalog);
     // M1-023: the combat component cannot jump itself; both the Free-state
     // jump and the launcher jump-cancel consume a buffered jump intent into
     // this handler, which performs the real ACharacter::Jump synchronously in

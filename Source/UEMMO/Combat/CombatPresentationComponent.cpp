@@ -78,6 +78,16 @@ FCombatAudioDedupKey FCombatAudioDispatcher::MakeDedupKey(const FCombatAudioEven
 		Key.C = static_cast<uint64>(Event.HitGroupId);
 		Key.D = ActorKey;
 	}
+	else if (Event.Type == ECombatAudioEventType::Swing)
+	{
+		// M8-035: one swing per attack instance, so the instance id alone is
+		// unique; the type byte keeps swing keys disjoint from hit keys that
+		// share the same instance numbers.
+		Key.A = Event.InstigatorId;
+		Key.B = Event.AttackInstanceId;
+		Key.C = 0;
+		Key.D = 0;
+	}
 	else
 	{
 		Key.A = 0;
@@ -417,6 +427,23 @@ void UCombatPresentationComponent::HandleStarted(FName AttackId, uint64 Instance
 	{
 		ApplySnapshot(CombatSource->GetSnapshot());
 	}
+	// M8-035: the attacker-side swing sound. Resolved BEFORE the submit so an
+	// attack without a swing sound (every enemy/legacy row) neither pollutes
+	// the dispatcher's dedup map nor warns - a missing swing clip is the
+	// normal shape for those rows, not a misconfiguration.
+	FCombatAudioEvent SwingEvent;
+	SwingEvent.Type = ECombatAudioEventType::Swing;
+	SwingEvent.AttackId = AttackId;
+	SwingEvent.InstigatorId = CombatSource.IsValid() ? CombatSource->GetInstigatorId() : 0ull;
+	SwingEvent.AttackInstanceId = InstanceId;
+	if (ResolveSoundForEvent(SwingEvent) != nullptr)
+	{
+		if (const AActor* Owner = GetOwner())
+		{
+			SwingEvent.WorldLocation = Owner->GetActorLocation();
+		}
+		SubmitAudioEvent(SwingEvent);
+	}
 }
 
 void UCombatPresentationComponent::HandleFinished(FName AttackId, uint64 InstanceId)
@@ -453,6 +480,7 @@ FCombatAudioEvent UCombatPresentationComponent::BuildHitAudioEvent(const FCombat
 {
 	FCombatAudioEvent Event;
 	Event.Type = ECombatAudioEventType::Hit;
+	Event.AttackId = Hit.AttackId;
 	Event.WorldLocation = Hit.WorldHitLocation;
 	Event.TargetActor = Hit.Target;
 	// Same session-unique target id derivation as the combat hit dedup key
@@ -466,9 +494,33 @@ FCombatAudioEvent UCombatPresentationComponent::BuildHitAudioEvent(const FCombat
 
 USoundWave* UCombatPresentationComponent::ResolveSoundForEvent(const FCombatAudioEvent& Event)
 {
+	// M8-035: the per-attack resolution first. A hit resolves the attack
+	// definition's HitImpactSound (the proper per-attack impact clip) and
+	// falls back to the static HitSound when the definition carries none; a
+	// swing resolves the definition's SwingSound (null when the attack has
+	// none - the caller pre-checks and never submits such an event).
+	if (AttackSoundCatalog.IsValid() && Event.AttackId != NAME_None
+		&& (Event.Type == ECombatAudioEventType::Hit || Event.Type == ECombatAudioEventType::Swing))
+	{
+		if (const UAttackDefinition* Definition = AttackSoundCatalog->Find(Event.AttackId))
+		{
+			const TSoftObjectPtr<USoundWave>& PerAttack = (Event.Type == ECombatAudioEventType::Swing)
+				? Definition->SwingSound
+				: Definition->HitImpactSound;
+			if (USoundWave* Loaded = PerAttack.LoadSynchronous())
+			{
+				return Loaded;
+			}
+		}
+	}
 	const TSoftObjectPtr<USoundWave>& Reference =
-		(Event.Type == ECombatAudioEventType::Hit) ? HitSound : LandSound;
+		(Event.Type == ECombatAudioEventType::Land) ? LandSound : HitSound;
 	return Reference.LoadSynchronous();
+}
+
+void UCombatPresentationComponent::SetAttackSoundCatalog(UAttackCatalog* InCatalog)
+{
+	AttackSoundCatalog = InCatalog;
 }
 
 void UCombatPresentationComponent::PlayCombatSound(USoundWave* Sound, const FVector& Location)
