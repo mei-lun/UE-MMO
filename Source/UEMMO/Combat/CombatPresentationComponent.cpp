@@ -1,6 +1,8 @@
 #include "CombatPresentationComponent.h"
 
+#include "AttackCatalog.h"
 #include "AttackDefinition.h"
+#include "FxFlipbookActor.h"
 #include "../Character/DNFMCharacterVisualComponent.h"
 
 #include "Animation/AnimInstance.h"
@@ -419,6 +421,22 @@ void UCombatPresentationComponent::StopPresentedMontage()
 	PresentingAttackId = NAME_None;
 }
 
+namespace
+{
+	// M8-036: the cast/hit FX spawn. A definition without the FX fields (the
+	// enemy/legacy rows) or without a world spawns nothing - the no-FX shape
+	// is the normal form for those rows, never a warning.
+	void SpawnFxQuiet(UWorld* World, const TSoftObjectPtr<UMaterialInterface>& Material,
+		int32 Frames, float FrameMs, float ScaleCm, const FVector& Location)
+	{
+		if (World == nullptr || Frames <= 0 || !Material.ToSoftObjectPath().IsValid())
+		{
+			return;
+		}
+		AFxFlipbookActor::Spawn(World, Material.LoadSynchronous(), Location, Frames, FrameMs, ScaleCm);
+	}
+}
+
 void UCombatPresentationComponent::HandleStarted(FName AttackId, uint64 InstanceId)
 {
 	// The Started broadcast happens while the snapshot is already Attacking;
@@ -443,6 +461,27 @@ void UCombatPresentationComponent::HandleStarted(FName AttackId, uint64 Instance
 			SwingEvent.WorldLocation = Owner->GetActorLocation();
 		}
 		SubmitAudioEvent(SwingEvent);
+	}
+	// M8-036: the cast FX. Anchored ahead of and above the attacker's feet
+	// (the fist-side flare position); the facing comes from the same snapshot
+	// the presentation already re-read.
+	if (AttackSoundCatalog.IsValid() && CombatSource.IsValid())
+	{
+		if (const UAttackDefinition* Definition = AttackSoundCatalog->Find(AttackId))
+		{
+			if (Definition->CastFxFrames > 0 && Definition->CastFxMaterial.ToSoftObjectPath().IsValid())
+			{
+				const AActor* Owner = GetOwner();
+				const FCombatSnapshot Snapshot = CombatSource->GetSnapshot();
+				const float FacingSign = Snapshot.Facing >= 0 ? 1.f : -1.f;
+				const FVector Feet = Owner ? Owner->GetActorLocation() : FVector::ZeroVector;
+				// The flare rides at chest height (~90cm) ahead of the body
+				// (~60cm) - the minimal-set anchor.
+				SpawnFxQuiet(GetWorld(), Definition->CastFxMaterial, Definition->CastFxFrames,
+					Definition->CastFxFrameMs, Definition->CastFxScaleCm,
+					Feet + FVector(FacingSign * 60.f, 0.f, 90.f));
+			}
+		}
 	}
 }
 
@@ -594,6 +633,17 @@ void UCombatPresentationComponent::HandleHitConfirmed(const FCombatHit& Hit)
 	// dispatcher's dedup key (InstigatorId, AttackInstanceId, HitGroupId,
 	// TargetId) makes the once-per-hit guarantee local to this component too.
 	SubmitAudioEvent(BuildHitAudioEvent(Hit));
+
+	// M8-036: the hit FX at the hit box center, resolved per attack through
+	// the same catalog; a definition without the FX fields spawns nothing.
+	if (AttackSoundCatalog.IsValid() && Hit.AttackId != NAME_None)
+	{
+		if (const UAttackDefinition* Definition = AttackSoundCatalog->Find(Hit.AttackId))
+		{
+			SpawnFxQuiet(GetWorld(), Definition->HitFxMaterial, Definition->HitFxFrames,
+				Definition->HitFxFrameMs, Definition->HitFxScaleCm, Hit.WorldHitLocation);
+		}
+	}
 }
 
 void UCombatPresentationComponent::SetAnimInstancePausedForHitStop(UAnimInstance* AnimInstance, bool bPaused)

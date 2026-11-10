@@ -3,6 +3,7 @@
 #include "UObject/SoftObjectPath.h"
 
 #include "Sound/SoundWave.h"
+#include "Materials/MaterialInterface.h"
 
 #include "../Combat/AttackDefinition.h"
 
@@ -39,8 +40,11 @@ namespace UE::UEMMO::Tasks::M1_009
 		bool bPlaceholderAnimation;
 		// M8-035: the optional attacker-side audio references (null = the
 		// row carries none).
-		const TCHAR* SwingSoundPath;
-		const TCHAR* HitImpactSoundPath;
+		const TCHAR* SwingSoundPath = nullptr;
+		const TCHAR* HitImpactSoundPath = nullptr;
+		// M8-036: the optional flipbook FX material references.
+		const TCHAR* CastFxMaterialPath = nullptr;
+		const TCHAR* HitFxMaterialPath = nullptr;
 	};
 
 	// next_attack_ids keep JSON order; function-local static const arrays
@@ -74,6 +78,8 @@ namespace UE::UEMMO::Tasks::M1_009
 		// M8-035: the attacker-side audio references.
 		Expected.SwingSoundPath = TEXT("/Game/UEMMO/DNFM/Audio/SND_ft_atk_01");
 		Expected.HitImpactSoundPath = TEXT("/Game/UEMMO/DNFM/Audio/SND_1st_strong_lowkick_hit");
+		Expected.CastFxMaterialPath = TEXT("/Game/UEMMO/Combat/FX/M_FX_wcs_particle");
+		Expected.HitFxMaterialPath = TEXT("/Game/UEMMO/Combat/FX/M_FX_blockbuster_particle");
 		return Expected;
 	}
 
@@ -106,6 +112,8 @@ namespace UE::UEMMO::Tasks::M1_009
 		// M8-035: the attacker-side audio references.
 		Expected.SwingSoundPath = TEXT("/Game/UEMMO/DNFM/Audio/SND_ft_atk_02");
 		Expected.HitImpactSoundPath = TEXT("/Game/UEMMO/DNFM/Audio/SND_1st_strong_lowkick_hit");
+		Expected.CastFxMaterialPath = TEXT("/Game/UEMMO/Combat/FX/M_FX_wcs_big02");
+		Expected.HitFxMaterialPath = TEXT("/Game/UEMMO/Combat/FX/M_FX_wcs_big03");
 		return Expected;
 	}
 
@@ -136,6 +144,8 @@ namespace UE::UEMMO::Tasks::M1_009
 		// M8-035: the attacker-side audio references.
 		Expected.SwingSoundPath = TEXT("/Game/UEMMO/DNFM/Audio/SND_ft_atk_03");
 		Expected.HitImpactSoundPath = TEXT("/Game/UEMMO/DNFM/Audio/SND_lowKick_impact");
+		Expected.CastFxMaterialPath = TEXT("/Game/UEMMO/Combat/FX/M_FX_nenflower_particle");
+		Expected.HitFxMaterialPath = TEXT("/Game/UEMMO/Combat/FX/M_FX_risingupper_stone");
 		Expected.ClipStartSeconds = 0.0f;
 		Expected.ClipEndSeconds = 0.4833f;
 		Expected.bPlaceholderAnimation = false; // M7-004: the real DNF clip
@@ -171,6 +181,8 @@ namespace UE::UEMMO::Tasks::M1_009
 		// M8-035: the attacker-side audio references.
 		Expected.SwingSoundPath = TEXT("/Game/UEMMO/DNFM/Audio/SND_ft_atk_03");
 		Expected.HitImpactSoundPath = TEXT("/Game/UEMMO/DNFM/Audio/SND_lowKick_impact");
+		Expected.CastFxMaterialPath = TEXT("/Game/UEMMO/Combat/FX/M_FX_skydrop_stone");
+		Expected.HitFxMaterialPath = TEXT("/Game/UEMMO/Combat/FX/M_FX_wcs_big01");
 		return Expected;
 	}
 
@@ -252,6 +264,29 @@ namespace UE::UEMMO::Tasks::M1_009
 		StoredHitImpact.GetAssetPath().GetPackageName().ToString(), FString(Expected.HitImpactSoundPath));
 	Test.TestTrue(TEXT("HitImpactSound resolves to a SoundWave asset"),
 		Cast<USoundWave>(StoredHitImpact.TryLoad()) != nullptr);
+
+	// M8-036: the FX material references (the acceptance's VFX half - every
+	// player attack row carries both, each must match the JSON path and load).
+	// A null expectation (a future row without FX) skips the comparison
+	// instead of comparing against a garbage pointer.
+	if (Expected.CastFxMaterialPath != nullptr)
+	{
+		const FSoftObjectPath StoredCastFx = Attack->CastFxMaterial.ToSoftObjectPath();
+		Test.TestEqual(TEXT("CastFxMaterial package path matches cast_fx_material_path"),
+			StoredCastFx.GetAssetPath().GetPackageName().ToString(), FString(Expected.CastFxMaterialPath));
+		Test.TestTrue(TEXT("CastFxMaterial resolves to a MaterialInterface asset"),
+			Cast<UMaterialInterface>(StoredCastFx.TryLoad()) != nullptr);
+		Test.TestTrue(TEXT("CastFxFrames positive"), Attack->CastFxFrames > 0);
+	}
+	if (Expected.HitFxMaterialPath != nullptr)
+	{
+		const FSoftObjectPath StoredHitFx = Attack->HitFxMaterial.ToSoftObjectPath();
+		Test.TestEqual(TEXT("HitFxMaterial package path matches hit_fx_material_path"),
+			StoredHitFx.GetAssetPath().GetPackageName().ToString(), FString(Expected.HitFxMaterialPath));
+		Test.TestTrue(TEXT("HitFxMaterial resolves to a MaterialInterface asset"),
+			Cast<UMaterialInterface>(StoredHitFx.TryLoad()) != nullptr);
+		Test.TestTrue(TEXT("HitFxFrames positive"), Attack->HitFxFrames > 0);
+	}
 	{
 		Test.TestEqual(TEXT("stored soft reference and animation_path resolve to the same UAnimSequence"),
 			StoredResolved, ExpectedResolved);

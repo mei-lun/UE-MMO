@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Internationalization/Text.h"
 #include "Engine/DataAsset.h"
+#include "Materials/MaterialInterface.h"
 #include "UObject/SoftObjectPtr.h"
 #include "Animation/AnimSequence.h"
 #include "Sound/SoundWave.h"
@@ -155,6 +156,34 @@ public:
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Audio")
 	TSoftObjectPtr<USoundWave> HitImpactSound;
+
+	/**
+	 * M8-036: the cast FX flipbook material (the M_ThrowStoneVisual UVRect
+	 * contract against a horizontal strip page), spawned once at the attack
+	 * start; soft reference keeps the asset optional. Zero frames = no FX.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Fx")
+	TSoftObjectPtr<UMaterialInterface> CastFxMaterial;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Fx")
+	int32 CastFxFrames = 0;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Fx")
+	float CastFxFrameMs = 0.f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Fx")
+	float CastFxScaleCm = 0.f;
+
+	/**
+	 * M8-036: the hit FX flipbook material, spawned per landed hit at the
+	 * hit box center; soft reference keeps the asset optional. Zero frames
+	 * = no FX.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Fx")
+	TSoftObjectPtr<UMaterialInterface> HitFxMaterial;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Fx")
+	int32 HitFxFrames = 0;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Fx")
+	float HitFxFrameMs = 0.f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Fx")
+	float HitFxScaleCm = 0.f;
 };
 
 /**

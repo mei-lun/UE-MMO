@@ -39,7 +39,15 @@
    "clip_end_seconds": 0.35,
    "placeholder_animation": false,
    "swing_sound_path": "/Game/UEMMO/DNFM/Audio/SND_ft_atk_01.SND_ft_atk_01",
-   "hit_sound_path": "/Game/UEMMO/DNFM/Audio/SND_1st_strong_lowkick_hit.SND_1st_strong_lowkick_hit"
+   "hit_sound_path": "/Game/UEMMO/DNFM/Audio/SND_1st_strong_lowkick_hit.SND_1st_strong_lowkick_hit",
+   "cast_fx_material_path": "/Game/UEMMO/Combat/FX/M_FX_wcs_particle",
+   "cast_fx_frames": 3,
+   "cast_fx_frame_ms": 60,
+   "cast_fx_scale_cm": 88,
+   "hit_fx_material_path": "/Game/UEMMO/Combat/FX/M_FX_blockbuster_particle",
+   "hit_fx_frames": 13,
+   "hit_fx_frame_ms": 40,
+   "hit_fx_scale_cm": 56
   },
   {
    "attack_id": "light_02",
@@ -75,7 +83,15 @@
    "clip_end_seconds": 0.4167,
    "placeholder_animation": false,
    "swing_sound_path": "/Game/UEMMO/DNFM/Audio/SND_ft_atk_02.SND_ft_atk_02",
-   "hit_sound_path": "/Game/UEMMO/DNFM/Audio/SND_1st_strong_lowkick_hit.SND_1st_strong_lowkick_hit"
+   "hit_sound_path": "/Game/UEMMO/DNFM/Audio/SND_1st_strong_lowkick_hit.SND_1st_strong_lowkick_hit",
+   "cast_fx_material_path": "/Game/UEMMO/Combat/FX/M_FX_wcs_big02",
+   "cast_fx_frames": 3,
+   "cast_fx_frame_ms": 60,
+   "cast_fx_scale_cm": 90,
+   "hit_fx_material_path": "/Game/UEMMO/Combat/FX/M_FX_wcs_big03",
+   "hit_fx_frames": 3,
+   "hit_fx_frame_ms": 60,
+   "hit_fx_scale_cm": 132
   },
   {
    "attack_id": "launcher",
@@ -112,7 +128,15 @@
    "clip_end_seconds": 0.4833,
    "placeholder_animation": false,
    "swing_sound_path": "/Game/UEMMO/DNFM/Audio/SND_ft_atk_03.SND_ft_atk_03",
-   "hit_sound_path": "/Game/UEMMO/DNFM/Audio/SND_lowKick_impact.SND_lowKick_impact"
+   "hit_sound_path": "/Game/UEMMO/DNFM/Audio/SND_lowKick_impact.SND_lowKick_impact",
+   "cast_fx_material_path": "/Game/UEMMO/Combat/FX/M_FX_nenflower_particle",
+   "cast_fx_frames": 4,
+   "cast_fx_frame_ms": 60,
+   "cast_fx_scale_cm": 99,
+   "hit_fx_material_path": "/Game/UEMMO/Combat/FX/M_FX_risingupper_stone",
+   "hit_fx_frames": 5,
+   "hit_fx_frame_ms": 50,
+   "hit_fx_scale_cm": 62
   },
   {
    "attack_id": "aerial_01",
@@ -146,7 +170,15 @@
    "clip_end_seconds": 0.3167,
    "placeholder_animation": false,
    "swing_sound_path": "/Game/UEMMO/DNFM/Audio/SND_ft_atk_03.SND_ft_atk_03",
-   "hit_sound_path": "/Game/UEMMO/DNFM/Audio/SND_lowKick_impact.SND_lowKick_impact"
+   "hit_sound_path": "/Game/UEMMO/DNFM/Audio/SND_lowKick_impact.SND_lowKick_impact",
+   "cast_fx_material_path": "/Game/UEMMO/Combat/FX/M_FX_skydrop_stone",
+   "cast_fx_frames": 4,
+   "cast_fx_frame_ms": 50,
+   "cast_fx_scale_cm": 190,
+   "hit_fx_material_path": "/Game/UEMMO/Combat/FX/M_FX_wcs_big01",
+   "hit_fx_frames": 3,
+   "hit_fx_frame_ms": 60,
+   "hit_fx_scale_cm": 127
   },
   {
    "attack_id": "singlekick",

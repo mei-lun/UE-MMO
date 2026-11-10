@@ -163,6 +163,23 @@ def validate_entry(entry, index, id_set, problems):
         elif not value.startswith('/Game/'):
             problem(field, "must start with '/Game/'.")
 
+    # M8-036: optional flipbook FX references. The material path pairs with
+    # the frame count / frame ms / scale cm trio - when the path is present
+    # the three numbers must be present and positive.
+    for prefix in ('cast_fx', 'hit_fx'):
+        path_field = prefix + '_material_path'
+        value = entry.get(path_field)
+        if value is None:
+            continue
+        if not isinstance(value, str) or not value.strip():
+            problem(path_field, 'when present it must be a non-empty asset path.')
+        elif not value.startswith('/Game/'):
+            problem(path_field, "must start with '/Game/'.")
+        for number_field in (prefix + '_frames', prefix + '_frame_ms', prefix + '_scale_cm'):
+            number = entry.get(number_field)
+            if not is_number(number) or number <= 0:
+                problem(number_field, 'must be a positive number when ' + path_field + ' is present.')
+
     next_ids = entry.get('next_attack_ids')
     if isinstance(next_ids, list):
         for element in next_ids:
@@ -274,21 +291,24 @@ def apply_window(asset, property_name, start_frame, end_frame):
 
 
 def load_sounds(entries):
-    """M8-035: returns {attack_id: {'swing': obj|None, 'hit': obj|None}} for
-    the optional audio references; the caller has already validated the
-    paths, so a load failure here raises (same hard-abort contract as the
-    animation loads)."""
+    """M8-035/M8-036: returns {attack_id: {'swing': obj|None, 'hit': obj|None,
+    'cast_fx': obj|None, 'hit_fx': obj|None}} for the optional audio + FX
+    references; the caller has already validated the paths, so a load failure
+    here raises (same hard-abort contract as the animation loads)."""
     sounds = {}
     for entry in entries:
-        loaded = {'swing': None, 'hit': None}
-        for field, key in (('swing_sound_path', 'swing'), ('hit_sound_path', 'hit')):
+        loaded = {'swing': None, 'hit': None, 'cast_fx': None, 'hit_fx': None}
+        for field, key in (('swing_sound_path', 'swing'), ('hit_sound_path', 'hit'),
+                           ('cast_fx_material_path', 'cast_fx'), ('hit_fx_material_path', 'hit_fx')):
             path = entry.get(field)
             if not path:
                 continue
             obj = unreal.load_asset(path)
-            if obj is None or not isinstance(obj, unreal.SoundWave):
+            expected_class = unreal.Material if key.endswith('_fx') else unreal.SoundWave
+            if obj is None or not isinstance(obj, expected_class):
                 raise RuntimeError("attack '" + entry['attack_id'] + "' field '" + field
-                                   + "': asset is not a loadable SoundWave: " + path)
+                                   + "': asset is not a loadable " + ('Material' if key.endswith('_fx') else 'SoundWave')
+                                   + ': ' + path)
             loaded[key] = obj
         sounds[entry['attack_id']] = loaded
     return sounds
@@ -325,6 +345,14 @@ def apply_fields(asset, entry, animations, sounds):
         asset.set_editor_property('swing_sound', entry_sounds['swing'])
     if entry_sounds.get('hit') is not None:
         asset.set_editor_property('hit_impact_sound', entry_sounds['hit'])
+    # M8-036: the optional FX references (the material + its frame/ms/scale
+    # trio are set together; rows without them are skipped).
+    for prefix, material_property in (('cast_fx', 'cast_fx_material'), ('hit_fx', 'hit_fx_material')):
+        if entry_sounds.get(prefix) is not None:
+            asset.set_editor_property(material_property, entry_sounds[prefix])
+            asset.set_editor_property(prefix + '_frames', int(entry[prefix + '_frames']))
+            asset.set_editor_property(prefix + '_frame_ms', float(entry[prefix + '_frame_ms']))
+            asset.set_editor_property(prefix + '_scale_cm', float(entry[prefix + '_scale_cm']))
     asset.set_editor_property('clip_start_seconds', float(entry['clip_start_seconds']))
     asset.set_editor_property('clip_end_seconds', float(entry['clip_end_seconds']))
     asset.set_editor_property('placeholder_animation', bool(entry['placeholder_animation']))
@@ -480,7 +508,9 @@ def verify_entry(asset, entry, checks):
     # JSON must mean unset on the asset (these properties were never written
     # for the rows without the fields).
     for field, property_name in (('swing_sound_path', 'swing_sound'),
-                                 ('hit_sound_path', 'hit_impact_sound')):
+                                 ('hit_sound_path', 'hit_impact_sound'),
+                                 ('cast_fx_material_path', 'cast_fx_material'),
+                                 ('hit_fx_material_path', 'hit_fx_material')):
         expected_path = entry.get(field) or ''
         soft_object = asset.get_editor_property(property_name)
         if not expected_path:
@@ -494,6 +524,17 @@ def verify_entry(asset, entry, checks):
         asset_base = expected_path.rsplit('/', 1)[-1]
         match = actual_path in (expected_path, expected_path + '.' + asset_base)
         record(field, expected_path, actual_path, match)
+
+    # M8-036: the FX numbers verify together with their material path.
+    for prefix in ('cast_fx', 'hit_fx'):
+        if not entry.get(prefix + '_material_path'):
+            continue
+        for field, property_name in ((prefix + '_frames', prefix + '_frames'),
+                                     (prefix + '_frame_ms', prefix + '_frame_ms'),
+                                     (prefix + '_scale_cm', prefix + '_scale_cm')):
+            expected = float(entry[field])
+            actual = float(asset.get_editor_property(property_name))
+            record(field, expected, actual, floats_match(expected, actual))
     return ok
 
 

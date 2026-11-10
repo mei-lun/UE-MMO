@@ -1,0 +1,182 @@
+{
+ "task": "M8-036",
+ "cm_per_px": 1.7615,
+ "pages": [
+  {
+   "page": "blockbuster_particle",
+   "source_img": "Character/Fighter/Effect/BlockBuster/BlockBuster_BlockParticle.img",
+   "atlas_id": 18728,
+   "atlas_scale": 1.0,
+   "frames": 13,
+   "cell_px": [
+    32,
+    32
+   ],
+   "page_px": [
+    416,
+    32
+   ],
+   "frame_ms": 40,
+   "cell_cm": [
+    56.37,
+    56.37
+   ],
+   "png": "fx_blockbuster_particle.png",
+   "sha256": "e8ceda5d6dc04ba619d69b38d65dba223e3bae2e9d229a0675f3b44b0db8bfc1"
+  },
+  {
+   "page": "nenflower_particle",
+   "source_img": "Character/Fighter/Effect/NenFlower/particle.img",
+   "atlas_id": 19004,
+   "atlas_scale": 1.0,
+   "frames": 4,
+   "cell_px": [
+    56,
+    56
+   ],
+   "page_px": [
+    224,
+    56
+   ],
+   "frame_ms": 60,
+   "cell_cm": [
+    98.64,
+    98.64
+   ],
+   "png": "fx_nenflower_particle.png",
+   "sha256": "b8dafc4560c003edd428e0f19467d03690528c3212ac9b6baea0e2dbfdacaafb"
+  },
+  {
+   "page": "risingupper_stone",
+   "source_img": "Character/Fighter/Effect/RisingUpperEx/stone.img",
+   "atlas_id": 19120,
+   "atlas_scale": 1.0,
+   "frames": 5,
+   "cell_px": [
+    40,
+    35
+   ],
+   "page_px": [
+    200,
+    35
+   ],
+   "frame_ms": 50,
+   "cell_cm": [
+    70.46,
+    61.65
+   ],
+   "png": "fx_risingupper_stone.png",
+   "sha256": "aa63abd5479d9bbd98e688d3ee8d6e0de7e6bf295e61082d38a10680f4161007"
+  },
+  {
+   "page": "skydrop_stone",
+   "source_img": "Character/Fighter/Effect/ATDestroyEarthSkyDrop/particle_stone_normal.img",
+   "atlas_id": 18581,
+   "atlas_scale": 1.0,
+   "frames": 4,
+   "cell_px": [
+    76,
+    108
+   ],
+   "page_px": [
+    304,
+    108
+   ],
+   "frame_ms": 50,
+   "cell_cm": [
+    133.87,
+    190.24
+   ],
+   "png": "fx_skydrop_stone.png",
+   "sha256": "962bee11f77913991862a83e3c966a4eb15a7de7c3abb835291dae05413b4f14"
+  },
+  {
+   "page": "wcs_big01",
+   "source_img": "Character/Fighter/Effect/WildCannonSpike/big_01.img",
+   "atlas_id": 19217,
+   "atlas_scale": 1.0,
+   "frames": 3,
+   "cell_px": [
+    67,
+    72
+   ],
+   "page_px": [
+    201,
+    72
+   ],
+   "frame_ms": 60,
+   "cell_cm": [
+    118.02,
+    126.83
+   ],
+   "png": "fx_wcs_big01.png",
+   "sha256": "e556c0555ccb09329e09044fb08e7f4c918d8f56e69466e69deb458e2902c844"
+  },
+  {
+   "page": "wcs_big02",
+   "source_img": "Character/Fighter/Effect/WildCannonSpike/big_02.img",
+   "atlas_id": 19218,
+   "atlas_scale": 1.0,
+   "frames": 3,
+   "cell_px": [
+    50,
+    51
+   ],
+   "page_px": [
+    150,
+    51
+   ],
+   "frame_ms": 60,
+   "cell_cm": [
+    88.08,
+    89.84
+   ],
+   "png": "fx_wcs_big02.png",
+   "sha256": "0b19fd5bfd2c3a38f85ecf5f3cdebbd010a365106553e0207744df1c37bbce9d"
+  },
+  {
+   "page": "wcs_big03",
+   "source_img": "Character/Fighter/Effect/WildCannonSpike/big_03.img",
+   "atlas_id": 19219,
+   "atlas_scale": 1.0,
+   "frames": 3,
+   "cell_px": [
+    61,
+    75
+   ],
+   "page_px": [
+    183,
+    75
+   ],
+   "frame_ms": 60,
+   "cell_cm": [
+    107.45,
+    132.11
+   ],
+   "png": "fx_wcs_big03.png",
+   "sha256": "cfe7202f21b95ba3921824d5c91adf3b6e742a9aefe04eeb1a38b0a88ff5910d"
+  },
+  {
+   "page": "wcs_particle",
+   "source_img": "Character/Fighter/Effect/ATWildCannonSpike/particle.img",
+   "atlas_id": 18718,
+   "atlas_scale": 1.0,
+   "frames": 3,
+   "cell_px": [
+    40,
+    50
+   ],
+   "page_px": [
+    120,
+    50
+   ],
+   "frame_ms": 60,
+   "cell_cm": [
+    70.46,
+    88.08
+   ],
+   "png": "fx_wcs_particle.png",
+   "sha256": "0f7c5339997e4bfa0b44c476b34d417b509c87e73ba5a7a3da05b1cb1162bb3f"
+  }
+ ]
+}
