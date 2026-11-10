@@ -2,7 +2,9 @@
 #include "UObject/UObjectGlobals.h"
 
 #include "../Combat/AttackCatalog.h"
+#include "../Combat/AttackDefinition.h"
 #include "../Combat/CombatComponent.h"
+#include "../Combat/CombatStateMachine.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -362,6 +364,125 @@ bool FUEMMOTasksM1_011FrozenClockPausesFrameAdvance::RunTest(const FString& Para
 	Component->SetClockFrozen(false);
 	TickN(*Component, 1);
 	TestEqual(TEXT("the first unfrozen tick lands on Frame 0"), Component->GetSnapshot().Frame, 0);
+	return true;
+}
+
+// M8-031 regression (the user's "attacks completely failed" package report):
+// a mid-Active teardown (the jump cancel, the accepted-hit interrupt and
+// ResetCombat all ClearInstance before the phase derivation can observe the
+// attack's own cancel window) used to leave the phase machine stuck at
+// Active - the transition table refuses Active->Idle - and every later
+// attack/skill gate read was then refused forever. The contract now: a
+// teardown (Frame -1) force-resets the phase to Idle, so the machine can
+// never enter a state that blocks a later attack start.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FUEMMOTasksM8_031TeardownNeverLocksThePhaseMachine,
+	"UEMMO.Tasks.M8_031.TeardownNeverLocksThePhaseMachine",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+
+bool FUEMMOTasksM8_031TeardownNeverLocksThePhaseMachine::RunTest(const FString& Parameters)
+{
+	UCombatComponent* Component = NewCombatComponentWithCatalog(*this);
+	if (Component == nullptr)
+	{
+		return true;
+	}
+	UCombatStateMachine* Machine = Component->GetStateMachine();
+	if (!TestNotNull(TEXT("the state machine subobject"), Machine))
+	{
+		return true;
+	}
+
+	TestTrue(TEXT("precondition: light_01 starts"), Component->TryStartAttack(FName(TEXT("light_01")), 1));
+
+	// Step until the machine reports the Active phase (bounded by the
+	// attack's full duration so a definition change degrades to a clean
+	// precondition failure, never a hang).
+	bool bSawActive = false;
+	for (int32 Step = 0; Step < 26 && !bSawActive; ++Step)
+	{
+		TickN(*Component, 1);
+		bSawActive = Machine->GetPhase() == ECombatPhase::Active;
+	}
+	if (!TestTrue(TEXT("light_01 reaches the Active phase"), bSawActive))
+	{
+		return true;
+	}
+
+	// The mid-Active teardown (the jump-cancel / hit-interrupt shape).
+	Component->ResetCombat();
+	TickN(*Component, 1);
+	TestEqual(TEXT("the machine force-resets to Idle after the mid-Active teardown"),
+		Machine->GetPhase(), ECombatPhase::Idle);
+	TestTrue(TEXT("CanStartAttack recovers after the mid-Active teardown"),
+		Machine->CanStartAttack());
+	TestTrue(TEXT("a fresh attack starts after the teardown"),
+		Component->TryStartAttack(FName(TEXT("light_01")), 1));
+	return true;
+}
+
+// M8-031 regression (the user's package log: "the consumed Light chain input
+// could not start 'light_02'"): the follow-up start must be accepted on the
+// first cancel-window frame. The chain precondition reads the live frame
+// while the phase derivation lags one tick behind, so the gate consumes the
+// buffered press and then refuses it - the follow-up press was lost every
+// time. With the gates disabled this passes trivially; it stays as the
+// acceptance for any future re-enable (which must also resolve the
+// one-tick lag, see the M8-031 report).
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FUEMMOTasksM8_031ChainWindowStartAcceptsTheFollowUp,
+	"UEMMO.Tasks.M8_031.ChainWindowStartAcceptsTheFollowUp",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::EngineFilter)
+
+bool FUEMMOTasksM8_031ChainWindowStartAcceptsTheFollowUp::RunTest(const FString& Parameters)
+{
+	UAttackCatalog* Catalog = NewObject<UAttackCatalog>();
+	FText Error;
+	if (!TestTrue(TEXT("catalog init"), Catalog->InitializeFromConfig(Error)))
+	{
+		AddError(FString::Printf(TEXT("catalog initialization failed: %s"), *Error.ToString()));
+		return true;
+	}
+	UCombatComponent* Component = NewObject<UCombatComponent>();
+	if (!TestTrue(TEXT("component init"), Component->InitializeFromCatalog(Catalog)))
+	{
+		return true;
+	}
+	const UAttackDefinition* Light01 = Catalog->Find(FName(TEXT("light_01")));
+	if (!TestNotNull(TEXT("light_01 definition"), Light01))
+	{
+		return true;
+	}
+	FLifecycleEvents Events;
+	Events.Bind(*Component);
+
+	TestTrue(TEXT("precondition: light_01 starts"), Component->TryStartAttack(FName(TEXT("light_01")), 1));
+
+	// TickN(1) after the start lands Frame 0, so k steps leave Frame k-1.
+	// Queue the follow-up press on the frame just before the cancel window
+	// opens. PressedAt stays 0.0: this bare-component harness injects no
+	// input clock (Now stays 0.0), so any later press time would read as
+	// "clearly in the future" and the prune would drop it before the window
+	// ever opens.
+	const int32 CancelStart = Light01->CancelWindow.StartFrame;
+	TestTrue(TEXT("light_01 has a cancel window"), CancelStart > 0);
+	TickN(*Component, CancelStart);
+	TestTrue(TEXT("precondition: the next step opens the cancel window"),
+		Light01->CancelWindow.Contains(Component->GetSnapshot().Frame + 1));
+	FBufferedCombatInput Intent;
+	Intent.Sequence = 1;
+	Intent.Action = ECombatInput::Light;
+	Intent.PressedAt = 0.0;
+	Component->QueueInput(Intent);
+
+	// The window-open tick: TryChainFromBuffer must consume the press and
+	// start light_02. The M8-031 regression ate exactly this press (the
+	// consumed-then-refused warning in the user's package log).
+	TickN(*Component, 1);
+	TestEqual(TEXT("the window-open tick chains light_02 (two Started events)"),
+		Events.StartedCount, 2);
+	TestEqual(TEXT("the chained instance is light_02"),
+		Events.StartedAttackId, FName(TEXT("light_02")));
 	return true;
 }
 

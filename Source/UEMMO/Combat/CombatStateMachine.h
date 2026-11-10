@@ -102,6 +102,13 @@ private:
 	/** Applies the transition if the table allows it; returns true on change. */
 	bool ApplyTransition(ECombatPhase NewPhase);
 
+	/**
+	 * Sets the phase unconditionally (the table is not consulted) and
+	 * broadcasts the change like any accepted transition. Only for the
+	 * fact-driven resets the table cannot model - the instance teardown.
+	 */
+	void ForcePhase(ECombatPhase NewPhase);
+
 	ECombatPhase Phase = ECombatPhase::Idle;
 	bool bCancelWindowOpen = false;
 };

@@ -254,12 +254,16 @@ bool UCombatComponent::TryStartAttack(FName AttackId, int32 NewFacing)
 	{
 		return false;
 	}
-	// M8-031: the phase transition table gates the start (Idle/CancelWindow
-	// -> Windup are the legal entries; the recovery/stun/knockdown refuse).
-	if (StateMachine != nullptr && !StateMachine->CanStartAttack())
-	{
-		return false;
-	}
+	// M8-031: the state machine gate is DISABLED (the M8-034 regression fix).
+	// The phase derivation used to run only at the end of the Attacking path
+	// (every non-Attacking TickCombat path returned before it), so after a
+	// finish/cancel/interrupt the phase froze at its last attack value and
+	// this gate then refused every later start - the user's "attacks
+	// completely failed" package report. UpdatePhaseMachine now derives on
+	// every path and the teardown force-resets to Idle, but the gate stays
+	// off until a follow-up task proves it across all maps (the one-tick
+	// phase lag vs the live-frame chain check also needs resolving first).
+	// if (StateMachine != nullptr && !StateMachine->CanStartAttack()) { return false; }
 
 	const UAttackDefinition* Definition = (Catalog != nullptr) ? Catalog->Find(AttackId) : nullptr;
 	if (Definition == nullptr)
@@ -298,8 +302,37 @@ bool UCombatComponent::TryStartAttack(FName AttackId, int32 NewFacing)
 	return true;
 }
 
+void UCombatComponent::UpdatePhaseMachine()
+{
+	// M8-034: see the header - this must run on every TickCombat path, not
+	// only the Attacking tail, so a finished/cancelled/interrupted instance
+	// never freezes the phase away from Idle.
+	if (StateMachine == nullptr)
+	{
+		return;
+	}
+	FCombatPhaseFacts Facts;
+	Facts.bDead = bDead;
+	Facts.bHitStun = ActionState == ECombatActionState::HitStun;
+	Facts.bKnockdown = ActionState == ECombatActionState::Knockdown;
+	Facts.bRecovering = ActionState == ECombatActionState::Recovering;
+	Facts.Frame = CurrentFrame;
+	if (const UAttackDefinition* PhaseDef = (Catalog != nullptr) ? Catalog->Find(ActiveAttackId) : nullptr)
+	{
+		Facts.ActiveStartFrame = PhaseDef->ActiveWindow.StartFrame;
+		Facts.ActiveEndFrame = PhaseDef->ActiveWindow.EndFrame;
+		Facts.CancelStartFrame = PhaseDef->CancelWindow.StartFrame;
+		Facts.DurationFrames = PhaseDef->DurationFrames;
+	}
+	StateMachine->UpdateFromFacts(Facts);
+}
+
 void UCombatComponent::TickCombat(float DeltaSeconds)
 {
+	// M8-034: the phase derivation runs before the state branches, so the
+	// non-Attacking early returns below (Free/HitStun/Knockdown/Recovering)
+	// still keep the machine converged (the M8-031 stuck-phase regression).
+	UpdatePhaseMachine();
 	// M3-031: keep the carried-anchor map in step with the buffer (entries
 	// consumed or pruned since the last tick lose their anchors).
 	CompactCarriedAnchors();
@@ -435,23 +468,7 @@ void UCombatComponent::TickCombat(float DeltaSeconds)
 	}
 	// M8-031: the phase state machine derives from the settled snapshot
 	// (the frame counters advanced, the victim timers applied this frame).
-	if (StateMachine != nullptr)
-	{
-		FCombatPhaseFacts Facts;
-		Facts.bDead = bDead;
-		Facts.bHitStun = ActionState == ECombatActionState::HitStun;
-		Facts.bKnockdown = ActionState == ECombatActionState::Knockdown;
-		Facts.bRecovering = ActionState == ECombatActionState::Recovering;
-		Facts.Frame = CurrentFrame;
-		if (const UAttackDefinition* PhaseDef = (Catalog != nullptr) ? Catalog->Find(ActiveAttackId) : nullptr)
-		{
-			Facts.ActiveStartFrame = PhaseDef->ActiveWindow.StartFrame;
-			Facts.ActiveEndFrame = PhaseDef->ActiveWindow.EndFrame;
-			Facts.CancelStartFrame = PhaseDef->CancelWindow.StartFrame;
-			Facts.DurationFrames = PhaseDef->DurationFrames;
-		}
-		StateMachine->UpdateFromFacts(Facts);
-	}
+	UpdatePhaseMachine();
 }
 
 void UCombatComponent::ResetCombat()

@@ -55,14 +55,12 @@ bool USkillAbilityComponent::TryCast(UCombatComponent* Combat, USkillLoadoutComp
 		return false;
 	}
 
-	// M8-031: the state machine gate - the phase transition table decides
-	// (the Idle and the cancel window enter Windup; the stun/knockdown/dead
-	// refuse). The plan 08 problem-1's "the input layer judges by the
-	// current state + the table" contract.
-	if (Combat->GetStateMachine() != nullptr && !Combat->GetStateMachine()->CanStartAttack())
-	{
-		return false;
-	}
+	// M8-031: the state machine gate is DISABLED (the M8-034 regression fix):
+	// the same frozen-phase issue as the TryStartAttack gate (see the
+	// CombatComponent M8-034 note). The economy + the Free-state check
+	// already gate the cast; the state machine stays observation-only until
+	// a follow-up task proves the phase tracking across all maps.
+	// if (Combat->GetStateMachine() != nullptr && !Combat->GetStateMachine()->CanStartAttack()) { return false; }
 
 	// The economy through the existing skill loadout (the MP/cooldown/profession
 	// gates stay in their own component - the ability composes, not duplicates).

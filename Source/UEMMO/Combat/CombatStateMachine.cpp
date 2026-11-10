@@ -116,12 +116,25 @@ void UCombatStateMachine::UpdateFromFacts(const FCombatPhaseFacts& Facts)
 	// counters (the frame table stays the single source of truth).
 	if (Facts.Frame < 0)
 	{
-		ApplyTransition(ECombatPhase::Idle);
+		// M8-031 regression fix: a teardown is a FACT, not a table
+		// transition. The real combat flow legitimately tears the running
+		// instance down mid-Active (the jump cancel, the accepted-hit
+		// interrupt and ResetCombat all ClearInstance before this derivation
+		// can observe the attack's own cancel window), so the table's
+		// Active->Idle refusal stuck the phase forever and every later gate
+		// read then refused the attack (the user's "attacks completely
+		// failed" package regression). The reset bypasses the table and
+		// broadcasts like any accepted change; the stale cancel flag clears.
+		ForcePhase(ECombatPhase::Idle);
+		bCancelWindowOpen = false;
 		return;
 	}
 
 	if (Facts.Frame < Facts.ActiveStartFrame)
 	{
+		// A fresh instance starts: the previous attack's cancel flag never
+		// leaks into the new windup (IsCancelWindowOpen stays honest).
+		bCancelWindowOpen = false;
 		ApplyTransition(ECombatPhase::Windup);
 		return;
 	}
@@ -138,6 +151,17 @@ void UCombatStateMachine::UpdateFromFacts(const FCombatPhaseFacts& Facts)
 		return;
 	}
 	ApplyTransition(ECombatPhase::Recovery);
+}
+
+void UCombatStateMachine::ForcePhase(ECombatPhase NewPhase)
+{
+	if (NewPhase == Phase)
+	{
+		return;
+	}
+	const ECombatPhase Old = Phase;
+	Phase = NewPhase;
+	OnPhaseChanged.Broadcast(Old, NewPhase);
 }
 
 bool UCombatStateMachine::CanStartAttack() const

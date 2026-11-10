@@ -568,6 +568,17 @@ public:
 
 private:
 	/**
+	 * M8-034: derives the phase machine from the current settled snapshot.
+	 * Runs on every TickCombat path - including the non-Attacking early
+	 * returns. The M8-031 regression: the derivation lived only at the end
+	 * of the Attacking path, so once an instance left Attacking (finish,
+	 * cancel, hit interrupt) the phase froze at its last attack value
+	 * (stuck Active/Recovery) and a phase gate then refused every later
+	 * start. No-op without the subobject.
+	 */
+	void UpdatePhaseMachine();
+
+	/**
 	 * M1-014: when the running attack is inside its cancel window, prunes
 	 * expired buffered inputs and switches into the earliest buffered entry
 	 * whose action maps to a follow-up the running attack allows (M1-021
