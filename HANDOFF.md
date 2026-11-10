@@ -1,3 +1,16 @@
+# 最新状态：M8-034 攻击/技能失效回归修复 DONE——相位机冻结根因消除，重打包待用户复测（2026-11-11）
+
+- **回归根因（用户包日志+回归测试双重实证）**：M8-031 相位推导注入只活在 TickCombat 的 Attacking 路径末尾，非 Attacking 分支提前 return——攻击一结束推导永停，相位冻结在最后攻击相位；`CanStartAttack` 门控从此静默拒绝一切攻击/技能启动（用户："攻击完全失效了，技能也没有了"）。技能失效同源（M5 技能是给下一击上增益，攻击起不来增益永不到账）。
+- **M8-034 修复（e707f84）**：①两处门控注释停用（Free 状态检查保持唯一门禁，状态机转纯观察层）；②注入抽 `UpdatePhaseMachine()` 全路径推进（TickCombat 顶部+Attacking 尾部）；③teardown `ForcePhase(Idle)` 绕表强制归位+清取消旗标；④两条回归测试护航（`TeardownNeverLocksThePhaseMachine` 修复前精确复现用户症状、`ChainWindowStartAcceptsTheFollowUp` 窗口首帧链式吃键），运行器 `Scripts/TestCombatAttackLifecycle.ps1`。
+- **验证**：Build exit=0；新验收 matched=2 passed=2（`Artifacts/Tasks/M8-034/2026-11-11T02-16-24+0800-attack-lifecycle`）；全量冒烟 exit=0。修复前红的复现证据同目录 02-08-56 批次。
+- **门控未重启用**：重启用前必须先解决链式实时帧 vs 滞后相位的一帧差（门控读实时事实），另开任务卡。
+- Owner：ZCode-20261111-A。本轮新增 DONE：**M8-034**（1 项）。任务板 valid=True，259 项，DONE=247。
+- 工作区遗留（非本任务，未提交）：`L_DNFM_Bamboo01/L_CombatRoom01/L_CombatRoom02.umap` 编辑器漂移、`Content/UEMMO/DNFM/Volcano/`+`DA_room_volcano_01`+`place_volcano_room_actors.py`（M8-028/029 已提交过火山内容，此为后续漂移，待甄别）。
+- 下一步：**重打包 → 用户复测攻击/技能** → M8-030 火山动态环境 → P08 Boss。用户事项：试玩 `Artifacts/Package/Windows/UEMMO/Binaries/Win64/UEMMO.exe`。
+- 报告 [M8-034](Docs/Tasks/Reports/M8-034.md)；[M8-031 回归注记](Docs/Tasks/Reports/M8-031.md)已同步。
+
+---
+
 # 最新状态：08 方案质量收口全部完成——第十三版包交付（含攻击音效 SND_* 资产），待用户试玩确认（2026-11-09）
 - **M8-028 进行中（4fb4a51）**：volcano map import script 创建（适配竹林管线：tile 空集跳过、44 对象按标定放置、材料从 goblin 母材质 duplicate、空 tile 记录）。剩余：UE Python API 兼容问题（rotation/scale 方法名）需修复后重跑导入 → room_volcano 接线 → 实拍验证。
 - **M8-032 补充**：攻击者侧挥击音/打击音（ft_atk_01..03 + lowKick_impact + 1st_strong_lowkick_hit）已从 M8-009 定位清单提取并 sha 钉档（b5f4e2a）；导入 SND_* + 经技能组件 CastSound 接线=下轮。

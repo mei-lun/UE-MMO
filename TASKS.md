@@ -280,3 +280,4 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M8-031 | [战斗状态机与技能组件化重构](Docs/Tasks/M8-031.md) | DONE | M8-019C | ZCode-20261107-A | 2026-11-09T17:30:00+08:00 | [report](Docs/Tasks/Reports/M8-031.md) |
 | M8-032 | [战斗手感调校](Docs/Tasks/M8-032.md) | DONE | M8-031 | ZCode-20261107-A | 2026-11-09T18:10:00+08:00 | [report](Docs/Tasks/Reports/M8-032.md) |
 | M8-033 | [美术完整性审计与缺损清补](Docs/Tasks/M8-033.md) | DONE | M8-031 | ZCode-20261107-A | 2026-11-09T18:20:00+08:00 | [report](Docs/Tasks/Reports/M8-033.md) |
+| M8-034 | [攻击与技能失效回归修复](Docs/Tasks/M8-034.md) | DONE | M8-032 | ZCode-20261111-A | 2026-11-11T02:25:00+08:00 | [report](Docs/Tasks/Reports/M8-034.md) |
