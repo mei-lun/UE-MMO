@@ -278,5 +278,5 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M8-029 | [P07-C 火山图碰撞/出生出口与专项](Docs/Tasks/M8-029.md) | TODO | M8-028 | — | — | [report](Docs/Tasks/Reports/M8-029.md) |
 | M8-030 | [P07-D 火山图动态环境](Docs/Tasks/M8-030.md) | TODO | M8-029 | — | — | [report](Docs/Tasks/Reports/M8-030.md) |
 | M8-031 | [战斗状态机与技能组件化重构](Docs/Tasks/M8-031.md) | DONE | M8-019C | ZCode-20261107-A | 2026-11-09T17:30:00+08:00 | [report](Docs/Tasks/Reports/M8-031.md) |
-| M8-032 | [战斗手感调校](Docs/Tasks/M8-032.md) | DONE | M8-031 | ZCode-20261107-A | 2026-11-09T18:10:00+08:00 | M8-031 | — | — | [report](Docs/Tasks/Reports/M8-032.md) |
+| M8-032 | [战斗手感调校](Docs/Tasks/M8-032.md) | DONE | M8-031 | ZCode-20261107-A | 2026-11-09T18:10:00+08:00 | [report](Docs/Tasks/Reports/M8-032.md) |
 | M8-033 | [美术完整性审计与缺损清补](Docs/Tasks/M8-033.md) | DONE | M8-031 | ZCode-20261107-A | 2026-11-09T18:20:00+08:00 | [report](Docs/Tasks/Reports/M8-033.md) |
