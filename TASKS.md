@@ -282,3 +282,4 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M8-033 | [美术完整性审计与缺损清补](Docs/Tasks/M8-033.md) | DONE | M8-031 | ZCode-20261107-A | 2026-11-09T18:20:00+08:00 | [report](Docs/Tasks/Reports/M8-033.md) |
 | M8-034 | [攻击与技能失效回归修复](Docs/Tasks/M8-034.md) | DONE | M8-032 | ZCode-20261111-A | 2026-11-11T02:25:00+08:00 | [report](Docs/Tasks/Reports/M8-034.md) |
 | M8-035 | [攻击音补接与第三hit节奏加大](Docs/Tasks/M8-035.md) | DONE | M8-034 | ZCode-20261111-A | 2026-11-11T02:45:00+08:00 | [report](Docs/Tasks/Reports/M8-035.md) |
+| M8-036 | [技能特效最小集](Docs/Tasks/M8-036.md) | DONE | M8-035 | ZCode-20261111-A | 2026-11-11T03:05:00+08:00 | [report](Docs/Tasks/Reports/M8-036.md) |

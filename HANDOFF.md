@@ -1,3 +1,15 @@
+# 最新状态：M8-036 技能特效最小集 DONE——08方案"特效/声音引用全可加载"验收全句闭环，重打包待用户复测（2026-11-11）
+
+- **M8-036（1775027）**：八个 fighter 源图集页（M8-009 exact_texture_path 命中，restore_dnf_atlas 提取、sha 钉档双跑一致）→ `/Game/UEMMO/Combat/FX/` 八纹理+八材质（duplicate M_ThrowStoneVisual 换 PageTex）；四命名攻击行 `cast_fx_*`/`hit_fx_*` 数据引用；新 `AFxFlipbookActor`（一次性播放自毁）由 presenter Started/HitConfirmed 按攻击目录解析生成（launcher 命中=上挑家族原生 RisingUpperEx/stone）。两个待定技能槽位留空待用户技能表。
+- **验证**：Build exit=0；导入 8 页全过；PrepareCombat 42 项 FX 校对零失败；`UEMMO.Tasks.M1_009` **5/5 绿**（含 FX 材质路径/可加载断言——与 M8-035 音频半边合成方案验收全句）；全量冒烟 exit=0。证据 `Artifacts/Tasks/M8-036/2026-11-11T02-57-48+0800`（首轮 2 失败=测试 maker 漏配指针垃圾值，已修正+默认空守卫）。
+- Owner：ZCode-20261111-A。本轮 goal 累计 DONE：**M8-034、M8-035、M8-036**（3 项）。
+- **08 方案剩余开放项**：问题二收尾（light/aerial 组件化+两个待定技能需用户技能表）；问题一收尾（显示层订阅 OnPhaseChanged、门控重启用需先修一帧滞后）；总验收用户试玩确认项随 M8-022。
+- 工作区遗留（非本轮，未提交）：三张 umap 编辑器漂移、`Content/UEMMO/DNFM/Volcano/`+`DA_room_volcano_01`+`place_volcano_room_actors.py`（待甄别）。
+- 下一步：**重打包 → 用户复测（攻击/技能恢复+打击音+特效+第三hit手感）** → M8-030 火山动态环境 → P08 Boss。
+- 报告 [M8-034](Docs/Tasks/Reports/M8-034.md)、[M8-035](Docs/Tasks/Reports/M8-035.md)、[M8-036](Docs/Tasks/Reports/M8-036.md)；方案文档 [08](Docs/DNF-Research/08-战斗质量收口方案.md)。
+
+---
+
 # 最新状态：M8-035 攻击音补接+第三hit节奏 DONE——08方案问题三/四音频缺口收口，重打包待用户复测（2026-11-11）
 
 - **M8-035（22fedb3）**：combat-attacks.json 四玩家攻击行携带 `swing_sound_path`/`hit_sound_path`（方案问题二.1 的数据驱动资产引用口径）；UAttackDefinition 解析；create_combat_assets.py 校验/加载/应用/校对；presenter 追加 Swing 事件类型（预解析非空才提交，敌人行静默形态）+Hit 事件按攻击解析打击音（缺省回退 ft_dmg_01）；launcher hit_stop 0.04→0.05（"第三 hit 加大"）。
