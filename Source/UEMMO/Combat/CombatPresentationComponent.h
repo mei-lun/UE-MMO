@@ -5,6 +5,7 @@
 #include "UObject/SoftObjectPtr.h"
 
 #include "CombatComponent.h"
+#include "CombatStateMachine.h"
 #include "DNFMCombatVisualPresenter.h"
 #include "HealthComponent.h"
 
@@ -381,6 +382,11 @@ public:
 	 */
 	int32 GetDispatchedAudioPlayCount() const { return DispatchedAudioPlayCount; }
 
+	/** M8-038: the presented attack instance (0 = none; the phase-event
+	 * interrupt/teardown path clears it synchronously - the read-only seam
+	 * the acceptance reads). */
+	uint64 GetPresentedInstanceId() const { return PresentingInstanceId; }
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -494,6 +500,15 @@ private:
 	void UnbindDelegates();
 
 	/**
+	 * M8-038: the plan 08 problem-1 display contract - the display reacts to
+	 * the phase EVENTS instead of reverse-deriving the phase from the
+	 * snapshot. The victim phases (HitStun/Knockdown/GetUp) interrupting a
+	 * presented attack and the Idle teardown re-sync the presentation NOW
+	 * (the snapshot fallback stays for anything event-less).
+	 */
+	void HandlePhaseChanged(ECombatPhase OldPhase, ECombatPhase NewPhase);
+
+	/**
 	 * M5-017: binds the owner health component's single death event to the
 	 * Dead reaction (once per component; the player carries no health
 	 * component and simply never dispatches Dead through this path).
@@ -527,6 +542,9 @@ private:
 
 	/** True while HandleStarted/HandleFinished are bound to the source. */
 	bool bDelegatesBound = false;
+
+	/** M8-038: the bound phase machine (for the unbind; weak). */
+	TWeakObjectPtr<UCombatStateMachine> PhaseMachineWeak;
 
 	/** M1-034: builds the Hit audio event from one accepted hit (dedup fields). */
 	FCombatAudioEvent BuildHitAudioEvent(const FCombatHit& Hit) const;

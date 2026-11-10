@@ -24,6 +24,17 @@ void AGoblinThrowerEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// M8-038: the display state machine subscribes to the combat phase
+	// machine (the plan 08 problem 1); the machine is a construction
+	// subobject of the combat component, available here.
+	if (UCombatComponent* CombatComp = GetCombatComponent())
+	{
+		if (UCombatStateMachine* Machine = CombatComp->GetStateMachine())
+		{
+			Machine->OnPhaseChanged.AddUObject(this, &AGoblinThrowerEnemy::HandlePhaseChanged);
+		}
+	}
+
 	// The goblin has no 3D alternative: the picture mode is its only display.
 	if (UDNFMCharacterVisualSet* Set = MonsterVisualSet.LoadSynchronous())
 	{
@@ -180,78 +191,112 @@ void AGoblinThrowerEnemy::ApplyTelegraphVisual(bool bActive)
 	// damage/down/stay resolution on the next tick.
 }
 
+void AGoblinThrowerEnemy::HandlePhaseChanged(ECombatPhase OldPhase, ECombatPhase NewPhase)
+{
+	// M8-038: the event IS the action decision for the phase-owned families
+	// (damage/down); the attack phases keep the telegraph's attack_0 hold.
+	// The tick resolver re-applies the same mapping idempotently, so a
+	// failed first apply (the visual not ready at the event moment) retries.
+	CachedPhase = NewPhase;
+	bool bHoldLastFrame = false;
+	const FName Desired = PhaseDesiredAction(bHoldLastFrame);
+	if (!Desired.IsNone())
+	{
+		ApplyDisplayAction(Desired, bHoldLastFrame);
+	}
+}
+
+FName AGoblinThrowerEnemy::PhaseDesiredAction(bool& bOutHoldLastFrame) const
+{
+	bOutHoldLastFrame = false;
+	switch (CachedPhase)
+	{
+	case ECombatPhase::Dead:
+		// M8-007 death chain: the down sequence plays out and holds its last
+		// frame (the M6-024 death rule).
+		bOutHoldLastFrame = true;
+		return FName(TEXT("down"));
+	case ECombatPhase::Knockdown:
+	case ECombatPhase::GetUp:
+		return FName(TEXT("down"));
+	case ECombatPhase::HitStun:
+		// Alternate the two single-frame damage holds (M8-007: damage_0/1).
+		return FName((HitStunAlternator % 2 == 0) ? TEXT("damage_0") : TEXT("damage_1"));
+	default:
+		return FName(NAME_None); // Idle/attack phases: the resolver/telegraph own those
+	}
+}
+
+bool AGoblinThrowerEnemy::ApplyDisplayAction(FName Desired, bool bHoldLastFrame)
+{
+	if (Desired == CurrentDisplayAction)
+	{
+		if (bHoldLastFrame && Desired == FName(TEXT("down")))
+		{
+			// Death hold: pin the display to the final drawn frame (the
+			// M6-024 rule); the clip itself is non-looping in the manifest.
+			const UDNFMCharacterVisualSet* Set = GoblinVisual->GetVisualSet();
+			if (Set != nullptr)
+			{
+				const int32 ActionIndex = Set->GetActionIndex(Desired);
+				if (Set->Actions.IsValidIndex(ActionIndex)
+					&& Set->Actions[ActionIndex].Frames.Num() > 0)
+				{
+					GoblinVisual->SeekToDisplayFrame(Set->Actions[ActionIndex].Frames.Num() - 1);
+				}
+			}
+		}
+		return false;
+	}
+	if (GoblinVisual->SetAction(Desired))
+	{
+		CurrentDisplayAction = Desired;
+		if (Desired == FName(TEXT("damage_0")) || Desired == FName(TEXT("damage_1")))
+		{
+			++HitStunAlternator;
+		}
+		return true;
+	}
+	return false;
+}
+
 void AGoblinThrowerEnemy::ResolveDisplayAction()
 {
 	const UCombatComponent* CombatComp = GetCombatComponent();
 	const bool bDead = CombatComp ? CombatComp->IsDead() : false;
-	const ECombatActionState State = CombatComp ? CombatComp->GetSnapshot().ActionState : ECombatActionState::Free;
-	const float Speed2D = GetVelocity().Size2D();
+	const double Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
 
 	// M8-019B: hold the attack_0 release pose for the clip remainder after
-	// the stone is away (every interrupt - death/stun/knockdown - overrides
-	// the hold and resolves its own display action).
-	const double Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
-	const bool bInterrupted = bDead
-		|| State == ECombatActionState::HitStun
-		|| State == ECombatActionState::Knockdown
-		|| State == ECombatActionState::Recovering;
-	if (!bInterrupted && Now < AttackClipHoldUntilSeconds)
+	// the stone is away (the phase-event interrupts override the hold the
+	// moment they fire, so the hold gate no longer needs the interrupt check).
+	if (!bDead && Now < AttackClipHoldUntilSeconds)
 	{
 		return;
 	}
 
-	FName Desired;
-	bool bHoldLastFrame = false;
+	// Death first (immediate, the machine's Dead event also fires but the
+	// flag is the authoritative same-tick signal).
 	if (bDead)
 	{
-		// M8-007 death chain: the down sequence plays out and holds its last
-		// frame (the M6-024 death rule); overturn stays for M8-019B's
-		// interruption composition.
-		Desired = FName(TEXT("down"));
-		bHoldLastFrame = true;
-	}
-	else if (State == ECombatActionState::Knockdown || State == ECombatActionState::Recovering)
-	{
-		Desired = FName(TEXT("down"));
-	}
-	else if (State == ECombatActionState::HitStun)
-	{
-		// Alternate the two single-frame damage holds (M8-007: damage_0/1).
-		Desired = FName((HitStunAlternator % 2 == 0) ? TEXT("damage_0") : TEXT("damage_1"));
-	}
-	else if (Speed2D > 20.f)
-	{
-		Desired = FName(TEXT("move"));
-	}
-	else
-	{
-		Desired = FName(TEXT("stay"));
+		ApplyDisplayAction(FName(TEXT("down")), /*bHoldLastFrame=*/true);
+		return;
 	}
 
-	if (Desired != CurrentDisplayAction)
+	if (CachedPhase != ECombatPhase::Idle)
 	{
-		if (GoblinVisual->SetAction(Desired))
+		// The event-owned phases re-apply per tick (idempotent - the same
+		// action no-ops) so a failed first apply retries without a separate
+		// path; the alternator only advances when the action actually flips.
+		bool bHoldLastFrame = false;
+		const FName Desired = PhaseDesiredAction(bHoldLastFrame);
+		if (!Desired.IsNone())
 		{
-			CurrentDisplayAction = Desired;
-			if (State == ECombatActionState::HitStun)
-			{
-				++HitStunAlternator;
-			}
+			ApplyDisplayAction(Desired, bHoldLastFrame);
 		}
+		return;
 	}
-	else if (bHoldLastFrame && Desired == FName(TEXT("down")))
-	{
-		// Death hold: pin the display to the final drawn frame (the M6-024
-		// rule); the clip itself is non-looping in the manifest.
-		const UDNFMCharacterVisualSet* Set = GoblinVisual->GetVisualSet();
-		if (Set != nullptr)
-		{
-			const int32 ActionIndex = Set->GetActionIndex(Desired);
-			if (Set->Actions.IsValidIndex(ActionIndex)
-				&& Set->Actions[ActionIndex].Frames.Num() > 0)
-			{
-				GoblinVisual->SeekToDisplayFrame(Set->Actions[ActionIndex].Frames.Num() - 1);
-			}
-		}
-	}
+
+	// Idle: the velocity switch (velocity is not a phase fact).
+	const float Speed2D = GetVelocity().Size2D();
+	ApplyDisplayAction(FName(Speed2D > 20.f ? TEXT("move") : TEXT("stay")));
 }

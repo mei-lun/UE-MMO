@@ -8,6 +8,7 @@
 #include "GameFramework/Character.h"
 #include "MeleeEnemy.h"
 #include "../Character/DNFMCharacterVisualSet.h"
+#include "../Combat/CombatStateMachine.h"
 
 #include "GoblinThrowerEnemy.generated.h"
 
@@ -71,7 +72,27 @@ public:
 private:
 	TFunction<void()> RefreshVisual;
 
+	/**
+	 * M8-038: the phase events drive the action switch (the plan 08 problem
+	 * 1: the display subscribes to the state machine instead of re-deriving
+	 * the phase from the snapshot each tick). The per-tick resolver keeps
+	 * only the hold gate, the death-hold pin and the Idle velocity switch.
+	 */
+	void HandlePhaseChanged(ECombatPhase OldPhase, ECombatPhase NewPhase);
+
+	/** M8-038: the cached-phase → display-action mapping (shared by the event
+	 * handler and the per-tick idempotent re-apply; NAME_None = the phase is
+	 * tick-resolver territory). */
+	FName PhaseDesiredAction(bool& bOutHoldLastFrame) const;
+
+	/** M8-038: applies one display action (idempotent); returns true on change. */
+	bool ApplyDisplayAction(FName Desired, bool bHoldLastFrame = false);
+
 	void ResolveDisplayAction();
+
+	/** M8-038: the last phase the machine reported (the tick resolver reads
+	 * this instead of re-deriving from the combat snapshot). */
+	ECombatPhase CachedPhase = ECombatPhase::Idle;
 
 	/** The hand anchor for the release: the foot + these offsets (design
 	 * defaults - no monster bone data exists; the throw hand sits forward of

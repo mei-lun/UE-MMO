@@ -221,6 +221,14 @@ void UCombatPresentationComponent::SetSources(UCombatComponent* InCombatSource, 
 		CombatSource->OnFinished.AddUObject(this, &UCombatPresentationComponent::HandleFinished);
 		CombatSource->OnHitConfirmed.AddUObject(this, &UCombatPresentationComponent::HandleHitConfirmed);
 		CombatSource->OnHitStopChanged.AddUObject(this, &UCombatPresentationComponent::HandleHitStopChanged);
+		// M8-038: the phase-event subscription (the plan 08 problem 1: the
+		// display subscribes instead of reverse-deriving). The machine is a
+		// UCombatComponent subobject, available from construction.
+		if (UCombatStateMachine* PhaseMachine = CombatSource->GetStateMachine())
+		{
+			PhaseMachine->OnPhaseChanged.AddUObject(this, &UCombatPresentationComponent::HandlePhaseChanged);
+			PhaseMachineWeak = PhaseMachine;
+		}
 		bDelegatesBound = true;
 	}
 }
@@ -708,7 +716,31 @@ void UCombatPresentationComponent::UnbindDelegates()
 			Combat->OnHitConfirmed.RemoveAll(this);
 			Combat->OnHitStopChanged.RemoveAll(this);
 		}
+		if (UCombatStateMachine* PhaseMachine = PhaseMachineWeak.Get())
+		{
+			PhaseMachine->OnPhaseChanged.RemoveAll(this);
+		}
+		PhaseMachineWeak = nullptr;
 		bDelegatesBound = false;
+	}
+}
+
+void UCombatPresentationComponent::HandlePhaseChanged(ECombatPhase OldPhase, ECombatPhase NewPhase)
+{
+	// M8-038: the interrupt/teardown re-sync runs NOW (event-driven) - a hit
+	// interrupt (HitStun/Knockdown/GetUp entered mid-attack) and the Idle
+	// teardown apply the snapshot the moment the phase changes instead of one
+	// component tick later through the fallback. The in-attack frame sampling
+	// keeps driving the clip playback: the events decide WHICH action family,
+	// the sampling decides WHERE inside it.
+	if (NewPhase != ECombatPhase::HitStun && NewPhase != ECombatPhase::Knockdown
+		&& NewPhase != ECombatPhase::GetUp && NewPhase != ECombatPhase::Idle)
+	{
+		return;
+	}
+	if (CombatSource.IsValid())
+	{
+		ApplySnapshot(CombatSource->GetSnapshot());
 	}
 }
 
