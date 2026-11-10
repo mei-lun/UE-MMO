@@ -12,9 +12,17 @@ namespace
 	{
 		static const TArray<uint8> Idle = {uint8(P::Windup), uint8(P::HitStun), uint8(P::LaunchAir), uint8(P::Knockdown), uint8(P::Dead)};
 		static const TArray<uint8> Windup = {uint8(P::Active), uint8(P::HitStun), uint8(P::LaunchAir), uint8(P::Knockdown), uint8(P::Dead)};
-		static const TArray<uint8> Active = {uint8(P::Recovery), uint8(P::HitStun), uint8(P::LaunchAir), uint8(P::Knockdown), uint8(P::Dead)};
-		static const TArray<uint8> Recovery = {uint8(P::Idle), uint8(P::HitStun), uint8(P::LaunchAir), uint8(P::Knockdown), uint8(P::Dead)};
-		static const TArray<uint8> CancelWindow = {uint8(P::Windup), uint8(P::Idle), uint8(P::HitStun), uint8(P::LaunchAir), uint8(P::Knockdown), uint8(P::Dead)};
+		// M8-037: the cancel window is an attack sub-phase the flow passes
+		// through (the derivation enters it at cancel_start from Active, or
+		// from Recovery when the cancel window opens late) - without these
+		// two edges CancelWindow was unreachable and every derivation into
+		// it was refused (the M8-031 acceptance caught it red).
+		static const TArray<uint8> Active = {uint8(P::Recovery), uint8(P::CancelWindow), uint8(P::HitStun), uint8(P::LaunchAir), uint8(P::Knockdown), uint8(P::Dead)};
+		static const TArray<uint8> Recovery = {uint8(P::Idle), uint8(P::CancelWindow), uint8(P::HitStun), uint8(P::LaunchAir), uint8(P::Knockdown), uint8(P::Dead)};
+		// M8-037: the cancel window closes back into the post-cancel recovery
+		// tail (the frame table's [cancel_end, duration) frames) - the natural
+		// attack-phase walk alongside Windup/Active/CancelWindow.
+		static const TArray<uint8> CancelWindow = {uint8(P::Windup), uint8(P::Recovery), uint8(P::Idle), uint8(P::HitStun), uint8(P::LaunchAir), uint8(P::Knockdown), uint8(P::Dead)};
 		static const TArray<uint8> HitStun = {uint8(P::Idle), uint8(P::Knockdown), uint8(P::Dead), uint8(P::LaunchAir)};
 		static const TArray<uint8> LaunchAir = {uint8(P::Knockdown), uint8(P::Idle), uint8(P::Dead)};
 		static const TArray<uint8> Knockdown = {uint8(P::GetUp), uint8(P::Dead)};
@@ -143,8 +151,12 @@ void UCombatStateMachine::UpdateFromFacts(const FCombatPhaseFacts& Facts)
 		ApplyTransition(ECombatPhase::Active);
 		return;
 	}
-	// The cancel window opens at cancel_start and stays through the end.
-	bCancelWindowOpen = Facts.Frame >= Facts.CancelStartFrame && Facts.Frame < Facts.DurationFrames;
+	// The cancel window mirrors the frame table's half-open
+	// [cancel_start, cancel_end); the [cancel_end, duration) tail derives
+	// Recovery (the M8-037 fix - the DurationFrames-only bound swallowed the
+	// tail into the cancel window and diverged from the live chain check,
+	// which reads the same definition window).
+	bCancelWindowOpen = Facts.Frame >= Facts.CancelStartFrame && Facts.Frame < Facts.CancelEndFrame;
 	if (bCancelWindowOpen)
 	{
 		ApplyTransition(ECombatPhase::CancelWindow);

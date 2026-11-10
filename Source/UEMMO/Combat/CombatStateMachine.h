@@ -61,6 +61,10 @@ struct FCombatPhaseFacts
 	int32 ActiveStartFrame = 0;
 	int32 ActiveEndFrame = 0;
 	int32 CancelStartFrame = 0;
+	/** M8-037: the half-open cancel window's end - the frames in
+	 * [CancelEndFrame, DurationFrames) derive Recovery (the window tail the
+	 * DurationFrames-only bound used to swallow into the cancel window). */
+	int32 CancelEndFrame = 0;
 	int32 DurationFrames = 0;
 };
 

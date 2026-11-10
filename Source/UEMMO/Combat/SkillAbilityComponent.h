@@ -62,9 +62,22 @@ public:
 	 */
 	bool TryCast(UCombatComponent* Combat, USkillLoadoutComponent* Loadout, int32 Facing);
 
-	/** The wiring: one-time configuration from the profession skill row. */
+	/**
+	 * The wiring: one-time configuration from the profession skill row.
+	 * InMPCost/InCooldownSeconds are the component-side record; the loadout
+	 * row stays the economy authority when a loadout is wired.
+	 */
 	void Configure(FName InSkillId, FName InAttackId, int32 InMPCost, float InCooldownSeconds,
 		const FSkillProjectileSpec& InProjectileSpec, USkillLoadoutComponent* InLoadout);
+
+	/**
+	 * M8-037: the slot-route lookup (the plan 08 problem-2 "the input layer
+	 * routes to the component"): the first configured ability whose attack id
+	 * matches the hotbar slot's attack id, or null. Static and pure so the
+	 * routing rule is testable without a character.
+	 */
+	static USkillAbilityComponent* FindAbilityForSlotAttack(const TArray<USkillAbilityComponent*>& Abilities,
+		FName SlotAttackId);
 
 	FName GetSkillId() const { return SkillId; }
 	FName GetAttackId() const { return AttackId; }

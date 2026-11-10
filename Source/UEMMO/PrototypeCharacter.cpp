@@ -1337,16 +1337,41 @@ void APrototypeCharacter::SubmitSkillSlot(int32 SlotIndex)
     // (所有既有槽位计数与操作日志继续记录).
     if (SkillLoadout != nullptr && SkillLoadout->IsWired())
     {
-        const FSkillActivationOutcome Outcome = SkillLoadout->TryActivateSkill(SlotIndex);
-        if (Outcome.bAccepted)
+        // M8-037: the generic component route (plan 08 problem 2 - the input
+        // layer routes slot presses to the ability components, no per-skill
+        // special-casing). A slot whose attack id has a configured component
+        // casts through it: the component composes the loadout's economy and
+        // delivery verbatim (behavior parity with the direct call - the
+        // loadout slot path IS the delivery) and adds the component-side cast
+        // presentation. Slots without a configured component (the two TBD
+        // skills, the buff row) keep the direct loadout activation verbatim.
+        if (USkillAbilityComponent* Ability = FindAbilityForSlot(SlotIndex))
         {
-            UE_LOG(LogTemp, Verbose, TEXT("UEMMO M7-003: slot %d activated skill '%s' (attack '%s')."),
-                SlotIndex, *Outcome.SkillId.ToString(), *Outcome.AttackId.ToString());
+            const int32 Facing = (Combat != nullptr) ? Combat->GetSnapshot().Facing : 1;
+            if (Ability->TryCast(Combat, SkillLoadout, Facing))
+            {
+                UE_LOG(LogTemp, Verbose, TEXT("UEMMO M8-037: slot %d cast through '%s' (attack '%s')."),
+                    SlotIndex, *Ability->GetSkillId().ToString(), *Ability->GetAttackId().ToString());
+            }
+            else if (UOperationLogSubsystem* SkillOpLog = UOperationLogSubsystem::FindForContext(this))
+            {
+                SkillOpLog->LogInput(FString::Printf(TEXT("SkillSlot%d Refused: the ability cast was not accepted"),
+                    SlotIndex));
+            }
         }
-        else if (UOperationLogSubsystem* SkillOpLog = UOperationLogSubsystem::FindForContext(this))
+        else
         {
-            SkillOpLog->LogInput(FString::Printf(TEXT("SkillSlot%d Refused: %s"),
-                SlotIndex, *Outcome.Message));
+            const FSkillActivationOutcome Outcome = SkillLoadout->TryActivateSkill(SlotIndex);
+            if (Outcome.bAccepted)
+            {
+                UE_LOG(LogTemp, Verbose, TEXT("UEMMO M7-003: slot %d activated skill '%s' (attack '%s')."),
+                    SlotIndex, *Outcome.SkillId.ToString(), *Outcome.AttackId.ToString());
+            }
+            else if (UOperationLogSubsystem* SkillOpLog = UOperationLogSubsystem::FindForContext(this))
+            {
+                SkillOpLog->LogInput(FString::Printf(TEXT("SkillSlot%d Refused: %s"),
+                    SlotIndex, *Outcome.Message));
+            }
         }
     }
     else
@@ -1367,13 +1392,39 @@ void APrototypeCharacter::CreateSkillAbilities(USkillLoadoutComponent* Loadout)
 		Ability->RegisterComponent();
 		SkillAbilities.Add(Ability);
 	}
+	// M8-037: the four named plan-08 skills ride configured components (the
+	// melee chain attacks light_01/light_02/aerial_01 through the shared
+	// combat chain, the launcher through its projectile spec); the two TBD
+	// skills (the plan's "two skills pending the user's skill table") stay
+	// unconfigured slots 4/5. The component-side MP/cooldown are records -
+	// the loadout row stays the economy authority.
 	if (Loadout != nullptr && SkillAbilities.Num() >= 4)
 	{
+		FSkillProjectileSpec MeleeSpec;
+		MeleeSpec.bProjectile = false;
 		FSkillProjectileSpec LauncherSpec;
 		LauncherSpec.bProjectile = true;
+		SkillAbilities[0]->Configure(FName(TEXT("skill_light_01")), FName(TEXT("light_01")),
+			0, 0.0f, MeleeSpec, Loadout);
+		SkillAbilities[1]->Configure(FName(TEXT("skill_light_02")), FName(TEXT("light_02")),
+			0, 0.0f, MeleeSpec, Loadout);
 		SkillAbilities[2]->Configure(FName(TEXT("skill_launcher")), FName(TEXT("launcher")),
 			20, 3.0f, LauncherSpec, Loadout);
+		SkillAbilities[3]->Configure(FName(TEXT("skill_aerial_01")), FName(TEXT("aerial_01")),
+			0, 0.0f, MeleeSpec, Loadout);
 	}
+}
+
+USkillAbilityComponent* APrototypeCharacter::FindAbilityForSlot(int32 SlotIndex) const
+{
+	// M8-037: the slot-route lookup - the component configured for the slot's
+	// attack id, or null (the slot keeps its direct loadout activation then).
+	if (SkillLoadout == nullptr)
+	{
+		return nullptr;
+	}
+	return USkillAbilityComponent::FindAbilityForSlotAttack(SkillAbilities,
+		SkillLoadout->GetSlotSkill(SlotIndex));
 }
 
 void APrototypeCharacter::DevSetMoveAxes(float AxisX, float AxisY)

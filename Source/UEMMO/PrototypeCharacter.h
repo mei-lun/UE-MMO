@@ -101,6 +101,13 @@ public:
     void CreateSkillAbilities(USkillLoadoutComponent* Loadout);
 
     /**
+     * M8-037: the slot-route lookup - the ability component configured for
+     * the hotbar slot's attack id (null = the slot has no component; its
+     * press keeps the direct loadout activation).
+     */
+    USkillAbilityComponent* FindAbilityForSlot(int32 SlotIndex) const;
+
+    /**
      * M1-012: public combat intent entry (M1-040 keys: X = Light, Z =
      * Launcher). PressedAt
      * is read from the input game clock (World GetTimeSeconds: advances with

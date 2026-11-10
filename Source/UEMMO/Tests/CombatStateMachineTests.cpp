@@ -47,6 +47,10 @@ bool FUEMMOM8_031StateMachine::RunTest(const FString& Parameters)
     Facts.ActiveStartFrame = 7;
     Facts.ActiveEndFrame = 11;
     Facts.CancelStartFrame = 12;
+    // M8-037: the facts mirror what the combat component injects - the
+    // frame table's half-open cancel window end (12..24) and the post-cancel
+    // Recovery tail up to the duration (26).
+    Facts.CancelEndFrame = 24;
     Facts.DurationFrames = 26;
 
     Facts.Frame = 0;
@@ -103,6 +107,7 @@ bool FUEMMOM8_031StateMachine::RunTest(const FString& Parameters)
     Facts.ActiveStartFrame = 7;
     Facts.ActiveEndFrame = 11;
     Facts.CancelStartFrame = 12;
+    Facts.CancelEndFrame = 24;
     Facts.DurationFrames = 26;
     SM->UpdateFromFacts(Facts);
     TestTrue(TEXT("the cancel window allows the chain start"), SM->CanStartAttack());

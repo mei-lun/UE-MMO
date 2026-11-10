@@ -322,6 +322,7 @@ void UCombatComponent::UpdatePhaseMachine()
 		Facts.ActiveStartFrame = PhaseDef->ActiveWindow.StartFrame;
 		Facts.ActiveEndFrame = PhaseDef->ActiveWindow.EndFrame;
 		Facts.CancelStartFrame = PhaseDef->CancelWindow.StartFrame;
+		Facts.CancelEndFrame = PhaseDef->CancelWindow.EndFrame;
 		Facts.DurationFrames = PhaseDef->DurationFrames;
 	}
 	StateMachine->UpdateFromFacts(Facts);
