@@ -78,11 +78,14 @@ namespace
         ECVF_Default);
     // M6-021: 1 = the DNFM picture mode (the M6-020/M6-022 composite action
     // atlas played by UDNFMCharacterVisualComponent on a camera-facing plane,
-    // plan sections 3/5); 0 = the animated 3D hero (default; the rollback
-    // path). Mutually exclusive with the M6-015 Spine idle preview above.
+    // plan sections 3/5); the DNFM composite picture mode is the PRODUCTION
+    // presentation (the skill bar, the hit FX and the segment tables all ride
+    // it), so the default is 1 - the animated 3D hero stays available as the
+    // rollback path via UEMMO.PlayerDNFMVisual=0. Mutually exclusive with the
+    // M6-015 Spine idle preview above.
     TAutoConsoleVariable<int32> CVarUEMMOPlayerDNFMVisual(
-        TEXT("UEMMO.PlayerDNFMVisual"), 0,
-        TEXT("Player visual: 0 = animated 3D hero (default), 1 = DNFM composite picture mode (M6-021)."),
+        TEXT("UEMMO.PlayerDNFMVisual"), 1,
+        TEXT("Player visual: 1 = DNFM composite picture mode (the production default, M6-021), 0 = animated 3D hero (the rollback path)."),
         ECVF_Default);
 }
 

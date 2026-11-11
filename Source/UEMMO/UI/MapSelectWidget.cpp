@@ -217,8 +217,12 @@ void UMapSelectWidget::BindMenu()
 	const bool bLatestExperience = Flow && Flow->IsResourceExperience();
 	const ESlateVisibility LegacyVisibility = bLatestExperience ? ESlateVisibility::Collapsed : ESlateVisibility::Visible;
 	CatalogListBox->SetVisibility(LegacyVisibility);
-	SystemTestRoomRow->SetVisibility(LegacyVisibility);
-	SystemTestRoomEnterButton->SetVisibility(LegacyVisibility);
+	// M8-041: the system-test room is a debug box (the M5-018A config-driver
+	// room) - it stays reachable through the flow API for the tests but leaves
+	// the public menu (the M8-040 play-flow review flagged it as "map content
+	// missing" for a player browsing the catalog).
+	SystemTestRoomRow->SetVisibility(ESlateVisibility::Collapsed);
+	SystemTestRoomEnterButton->SetVisibility(ESlateVisibility::Collapsed);
 	SettingsPlaceholderBlock->SetVisibility(LegacyVisibility);
 	TitleBlock->SetText(FText::FromString(bLatestExperience ? TEXT("UE-MMO | Latest resources") : GM3_017_TitleText));
 	if (EnterLabel != nullptr)
