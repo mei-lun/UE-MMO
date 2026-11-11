@@ -11,9 +11,12 @@ try {
     foreach ($Pass in @('first','restart')) {
         $PassDir = Join-Path $Evidence $Pass
         New-Item -ItemType Directory -Path $PassDir | Out-Null
-        # Intentionally no -unattended, visual override, map override, experience
-        # enable flag or skill-demo command: exercise the normal public boot.
+        # M8-039 play-flow contract: the normal public boot stays on the main
+        # menu (no auto-entry), so the experience runs EXPLICITLY through
+        # -UEMMOResourceExperience. Intentionally no -unattended, visual
+        # override, map override or skill-demo command otherwise.
         $Arguments = @('-game','-nosplash','-nosound','-RenderOffscreen','-ResX=1280','-ResY=720',
+            '-UEMMOResourceExperience',
             "-ExecCmds=Automation RunTests $Filter", '-TestExit=Automation Test Queue Empty',
             "-ReportExportPath=$PassDir", "-ExperienceOutput=$PassDir",
             "-UserDir=$Evidence\User", "-abslog=$PassDir\ue.log")

@@ -51,7 +51,7 @@ bool FResourceExperienceAcceptance::RunTest(const FString& Parameters)
     ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, Player, Flow, State, Output, bExpectRestore]() {
         APrototypeCharacter* Pawn = Player();
         UGameFlowSubsystem* GameFlow = Flow();
-        if (!TestTrue(TEXT("default launch automatically enters guild"), GameFlow && GameFlow->IsResourceExperience()
+        if (!TestTrue(TEXT("the explicit experience launch auto-enters the guild"), GameFlow && GameFlow->IsResourceExperience()
             && GameFlow->GetState() == EGameFlowState::Room && GWorld->GetMapName().Contains(TEXT("L_DNFM_Guildagit")))
             || !TestNotNull(TEXT("player exists"), Pawn)) return true;
         TestTrue(TEXT("latest character visible without a CVar override"), Pawn->IsDNFMVisualActive()

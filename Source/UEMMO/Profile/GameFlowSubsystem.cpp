@@ -87,13 +87,15 @@ void UGameFlowSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		Settings->SetScreenResolution(FIntPoint(1280, 720));
 		Settings->ApplySettings(false);
 	}
-	// Interactive game launches use the current resource experience. Dedicated
-	// unattended regression processes keep their explicit scenarios; the flag
-	// runs this same production path in a dedicated rendered acceptance process.
-	bResourceExperience = FParse::Param(FCommandLine::Get(), TEXT("UEMMOResourceExperience"))
-		|| (!GIsEditor && !GIsAutomationTesting && !FApp::IsUnattended()
-			&& !FParse::Param(FCommandLine::Get(), TEXT("UEMMOSmoke"))
-			&& !FParse::Param(FCommandLine::Get(), TEXT("M7DemoSelfTest")));
+	// M8-039 play-flow fix: interactive launches are NORMAL launches - the
+	// main menu shows and the player picks a room (the M8-022 primary enter).
+	// The M6 auto-entry ("interactive launches use the current resource
+	// experience") hijacked every packaged boot straight into the guild hub
+	// with the menu hidden, which broke the play flow the moment the menu
+	// shipped. The resource experience stays available explicitly through
+	// -UEMMOResourceExperience (the dedicated regression processes keep
+	// their explicit scenarios).
+	bResourceExperience = FParse::Param(FCommandLine::Get(), TEXT("UEMMOResourceExperience"));
 	bResourceExperienceAutoEntryConsumed = false;
 
 	State = EGameFlowState::Menu;

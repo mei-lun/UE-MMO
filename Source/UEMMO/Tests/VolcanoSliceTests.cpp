@@ -53,13 +53,34 @@ bool FUEMMOM8_029VolcanoSlice::RunTest(const FString& Parameters)
         }
         return false;
     }));
-    ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(2.5f));
+    // M8-040: walk into the trigger (the production path - the same walk the
+    // bamboo slice uses). The M8-029 draft wrongly assumed the spawn already
+    // overlaps the trigger and just waited; its recorded evidence was a
+    // path-mangled run that never executed the test, so the broken assumption
+    // shipped unnoticed.
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(1.0f));
+    ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this]()
+    {
+        static double Start = 0;
+        URoomSessionSubsystem* Session = GWorld->GetSubsystem<URoomSessionSubsystem>();
+        APrototypeCharacter* P = Cast<APrototypeCharacter>(UGameplayStatics::GetPlayerCharacter(GWorld, 0));
+        if (Start == 0) Start = FPlatformTime::Seconds();
+        const bool bRunning = Session && Session->GetState() == ERoomSessionState::Running;
+        if (!P || bRunning || FPlatformTime::Seconds() - Start > 8.0)
+        {
+            if (P) P->DevSetMoveAxes(0.f, 0.f);
+            Start = 0;
+            TestTrue(TEXT("the trigger overlap started the run"), bRunning);
+            return true;
+        }
+        P->DevSetMoveAxes(1.f, 0.f);
+        return false;
+    }));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(1.0f));
     ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, Output]()
     {
         URoomSessionSubsystem* Session = GWorld->GetSubsystem<URoomSessionSubsystem>();
         if (!TestNotNull(TEXT("session subsystem"), Session)) return true;
-        TestTrue(TEXT("the trigger overlap started the run"),
-            Session->GetState() == ERoomSessionState::Running);
         int32 Goblins = 0;
         for (TActorIterator<AGoblinThrowerEnemy> It(GWorld); It; ++It) ++Goblins;
         TestTrue(TEXT("the wave birthed the two goblin throwers"), Goblins == 2);
