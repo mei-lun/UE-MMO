@@ -1,3 +1,14 @@
+# 最新状态：M8-040 游玩流程修复 DONE——菜单劫持+火山房可玩性双根因消除，包内双切片 Success（2026-11-12）
+
+- **用户报告"游玩流程有问题"实机诊断**（亲自启动打包版+截图+包内自动化）定位两项根因并修复（24ff6d5）：①M6 经验自动进入把每个正常 boot 直接丢进工会图+隐藏主菜单（交互启动回归正常模式，经验模式仅 `-UEMMOResourceExperience` 显式启用，M6 验收同步显式契约绿）；②火山房三层地图缺陷（触发器未持久化/装饰碰撞挡路/走带无地板）+出生点错位——`fix_volcano_playability.py`+`fix_volcano_player_start.py` 全部持久化修复，切片测试修正为走位启动。
+- **验证（包内实跑）**：正常启动零自动进入+菜单展示；`M8_029.VolcanoSlice` **Success**（编辑器+包内双证，结算截图在案）；`M8_020.BambooSliceCombat` **Success**；`M6_026.ResourceExperience` 绿；全量冒烟 exit=0。证据 `Artifacts/Tasks/M8-022/pkgvol-*`、`edslice4/5-*`。
+- **教训**：包内自动化是玩法流程唯一可信验收（报告"全绿"必须核对 index.json 的 Success 行——M8-029 的"全绿"证据是被 MSYS 路径转义毁掉的运行，火山房从未可玩）；归档前清残留 UEMMO 进程（锁文件致 UAT 静默保留旧二进制）；UE 路径参数防 MSYS 转义。
+- Owner：ZCode-20261111-A。任务板 valid=True。
+- 下一步：**用户复测（主菜单→选图→游玩全流程；火山图应能正常开波）** → M8-030 火山动态环境 → P08 Boss。
+- 报告 [M8-040](Docs/Tasks/Reports/M8-040.md)。
+
+---
+
 # 最新状态：M8-039 门控重启用（实时事实重推导）DONE——08 方案问题一解决条款全部落地，重打包待用户复测（2026-11-11）
 
 - **M8-039（64b025e）**：`DerivePhase` 抽纯静态函数（UpdateFromFacts 复用同一派生）；`CanStartAttackLive` 在判定现场用当前 facts 重推导（存储相位仅作显示记录，滞后从机制上消除）；`UCombatComponent::BuildPhaseFacts` 单一事实装配（门控与每 tick 推导共用）；`TryStartAttack`+`TryCast` 双门重启用（M8-034 回退项闭环）。修复 CombatComponent.h 缺 CombatStateMachine.h include（FCombatPhaseFacts 完整类型）。
