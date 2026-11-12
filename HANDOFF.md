@@ -1,3 +1,24 @@
+# 最新状态：地图摆位修复链 M8-042~048 全部技术收口——M8-048 REVIEW 待用户逐图复测（2026-11-13）
+
+- **七卡全部完成（ZCode-20261113-A，6 DONE + 1 REVIEW）**：M8-042 基线+门禁 → M8-043 火山摆位（44 岩壁接地）→ M8-044 火山材质（真深色+黄昏灯光+发光岩浆带）→ M8-045 工会图地面背景（石板地+幕）→ M8-046 工会图摆位（223 贴地/湖上浮/树迁出/星球升空）→ M8-047 竹林收口（出口门/壳体/封顶）→ M8-048 出口统一+全图回归。
+- **最终证据**：全图门禁 **GATE PASS**（9 图悬空/埋地/占位/规则全零；基线 104 占位+84 悬空+8 埋地+25 违规 → 0）；打包 exit=0；包内 VolcanoSlice **Success** + BambooSliceCombat **Victory 2杀**（`Artifacts/Tasks/M8-048/pkg-*/evidence`）；ResourceExperience 双 pass 绿；里程碑记录已写入 Docs/05-验证记录.md。
+- **教训入库**：commandlet（-nullrhi）创建的材质是"标记已编译、shader 空"的僵尸态，必须经一次包 cook 才能渲染（M_ExitPortal/M_BambooShell 均踩）；自动化面片 spawn 后默认带碰撞——pitch=90 竖立的 Plane 实为横穿走道的隐形墙（竹林切片连败根因）；裸跑切片测试缺 DNFMGoblinOutput=/ExperienceOutput= 契约参数会误报。
+- **待用户**：启动 `Artifacts/Package/Windows/UEMMO/Binaries/Win64/UEMMO.exe` 逐图复测（验收点见 [M8-048 报告](Docs/Tasks/Reports/M8-048.md)）→ 通过则 M8-048 DONE；不通过按图开小卡。
+- 下一步：用户复测反馈 → M8-048 DONE（或修复小卡）→ P08 Boss。板 valid=True，261 DONE + 1 REVIEW。
+- 报告 [M8-042](Docs/Tasks/Reports/M8-042.md)、[M8-043](Docs/Tasks/Reports/M8-043.md)、[M8-044](Docs/Tasks/Reports/M8-044.md)、[M8-045](Docs/Tasks/Reports/M8-045.md)、[M8-046](Docs/Tasks/Reports/M8-046.md)、[M8-047](Docs/Tasks/Reports/M8-047.md)、[M8-048](Docs/Tasks/Reports/M8-048.md)。
+
+---
+
+# 最新状态：摆位修复第一轮完成——M8-042/043/044 DONE，火山全链修复实证（2026-11-13）
+
+- **本轮 3 项 DONE（ZCode-20261113-A）**：**M8-042**（99ba659+f3d0622）基线入库（遗留 umap 重存+火山漏交 44 材质/贴图/DA/脚本）+ `CheckMapPlacement.ps1` 摆位门禁（含火山"面片禁悬空"专项规则；基线全 10 图记录在案）；**M8-043**（7e5d1f5）44 块岩壁两遍法接地（几何贴地+贴图 alpha 精校，30 块 NORMAL 图案悬空实锤修复）、CONTACT NoCollision、地面加厚 20cm、出口视觉 v1（M_ExitPortal，Frac 脉冲+运行时红绿染色契约）；**M8-044**（0a83789+d41c58c）浅灰根因=线性域颜色+阳光 5.0 → 真深色底色+灯光调暗（5→1.5）、44 材质双面、后墙加高、剪影山脊、岩浆带 60cm 发光橙带。
+- **验证**：门禁火山全绿（悬空/埋地/占位/规则=0）；打包 exit=0 两轮；**包内 VolcanoSlice Success 两轮**（pkg-slice2/evidence/：深色地面+发光岩浆带+岩壁接地+无黑区）；M_ExitPortal shader 经 cook 编译（commandlet 建材质必须经一次 cook——新坑记录）。
+- 决策点 D1~D4 用户未表态按默认执行（前景树南移/BG_Planet 背景化/岩浆带贴地/地面合成纹理）。
+- 下一步：**第二轮 M8-045（工会图地面与背景）→046（工会图摆位）→047（竹林收口）**；M8-048 收口交用户复测。板 valid=True，258 DONE。
+- 报告 [M8-042](Docs/Tasks/Reports/M8-042.md)、[M8-043](Docs/Tasks/Reports/M8-043.md)、[M8-044](Docs/Tasks/Reports/M8-044.md)。
+
+---
+
 # 最新状态：地图摆位审计+修复拆卡就绪——预备轮，未执行修复，0 项 DONE（2026-11-13）
 
 - **只读审计（无头编辑器 commandlet，10 图全量）证实用户报告**："大量资源位置不对"=火山 44 块岩壁全部悬空+地面渲染浅灰（M_VolcanoRockDark/M_VolcanoFloorBase 名为深色实为浅灰）+岩浆带如斑马线+黑区；工会图地面是占位几何（DNFM_GAGroundPlaceholder_MISSING_GEOMETRY）+84 件装饰悬空+135 件湖对象埋在地下+70 棵前景树遮挡镜头+无背景幕；竹林出口绿板占位+壳体 WorldGridMaterial+地砖同面 z-fighting+幕布不封顶。**关键发现：M8-030 的 PASS 验收截图当时就是现状——摆位正确性从未被验收过。**
