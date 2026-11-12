@@ -268,7 +268,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M8-019C | [P05-A3 竹林生产波次接线与计数](Docs/Tasks/M8-019C.md) | DONE | M8-019A,M8-019B | ZCode-20261107-A | 2026-11-07T16:15:00+08:00 | [report](Docs/Tasks/Reports/M8-019C.md) |
 | M8-020 | [P06-A 竹林正常入口与切片战斗校验](Docs/Tasks/M8-020.md) | DONE | M8-019C | ZCode-20261107-A | 2026-11-07T17:30:00+08:00 | [report](Docs/Tasks/Reports/M8-020.md) |
 | M8-021 | [P06-B 切片源特效声音](Docs/Tasks/M8-021.md) | DONE | M8-020 | ZCode-20261107-A | 2026-11-07T17:55:00+08:00 | [report](Docs/Tasks/Reports/M8-021.md) |
-| M8-022 | [P06-C 固定包与用户试玩](Docs/Tasks/M8-022.md) | IN_PROGRESS | M8-021 | ZCode-20261107-A | 2026-11-07T18:05:00+08:00 | [report](Docs/Tasks/Reports/M8-022.md) |
+| M8-022 | [P06-C 固定包与用户试玩](Docs/Tasks/M8-022.md) | REVIEW | M8-021 | ZCode-20261107-A | 2026-11-13T01:29:00+08:00 | [report](Docs/Tasks/Reports/M8-022.md) |
 | M8-023 | [P06-D 侧视取景重对齐](Docs/Tasks/M8-023.md) | DONE | M8-020 | ZCode-20261107-A | 2026-11-08T18:05:00+08:00 | [report](Docs/Tasks/Reports/M8-023.md) |
 | M8-024 | [P06-E 工会图补色](Docs/Tasks/M8-024.md) | DONE | M8-021 | ZCode-20261107-A | 2026-11-08T19:05:00+08:00 | [report](Docs/Tasks/Reports/M8-024.md) |
 | M8-026 | [P06-F 窗口默认窗口化 1280x720](Docs/Tasks/M8-026.md) | DONE | M8-021 | ZCode-20261107-A | 2026-11-08T19:50:00+08:00 | [report](Docs/Tasks/Reports/M8-026.md) |
@@ -288,7 +288,7 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M8-039 | [门控重启用与实时事实重推导](Docs/Tasks/M8-039.md) | DONE | M8-038 | ZCode-20261111-A | 2026-11-11T04:05:00+08:00 | [report](Docs/Tasks/Reports/M8-039.md) |
 | M8-040 | [游玩流程修复](Docs/Tasks/M8-040.md) | DONE | M8-039 | ZCode-20261111-A | 2026-11-12T01:30:00+08:00 | [report](Docs/Tasks/Reports/M8-040.md) |
 | M8-041 | [立绘回归与地图视觉修复](Docs/Tasks/M8-041.md) | DONE | M8-040 | ZCode-20261111-A | 2026-11-12T02:05:00+08:00 | [report](Docs/Tasks/Reports/M8-041.md) |
-| M8-042 | [基线入库与地图摆位审计门禁](Docs/Audit-2026-11-12.md#m8-042-基线入库与地图摆位审计门禁) | TODO | — | — | — | — |
+| M8-042 | [基线入库与地图摆位审计门禁](Docs/Audit-2026-11-12.md#m8-042-基线入库与地图摆位审计门禁) | DONE | — | ZCode-20261113-A | 2026-11-13T01:45:00+08:00 | [report](Docs/Tasks/Reports/M8-042.md) |
 | M8-043 | [火山摆位修复](Docs/Audit-2026-11-12.md#m8-043-火山摆位修复) | TODO | M8-042 | — | — | — |
 | M8-044 | [火山材质与黑区填充](Docs/Audit-2026-11-12.md#m8-044-火山材质与黑区填充) | TODO | M8-043 | — | — | — |
 | M8-045 | [工会图地面与背景](Docs/Audit-2026-11-12.md#m8-045-工会图地面与背景) | TODO | M8-042 | — | — | — |
