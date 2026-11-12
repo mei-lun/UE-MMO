@@ -37,12 +37,13 @@ PLACEHOLDER_MARKERS = ('M_Unassigned', 'M_Default', 'M_GAGroundPlaceholder', 'Pl
 FLOAT_WHITELIST = ('BoundsCollision', 'FoundationBackdrop')
 
 # Per-map extra placement rules: actor labels matching `pattern` must keep their
-# bounds bottom edge inside [z_min_min, z_min_max]. Catches art that visually
-# floats even though the plane's geometric bottom pierces the ground (V1).
+# bounds bottom edge inside [z_min_min, z_min_max]. Catches planes floating above
+# the ground; deep burial is allowed (the art-level grounding is verified via the
+# texture alpha pass + in-game screenshots, see M8-043).
 LABEL_RANGE_RULES = {
     'L_DNFM_Volcano01': [
-        {'name': 'vol_obj_bottom_edge', 'pattern': 'VOL_OBJ_',
-         'z_min_min': -60.0, 'z_min_max': 5.0},
+        {'name': 'vol_obj_not_floating', 'pattern': 'VOL_OBJ_',
+         'z_min_min': -1800.0, 'z_min_max': 5.0},
     ],
 }
 
