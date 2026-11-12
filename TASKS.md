@@ -288,3 +288,10 @@ Owner 使用工具与会话标识（例如 ZCode-20260925-A），不是机器用
 | M8-039 | [门控重启用与实时事实重推导](Docs/Tasks/M8-039.md) | DONE | M8-038 | ZCode-20261111-A | 2026-11-11T04:05:00+08:00 | [report](Docs/Tasks/Reports/M8-039.md) |
 | M8-040 | [游玩流程修复](Docs/Tasks/M8-040.md) | DONE | M8-039 | ZCode-20261111-A | 2026-11-12T01:30:00+08:00 | [report](Docs/Tasks/Reports/M8-040.md) |
 | M8-041 | [立绘回归与地图视觉修复](Docs/Tasks/M8-041.md) | DONE | M8-040 | ZCode-20261111-A | 2026-11-12T02:05:00+08:00 | [report](Docs/Tasks/Reports/M8-041.md) |
+| M8-042 | [基线入库与地图摆位审计门禁](Docs/Tasks/M8-042.md) | TODO | — | — | — | — |
+| M8-043 | [火山摆位修复](Docs/Tasks/M8-043.md) | TODO | M8-042 | — | — | — |
+| M8-044 | [火山材质与黑区填充](Docs/Tasks/M8-044.md) | TODO | M8-043 | — | — | — |
+| M8-045 | [工会图地面与背景](Docs/Tasks/M8-045.md) | TODO | M8-042 | — | — | — |
+| M8-046 | [工会图摆位修复](Docs/Tasks/M8-046.md) | TODO | M8-045 | — | — | — |
+| M8-047 | [竹林视觉收口](Docs/Tasks/M8-047.md) | TODO | M8-042 | — | — | — |
+| M8-048 | [跨图出口统一与摆位回归](Docs/Tasks/M8-048.md) | TODO | M8-043,M8-044,M8-045,M8-046,M8-047 | — | — | — |
