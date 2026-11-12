@@ -34,7 +34,7 @@ PLACEHOLDER_MARKERS = ('M_Unassigned', 'M_Default', 'M_GAGroundPlaceholder', 'Pl
                        'MISSING', 'WorldGridMaterial', 'BasicShapeMaterial', 'Invalid')
 
 # Actor labels that are allowed to be flagged-floating (structural, never game content)
-FLOAT_WHITELIST = ('BoundsCollision', 'FoundationBackdrop')
+FLOAT_WHITELIST = ('BoundsCollision', 'FoundationBackdrop', 'BG_Planet')
 
 # Per-map extra placement rules: actor labels matching `pattern` must keep their
 # bounds bottom edge inside [z_min_min, z_min_max]. Catches planes floating above
